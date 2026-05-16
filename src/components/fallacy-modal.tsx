@@ -40,7 +40,7 @@ export function FallacyModal({ fallacyId, onClose }: Props) {
       className="m-auto bg-transparent p-0 border-0 outline-none backdrop:bg-black/60 backdrop:backdrop-blur-sm"
     >
       {f && (
-        <div className="bg-paper border border-rule rounded-lg shadow-2xl max-w-2xl w-[90vw] max-h-[85vh] overflow-y-auto">
+        <div className="bg-paper text-foreground border border-rule rounded-lg shadow-2xl max-w-2xl w-[90vw] max-h-[85vh] overflow-y-auto">
           <header className="flex items-start gap-3 p-6 pb-3 border-b border-rule sticky top-0 bg-paper">
             <span
               className="inline-block h-3 w-3 rounded-full mt-2 shrink-0"
