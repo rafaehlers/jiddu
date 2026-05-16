@@ -1,0 +1,24 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Analysis {
+  id          String   @id
+  source      String   // "url" | "pdf" | "txt" | "paste"
+  sourceRef   String?  // URL or filename
+  title       String?
+  text        String   // full normalized text
+  language    String?  // "pt" | "en" | ...
+  provider    String   // "anthropic" | "openai"
+  model       String
+  score       Int      // 0..100 fallacy intensity
+  summary     String?  // short verdict
+  sentences   String   // JSON array of {id,start,end,text}
+  findings    String   // JSON array of {sentenceIds[],fallacy,severity,quote,explanation}
+  createdAt   DateTime @default(now())
+}
