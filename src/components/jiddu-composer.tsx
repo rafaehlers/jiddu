@@ -197,9 +197,8 @@ function LoadingPanel({ state }: { state: StreamingState }) {
   if (!known) {
     stage = preMetaPool[tick % preMetaPool.length];
   } else if (chunksDone < chunkCount) {
-    const current = chunksDone + 1;
     const pool = t.loader_analysis;
-    stage = pool[tick % pool.length](current, chunkCount);
+    stage = pool[tick % pool.length];
   } else {
     stage = t.loading_finalizing;
   }

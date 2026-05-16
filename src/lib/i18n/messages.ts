@@ -40,7 +40,7 @@ export type Messages = {
   loader_url: string[];
   loader_paste: string[];
   loader_file: string[];
-  loader_analysis: ((current: number, total: number) => string)[];
+  loader_analysis: string[];
 
   // Errors
   analysis_failed: string;
@@ -167,12 +167,12 @@ const en: Messages = {
     "Splitting into sentences",
   ],
   loader_analysis: [
-    (n, t) => `Scanning section ${n} of ${t}`,
-    (n) => `Looking for biased framing in section ${n}`,
-    (n) => `Cross-checking claims in section ${n}`,
-    () => "Comparing against the fallacy catalog",
-    (n) => `Drafting comments for section ${n}`,
-    () => "Weighing severity",
+    "Looking for biased framing",
+    "Cross-checking claims",
+    "Comparing against the fallacy catalog",
+    "Examining rhetorical patterns",
+    "Drafting the comments",
+    "Weighing severity",
   ],
 
   analysis_failed: "Analysis failed",
@@ -300,12 +300,12 @@ const pt: Messages = {
     "Dividindo em sentenças",
   ],
   loader_analysis: [
-    (n, t) => `Examinando trecho ${n} de ${t}`,
-    (n) => `Procurando enquadramento tendencioso no trecho ${n}`,
-    (n) => `Verificando afirmações do trecho ${n}`,
-    () => "Comparando com o catálogo de falácias",
-    (n) => `Redigindo comentários do trecho ${n}`,
-    () => "Avaliando severidade",
+    "Procurando enquadramento tendencioso",
+    "Verificando as afirmações",
+    "Comparando com o catálogo de falácias",
+    "Examinando padrões retóricos",
+    "Redigindo os comentários",
+    "Avaliando a severidade",
   ],
 
   analysis_failed: "Falha na análise",
@@ -433,12 +433,12 @@ const es: Messages = {
     "Dividiendo en oraciones",
   ],
   loader_analysis: [
-    (n, t) => `Revisando sección ${n} de ${t}`,
-    (n) => `Buscando encuadres tendenciosos en la sección ${n}`,
-    (n) => `Verificando afirmaciones de la sección ${n}`,
-    () => "Comparando con el catálogo de falacias",
-    (n) => `Redactando comentarios de la sección ${n}`,
-    () => "Evaluando severidad",
+    "Buscando encuadres tendenciosos",
+    "Verificando las afirmaciones",
+    "Comparando con el catálogo de falacias",
+    "Examinando patrones retóricos",
+    "Redactando los comentarios",
+    "Evaluando la severidad",
   ],
 
   analysis_failed: "Falló el análisis",
