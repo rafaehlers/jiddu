@@ -6,7 +6,7 @@ import { ANALYSIS_JSON_SCHEMA } from "./jsonSchema";
 import type { AnalyzeInput, AnalyzeOutput, LlmProvider } from "./types";
 import type { StreamEvent } from "./stream";
 
-const DEFAULT_MODEL = "gpt-4.1-mini";
+const DEFAULT_MODEL = "gpt-5";
 
 export class OpenAIProvider implements LlmProvider {
   readonly id = "openai" as const;
