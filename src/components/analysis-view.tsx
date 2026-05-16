@@ -126,7 +126,7 @@ export function AnalysisView({
 
   return (
     <div className="flex-1 flex flex-col">
-      <div className="mx-auto max-w-7xl w-full px-6 py-6 flex flex-col gap-4">
+      <div className="mx-auto max-w-7xl w-full px-4 sm:px-6 py-6 flex flex-col gap-4">
         <div className="flex flex-col gap-1 min-w-0">
           <h1 className="font-serif text-2xl md:text-3xl tracking-tight">
             {title ?? "Untitled"}
@@ -151,10 +151,10 @@ export function AnalysisView({
         </p>
       </div>
 
-      <div className="mx-auto max-w-7xl w-full px-6 pb-10 grid grid-cols-1 lg:grid-cols-[1fr_22rem] gap-8">
+      <div className="mx-auto max-w-7xl w-full px-4 sm:px-6 pb-10 grid grid-cols-1 lg:grid-cols-[1fr_22rem] gap-6 lg:gap-8">
         <article
           ref={textColRef}
-          className="bg-paper border border-rule rounded-lg p-8 font-serif text-lg leading-[1.75] text-ink"
+          className="bg-paper border border-rule rounded-lg p-5 sm:p-8 font-serif text-base sm:text-lg leading-[1.75] text-ink"
         >
           {segments.map((seg, i) => {
             if (seg.type === "gap") {
@@ -196,10 +196,10 @@ export function AnalysisView({
 
         <aside
           ref={commentsColRef}
-          className="relative"
-          style={{ minHeight: asideMinHeight }}
+          className="relative flex flex-col gap-3 lg:gap-0 lg:block lg:min-h-[var(--aside-min-h)]"
+          style={{ "--aside-min-h": `${asideMinHeight}px` } as React.CSSProperties}
         >
-          <div ref={scoreRef} className="absolute top-0 left-0 right-0">
+          <div ref={scoreRef} className="lg:absolute lg:top-0 lg:left-0 lg:right-0">
             {score === null ? <PendingBadge /> : <ScoreBadge score={score} />}
           </div>
           {keyedFindings.map((f) => {
@@ -214,7 +214,7 @@ export function AnalysisView({
                 }}
                 onClick={() => focusFinding(f.key)}
                 className={cn(
-                  "absolute left-0 right-0 cursor-pointer",
+                  "lg:absolute lg:left-0 lg:right-0 cursor-pointer",
                   "bg-paper border border-rule rounded-md p-3 shadow-sm",
                   "transition-all hover:border-foreground",
                   active === f.key && "border-foreground ring-2",
@@ -259,7 +259,7 @@ export function AnalysisView({
         </aside>
       </div>
 
-      <div className="mx-auto max-w-7xl w-full px-6 pb-16 grid grid-cols-1 lg:grid-cols-[1fr_22rem] gap-8">
+      <div className="mx-auto max-w-7xl w-full px-4 sm:px-6 pb-16 grid grid-cols-1 lg:grid-cols-[1fr_22rem] gap-8">
         <ShareLinkBar />
       </div>
 

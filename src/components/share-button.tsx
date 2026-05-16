@@ -34,7 +34,7 @@ export function ShareButton() {
       )}
     >
       {copied ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
-      <span>{copied ? t.copied : t.share}</span>
+      <span className="hidden sm:inline">{copied ? t.copied : t.share}</span>
     </button>
   );
 }

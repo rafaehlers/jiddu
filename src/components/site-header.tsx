@@ -14,23 +14,23 @@ export function SiteHeader({ variant = "home", rightSlot }: Props) {
   const { t } = useI18n();
   return (
     <header className="border-b border-rule">
-      <div className="mx-auto max-w-7xl px-6 py-4 flex items-baseline justify-between gap-4">
-        <div className="flex items-baseline gap-4 min-w-0">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-3">
+        <div className="flex items-baseline gap-3 sm:gap-4 min-w-0">
           <Link
             href="/"
             className={
               variant === "home"
-                ? "font-serif text-3xl tracking-tight shrink-0"
-                : "font-serif text-2xl tracking-tight shrink-0"
+                ? "font-serif text-2xl sm:text-3xl tracking-tight shrink-0"
+                : "font-serif text-xl sm:text-2xl tracking-tight shrink-0"
             }
           >
             Jiddu
           </Link>
-          <span className="font-serif italic text-muted text-sm md:text-base">
+          <span className="font-serif italic text-muted text-sm md:text-base hidden sm:inline">
             {t.tagline}
           </span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <Link
             href="/fallacies"
             className="text-sm text-muted hover:text-foreground transition-colors hidden md:inline"

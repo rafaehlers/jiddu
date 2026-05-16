@@ -119,23 +119,23 @@ export function JidduComposer() {
 
   if (!live) {
     return (
-      <section className="mx-auto max-w-3xl w-full px-6 py-16 flex flex-col gap-10">
+      <section className="mx-auto max-w-3xl w-full px-4 sm:px-6 py-10 sm:py-16 flex flex-col gap-8 sm:gap-10">
         <div className="flex flex-col gap-4">
-          <h1 className="font-serif text-4xl md:text-5xl leading-tight text-balance">
+          <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl leading-tight text-balance">
             {t.hero_title}
           </h1>
-          <p className="text-muted text-lg max-w-2xl">{t.hero_subtitle}</p>
+          <p className="text-muted text-base sm:text-lg max-w-2xl">{t.hero_subtitle}</p>
         </div>
         <UploadForm
           onSubmit={startStream}
           error={submitError}
           onClearError={() => setSubmitError(null)}
         />
-        <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm">
           <span className="text-muted">{t.see_demo_hint}</span>
           <Link
             href={`/a/demo-${lang}`}
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md border border-rule hover:border-foreground transition-colors"
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md border border-rule hover:border-foreground transition-colors self-start sm:self-auto"
           >
             {t.see_demo} <span aria-hidden>→</span>
           </Link>

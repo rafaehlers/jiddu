@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Plus } from "lucide-react";
 import { useI18n } from "@/lib/i18n/provider";
 
 export function AnalysisHeaderActions() {
@@ -8,9 +9,12 @@ export function AnalysisHeaderActions() {
   return (
     <Link
       href="/"
-      className="text-sm px-3 py-1.5 rounded-md border border-rule hover:border-foreground transition-colors"
+      aria-label={t.new_analysis}
+      title={t.new_analysis}
+      className="inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-md border border-rule text-muted hover:text-foreground hover:border-foreground transition-colors"
     >
-      {t.new_analysis}
+      <Plus className="h-4 w-4 sm:hidden" />
+      <span className="hidden sm:inline">{t.new_analysis}</span>
     </Link>
   );
 }
