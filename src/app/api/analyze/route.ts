@@ -8,6 +8,7 @@ import { splitSentences } from "@/lib/sentences";
 import { chunkSentences } from "@/lib/chunker";
 import { getProvider } from "@/lib/llm";
 import type { IngestedDocument } from "@/lib/ingest/url";
+import { IngestError } from "@/lib/ingest/errors";
 import type { Finding } from "@/lib/schema";
 import type { ProviderId } from "@/lib/llm";
 import type { Lang } from "@/lib/fallacies";
@@ -60,6 +61,12 @@ export async function POST(req: NextRequest) {
       }
     }
   } catch (err) {
+    if (err instanceof IngestError) {
+      return new Response(
+        JSON.stringify({ error: err.message, code: err.code }),
+        { status: 400, headers: { "content-type": "application/json" } },
+      );
+    }
     return jsonError(err instanceof Error ? err.message : "Ingestion failed", 400);
   }
 

@@ -37,10 +37,29 @@ export type Messages = {
   loading_hint: string;
   sections: string;
   fallacies_found_so_far: (count: number) => string;
+  loader_url: string[];
+  loader_paste: string[];
+  loader_file: string[];
+  loader_analysis: ((current: number, total: number) => string)[];
 
   // Errors
   analysis_failed: string;
   try_again: string;
+  ingest_blocked_title: string;
+  ingest_blocked_hint: string;
+  ingest_not_found_title: string;
+  ingest_not_found_hint: string;
+  ingest_rate_limited_title: string;
+  ingest_rate_limited_hint: string;
+  ingest_timeout_title: string;
+  ingest_timeout_hint: string;
+  ingest_unreachable_title: string;
+  ingest_unreachable_hint: string;
+  ingest_extraction_failed_title: string;
+  ingest_extraction_failed_hint: string;
+  ingest_invalid_url_title: string;
+  ingest_too_short_title: string;
+  switch_to_paste: string;
 
   // Viewer chrome
   new_analysis: string;
@@ -126,9 +145,59 @@ const en: Messages = {
   sections: "sections",
   fallacies_found_so_far: (count) =>
     `${count} ${count === 1 ? "fallacy" : "fallacies"} found so far`,
+  loader_url: [
+    "Fetching the page",
+    "Following redirects",
+    "Stripping ads and navigation",
+    "Pulling the article body",
+    "Detecting language",
+    "Splitting into sentences",
+  ],
+  loader_paste: [
+    "Reading your text",
+    "Normalizing whitespace",
+    "Detecting language",
+    "Splitting into sentences",
+  ],
+  loader_file: [
+    "Reading the file",
+    "Extracting text content",
+    "Cleaning page breaks",
+    "Detecting language",
+    "Splitting into sentences",
+  ],
+  loader_analysis: [
+    (n, t) => `Scanning section ${n} of ${t}`,
+    (n) => `Looking for biased framing in section ${n}`,
+    (n) => `Cross-checking claims in section ${n}`,
+    () => "Comparing against the fallacy catalog",
+    (n) => `Drafting comments for section ${n}`,
+    () => "Weighing severity",
+  ],
 
   analysis_failed: "Analysis failed",
   try_again: "Try again",
+  ingest_blocked_title: "The site refused our request",
+  ingest_blocked_hint:
+    "Many news outlets block automated readers or hide content behind paywalls. Open the article in your browser, copy the body, and paste it here.",
+  ingest_not_found_title: "Page not found",
+  ingest_not_found_hint:
+    "The URL returned 404. Double-check the link, or paste the text directly.",
+  ingest_rate_limited_title: "The site asked us to slow down",
+  ingest_rate_limited_hint:
+    "We got a rate-limit response (429). Wait a minute and try again, or paste the text directly.",
+  ingest_timeout_title: "The site took too long to respond",
+  ingest_timeout_hint:
+    "We gave up after 15 seconds. Try again, or paste the text directly.",
+  ingest_unreachable_title: "We couldn't reach that URL",
+  ingest_unreachable_hint:
+    "DNS or network error. Check the address, or paste the text directly.",
+  ingest_extraction_failed_title: "We couldn't extract the article",
+  ingest_extraction_failed_hint:
+    "The page loaded but we couldn't find a readable body. Paste the text directly.",
+  ingest_invalid_url_title: "Invalid URL",
+  ingest_too_short_title: "Text is too short",
+  switch_to_paste: "Paste text instead",
 
   new_analysis: "New analysis",
   share: "Share",
@@ -209,9 +278,59 @@ const pt: Messages = {
   sections: "trechos",
   fallacies_found_so_far: (count) =>
     `${count} ${count === 1 ? "falácia encontrada" : "falácias encontradas"} até agora`,
+  loader_url: [
+    "Buscando a página",
+    "Seguindo redirecionamentos",
+    "Removendo anúncios e navegação",
+    "Extraindo o corpo do artigo",
+    "Detectando o idioma",
+    "Dividindo em sentenças",
+  ],
+  loader_paste: [
+    "Lendo seu texto",
+    "Normalizando espaçamento",
+    "Detectando o idioma",
+    "Dividindo em sentenças",
+  ],
+  loader_file: [
+    "Lendo o arquivo",
+    "Extraindo conteúdo de texto",
+    "Limpando quebras de página",
+    "Detectando o idioma",
+    "Dividindo em sentenças",
+  ],
+  loader_analysis: [
+    (n, t) => `Examinando trecho ${n} de ${t}`,
+    (n) => `Procurando enquadramento tendencioso no trecho ${n}`,
+    (n) => `Verificando afirmações do trecho ${n}`,
+    () => "Comparando com o catálogo de falácias",
+    (n) => `Redigindo comentários do trecho ${n}`,
+    () => "Avaliando severidade",
+  ],
 
   analysis_failed: "Falha na análise",
   try_again: "Tentar novamente",
+  ingest_blocked_title: "O site bloqueou nossa solicitação",
+  ingest_blocked_hint:
+    "Vários veículos de notícia bloqueiam leitores automatizados ou exigem assinatura. Abra o artigo no seu navegador, copie o conteúdo e cole aqui.",
+  ingest_not_found_title: "Página não encontrada",
+  ingest_not_found_hint:
+    "A URL retornou 404. Verifique o link, ou cole o texto diretamente.",
+  ingest_rate_limited_title: "O site pediu para diminuir o ritmo",
+  ingest_rate_limited_hint:
+    "Recebemos um aviso de limite de requisições (429). Espere um minuto e tente de novo, ou cole o texto diretamente.",
+  ingest_timeout_title: "O site demorou demais para responder",
+  ingest_timeout_hint:
+    "Desistimos depois de 15 segundos. Tente de novo, ou cole o texto diretamente.",
+  ingest_unreachable_title: "Não conseguimos acessar a URL",
+  ingest_unreachable_hint:
+    "Erro de DNS ou de rede. Confira o endereço, ou cole o texto diretamente.",
+  ingest_extraction_failed_title: "Não conseguimos extrair o artigo",
+  ingest_extraction_failed_hint:
+    "A página carregou mas não encontramos um corpo de texto legível. Cole o texto diretamente.",
+  ingest_invalid_url_title: "URL inválida",
+  ingest_too_short_title: "Texto curto demais",
+  switch_to_paste: "Colar texto",
 
   new_analysis: "Nova análise",
   share: "Compartilhar",
@@ -292,9 +411,59 @@ const es: Messages = {
   sections: "secciones",
   fallacies_found_so_far: (count) =>
     `${count} ${count === 1 ? "falacia encontrada" : "falacias encontradas"} hasta ahora`,
+  loader_url: [
+    "Obteniendo la página",
+    "Siguiendo redirecciones",
+    "Eliminando anuncios y navegación",
+    "Extrayendo el cuerpo del artículo",
+    "Detectando el idioma",
+    "Dividiendo en oraciones",
+  ],
+  loader_paste: [
+    "Leyendo tu texto",
+    "Normalizando espacios",
+    "Detectando el idioma",
+    "Dividiendo en oraciones",
+  ],
+  loader_file: [
+    "Leyendo el archivo",
+    "Extrayendo el texto",
+    "Limpiando saltos de página",
+    "Detectando el idioma",
+    "Dividiendo en oraciones",
+  ],
+  loader_analysis: [
+    (n, t) => `Revisando sección ${n} de ${t}`,
+    (n) => `Buscando encuadres tendenciosos en la sección ${n}`,
+    (n) => `Verificando afirmaciones de la sección ${n}`,
+    () => "Comparando con el catálogo de falacias",
+    (n) => `Redactando comentarios de la sección ${n}`,
+    () => "Evaluando severidad",
+  ],
 
   analysis_failed: "Falló el análisis",
   try_again: "Reintentar",
+  ingest_blocked_title: "El sitio rechazó nuestra solicitud",
+  ingest_blocked_hint:
+    "Muchos medios bloquean lectores automatizados o esconden el contenido tras un muro de pago. Abre el artículo en tu navegador, copia el cuerpo y pégalo aquí.",
+  ingest_not_found_title: "Página no encontrada",
+  ingest_not_found_hint:
+    "La URL devolvió 404. Verifica el enlace o pega el texto directamente.",
+  ingest_rate_limited_title: "El sitio nos pidió bajar el ritmo",
+  ingest_rate_limited_hint:
+    "Recibimos una respuesta de límite de tasa (429). Espera un minuto y vuelve a intentar, o pega el texto directamente.",
+  ingest_timeout_title: "El sitio tardó demasiado en responder",
+  ingest_timeout_hint:
+    "Desistimos tras 15 segundos. Intenta de nuevo o pega el texto directamente.",
+  ingest_unreachable_title: "No pudimos acceder a esa URL",
+  ingest_unreachable_hint:
+    "Error de DNS o de red. Revisa la dirección o pega el texto directamente.",
+  ingest_extraction_failed_title: "No pudimos extraer el artículo",
+  ingest_extraction_failed_hint:
+    "La página cargó pero no encontramos un cuerpo legible. Pega el texto directamente.",
+  ingest_invalid_url_title: "URL inválida",
+  ingest_too_short_title: "Texto demasiado corto",
+  switch_to_paste: "Pegar texto",
 
   new_analysis: "Nuevo análisis",
   share: "Compartir",

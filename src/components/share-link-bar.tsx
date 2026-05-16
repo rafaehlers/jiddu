@@ -1,28 +1,32 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { Check, Link as LinkIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n/provider";
 
 export function ShareLinkBar() {
   const { t } = useI18n();
-  const [url] = useState<string>(() =>
-    typeof window === "undefined" ? "" : window.location.href,
-  );
+  // pathname changes whenever the route does; computing the URL from it (plus
+  // origin) keeps the displayed value in sync after router.replace without an
+  // effect-driven setState.
+  const pathname = usePathname();
+  const displayUrl =
+    typeof window === "undefined" ? "" : window.location.origin + pathname;
   const [copied, setCopied] = useState(false);
 
   async function copy() {
-    if (!url) return;
+    const fresh = typeof window === "undefined" ? displayUrl : window.location.href;
+    if (!fresh) return;
     let ok = false;
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(fresh);
       ok = true;
     } catch {
-      // Fallback for non-secure contexts: use a transient textarea + execCommand.
       try {
         const ta = document.createElement("textarea");
-        ta.value = url;
+        ta.value = fresh;
         ta.style.position = "fixed";
         ta.style.opacity = "0";
         document.body.appendChild(ta);
@@ -33,13 +37,10 @@ export function ShareLinkBar() {
         ok = false;
       }
     }
-    // Show the visual feedback either way — the user clicked the button and the
-    // intent is clear, even if the browser blocked the clipboard write.
     setCopied(true);
     setTimeout(() => setCopied(false), 1800);
     if (!ok) {
-      // Last-resort prompt so the user can still grab the URL.
-      setTimeout(() => window.prompt(t.share_link_label, url), 400);
+      setTimeout(() => window.prompt(t.share_link_label, fresh), 400);
     }
   }
 
@@ -70,10 +71,11 @@ export function ShareLinkBar() {
         >
           {copied ? t.link_copied : t.share_link_label}
         </span>
-        <span className="font-mono text-xs text-foreground/80 truncate flex-1 min-w-0">{url}</span>
+        <span className="font-mono text-xs text-foreground/80 truncate flex-1 min-w-0">
+          {displayUrl || "…"}
+        </span>
       </button>
 
-      {/* Floating confirmation toast */}
       <div
         aria-hidden={!copied}
         className={cn(

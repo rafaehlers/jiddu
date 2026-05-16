@@ -1,29 +1,43 @@
 "use client";
 
 import { useState } from "react";
+import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n/provider";
+import type { Messages } from "@/lib/i18n/messages";
 
 type Tab = "url" | "text" | "file";
 
-type Props = {
-  onSubmit: (text: string, body: BodyInit, contentType: string | null) => Promise<void>;
+type ErrorState = {
+  message: string;
+  code?: string;
 };
 
-export function UploadForm({ onSubmit }: Props) {
+type Props = {
+  onSubmit: (
+    sourceType: Tab,
+    body: BodyInit,
+    contentType: string | null,
+  ) => Promise<void>;
+  error?: ErrorState | null;
+  onClearError?: () => void;
+};
+
+export function UploadForm({ onSubmit, error, onClearError }: Props) {
   const { t, lang } = useI18n();
   const [tab, setTab] = useState<Tab>("url");
   const [url, setUrl] = useState("");
   const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [provider, setProvider] = useState<"anthropic" | "openai">("anthropic");
-  const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [localError, setLocalError] = useState<ErrorState | null>(null);
+
+  const visibleError = error ?? localError;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
-    setSubmitting(true);
+    setLocalError(null);
+    onClearError?.();
     try {
       if (tab === "file") {
         if (!file) throw new Error("Choose a PDF or TXT file");
@@ -31,19 +45,26 @@ export function UploadForm({ onSubmit }: Props) {
         fd.set("file", file);
         fd.set("provider", provider);
         fd.set("lang", lang);
-        await onSubmit("", fd, null);
+        await onSubmit("file", fd, null);
       } else {
         const body = JSON.stringify(
           tab === "url"
             ? { type: "url", url, provider, lang }
             : { type: "text", text, provider, lang },
         );
-        await onSubmit(tab === "text" ? text : "", body, "application/json");
+        await onSubmit(tab, body, "application/json");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
-      setSubmitting(false);
+      setLocalError({
+        message: err instanceof Error ? err.message : "Something went wrong",
+      });
     }
+  }
+
+  function switchToPaste() {
+    setTab("text");
+    setLocalError(null);
+    onClearError?.();
   }
 
   return (
@@ -107,25 +128,99 @@ export function UploadForm({ onSubmit }: Props) {
         </label>
       )}
 
-      {error && (
-        <p className="text-sm text-[var(--severity-high)]">{error}</p>
+      {visibleError && (
+        <ErrorBox error={visibleError} t={t} onSwitchToPaste={switchToPaste} fromTab={tab} />
       )}
 
       <div className="flex items-center justify-between">
         <span className="text-xs text-muted">{t.form_hint}</span>
         <button
           type="submit"
-          disabled={submitting}
           className={cn(
             "px-5 py-2 rounded-md bg-foreground text-background font-medium",
-            "hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed",
+            "hover:opacity-90 transition-opacity",
           )}
         >
-          {submitting ? t.starting : t.analyze}
+          {t.analyze}
         </button>
       </div>
     </form>
   );
+}
+
+function ErrorBox({
+  error,
+  t,
+  onSwitchToPaste,
+  fromTab,
+}: {
+  error: ErrorState;
+  t: Messages;
+  onSwitchToPaste: () => void;
+  fromTab: Tab;
+}) {
+  const friendly = friendlyError(error.code, t);
+  const isUrlError =
+    fromTab === "url" &&
+    !!error.code &&
+    ["blocked", "not_found", "rate_limited", "timeout", "unreachable", "extraction_failed"].includes(
+      error.code,
+    );
+
+  return (
+    <div className="rounded-md border border-[var(--severity-high)]/40 bg-[color-mix(in_oklab,var(--severity-high)_8%,transparent)] p-4 flex flex-col gap-3">
+      <div className="flex flex-col gap-1">
+        <p className="text-sm font-medium text-[var(--severity-high)]">
+          {friendly.title}
+        </p>
+        {friendly.hint && (
+          <p className="text-sm text-foreground/85 leading-snug">{friendly.hint}</p>
+        )}
+        <p className="text-xs text-muted mt-1 font-mono">{error.message}</p>
+      </div>
+      {isUrlError && (
+        <div>
+          <button
+            type="button"
+            onClick={onSwitchToPaste}
+            className="inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-md bg-foreground text-background hover:opacity-90 transition-opacity"
+          >
+            {t.switch_to_paste}
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function friendlyError(
+  code: string | undefined,
+  t: Messages,
+): { title: string; hint?: string } {
+  switch (code) {
+    case "blocked":
+      return { title: t.ingest_blocked_title, hint: t.ingest_blocked_hint };
+    case "not_found":
+      return { title: t.ingest_not_found_title, hint: t.ingest_not_found_hint };
+    case "rate_limited":
+      return { title: t.ingest_rate_limited_title, hint: t.ingest_rate_limited_hint };
+    case "timeout":
+      return { title: t.ingest_timeout_title, hint: t.ingest_timeout_hint };
+    case "unreachable":
+      return { title: t.ingest_unreachable_title, hint: t.ingest_unreachable_hint };
+    case "extraction_failed":
+      return {
+        title: t.ingest_extraction_failed_title,
+        hint: t.ingest_extraction_failed_hint,
+      };
+    case "invalid_url":
+      return { title: t.ingest_invalid_url_title };
+    case "too_short":
+      return { title: t.ingest_too_short_title };
+    default:
+      return { title: t.analysis_failed };
+  }
 }
 
 function TabButton({

@@ -9,44 +9,72 @@ import { readSse } from "@/lib/sse";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n/provider";
 
+type SourceType = "url" | "text" | "file";
+
 type StreamingState = {
   id: string | null;
   chunkCount: number;
   chunksDone: number;
   findingsCount: number;
+  sourceType: SourceType;
 };
 
 type LiveState =
   | { status: "streaming"; data: StreamingState }
   | { status: "failed"; error: string };
 
+type SubmitErrorState = { message: string; code?: string };
+
 export function JidduComposer() {
   const router = useRouter();
   const { t, lang } = useI18n();
   const [live, setLive] = useState<LiveState | null>(null);
+  const [submitError, setSubmitError] = useState<SubmitErrorState | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     return () => abortRef.current?.abort();
   }, []);
 
-  async function startStream(_text: string, body: BodyInit, contentType: string | null) {
+  async function startStream(
+    sourceType: SourceType,
+    body: BodyInit,
+    contentType: string | null,
+  ) {
     const ctrl = new AbortController();
     abortRef.current = ctrl;
+    setSubmitError(null);
     setLive({
       status: "streaming",
-      data: { id: null, chunkCount: 0, chunksDone: 0, findingsCount: 0 },
+      data: { id: null, chunkCount: 0, chunksDone: 0, findingsCount: 0, sourceType },
     });
 
-    const res = await fetch("/api/analyze", {
-      method: "POST",
-      body,
-      headers: contentType ? { "content-type": contentType } : undefined,
-      signal: ctrl.signal,
-    });
+    let res: Response;
+    try {
+      res = await fetch("/api/analyze", {
+        method: "POST",
+        body,
+        headers: contentType ? { "content-type": contentType } : undefined,
+        signal: ctrl.signal,
+      });
+    } catch (err) {
+      setLive(null);
+      setSubmitError({
+        message: err instanceof Error ? err.message : "Request failed",
+        code: "request_failed",
+      });
+      return;
+    }
     if (!res.ok || !res.body) {
-      const data = (await res.json().catch(() => null)) as { error?: string } | null;
-      throw new Error(data?.error ?? `Request failed (${res.status})`);
+      const data = (await res.json().catch(() => null)) as
+        | { error?: string; code?: string }
+        | null;
+      setLive(null);
+      setSubmitError({
+        message: data?.error ?? `Request failed (${res.status})`,
+        code: data?.code ?? "request_failed",
+      });
+      return;
     }
 
     for await (const ev of readSse(res, ctrl.signal)) {
@@ -99,7 +127,11 @@ export function JidduComposer() {
           </h1>
           <p className="text-muted text-lg max-w-2xl">{t.hero_subtitle}</p>
         </div>
-        <UploadForm onSubmit={startStream} />
+        <UploadForm
+          onSubmit={startStream}
+          error={submitError}
+          onClearError={() => setSubmitError(null)}
+        />
         <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
           <span className="text-muted">{t.see_demo_hint}</span>
           <Link
@@ -143,16 +175,36 @@ export function JidduComposer() {
 
 function LoadingPanel({ state }: { state: StreamingState }) {
   const { t } = useI18n();
-  const { chunkCount, chunksDone, findingsCount } = state;
+  const { chunkCount, chunksDone, findingsCount, sourceType } = state;
   const known = chunkCount > 0;
   const pct = known ? Math.round((chunksDone / chunkCount) * 100) : 0;
-  const stage = !known
-    ? t.loading_reading
-    : chunksDone === 0
-      ? t.loading_starting
-      : chunksDone < chunkCount
-        ? t.loading_analyzing(chunksDone, chunkCount)
-        : t.loading_finalizing;
+
+  // Cycle a "tick" every 2.5s while loading so the stage label rotates even if
+  // chunksDone doesn't advance. Each phase (pre-meta / per-chunk analysis) has
+  // its own pool of friendly copy.
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((n) => n + 1), 2500);
+    return () => clearInterval(id);
+  }, []);
+
+  const preMetaPool =
+    sourceType === "url"
+      ? t.loader_url
+      : sourceType === "file"
+        ? t.loader_file
+        : t.loader_paste;
+
+  let stage: string;
+  if (!known) {
+    stage = preMetaPool[tick % preMetaPool.length];
+  } else if (chunksDone < chunkCount) {
+    const current = chunksDone + 1;
+    const pool = t.loader_analysis;
+    stage = pool[tick % pool.length](current, chunkCount);
+  } else {
+    stage = t.loading_finalizing;
+  }
 
   return (
     <div
@@ -162,8 +214,8 @@ function LoadingPanel({ state }: { state: StreamingState }) {
     >
       <Loader2 className="h-7 w-7 animate-spin text-muted" />
 
-      <div className="flex flex-col gap-1">
-        <p className="font-serif text-2xl">{stage}…</p>
+      <div className="flex flex-col gap-1 min-h-[3.5rem]">
+        <p className="font-serif text-2xl transition-opacity duration-200">{stage}…</p>
         <p className="text-sm text-muted">{t.loading_hint}</p>
       </div>
 
