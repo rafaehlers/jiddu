@@ -1,0 +1,24 @@
+services:
+  jiddu-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: jiddu-app
+    container_name: jiddu-app
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=file:/app/data/jiddu.db
+      - LLM_PROVIDER=${LLM_PROVIDER:-anthropic}
+    volumes:
+      - jiddu_data:/app/data
+    networks:
+      - proxy-network
+
+volumes:
+  jiddu_data:
+
+networks:
+  proxy-network:
+    external: true

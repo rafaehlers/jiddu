@@ -1,12 +1,50 @@
-import Link from "next/link";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { AnalysisView } from "@/components/analysis-view";
+import { ShareButton } from "@/components/share-button";
+import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
+import { AnalysisHeaderActions } from "@/components/analysis-header-actions";
+import { ScrollIndicator } from "@/components/scroll-indicator";
 import type { Finding, Sentence } from "@/lib/schema";
 
 type Props = { params: Promise<{ id: string }> };
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params;
+  const a = await prisma.analysis.findUnique({ where: { id } });
+  if (!a) return { title: "Jiddu" };
+  const title = a.title ?? "Untitled";
+  const score = a.score ?? 0;
+  const label =
+    score >= 81
+      ? "Propagandistic"
+      : score >= 61
+        ? "Highly fallacious"
+        : score >= 36
+          ? "Several fallacies"
+          : score >= 16
+            ? "Minor issues"
+            : "Clean reasoning";
+  const desc = `${score}/100 — ${label}. Analyzed with Jiddu.`;
+  return {
+    title: `${title} · Jiddu`,
+    description: desc,
+    openGraph: {
+      title: `${title} · Jiddu`,
+      description: desc,
+      type: "article",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${title} · Jiddu`,
+      description: desc,
+    },
+  };
+}
 
 export default async function AnalysisPage({ params }: Props) {
   const { id } = await params;
@@ -18,24 +56,15 @@ export default async function AnalysisPage({ params }: Props) {
 
   return (
     <main className="flex-1 flex flex-col">
-      <header className="border-b border-rule">
-        <div className="mx-auto max-w-7xl px-6 py-4 flex items-baseline justify-between gap-4">
-          <div className="flex items-baseline gap-4 min-w-0">
-            <Link href="/" className="font-serif text-2xl tracking-tight shrink-0">
-              Jiddu
-            </Link>
-            <span className="font-serif italic text-muted text-sm hidden md:inline">
-              truth is a pathless land
-            </span>
-          </div>
-          <Link
-            href="/"
-            className="text-sm px-3 py-1.5 rounded-md border border-rule hover:border-foreground transition-colors"
-          >
-            New analysis
-          </Link>
-        </div>
-      </header>
+      <SiteHeader
+        variant="viewer"
+        rightSlot={
+          <>
+            <ShareButton />
+            <AnalysisHeaderActions />
+          </>
+        }
+      />
 
       <AnalysisView
         title={a.title}
@@ -44,11 +73,14 @@ export default async function AnalysisPage({ params }: Props) {
         text={a.text}
         sentences={sentences}
         findings={findings}
-        score={a.score}
+        score={a.status === "complete" ? a.score : null}
         summary={a.summary ?? ""}
         provider={a.provider}
         model={a.model}
       />
+
+      <SiteFooter />
+      <ScrollIndicator />
     </main>
   );
 }

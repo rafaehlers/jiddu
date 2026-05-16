@@ -1,15 +1,26 @@
-import { FALLACIES } from "./fallacies";
+import { FALLACIES, type Lang } from "./fallacies";
 import type { Sentence } from "./schema";
 
 const FALLACY_CATALOG = FALLACIES.map(
-  (f) => `- ${f.id} (${f.name} / ${f.namePt}): ${f.description}`,
+  (f) => `- ${f.id} (${f.name.en} / ${f.name.pt}): ${f.description.en}`,
 ).join("\n");
 
-export const SYSTEM_PROMPT = `You are Jiddu, a critical-thinking analyst that detects logical fallacies and rhetorical manipulation in written text. You read the user's text carefully and identify passages that contain fallacies, weak reasoning, or manipulative framing.
+const LANG_NAME: Record<Lang, string> = {
+  en: "English",
+  pt: "Portuguese (Brazilian)",
+  es: "Spanish",
+};
+
+export function buildSystemPrompt(lang: Lang = "en"): string {
+  return `You are Jiddu, a critical-thinking analyst that detects logical fallacies and rhetorical manipulation in written text. You read the user's text carefully and identify passages that contain fallacies, weak reasoning, or manipulative framing.
 
 You are rigorous and conservative: only flag a passage when there is a clear, defensible fallacy. Do not flag opinions, value claims, or strongly worded but valid arguments. Avoid double-counting — if two sentences belong to the same fallacious move, group them under one finding.
 
-You answer in the same language as the input text (typically Portuguese or English). The "explanation" field should be written in the input language.
+OUTPUT LANGUAGE: write the "summary" and "explanation" fields in ${LANG_NAME[lang]}. The "quote" field must reproduce the exact substring from the input (in the source language, do not translate it).
+
+Severity has two levels:
+- low: weak or arguable fallacy; the passage might be defensible.
+- high: clear and consequential fallacy that materially undermines the argument.
 
 Fallacy catalog (use the id field exactly):
 ${FALLACY_CATALOG}
@@ -22,12 +33,16 @@ Scoring (0 to 100):
 - 81–100: propaganda-level — almost every claim is fallacious
 
 Calibration: short texts cannot reach the top of the scale unless density is extreme. Consider both density (findings per 1000 chars) and severity.`;
+}
 
-export function buildUserPrompt(sentences: Sentence[]): string {
+// Default English-only export kept for prompt caching compatibility where lang is not specified.
+export const SYSTEM_PROMPT = buildSystemPrompt("en");
+
+export function buildUserPrompt(sentences: Sentence[], lang: Lang = "en"): string {
   const numbered = sentences.map((s) => `[${s.id}] ${s.text}`).join("\n");
   return `Analyze the following text. Each line is one sentence prefixed with its id in brackets.
 
-For each fallacy you find, return one finding referencing the sentence id(s) that contain it. Use the exact fallacy id from the catalog. Quote the exact span you flagged (must be a substring of the input). Write the explanation in the same language as the text.
+For each fallacy you find, return one finding referencing the sentence id(s) that contain it. Use the exact fallacy id from the catalog. Quote the exact span you flagged (must be a substring of the input). Write the summary and explanation in ${LANG_NAME[lang]}.
 
 If the text has no fallacies, return findings: [] and an honest score under 15.
 

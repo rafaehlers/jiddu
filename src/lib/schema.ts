@@ -12,7 +12,7 @@ export type Sentence = z.infer<typeof SentenceSchema>;
 export const FindingSchema = z.object({
   sentenceIds: z.array(z.string()).min(1),
   fallacy: z.enum(FALLACY_IDS as [string, ...string[]]),
-  severity: z.enum(["low", "medium", "high"]),
+  severity: z.enum(["low", "high"]),
   quote: z.string(),
   explanation: z.string(),
 });

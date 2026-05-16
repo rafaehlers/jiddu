@@ -4,6 +4,9 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { FALLACY_BY_ID } from "@/lib/fallacies";
 import type { Finding, Sentence } from "@/lib/schema";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/provider";
+import { FallacyModal } from "@/components/fallacy-modal";
+import { ShareLinkBar } from "@/components/share-link-bar";
 
 type Props = {
   title: string | null;
@@ -12,7 +15,7 @@ type Props = {
   text: string;
   sentences: Sentence[];
   findings: Finding[];
-  score: number;
+  score: number | null;
   summary: string;
   provider: string;
   model: string;
@@ -32,12 +35,12 @@ export function AnalysisView({
   provider,
   model,
 }: Props) {
+  const { t, lang } = useI18n();
   const keyedFindings: FindingWithKey[] = useMemo(
     () => findings.map((f, i) => ({ ...f, key: `f${i}` })),
     [findings],
   );
 
-  // Map sentenceId → list of findings on that sentence (highest severity wins styling).
   const findingsBySentence = useMemo(() => {
     const m = new Map<string, FindingWithKey[]>();
     for (const f of keyedFindings) {
@@ -50,8 +53,10 @@ export function AnalysisView({
   }, [keyedFindings]);
 
   const [active, setActive] = useState<string | null>(null);
+  const [modalFallacyId, setModalFallacyId] = useState<string | null>(null);
   const textColRef = useRef<HTMLDivElement>(null);
   const commentsColRef = useRef<HTMLDivElement>(null);
+  const scoreRef = useRef<HTMLDivElement>(null);
   const commentRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
   const [commentOffsets, setCommentOffsets] = useState<Map<string, number>>(new Map());
   const [asideMinHeight, setAsideMinHeight] = useState<number>(0);
@@ -60,6 +65,8 @@ export function AnalysisView({
     if (!textColRef.current) return;
     const container = textColRef.current;
     const containerTop = container.getBoundingClientRect().top;
+    const scoreHeight = scoreRef.current?.offsetHeight ?? 0;
+    const scoreGap = scoreHeight > 0 ? scoreHeight + 16 : 0;
 
     const items: { key: string; top: number; height: number }[] = [];
     for (const f of keyedFindings) {
@@ -75,7 +82,7 @@ export function AnalysisView({
     items.sort((a, b) => a.top - b.top);
     const gap = 12;
     const offsets = new Map<string, number>();
-    let cursor = 0;
+    let cursor = scoreGap;
     for (const it of items) {
       const y = Math.max(it.top, cursor);
       offsets.set(it.key, y);
@@ -115,48 +122,42 @@ export function AnalysisView({
     node?.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 
-  // Render text by sentence, preserving the gaps in between (whitespace/newlines).
   const segments = useMemo(() => buildSegments(text, sentences), [text, sentences]);
 
   return (
     <div className="flex-1 flex flex-col">
       <div className="mx-auto max-w-7xl w-full px-6 py-6 flex flex-col gap-4">
-        <div className="flex flex-wrap items-end gap-4 justify-between">
-          <div className="flex flex-col gap-1 min-w-0">
-            <h1 className="font-serif text-2xl md:text-3xl tracking-tight truncate">
-              {title ?? "Untitled"}
-            </h1>
-            {sourceRef && (
-              <p className="text-sm text-muted truncate">
-                {source === "url" ? (
-                  <a href={sourceRef} target="_blank" rel="noopener noreferrer" className="underline">
-                    {sourceRef}
-                  </a>
-                ) : (
-                  sourceRef
-                )}
-              </p>
-            )}
-          </div>
-          <ScoreBadge score={score} />
+        <div className="flex flex-col gap-1 min-w-0">
+          <h1 className="font-serif text-2xl md:text-3xl tracking-tight">
+            {title ?? "Untitled"}
+          </h1>
+          {sourceRef && (
+            <p className="text-sm text-muted truncate">
+              {source === "url" ? (
+                <a href={sourceRef} target="_blank" rel="noopener noreferrer" className="underline">
+                  {sourceRef}
+                </a>
+              ) : (
+                sourceRef
+              )}
+            </p>
+          )}
         </div>
         {summary && (
           <p className="text-foreground/90 text-base max-w-3xl">{summary}</p>
         )}
         <p className="text-xs text-muted">
-          {provider} · {model} · {keyedFindings.length} finding
-          {keyedFindings.length === 1 ? "" : "s"} across {sentences.length} sentences
+          {provider} · {model} · {t.finding_count(keyedFindings.length, sentences.length)}
         </p>
       </div>
 
-      <div className="mx-auto max-w-7xl w-full px-6 pb-16 grid grid-cols-1 lg:grid-cols-[1fr_22rem] gap-8">
+      <div className="mx-auto max-w-7xl w-full px-6 pb-10 grid grid-cols-1 lg:grid-cols-[1fr_22rem] gap-8">
         <article
           ref={textColRef}
           className="bg-paper border border-rule rounded-lg p-8 font-serif text-lg leading-[1.75] text-ink"
         >
           {segments.map((seg, i) => {
             if (seg.type === "gap") {
-              // Preserve paragraph breaks.
               return <span key={`g${i}`} style={{ whiteSpace: "pre-wrap" }}>{seg.text}</span>;
             }
             const s = seg.sentence;
@@ -168,24 +169,28 @@ export function AnalysisView({
                 </span>
               );
             }
-            const severity = highestSeverity(fs);
             const isActive = fs.some((f) => f.key === active);
+            const color = FALLACY_BY_ID[fs[0].fallacy]?.color ?? "currentColor";
             return (
               <mark
                 key={s.id}
                 data-sid={s.id}
-                data-severity={severity}
                 data-active={isActive ? "true" : undefined}
                 className="fallacy"
                 onClick={() => focusSentence(s.id)}
-                title={fs.map((f) => FALLACY_BY_ID[f.fallacy]?.namePt ?? f.fallacy).join(", ")}
+                title={fs.map((f) => FALLACY_BY_ID[f.fallacy]?.name[lang] ?? f.fallacy).join(", ")}
+                style={
+                  {
+                    "--fallacy-color": color,
+                  } as React.CSSProperties
+                }
               >
                 {s.text}
               </mark>
             );
           })}
           {keyedFindings.length === 0 && (
-            <p className="mt-6 text-sm text-muted italic">No fallacies detected.</p>
+            <p className="mt-6 text-sm text-muted italic">{t.no_fallacies}</p>
           )}
         </article>
 
@@ -194,9 +199,13 @@ export function AnalysisView({
           className="relative"
           style={{ minHeight: asideMinHeight }}
         >
+          <div ref={scoreRef} className="absolute top-0 left-0 right-0">
+            {score === null ? <PendingBadge /> : <ScoreBadge score={score} />}
+          </div>
           {keyedFindings.map((f) => {
             const def = FALLACY_BY_ID[f.fallacy];
             const offset = commentOffsets.get(f.key) ?? 0;
+            const color = def?.color ?? "currentColor";
             return (
               <div
                 key={f.key}
@@ -208,28 +217,36 @@ export function AnalysisView({
                   "absolute left-0 right-0 cursor-pointer",
                   "bg-paper border border-rule rounded-md p-3 shadow-sm",
                   "transition-all hover:border-foreground",
-                  active === f.key && "border-foreground ring-2 ring-[var(--severity-medium)]/40",
+                  active === f.key && "border-foreground ring-2",
                 )}
-                style={{ top: `${offset}px` }}
+                style={
+                  {
+                    top: `${offset}px`,
+                    "--fallacy-color": color,
+                    ...(active === f.key
+                      ? { boxShadow: `0 0 0 2px ${color}55` }
+                      : {}),
+                  } as React.CSSProperties
+                }
                 data-severity={f.severity}
               >
                 <div className="flex items-center gap-2 mb-1">
                   <span
-                    className="inline-block h-2 w-2 rounded-full"
-                    style={{
-                      backgroundColor:
-                        f.severity === "high"
-                          ? "var(--severity-high)"
-                          : f.severity === "medium"
-                            ? "var(--severity-medium)"
-                            : "var(--severity-low)",
-                    }}
+                    className="inline-block h-2 w-2 rounded-full shrink-0"
+                    style={{ backgroundColor: color }}
                   />
-                  <span className="font-medium text-sm">
-                    {def?.namePt ?? f.fallacy}
-                  </span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setModalFallacyId(f.fallacy);
+                    }}
+                    className="font-medium text-sm hover:underline underline-offset-2 text-left"
+                  >
+                    {def?.name[lang] ?? f.fallacy}
+                  </button>
                   <span className="text-xs text-muted ml-auto uppercase tracking-wide">
-                    {f.severity}
+                    {f.severity === "high" ? t.severity_high : t.severity_low}
                   </span>
                 </div>
                 <blockquote className="text-sm text-muted italic mb-2 border-l-2 border-rule pl-2 line-clamp-3">
@@ -241,34 +258,55 @@ export function AnalysisView({
           })}
         </aside>
       </div>
+
+      <div className="mx-auto max-w-7xl w-full px-6 pb-16 grid grid-cols-1 lg:grid-cols-[1fr_22rem] gap-8">
+        <ShareLinkBar />
+      </div>
+
+      <FallacyModal
+        fallacyId={modalFallacyId}
+        onClose={() => setModalFallacyId(null)}
+      />
+    </div>
+  );
+}
+
+function PendingBadge() {
+  const { t } = useI18n();
+  return (
+    <div className="flex items-center gap-3 bg-paper border border-rule rounded-lg px-4 py-3">
+      <div className="font-serif text-3xl font-semibold text-muted tabular-nums flex items-baseline gap-2">
+        <span className="text-base text-muted uppercase tracking-wide font-sans font-normal">
+          {t.score_label}
+        </span>
+        <span>—</span>
+        <span className="text-base text-muted">/100</span>
+      </div>
+      <div className="text-xs text-muted uppercase tracking-wide">{t.pending}</div>
     </div>
   );
 }
 
 function ScoreBadge({ score }: { score: number }) {
-  const tone =
-    score >= 61
-      ? "var(--severity-high)"
-      : score >= 36
-        ? "var(--severity-medium)"
-        : "var(--severity-low)";
+  const { t } = useI18n();
+  const tone = score >= 61 ? "var(--severity-high)" : "var(--severity-low)";
   const label =
     score >= 81
-      ? "propagandistic"
+      ? t.score_propagandistic
       : score >= 61
-        ? "highly fallacious"
+        ? t.score_high
         : score >= 36
-          ? "several fallacies"
+          ? t.score_several
           : score >= 16
-            ? "minor issues"
-            : "clean reasoning";
+            ? t.score_minor
+            : t.score_clean;
   return (
     <div className="flex items-center gap-3 bg-paper border border-rule rounded-lg px-4 py-3">
-      <div
-        className="font-serif text-3xl font-semibold tabular-nums"
-        style={{ color: tone }}
-      >
-        {score}
+      <div className="font-serif text-3xl font-semibold tabular-nums flex items-baseline gap-2">
+        <span className="text-base text-muted uppercase tracking-wide font-sans font-normal">
+          {t.score_label}
+        </span>
+        <span style={{ color: tone }}>{score}</span>
         <span className="text-base text-muted">/100</span>
       </div>
       <div className="text-xs text-muted uppercase tracking-wide">{label}</div>
@@ -294,10 +332,4 @@ function buildSegments(text: string, sentences: Sentence[]): Segment[] {
     segs.push({ type: "gap", text: text.slice(cursor) });
   }
   return segs;
-}
-
-function highestSeverity(fs: FindingWithKey[]): "low" | "medium" | "high" {
-  if (fs.some((f) => f.severity === "high")) return "high";
-  if (fs.some((f) => f.severity === "medium")) return "medium";
-  return "low";
 }

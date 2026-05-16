@@ -21,7 +21,7 @@ export const ANALYSIS_JSON_SCHEMA = {
             items: { type: "string" },
           },
           fallacy: { type: "string", enum: FALLACY_IDS },
-          severity: { type: "string", enum: ["low", "medium", "high"] },
+          severity: { type: "string", enum: ["low", "high"] },
           quote: { type: "string" },
           explanation: { type: "string" },
         },

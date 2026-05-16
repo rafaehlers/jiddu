@@ -1,0 +1,13 @@
+.git
+.github
+.next
+.claude
+node_modules
+*.log
+.env
+.env.local
+dev.db
+dev.db-journal
+README.md
+.vscode
+src/generated/prisma

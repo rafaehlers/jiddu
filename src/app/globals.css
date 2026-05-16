@@ -1,16 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fbf8f1;
-  --foreground: #1c1a17;
-  --paper: #fdfaf2;
-  --ink: #2a2722;
-  --muted: #6b665d;
-  --rule: #e5dfd1;
-  --accent: #b4471f;
-  --severity-low: #d2c66b;
-  --severity-medium: #e2a23a;
-  --severity-high: #c64c2a;
+  --background: rgb(20, 19, 15);
+  --foreground: rgb(236, 230, 216);
+  --paper: rgb(26, 24, 21);
+  --ink: rgb(236, 230, 216);
+  --muted: rgb(142, 136, 125);
+  --rule: rgb(44, 42, 37);
+  --accent: rgb(215, 106, 68);
+  --severity-low: rgb(228, 178, 102);
+  --severity-high: rgb(232, 102, 78);
 }
 
 @theme inline {
@@ -26,19 +25,16 @@
   --font-serif: var(--font-serif), Georgia, "Times New Roman", serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #14130f;
-    --foreground: #ece6d8;
-    --paper: #1a1815;
-    --ink: #ece6d8;
-    --muted: #8e887d;
-    --rule: #2c2a25;
-    --accent: #d76a44;
-    --severity-low: #b4a44a;
-    --severity-medium: #d2924a;
-    --severity-high: #de6a4a;
-  }
+.light {
+  --background: rgb(251, 248, 241);
+  --foreground: rgb(28, 26, 23);
+  --paper: rgb(253, 250, 242);
+  --ink: rgb(42, 39, 34);
+  --muted: rgb(107, 102, 93);
+  --rule: rgb(229, 223, 209);
+  --accent: rgb(180, 71, 31);
+  --severity-low: rgb(214, 167, 96);
+  --severity-high: rgb(220, 80, 56);
 }
 
 body {
@@ -56,31 +52,14 @@ body {
 }
 
 mark.fallacy {
-  background: transparent;
+  background: color-mix(in oklab, var(--fallacy-color, currentColor) 22%, transparent);
   color: inherit;
-  border-bottom: 2px solid var(--severity-medium);
-  padding: 0 1px;
+  padding: 0 2px;
+  border-radius: 2px;
   cursor: pointer;
   transition: background 120ms ease;
 }
-mark.fallacy[data-severity="low"] {
-  border-bottom-color: var(--severity-low);
-}
-mark.fallacy[data-severity="medium"] {
-  border-bottom-color: var(--severity-medium);
-}
-mark.fallacy[data-severity="high"] {
-  border-bottom-color: var(--severity-high);
-}
 mark.fallacy:hover,
 mark.fallacy[data-active="true"] {
-  background: color-mix(in oklab, var(--severity-medium) 18%, transparent);
-}
-mark.fallacy[data-severity="low"][data-active="true"],
-mark.fallacy[data-severity="low"]:hover {
-  background: color-mix(in oklab, var(--severity-low) 18%, transparent);
-}
-mark.fallacy[data-severity="high"][data-active="true"],
-mark.fallacy[data-severity="high"]:hover {
-  background: color-mix(in oklab, var(--severity-high) 22%, transparent);
+  background: color-mix(in oklab, var(--fallacy-color, currentColor) 42%, transparent);
 }
