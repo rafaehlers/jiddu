@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { UploadForm } from "@/components/upload-form";
 import { readSse } from "@/lib/sse";
-import { cn } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n/provider";
 
 type SourceType = "url" | "text" | "file";
@@ -175,9 +174,8 @@ export function JidduComposer() {
 
 function LoadingPanel({ state }: { state: StreamingState }) {
   const { t } = useI18n();
-  const { chunkCount, chunksDone, findingsCount, sourceType } = state;
+  const { chunkCount, chunksDone, sourceType } = state;
   const known = chunkCount > 0;
-  const pct = known ? Math.round((chunksDone / chunkCount) * 100) : 0;
 
   // Cycle a "tick" every 2.5s while loading so the stage label rotates even if
   // chunksDone doesn't advance. Each phase (pre-meta / per-chunk analysis) has
@@ -218,23 +216,6 @@ function LoadingPanel({ state }: { state: StreamingState }) {
         <p className="font-serif text-2xl transition-opacity duration-200">{stage}…</p>
         <p className="text-sm text-muted">{t.loading_hint}</p>
       </div>
-
-      {known && (
-        <div className="w-full max-w-md flex flex-col gap-2">
-          <div className="h-1.5 rounded-full bg-rule overflow-hidden">
-            <div
-              className={cn("h-full bg-[var(--accent)] transition-all duration-500 ease-out")}
-              style={{ width: `${Math.max(pct, 4)}%` }}
-            />
-          </div>
-          <div className="flex justify-between text-xs text-muted tabular-nums">
-            <span>
-              {chunksDone}/{chunkCount} {t.sections}
-            </span>
-            <span>{t.fallacies_found_so_far(findingsCount)}</span>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

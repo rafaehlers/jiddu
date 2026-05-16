@@ -282,7 +282,9 @@ function PendingBadge() {
         <span>—</span>
         <span className="text-base text-muted">/100</span>
       </div>
-      <div className="text-xs text-muted uppercase tracking-wide">{t.pending}</div>
+      <span className="px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider whitespace-nowrap border border-rule text-muted">
+        {t.pending}
+      </span>
     </div>
   );
 }
@@ -309,7 +311,16 @@ function ScoreBadge({ score }: { score: number }) {
         <span style={{ color: tone }}>{score}</span>
         <span className="text-base text-muted">/100</span>
       </div>
-      <div className="text-xs text-muted uppercase tracking-wide">{label}</div>
+      <span
+        className="px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider whitespace-nowrap border"
+        style={{
+          color: tone,
+          borderColor: `color-mix(in oklab, ${tone} 40%, transparent)`,
+          backgroundColor: `color-mix(in oklab, ${tone} 14%, transparent)`,
+        }}
+      >
+        {label}
+      </span>
     </div>
   );
 }
