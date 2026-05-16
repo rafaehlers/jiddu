@@ -3,13 +3,8 @@ set -e
 
 mkdir -p /app/data
 
-# Locate the prisma CLI entry from the copied node_modules.
-PRISMA_BIN=""
-if [ -f /app/node_modules/prisma/build/index.js ]; then
-  PRISMA_BIN="/app/node_modules/prisma/build/index.js"
-fi
-
-if [ -n "$PRISMA_BIN" ]; then
+PRISMA_BIN="/opt/prisma-cli/node_modules/prisma/build/index.js"
+if [ -f "$PRISMA_BIN" ]; then
   echo "[jiddu] running prisma migrate deploy…"
   node "$PRISMA_BIN" migrate deploy
 else

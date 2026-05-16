@@ -42,15 +42,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-cert
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
-# Prisma migrations + CLI for `prisma migrate deploy` on startup.
+# Prisma migrations.
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.ts ./prisma.config.ts
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/dotenv ./node_modules/dotenv
-# Seed script + better-sqlite3 (already in standalone but make it explicit).
+# Seed script (executed at container startup).
 COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
 COPY --chown=nextjs:nodejs docker-entrypoint.sh ./docker-entrypoint.sh
+
+# Install prisma CLI + its full transitive tree in a dedicated location so
+# `prisma migrate deploy` works without dragging dev deps into the bundle.
+RUN mkdir -p /opt/prisma-cli \
+ && cd /opt/prisma-cli \
+ && npm init -y >/dev/null \
+ && npm install --no-audit --no-fund --no-progress prisma@7.8.0 dotenv \
+ && chown -R nextjs:nodejs /opt/prisma-cli
+
 RUN chmod +x ./docker-entrypoint.sh \
  && mkdir -p /app/data \
  && chown -R nextjs:nodejs /app/data
