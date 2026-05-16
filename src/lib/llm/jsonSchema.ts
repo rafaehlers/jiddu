@@ -1,12 +1,18 @@
 import { FALLACY_IDS } from "../fallacies";
 
+// OpenAI strict-mode rules:
+//  • Every key in `properties` must appear in `required`
+//  • `additionalProperties: false` on every object
+//  • Forbidden keywords: minimum/maximum, minItems/maxItems, minLength/maxLength,
+//    pattern, format, etc.
+// Anthropic tool_use is more lenient but accepts the same schema fine.
 export const ANALYSIS_JSON_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["score", "summary", "findings"],
+  required: ["language", "score", "summary", "findings"],
   properties: {
     language: { type: ["string", "null"] },
-    score: { type: "integer", minimum: 0, maximum: 100 },
+    score: { type: "integer" },
     summary: { type: "string" },
     findings: {
       type: "array",
@@ -17,7 +23,6 @@ export const ANALYSIS_JSON_SCHEMA = {
         properties: {
           sentenceIds: {
             type: "array",
-            minItems: 1,
             items: { type: "string" },
           },
           fallacy: { type: "string", enum: FALLACY_IDS },
