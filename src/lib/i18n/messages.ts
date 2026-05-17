@@ -123,7 +123,7 @@ const en: Messages = {
     "Upload a PDF, paste text, or drop a URL. Jiddu highlights the passages that contain logical fallacies and explains each one in a comment — just like a reviewer in Word — and gives the whole piece a fallacy score from 0 to 100.",
   privacy: "Privacy:",
   privacy_body:
-    "your text is sent to the selected model (Anthropic or OpenAI) for analysis and stored locally under a shareable id.",
+    "your text is sent to the selected model (OpenAI or MiniMax, routed via OpenRouter) for analysis and stored locally under a shareable id.",
   see_demo: "See a demo",
   see_demo_hint: "Want a quick look without running an analysis?",
 
@@ -231,7 +231,7 @@ const en: Messages = {
   guide_example: "Example",
   guide_back: "Back to home",
 
-  nav_fallacies: "Fallacies",
+  nav_fallacies: "Fallacy guide",
 
   theme_to_dark: "Switch to dark mode",
   theme_to_light: "Switch to light mode",
@@ -261,7 +261,7 @@ const pt: Messages = {
     "Envie um PDF, cole um texto ou solte uma URL. O Jiddu destaca os trechos com falácias lógicas e explica cada um em um comentário — como um revisor no Word — e dá uma nota de 0 a 100 para o texto inteiro.",
   privacy: "Privacidade:",
   privacy_body:
-    "seu texto é enviado ao modelo selecionado (Anthropic ou OpenAI) para análise e armazenado localmente sob um id compartilhável.",
+    "seu texto é enviado ao modelo selecionado (OpenAI ou MiniMax, roteado via OpenRouter) para análise e armazenado localmente sob um id compartilhável.",
   see_demo: "Ver demonstração",
   see_demo_hint: "Quer uma amostra rápida sem rodar uma análise?",
 
@@ -370,7 +370,7 @@ const pt: Messages = {
   guide_example: "Exemplo",
   guide_back: "Voltar para o início",
 
-  nav_fallacies: "Falácias",
+  nav_fallacies: "Guia de Falácias",
 
   theme_to_dark: "Mudar para tema escuro",
   theme_to_light: "Mudar para tema claro",
@@ -400,7 +400,7 @@ const es: Messages = {
     "Sube un PDF, pega un texto o suelta una URL. Jiddu resalta los pasajes con falacias lógicas y explica cada uno en un comentario — como un revisor en Word — y le da al texto entero una puntuación de falacia de 0 a 100.",
   privacy: "Privacidad:",
   privacy_body:
-    "tu texto se envía al modelo seleccionado (Anthropic u OpenAI) para análisis y se almacena localmente bajo un id compartible.",
+    "tu texto se envía al modelo seleccionado (OpenAI o MiniMax, enrutado vía OpenRouter) para análisis y se almacena localmente bajo un id compartible.",
   see_demo: "Ver demostración",
   see_demo_hint: "¿Quieres un vistazo rápido sin ejecutar un análisis?",
 
@@ -509,7 +509,7 @@ const es: Messages = {
   guide_example: "Ejemplo",
   guide_back: "Volver al inicio",
 
-  nav_fallacies: "Falacias",
+  nav_fallacies: "Guía de falacias",
 
   theme_to_dark: "Cambiar a modo oscuro",
   theme_to_light: "Cambiar a modo claro",

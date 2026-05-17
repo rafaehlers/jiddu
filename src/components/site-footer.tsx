@@ -19,7 +19,17 @@ export function SiteFooter() {
             J. Krishnamurti
           </a>
         </span>
-        <span>© Jiddu</span>
+        <span>
+          ©{" "}
+          <a
+            href="https://www.linkedin.com/in/rafael-m-ehlers/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline decoration-rule hover:decoration-foreground transition-colors"
+          >
+            Rafael de Menezes Ehlers
+          </a>
+        </span>
       </div>
     </footer>
   );
