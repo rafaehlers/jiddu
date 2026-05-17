@@ -40,7 +40,7 @@ export function TranscriptStream({ transcript, active, className }: Props) {
     <div
       ref={scrollRef}
       className={
-        "h-[50vh] overflow-y-auto rounded-md border border-rule bg-paper p-4 text-base leading-relaxed whitespace-pre-wrap " +
+        "h-[25vh] overflow-y-auto rounded-md border border-rule bg-paper p-4 text-base leading-relaxed whitespace-pre-wrap " +
         (className ?? "")
       }
     >
