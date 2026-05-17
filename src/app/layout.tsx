@@ -19,10 +19,26 @@ const serif = Cormorant_Garamond({
   subsets: ["latin"],
 });
 
+const SITE_DESCRIPTION =
+  "Jiddu detects logical fallacies in any text. Upload a PDF, paste text, or share a URL and read it like Microsoft Word with critical-thinking comments in the margin.";
+
 export const metadata: Metadata = {
+  metadataBase: new URL("https://jiddu.app"),
   title: "Jiddu — truth is a pathless land",
-  description:
-    "Jiddu detects logical fallacies in any text. Upload a PDF, paste text, or share a URL and read it like Microsoft Word with critical-thinking comments in the margin.",
+  description: SITE_DESCRIPTION,
+  openGraph: {
+    title: "Jiddu — truth is a pathless land",
+    description: SITE_DESCRIPTION,
+    url: "https://jiddu.app",
+    type: "website",
+    images: [{ url: "/og.png" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Jiddu — truth is a pathless land",
+    description: SITE_DESCRIPTION,
+    images: ["/og.png"],
+  },
 };
 
 const themeInitScript = `
