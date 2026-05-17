@@ -136,6 +136,9 @@ export type Messages = {
   live_transcript_listening: string;
   live_transcript_idle: string;
   live_no_findings_yet: string;
+  live_session_saved: string;
+  live_view_analysis: string;
+  live_start_new: string;
 };
 
 const en: Messages = {
@@ -299,6 +302,9 @@ const en: Messages = {
   live_transcript_idle: "Press Start to begin transcribing.",
   live_no_findings_yet:
     "No fallacies detected yet. They will appear here as the speaker talks.",
+  live_session_saved: "Session saved.",
+  live_view_analysis: "View full analysis",
+  live_start_new: "Start new recording",
 };
 
 const pt: Messages = {
@@ -463,6 +469,9 @@ const pt: Messages = {
   live_transcript_idle: "Clique em Iniciar para começar a transcrever.",
   live_no_findings_yet:
     "Nenhuma falácia detectada ainda. Elas aparecerão aqui conforme a pessoa fala.",
+  live_session_saved: "Sessão salva.",
+  live_view_analysis: "Ver análise completa",
+  live_start_new: "Nova gravação",
 };
 
 const es: Messages = {
@@ -627,6 +636,9 @@ const es: Messages = {
   live_transcript_idle: "Haz clic en Iniciar para empezar a transcribir.",
   live_no_findings_yet:
     "Aún no se detectaron falacias. Aparecerán aquí mientras la persona habla.",
+  live_session_saved: "Sesión guardada.",
+  live_view_analysis: "Ver análisis completo",
+  live_start_new: "Nueva grabación",
 };
 
 export const MESSAGES: Record<Lang, Messages> = { en, pt, es };

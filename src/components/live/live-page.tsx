@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Loader2, Play, Square } from "lucide-react";
+import Link from "next/link";
+import { Loader2, Play, Square, ExternalLink, RotateCcw } from "lucide-react";
 import { useLiveSession, type LiveSource } from "@/lib/live/use-live-session";
 import { useLiveAnalysis } from "@/lib/live/use-live-analysis";
 import { useI18n } from "@/lib/i18n/provider";
@@ -15,7 +15,6 @@ import { FindingsList } from "./findings-list";
 const MAX_SESSION_MS = 60 * 60 * 1000;
 
 export function LivePage() {
-  const router = useRouter();
   // Use the site-wide language preference (selector lives in the header) so
   // both the Whisper transcription hint and the LLM analysis output language
   // follow the rest of the UI.
@@ -32,6 +31,11 @@ export function LivePage() {
   const isRunning = session.state === "live" || session.state === "connecting";
   const reachedHardLimit =
     session.state === "live" && session.elapsedMs >= MAX_SESSION_MS;
+  // A session is "concluded" when we've stopped recording AND the LLM
+  // finalized; the user can then view the persisted analysis or start over.
+  const hasConcludedSession =
+    (session.state === "stopped" || session.state === "error") &&
+    analysis.sessionId != null;
 
   const handleStart = () => {
     void session.start(source);
@@ -39,10 +43,12 @@ export function LivePage() {
 
   const handleStop = async () => {
     // Stop capturing audio first so finalize gets the full transcript and
-    // no more deltas arrive while we wait for the LLM.
+    // no more deltas arrive while we wait for the LLM. We intentionally
+    // do NOT redirect on success — the user sees a "session saved" banner
+    // here, can review findings, and chooses to view the full analysis or
+    // start a new recording.
     await session.stop();
-    const id = await analysis.finalize();
-    if (id) router.push(`/a/${id}`);
+    await analysis.finalize();
   };
 
   // Auto-stop on hard limit.
@@ -80,8 +86,17 @@ export function LivePage() {
             onClick={handleStart}
             className="inline-flex items-center gap-2 rounded-md bg-foreground text-background px-4 py-2 text-sm font-medium hover:opacity-90"
           >
-            <Play className="size-4" />
-            {t.live_start}
+            {hasConcludedSession ? (
+              <>
+                <RotateCcw className="size-4" />
+                {t.live_start_new}
+              </>
+            ) : (
+              <>
+                <Play className="size-4" />
+                {t.live_start}
+              </>
+            )}
           </button>
         ) : (
           <button
@@ -101,6 +116,19 @@ export function LivePage() {
           isAnalyzing={analysis.isAnalyzing}
         />
       </div>
+
+      {hasConcludedSession && (
+        <div className="mb-4 rounded-md border border-accent/40 bg-accent/10 text-foreground px-3 py-2 text-sm flex items-center justify-between gap-3 flex-wrap">
+          <span>{t.live_session_saved}</span>
+          <Link
+            href={`/a/${analysis.sessionId}`}
+            className="inline-flex items-center gap-1.5 text-accent hover:underline font-medium"
+          >
+            {t.live_view_analysis}
+            <ExternalLink className="size-3.5" />
+          </Link>
+        </div>
+      )}
 
       {(session.error || analysis.error) && (
         <div className="mb-4 rounded-md border border-severity-high/50 bg-severity-high/10 text-foreground px-3 py-2 text-sm">
