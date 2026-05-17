@@ -18,6 +18,8 @@ export const maxDuration = 300;
 
 const MAX_TEXT_CHARS = 200_000;
 const CHUNK_CONCURRENCY = 4;
+const MAX_TITLE_CHARS = 500;
+const MAX_SOURCE_REF_CHARS = 2_000;
 
 export async function POST(req: NextRequest) {
   let doc: IngestedDocument;
@@ -94,8 +96,8 @@ export async function POST(req: NextRequest) {
       id,
       status: "running",
       source: doc.source,
-      sourceRef: doc.sourceRef,
-      title: doc.title,
+      sourceRef: cap(doc.sourceRef, MAX_SOURCE_REF_CHARS),
+      title: doc.title ? cap(doc.title, MAX_TITLE_CHARS) : null,
       text: doc.text,
       language: lang,
       provider: llm.id,
@@ -260,4 +262,8 @@ function normalizeLang(v: FormDataEntryValue | string | undefined | null): Lang 
   const s = typeof v === "string" ? v.toLowerCase() : undefined;
   if (s === "en" || s === "pt" || s === "es") return s;
   return "en";
+}
+
+function cap(s: string, max: number): string {
+  return s.length > max ? s.slice(0, max) : s;
 }
