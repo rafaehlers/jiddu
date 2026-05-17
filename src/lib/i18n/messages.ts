@@ -358,7 +358,7 @@ const pt: Messages = {
   score_clean: "raciocínio limpo",
   score_minor: "questões menores",
   score_several: "várias falácias",
-  score_high: "altamente fallacioso",
+  score_high: "altamente falacioso",
   score_propagandistic: "propagandístico",
 
   severity_low: "baixa",
