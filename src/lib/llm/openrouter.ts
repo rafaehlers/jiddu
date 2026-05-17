@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 import { parse as partialParse } from "partial-json";
-import { AnalysisResultSchema, FindingSchema } from "../schema";
+import { AnalysisResultSchema, FindingSchema, type Finding } from "../schema";
 import { buildSystemPrompt, buildUserPrompt } from "../prompt";
 import { ANALYSIS_JSON_SCHEMA } from "./jsonSchema";
 import type { AnalyzeInput, AnalyzeOutput, LlmProvider, ProviderId } from "./types";
@@ -245,29 +245,60 @@ export class OpenRouterProvider implements LlmProvider {
       }
     }
 
+    // Strict parse first; if the upstream cut the stream short, fall back
+    // to a tolerant partial parse and salvage whatever findings we got.
+    let final: ReturnType<typeof AnalysisResultSchema.parse> | null = null;
     try {
-      const final = AnalysisResultSchema.parse(JSON.parse(buffer));
-      for (let i = 0; i < final.findings.length; i++) {
-        if (emittedFindings.has(i)) continue;
-        emittedFindings.add(i);
-        yield { type: "finding", finding: final.findings[i] };
+      final = AnalysisResultSchema.parse(JSON.parse(buffer));
+    } catch {
+      try {
+        const snap = partialParse(buffer) as Record<string, unknown> | null;
+        if (snap && typeof snap === "object") {
+          const findings = Array.isArray(snap.findings)
+            ? snap.findings
+                .map((f) => FindingSchema.safeParse(f))
+                .filter((r): r is { success: true; data: Finding } => r.success)
+                .map((r) => r.data)
+            : [];
+          final = {
+            language: typeof snap.language === "string" ? snap.language : null,
+            summary: typeof snap.summary === "string" ? snap.summary : "",
+            score:
+              typeof snap.score === "number" && Number.isFinite(snap.score)
+                ? Math.max(0, Math.min(100, Math.round(snap.score)))
+                : findings.length === 0
+                  ? 0
+                  : Math.min(100, findings.length * 10),
+            findings,
+          };
+        }
+      } catch {
+        // ignore
       }
-      if (!emittedFields.has("language")) {
-        yield { type: "language", language: final.language ?? null };
-        emittedFields.add("language");
-      }
-      if (!emittedFields.has("summary")) {
-        yield { type: "summary", summary: final.summary };
-        emittedFields.add("summary");
-      }
-      if (!emittedFields.has("score")) {
-        yield { type: "score", score: final.score };
-        emittedFields.add("score");
-      }
-    } catch (err) {
+    }
+
+    if (!final) {
       throw new Error(
-        `Failed to parse OpenRouter final JSON: ${err instanceof Error ? err.message : String(err)}`,
+        `Failed to parse OpenRouter response (buffer length=${buffer.length})`,
       );
+    }
+
+    for (let i = 0; i < final.findings.length; i++) {
+      if (emittedFindings.has(i)) continue;
+      emittedFindings.add(i);
+      yield { type: "finding", finding: final.findings[i] };
+    }
+    if (!emittedFields.has("language")) {
+      yield { type: "language", language: final.language ?? null };
+      emittedFields.add("language");
+    }
+    if (!emittedFields.has("summary")) {
+      yield { type: "summary", summary: final.summary };
+      emittedFields.add("summary");
+    }
+    if (!emittedFields.has("score")) {
+      yield { type: "score", score: final.score };
+      emittedFields.add("score");
     }
 
     return { model: this.defaultModel };
