@@ -56,6 +56,10 @@ export const MODEL_CATALOG: ModelChoice[] = [
     label: "MiniMax M2.7",
     family: "minimax",
     openrouter: "minimax/minimax-m2.7",
+    // The Minimax upstream rejects forced tool_choice ("auto" only), and
+    // pinning the provider stops OpenRouter from routing to Morph/Fireworks
+    // (those burn the budget on reasoning and never emit the tool call).
+    toolMode: "auto",
     providerOrder: ["Minimax"],
   },
 ];
