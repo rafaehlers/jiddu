@@ -12,7 +12,16 @@ import type { StreamEvent } from "./stream";
 export type ModelChoice = {
   id: string;
   label: string;
-  family: ProviderId | "google" | "meta" | "mistral";
+  family:
+    | ProviderId
+    | "google"
+    | "meta"
+    | "mistral"
+    | "deepseek"
+    | "qwen"
+    | "moonshot"
+    | "zhipu"
+    | "minimax";
   openrouter: string;
 };
 
@@ -46,6 +55,36 @@ export const MODEL_CATALOG: ModelChoice[] = [
     label: "Gemini 2.5 Pro",
     family: "google",
     openrouter: "google/gemini-2.5-pro",
+  },
+  {
+    id: "deepseek-v4-pro",
+    label: "DeepSeek V4 Pro",
+    family: "deepseek",
+    openrouter: "deepseek/deepseek-v4-pro",
+  },
+  {
+    id: "qwen3.6-plus",
+    label: "Qwen3.6 Plus",
+    family: "qwen",
+    openrouter: "qwen/qwen3.6-plus",
+  },
+  {
+    id: "kimi-k2.6",
+    label: "Kimi K2.6 (Moonshot)",
+    family: "moonshot",
+    openrouter: "moonshotai/kimi-k2.6",
+  },
+  {
+    id: "glm-5",
+    label: "GLM-5 (Zhipu)",
+    family: "zhipu",
+    openrouter: "z-ai/glm-5",
+  },
+  {
+    id: "minimax-m2.7",
+    label: "MiniMax M2.7",
+    family: "minimax",
+    openrouter: "minimax/minimax-m2.7",
   },
 ];
 
@@ -114,7 +153,7 @@ export class OpenRouterProvider implements LlmProvider {
           },
         },
       ],
-      tool_choice: { type: "function", function: { name: "report_analysis" } },
+      tool_choice: "auto",
     });
 
     const toolCall = response.choices[0]?.message?.tool_calls?.[0];
@@ -150,7 +189,7 @@ export class OpenRouterProvider implements LlmProvider {
             },
           },
         ],
-        tool_choice: { type: "function", function: { name: "report_analysis" } },
+        tool_choice: "auto",
         stream: true,
       },
       opts?.signal ? { signal: opts.signal } : undefined,
