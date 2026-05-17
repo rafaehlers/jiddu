@@ -13,7 +13,7 @@ Live: **https://jiddu.app**
 - **Dual-pane viewer** — text on the left with each fallacious passage highlighted in its own color; explanations stack as anchored comments on the right.
 - **Streaming analysis** — comments appear progressively while the LLM is still writing.
 - **Multi-chunk parallel analysis** — texts up to ~200k chars are split at sentence boundaries and analyzed in parallel with bounded concurrency.
-- **Multi-model via OpenRouter** — Claude Sonnet 4.6, GPT-5.4 mini, DeepSeek V4 Pro and MiniMax M2.7 all behind one API. Pick the model per request from the dropdown.
+- **Multi-model via OpenRouter** — GPT-5.4 mini and MiniMax M2.7 behind one API. Pick the model per request from the dropdown.
 - **28 fallacies catalog** — covering relevance, ambiguity, presumption, emotional appeals, causal reasoning and evidence. Each has its own distinct color (golden-angle palette).
 - **Fallacy guide page** at `/fallacies` and a per-fallacy modal opened from any comment.
 - **Trilingual UI** (EN, PT-BR, ES) — selector in the header, browser-language detection on first visit, persisted in localStorage. The LLM is also instructed to write the analysis in the chosen language.
@@ -119,7 +119,7 @@ Request bodies:
 { "type": "text", "text": "…",         "model": "gpt-5.4",         "lang": "en" }
 ```
 
-…or multipart with `file=<PDF or TXT>` + `model` + `lang`. Valid `model` values: `claude-sonnet-4.6`, `gpt-5.4-mini`, `deepseek-v4-pro`, `minimax-m2.7`.
+…or multipart with `file=<PDF or TXT>` + `model` + `lang`. Valid `model` values: `gpt-5.4-mini`, `minimax-m2.7`.
 
 ### `GET /api/analysis/[id]`
 

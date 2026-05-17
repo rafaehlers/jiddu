@@ -34,22 +34,10 @@ export type ModelChoice = {
 
 export const MODEL_CATALOG: ModelChoice[] = [
   {
-    id: "claude-sonnet-4.6",
-    label: "Claude Sonnet 4.6",
-    family: "anthropic",
-    openrouter: "anthropic/claude-sonnet-4.6",
-  },
-  {
     id: "gpt-5.4-mini",
     label: "GPT-5.4 mini",
     family: "openai",
     openrouter: "openai/gpt-5.4-mini",
-  },
-  {
-    id: "deepseek-v4-pro",
-    label: "DeepSeek V4 Pro",
-    family: "deepseek",
-    openrouter: "deepseek/deepseek-v4-pro",
   },
   {
     id: "minimax-m2.7",
@@ -68,7 +56,7 @@ const MODEL_BY_ID: Record<string, ModelChoice> = Object.fromEntries(
   MODEL_CATALOG.map((m) => [m.id, m]),
 );
 
-const DEFAULT_MODEL_ID = "claude-sonnet-4.6";
+const DEFAULT_MODEL_ID = "gpt-5.4-mini";
 
 export function resolveModel(id?: string | null): ModelChoice {
   if (id && MODEL_BY_ID[id]) return MODEL_BY_ID[id];
