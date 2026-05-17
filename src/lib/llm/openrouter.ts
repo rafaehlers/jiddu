@@ -128,7 +128,7 @@ export class OpenRouterProvider implements LlmProvider {
       model,
       messages: [
         { role: "system", content: buildSystemPrompt(lang) },
-        { role: "user", content: buildUserPrompt(input.sentences, lang) },
+        { role: "user", content: buildUserPrompt(input.sentences, lang, input.contextSentences) },
       ],
       tools: [
         {
@@ -165,7 +165,7 @@ export class OpenRouterProvider implements LlmProvider {
         model,
         messages: [
           { role: "system", content: buildSystemPrompt(lang) },
-          { role: "user", content: buildUserPrompt(input.sentences, lang) },
+          { role: "user", content: buildUserPrompt(input.sentences, lang, input.contextSentences) },
         ],
         tools: [
           {

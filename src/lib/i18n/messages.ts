@@ -113,6 +113,29 @@ export type Messages = {
   mobile_hint_dismiss: string;
   finding_from_text: string;
   finding_about_this_fallacy: string;
+
+  // Live mode (beta)
+  live_subtitle: string;
+  live_source_mic: string;
+  live_source_tab: string;
+  live_source_tab_chrome_only: string;
+  live_source_tab_tooltip: string;
+  live_source_tab_unsupported: string;
+  live_language_follows_header: string;
+  live_start: string;
+  live_stop: string;
+  live_findings: string;
+  live_running_score: string;
+  live_privacy_note: string;
+  live_status_connecting: string;
+  live_status_live: string;
+  live_status_analyzing: string;
+  live_status_stopped: string;
+  live_status_finalizing: string;
+  live_status_error: string;
+  live_transcript_listening: string;
+  live_transcript_idle: string;
+  live_no_findings_yet: string;
 };
 
 const en: Messages = {
@@ -251,6 +274,31 @@ const en: Messages = {
   mobile_hint_dismiss: "Got it",
   finding_from_text: "From the text",
   finding_about_this_fallacy: "About this fallacy",
+
+  live_subtitle:
+    "Listen in real time and surface logical fallacies as the speaker talks.",
+  live_source_mic: "Microphone",
+  live_source_tab: "Browser tab",
+  live_source_tab_chrome_only: "Chrome only",
+  live_source_tab_tooltip: "Capture audio from a browser tab",
+  live_source_tab_unsupported: "Tab capture requires Chrome or Edge",
+  live_language_follows_header: "Language follows the selector in the header.",
+  live_start: "Start",
+  live_stop: "Stop & finalize",
+  live_findings: "Findings",
+  live_running_score: "Running score",
+  live_privacy_note:
+    "Audio is streamed directly from your browser to OpenAI’s Realtime API via WebRTC. The raw audio is not stored — only the transcript and findings are persisted, and they become available at a shareable URL once you stop the session.",
+  live_status_connecting: "Connecting…",
+  live_status_live: "Live",
+  live_status_analyzing: "Analyzing",
+  live_status_stopped: "Stopped",
+  live_status_finalizing: "Finalizing…",
+  live_status_error: "Error",
+  live_transcript_listening: "Listening… speak into your microphone.",
+  live_transcript_idle: "Press Start to begin transcribing.",
+  live_no_findings_yet:
+    "No fallacies detected yet. They will appear here as the speaker talks.",
 };
 
 const pt: Messages = {
@@ -390,6 +438,31 @@ const pt: Messages = {
   mobile_hint_dismiss: "Entendi",
   finding_from_text: "Do texto",
   finding_about_this_fallacy: "Sobre esta falácia",
+
+  live_subtitle:
+    "Escute em tempo real e veja as falácias aparecerem conforme a pessoa fala.",
+  live_source_mic: "Microfone",
+  live_source_tab: "Aba do navegador",
+  live_source_tab_chrome_only: "Só no Chrome",
+  live_source_tab_tooltip: "Capturar áudio de uma aba do navegador",
+  live_source_tab_unsupported: "Captura de aba requer Chrome ou Edge",
+  live_language_follows_header: "O idioma segue o seletor no cabeçalho.",
+  live_start: "Iniciar",
+  live_stop: "Parar e finalizar",
+  live_findings: "Falácias",
+  live_running_score: "Nota parcial",
+  live_privacy_note:
+    "O áudio é transmitido direto do seu navegador para a API Realtime da OpenAI via WebRTC. O áudio bruto não é armazenado — apenas a transcrição e as falácias detectadas ficam salvas, e estarão disponíveis em uma URL compartilhável quando você parar a sessão.",
+  live_status_connecting: "Conectando…",
+  live_status_live: "Ao vivo",
+  live_status_analyzing: "Analisando",
+  live_status_stopped: "Parado",
+  live_status_finalizing: "Finalizando…",
+  live_status_error: "Erro",
+  live_transcript_listening: "Ouvindo… fale no microfone.",
+  live_transcript_idle: "Clique em Iniciar para começar a transcrever.",
+  live_no_findings_yet:
+    "Nenhuma falácia detectada ainda. Elas aparecerão aqui conforme a pessoa fala.",
 };
 
 const es: Messages = {
@@ -529,6 +602,31 @@ const es: Messages = {
   mobile_hint_dismiss: "Entendido",
   finding_from_text: "Del texto",
   finding_about_this_fallacy: "Sobre esta falacia",
+
+  live_subtitle:
+    "Escucha en tiempo real y observa las falacias aparecer mientras la persona habla.",
+  live_source_mic: "Micrófono",
+  live_source_tab: "Pestaña del navegador",
+  live_source_tab_chrome_only: "Solo Chrome",
+  live_source_tab_tooltip: "Capturar audio de una pestaña del navegador",
+  live_source_tab_unsupported: "La captura de pestaña requiere Chrome o Edge",
+  live_language_follows_header: "El idioma sigue el selector del encabezado.",
+  live_start: "Iniciar",
+  live_stop: "Detener y finalizar",
+  live_findings: "Falacias",
+  live_running_score: "Puntuación parcial",
+  live_privacy_note:
+    "El audio se transmite directamente desde tu navegador a la API Realtime de OpenAI vía WebRTC. El audio en bruto no se almacena — solo se guardan la transcripción y las falacias detectadas, y estarán disponibles en una URL compartible cuando detengas la sesión.",
+  live_status_connecting: "Conectando…",
+  live_status_live: "En vivo",
+  live_status_analyzing: "Analizando",
+  live_status_stopped: "Detenido",
+  live_status_finalizing: "Finalizando…",
+  live_status_error: "Error",
+  live_transcript_listening: "Escuchando… habla por el micrófono.",
+  live_transcript_idle: "Haz clic en Iniciar para empezar a transcribir.",
+  live_no_findings_yet:
+    "Aún no se detectaron falacias. Aparecerán aquí mientras la persona habla.",
 };
 
 export const MESSAGES: Record<Lang, Messages> = { en, pt, es };

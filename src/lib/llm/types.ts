@@ -8,6 +8,13 @@ export type ProviderId = "anthropic" | "openai";
 export type AnalyzeInput = {
   sentences: Sentence[];
   lang?: Lang;
+  /**
+   * Optional previous sentences provided to the LLM purely as context so it
+   * can resolve anaphora and references. Findings emitted against these
+   * sentences are ignored by callers (the prompt instructs the model not to
+   * emit them, but we filter defensively).
+   */
+  contextSentences?: Sentence[];
 };
 
 export type AnalyzeOutput = {

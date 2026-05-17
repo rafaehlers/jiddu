@@ -8,20 +8,22 @@ datasource db {
 }
 
 model Analysis {
-  id           String   @id
-  status       String   @default("pending") // "pending" | "running" | "complete" | "failed"
-  source       String   // "url" | "pdf" | "txt" | "paste"
-  sourceRef    String?  // URL or filename
-  title        String?
-  text         String   // full normalized text
-  language     String?  // "pt" | "en" | ...
-  provider     String   // "anthropic" | "openai"
-  model        String
-  score        Int      @default(0) // 0..100 fallacy intensity
-  summary      String?  // short verdict
-  sentences    String   @default("[]") // JSON array of {id,start,end,text}
-  findings     String   @default("[]") // JSON array of findings
-  errorMessage String?
-  createdAt    DateTime @default(now())
-  finishedAt   DateTime?
+  id              String   @id
+  status          String   @default("pending") // "pending" | "running" | "complete" | "failed"
+  source          String   // "url" | "pdf" | "txt" | "paste" | "live"
+  sourceRef       String?  // URL or filename
+  title           String?
+  text            String   // full normalized text
+  language        String?  // "pt" | "en" | ...
+  provider        String   // "anthropic" | "openai"
+  model           String
+  score           Int      @default(0) // 0..100 fallacy intensity
+  summary         String?  // short verdict
+  sentences       String   @default("[]") // JSON array of {id,start,end,text}
+  findings        String   @default("[]") // JSON array of findings
+  transcript      String?  // raw transcript accumulated during a live session
+  audioDurationMs Int?     // total audio duration captured (live mode)
+  errorMessage    String?
+  createdAt       DateTime @default(now())
+  finishedAt      DateTime?
 }

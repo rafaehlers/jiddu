@@ -125,6 +125,19 @@ Request bodies:
 
 Returns the persisted analysis as JSON.
 
+### Live mode (beta) — `/live`
+
+A separate page at `/live` listens to live audio (microphone or browser-tab capture) via the OpenAI Realtime API (`gpt-realtime-whisper`) and surfaces fallacies as the speaker talks. Two endpoints back it:
+
+- `POST /api/live/token` — mints a short-lived ephemeral client secret so the browser can open a WebRTC connection directly to OpenAI. Requires `OPENAI_API_KEY`.
+- `POST /api/live/analyze` — SSE stream that ingests the cumulative transcript in sliding windows (~500 char delta or every 30s) and emits `finding` events. Send `{ finalize: true }` on Stop to compute the final score and commit the session.
+
+Notes:
+- Tab capture requires Chrome or Edge — Safari/Firefox don't expose tab audio via `getDisplayMedia`. The Microphone source works everywhere.
+- Audio is streamed Browser → OpenAI directly via WebRTC; the Jiddu server only mints tokens and persists the transcript + findings.
+- Hard cap of 60 minutes per session to keep cost predictable (`gpt-realtime-whisper` is $0.017/min ≈ $1/hour, plus the analysis LLM cost).
+- The page is intentionally not linked from the nav while in beta — access it by URL.
+
 ## Fallacy score
 
 | Range  | Label              |
