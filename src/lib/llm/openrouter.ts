@@ -56,7 +56,7 @@ export const MODEL_CATALOG: ModelChoice[] = [
     label: "MiniMax M2.7",
     family: "minimax",
     openrouter: "minimax/minimax-m2.7",
-    providerOrder: ["MiniMax"],
+    providerOrder: ["Minimax"],
   },
 ];
 
