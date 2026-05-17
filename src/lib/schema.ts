@@ -9,10 +9,19 @@ export const SentenceSchema = z.object({
 });
 export type Sentence = z.infer<typeof SentenceSchema>;
 
+const SeveritySchema = z.preprocess((v) => {
+  if (v === "low" || v === "high") return v;
+  if (typeof v !== "string") return "low";
+  const s = v.toLowerCase().trim();
+  if (["high", "severe", "strong", "critical", "major", "serious"].includes(s)) return "high";
+  if (["low", "mild", "minor", "weak", "medium", "moderate", "mid"].includes(s)) return "low";
+  return "low";
+}, z.enum(["low", "high"]));
+
 export const FindingSchema = z.object({
   sentenceIds: z.array(z.string()).min(1),
   fallacy: z.enum(FALLACY_IDS as [string, ...string[]]),
-  severity: z.enum(["low", "high"]),
+  severity: SeveritySchema,
   quote: z.string(),
   explanation: z.string(),
 });

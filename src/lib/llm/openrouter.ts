@@ -23,6 +23,9 @@ export type ModelChoice = {
     | "zhipu"
     | "minimax";
   openrouter: string;
+  // Most upstreams honour a forced tool_choice; Qwen rejects it and only
+  // works with "auto". Default is forced.
+  toolMode?: "forced" | "auto";
 };
 
 export const MODEL_CATALOG: ModelChoice[] = [
@@ -67,6 +70,7 @@ export const MODEL_CATALOG: ModelChoice[] = [
     label: "Qwen3.6 Plus",
     family: "qwen",
     openrouter: "qwen/qwen3.6-plus",
+    toolMode: "auto",
   },
   {
     id: "kimi-k2.6",
@@ -133,6 +137,14 @@ export class OpenRouterProvider implements LlmProvider {
     return this.modelSlug;
   }
 
+  private toolChoiceFor(modelOverride?: string):
+    | "auto"
+    | { type: "function"; function: { name: string } } {
+    const choice = resolveModel(modelOverride ?? this.defaultModel);
+    if (choice.toolMode === "auto") return "auto";
+    return { type: "function", function: { name: "report_analysis" } };
+  }
+
   async analyze(input: AnalyzeInput, opts?: { model?: string }): Promise<AnalyzeOutput> {
     const model = this.slug(opts?.model);
     const lang = input.lang ?? "en";
@@ -153,7 +165,7 @@ export class OpenRouterProvider implements LlmProvider {
           },
         },
       ],
-      tool_choice: "auto",
+      tool_choice: this.toolChoiceFor(opts?.model),
     });
 
     const toolCall = response.choices[0]?.message?.tool_calls?.[0];
@@ -189,7 +201,7 @@ export class OpenRouterProvider implements LlmProvider {
             },
           },
         ],
-        tool_choice: "auto",
+        tool_choice: this.toolChoiceFor(opts?.model),
         stream: true,
       },
       opts?.signal ? { signal: opts.signal } : undefined,
