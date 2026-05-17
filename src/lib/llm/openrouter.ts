@@ -26,26 +26,18 @@ export type ModelChoice = {
   // Most upstreams honour a forced tool_choice; Qwen rejects it and only
   // works with "auto". Default is forced.
   toolMode?: "forced" | "auto";
+  // Pin OpenRouter's upstream routing. MiniMax is a reasoning model that
+  // only emits tool_calls reliably when the upstream is "MiniMax" itself
+  // (Morph/Fireworks burn budget on reasoning and never call the tool).
+  providerOrder?: string[];
 };
 
 export const MODEL_CATALOG: ModelChoice[] = [
-  {
-    id: "claude-opus-4.7",
-    label: "Claude Opus 4.7",
-    family: "anthropic",
-    openrouter: "anthropic/claude-opus-4.7",
-  },
   {
     id: "claude-sonnet-4.6",
     label: "Claude Sonnet 4.6",
     family: "anthropic",
     openrouter: "anthropic/claude-sonnet-4.6",
-  },
-  {
-    id: "gpt-5.4",
-    label: "GPT-5.4",
-    family: "openai",
-    openrouter: "openai/gpt-5.4",
   },
   {
     id: "gpt-5.4-mini",
@@ -54,41 +46,17 @@ export const MODEL_CATALOG: ModelChoice[] = [
     openrouter: "openai/gpt-5.4-mini",
   },
   {
-    id: "gemini-2.5-pro",
-    label: "Gemini 2.5 Pro",
-    family: "google",
-    openrouter: "google/gemini-2.5-pro",
-  },
-  {
     id: "deepseek-v4-pro",
     label: "DeepSeek V4 Pro",
     family: "deepseek",
     openrouter: "deepseek/deepseek-v4-pro",
   },
   {
-    id: "qwen3.6-plus",
-    label: "Qwen3.6 Plus",
-    family: "qwen",
-    openrouter: "qwen/qwen3.6-plus",
-    toolMode: "auto",
-  },
-  {
-    id: "kimi-k2.6",
-    label: "Kimi K2.6 (Moonshot)",
-    family: "moonshot",
-    openrouter: "moonshotai/kimi-k2.6",
-  },
-  {
-    id: "glm-5",
-    label: "GLM-5 (Zhipu)",
-    family: "zhipu",
-    openrouter: "z-ai/glm-5",
-  },
-  {
     id: "minimax-m2.7",
     label: "MiniMax M2.7",
     family: "minimax",
     openrouter: "minimax/minimax-m2.7",
+    providerOrder: ["MiniMax"],
   },
 ];
 
@@ -96,7 +64,7 @@ const MODEL_BY_ID: Record<string, ModelChoice> = Object.fromEntries(
   MODEL_CATALOG.map((m) => [m.id, m]),
 );
 
-const DEFAULT_MODEL_ID = "claude-opus-4.7";
+const DEFAULT_MODEL_ID = "claude-sonnet-4.6";
 
 export function resolveModel(id?: string | null): ModelChoice {
   if (id && MODEL_BY_ID[id]) return MODEL_BY_ID[id];
@@ -145,6 +113,21 @@ export class OpenRouterProvider implements LlmProvider {
     return { type: "function", function: { name: "report_analysis" } };
   }
 
+  // OpenRouter-specific extras (provider routing). Not part of the OpenAI
+  // schema, so we widen the type to pass them through as request body.
+  private openRouterExtras(modelOverride?: string): Record<string, unknown> {
+    const choice = resolveModel(modelOverride ?? this.defaultModel);
+    if (choice.providerOrder && choice.providerOrder.length > 0) {
+      return {
+        provider: {
+          order: choice.providerOrder,
+          allow_fallbacks: false,
+        },
+      };
+    }
+    return {};
+  }
+
   async analyze(input: AnalyzeInput, opts?: { model?: string }): Promise<AnalyzeOutput> {
     const model = this.slug(opts?.model);
     const lang = input.lang ?? "en";
@@ -166,7 +149,8 @@ export class OpenRouterProvider implements LlmProvider {
         },
       ],
       tool_choice: this.toolChoiceFor(opts?.model),
-    });
+      ...this.openRouterExtras(opts?.model),
+    } as OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming);
 
     const toolCall = response.choices[0]?.message?.tool_calls?.[0];
     if (!toolCall || toolCall.type !== "function") {
@@ -203,7 +187,8 @@ export class OpenRouterProvider implements LlmProvider {
         ],
         tool_choice: this.toolChoiceFor(opts?.model),
         stream: true,
-      },
+        ...this.openRouterExtras(opts?.model),
+      } as OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming,
       opts?.signal ? { signal: opts.signal } : undefined,
     );
 
