@@ -106,6 +106,13 @@ export type Messages = {
   close: string;
   open_in_guide: string;
   category: string;
+
+  // Mobile-specific
+  mobile_hint_title: string;
+  mobile_hint_body: string;
+  mobile_hint_dismiss: string;
+  finding_from_text: string;
+  finding_about_this_fallacy: string;
 };
 
 const en: Messages = {
@@ -238,6 +245,12 @@ const en: Messages = {
   close: "Close",
   open_in_guide: "Open in full guide",
   category: "Category",
+  mobile_hint_title: "Reading tip",
+  mobile_hint_body:
+    "Tap any highlighted passage to read the explanation of the fallacy in a pop-up.",
+  mobile_hint_dismiss: "Got it",
+  finding_from_text: "From the text",
+  finding_about_this_fallacy: "About this fallacy",
 };
 
 const pt: Messages = {
@@ -371,6 +384,12 @@ const pt: Messages = {
   close: "Fechar",
   open_in_guide: "Abrir no guia completo",
   category: "Categoria",
+  mobile_hint_title: "Dica de leitura",
+  mobile_hint_body:
+    "Toque em qualquer trecho destacado para ler a explicação da falácia em um pop-up.",
+  mobile_hint_dismiss: "Entendi",
+  finding_from_text: "Do texto",
+  finding_about_this_fallacy: "Sobre esta falácia",
 };
 
 const es: Messages = {
@@ -504,6 +523,12 @@ const es: Messages = {
   close: "Cerrar",
   open_in_guide: "Abrir en la guía completa",
   category: "Categoría",
+  mobile_hint_title: "Consejo de lectura",
+  mobile_hint_body:
+    "Toca cualquier pasaje resaltado para leer la explicación de la falacia en un pop-up.",
+  mobile_hint_dismiss: "Entendido",
+  finding_from_text: "Del texto",
+  finding_about_this_fallacy: "Sobre esta falacia",
 };
 
 export const MESSAGES: Record<Lang, Messages> = { en, pt, es };

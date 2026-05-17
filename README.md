@@ -13,7 +13,7 @@ Live: **https://jiddu.app**
 - **Dual-pane viewer** — text on the left with each fallacious passage highlighted in its own color; explanations stack as anchored comments on the right.
 - **Streaming analysis** — comments appear progressively while the LLM is still writing.
 - **Multi-chunk parallel analysis** — texts up to ~200k chars are split at sentence boundaries and analyzed in parallel with bounded concurrency.
-- **Provider-agnostic** — Anthropic Claude (tool_use) and OpenAI GPT (structured outputs) behind the same interface; pick per request.
+- **Multi-model via OpenRouter** — Claude Opus 4.7, Claude Sonnet 4.6, GPT-5.4, GPT-5.4 mini and Gemini 2.5 Pro all behind one API. Pick the model per request from the dropdown.
 - **28 fallacies catalog** — covering relevance, ambiguity, presumption, emotional appeals, causal reasoning and evidence. Each has its own distinct color (golden-angle palette).
 - **Fallacy guide page** at `/fallacies` and a per-fallacy modal opened from any comment.
 - **Trilingual UI** (EN, PT-BR, ES) — selector in the header, browser-language detection on first visit, persisted in localStorage. The LLM is also instructed to write the analysis in the chosen language.
@@ -48,12 +48,11 @@ Open <http://localhost:3000>. Try `/a/demo-en`, `/a/demo-pt`, `/a/demo-es` to se
 
 ## Environment
 
-| Variable             | Purpose                                                              |
-|----------------------|----------------------------------------------------------------------|
-| `DATABASE_URL`       | SQLite path. Local dev: `file:./dev.db`. Docker: `file:/app/data/jiddu.db` |
-| `LLM_PROVIDER`       | Default provider when the client doesn't pass one (`anthropic` / `openai`) |
-| `ANTHROPIC_API_KEY`  | Required for Claude                                                  |
-| `OPENAI_API_KEY`     | Required for GPT                                                     |
+| Variable               | Purpose                                                              |
+|------------------------|----------------------------------------------------------------------|
+| `DATABASE_URL`         | SQLite path. Local dev: `file:./dev.db`. Docker: `file:/app/data/jiddu.db` |
+| `OPENROUTER_API_KEY`   | Required — unified gateway used for every model. Get one at https://openrouter.ai/keys |
+| `OPENROUTER_REFERER`   | Optional. Identifies the deployment in OpenRouter's analytics. Defaults to `https://jiddu.app` |
 
 ## Architecture
 
@@ -91,11 +90,10 @@ src/
     ├── ingest/                        URL, PDF, TXT
     └── llm/
         ├── types.ts                   Provider interface
-        ├── jsonSchema.ts              Shared JSON Schema for both providers
+        ├── jsonSchema.ts              Shared JSON Schema fed to the model as a tool
         ├── stream.ts                  StreamEvent union type
-        ├── anthropic.ts               Claude via tool_use + accumulated raw JSON
-        ├── openai.ts                  GPT via structured outputs streaming
-        └── index.ts                   getProvider()
+        ├── openrouter.ts              Single provider — OpenRouter via OpenAI SDK, function-calling streaming, partial-json
+        └── index.ts                   getProvider() + MODEL_CATALOG
 ```
 
 ## API
@@ -117,11 +115,11 @@ Streams `text/event-stream`. Events:
 Request bodies:
 
 ```json
-{ "type": "url",  "url": "https://…",  "provider": "anthropic", "lang": "pt" }
-{ "type": "text", "text": "…",         "provider": "openai",    "lang": "en" }
+{ "type": "url",  "url": "https://…",  "model": "claude-opus-4.7", "lang": "pt" }
+{ "type": "text", "text": "…",         "model": "gpt-5.4",         "lang": "en" }
 ```
 
-…or multipart with `file=<PDF or TXT>` + `provider` + `lang`.
+…or multipart with `file=<PDF or TXT>` + `model` + `lang`. Valid `model` values: `claude-opus-4.7`, `claude-sonnet-4.6`, `gpt-5.4`, `gpt-5.4-mini`, `gemini-2.5-pro`.
 
 ### `GET /api/analysis/[id]`
 

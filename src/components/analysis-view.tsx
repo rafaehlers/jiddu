@@ -6,7 +6,12 @@ import type { Finding, Sentence } from "@/lib/schema";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n/provider";
 import { FallacyModal } from "@/components/fallacy-modal";
+import { FindingModal } from "@/components/finding-modal";
+import { MobileHintModal } from "@/components/mobile-hint-modal";
 import { ShareLinkBar } from "@/components/share-link-bar";
+
+const MOBILE_BREAKPOINT = 1024; // matches Tailwind's `lg`
+const MOBILE_HINT_KEY = "mobileHintSeen";
 
 type Props = {
   title: string | null;
@@ -54,6 +59,25 @@ export function AnalysisView({
 
   const [active, setActive] = useState<string | null>(null);
   const [modalFallacyId, setModalFallacyId] = useState<string | null>(null);
+  const [findingForModal, setFindingForModal] = useState<FindingWithKey | null>(null);
+  const [showHint, setShowHint] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return (
+        window.innerWidth < MOBILE_BREAKPOINT &&
+        localStorage.getItem(MOBILE_HINT_KEY) !== "1"
+      );
+    } catch {
+      return false;
+    }
+  });
+
+  function dismissHint() {
+    setShowHint(false);
+    try {
+      localStorage.setItem(MOBILE_HINT_KEY, "1");
+    } catch {}
+  }
   const textColRef = useRef<HTMLDivElement>(null);
   const commentsColRef = useRef<HTMLDivElement>(null);
   const scoreRef = useRef<HTMLDivElement>(null);
@@ -118,6 +142,14 @@ export function AnalysisView({
     if (!list || list.length === 0) return;
     const f = list[0];
     setActive(f.key);
+    // On narrow viewports the comments stack way below the article, so jumping
+    // to them would take the reader far from the passage. Open the modal
+    // instead. On wide layouts the comments are anchored beside the sentence,
+    // so scrollIntoView is the right move.
+    if (typeof window !== "undefined" && window.innerWidth < MOBILE_BREAKPOINT) {
+      setFindingForModal(f);
+      return;
+    }
     const node = commentRefs.current.get(f.key);
     node?.scrollIntoView({ behavior: "smooth", block: "center" });
   }
@@ -267,6 +299,13 @@ export function AnalysisView({
         fallacyId={modalFallacyId}
         onClose={() => setModalFallacyId(null)}
       />
+
+      <FindingModal
+        finding={findingForModal}
+        onClose={() => setFindingForModal(null)}
+      />
+
+      <MobileHintModal open={showHint} onClose={dismissHint} />
     </div>
   );
 }

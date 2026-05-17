@@ -5,6 +5,7 @@ import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n/provider";
 import type { Messages } from "@/lib/i18n/messages";
+import { MODEL_CATALOG } from "@/lib/llm";
 
 type Tab = "url" | "text" | "file";
 
@@ -29,7 +30,7 @@ export function UploadForm({ onSubmit, error, onClearError }: Props) {
   const [url, setUrl] = useState("");
   const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
-  const [provider, setProvider] = useState<"anthropic" | "openai">("anthropic");
+  const [model, setModel] = useState<string>(MODEL_CATALOG[0].id);
   const [localError, setLocalError] = useState<ErrorState | null>(null);
 
   const visibleError = error ?? localError;
@@ -43,14 +44,14 @@ export function UploadForm({ onSubmit, error, onClearError }: Props) {
         if (!file) throw new Error("Choose a PDF or TXT file");
         const fd = new FormData();
         fd.set("file", file);
-        fd.set("provider", provider);
+        fd.set("model", model);
         fd.set("lang", lang);
         await onSubmit("file", fd, null);
       } else {
         const body = JSON.stringify(
           tab === "url"
-            ? { type: "url", url, provider, lang }
-            : { type: "text", text, provider, lang },
+            ? { type: "url", url, model, lang }
+            : { type: "text", text, model, lang },
         );
         await onSubmit(tab, body, "application/json");
       }
@@ -78,15 +79,18 @@ export function UploadForm({ onSubmit, error, onClearError }: Props) {
         <TabButton active={tab === "file"} onClick={() => setTab("file")}>{t.tab_file}</TabButton>
 
         <div className="ml-auto flex items-center gap-2 text-sm">
-          <label htmlFor="provider" className="text-muted">{t.model}</label>
+          <label htmlFor="model" className="text-muted">{t.model}</label>
           <select
-            id="provider"
-            value={provider}
-            onChange={(e) => setProvider(e.target.value as "anthropic" | "openai")}
+            id="model"
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
             className="bg-background border border-rule rounded-md px-2 py-1"
           >
-            <option value="anthropic">{t.model_anthropic}</option>
-            <option value="openai">{t.model_openai}</option>
+            {MODEL_CATALOG.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.label}
+              </option>
+            ))}
           </select>
         </div>
       </div>

@@ -10,7 +10,7 @@ import { getProvider } from "@/lib/llm";
 import type { IngestedDocument } from "@/lib/ingest/url";
 import { IngestError } from "@/lib/ingest/errors";
 import type { Finding } from "@/lib/schema";
-import type { ProviderId } from "@/lib/llm";
+import { resolveModel } from "@/lib/llm";
 import type { Lang } from "@/lib/fallacies";
 
 export const runtime = "nodejs";
@@ -21,14 +21,14 @@ const CHUNK_CONCURRENCY = 4;
 
 export async function POST(req: NextRequest) {
   let doc: IngestedDocument;
-  let provider: ProviderId | undefined;
+  let modelId: string | undefined;
   let lang: Lang = "en";
 
   try {
     const ct = req.headers.get("content-type") ?? "";
     if (ct.includes("multipart/form-data")) {
       const form = await req.formData();
-      provider = normalizeProvider(form.get("provider"));
+      modelId = normalizeString(form.get("model"));
       lang = normalizeLang(form.get("lang"));
       const file = form.get("file");
       if (!(file instanceof File)) return jsonError("Missing 'file' field", 400);
@@ -47,10 +47,10 @@ export async function POST(req: NextRequest) {
       }
     } else {
       const body = (await req.json().catch(() => null)) as
-        | { type?: string; url?: string; text?: string; provider?: string; title?: string; lang?: string }
+        | { type?: string; url?: string; text?: string; model?: string; title?: string; lang?: string }
         | null;
       if (!body) return jsonError("Invalid JSON", 400);
-      provider = normalizeProvider(body.provider);
+      modelId = body.model ?? undefined;
       lang = normalizeLang(body.lang);
       if (body.type === "url" && body.url) {
         doc = await ingestUrl(body.url);
@@ -77,9 +77,10 @@ export async function POST(req: NextRequest) {
   const sentences = splitSentences(doc.text);
   if (sentences.length === 0) return jsonError("No sentences detected", 422);
 
+  const chosenModel = resolveModel(modelId);
   let llm;
   try {
-    llm = getProvider(provider);
+    llm = getProvider(chosenModel.id);
   } catch (err) {
     return jsonError(err instanceof Error ? err.message : "Provider error", 400);
   }
@@ -249,10 +250,10 @@ function jsonError(message: string, status: number) {
   });
 }
 
-function normalizeProvider(v: FormDataEntryValue | string | undefined | null): ProviderId | undefined {
-  const s = typeof v === "string" ? v.toLowerCase() : undefined;
-  if (s === "anthropic" || s === "openai") return s;
-  return undefined;
+function normalizeString(v: FormDataEntryValue | string | undefined | null): string | undefined {
+  if (typeof v !== "string") return undefined;
+  const s = v.trim();
+  return s.length > 0 ? s : undefined;
 }
 
 function normalizeLang(v: FormDataEntryValue | string | undefined | null): Lang {
