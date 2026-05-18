@@ -5,6 +5,7 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { ADMIN_COOKIE_NAME, adminTokenIsValid } from "./auth";
 import { loginAction, logoutAction } from "./actions";
+import { toggleReviewedAction } from "./review-actions";
 import { getOpenRouterCredits, isCreditsSnapshot } from "@/lib/openrouter-credits";
 
 export const dynamic = "force-dynamic";
@@ -78,6 +79,7 @@ type AdminRow = {
   status: string;
   signal: string; // right-aligned number column: score for fallacy, claim count for factcheck
   createdAt: Date;
+  reviewedAt: Date | null;
 };
 
 async function AdminList() {
@@ -96,6 +98,7 @@ async function AdminList() {
         score: true,
         status: true,
         createdAt: true,
+        reviewedAt: true,
       },
     }),
     prisma.factCheck.findMany({
@@ -110,11 +113,15 @@ async function AdminList() {
         claims: true,
         status: true,
         createdAt: true,
+        reviewedAt: true,
       },
     }),
   ]);
 
   const credits = await getOpenRouterCredits();
+  const openFeedbackCount = await prisma.verdictFeedback.count({
+    where: { status: "open" },
+  });
 
   const rows: AdminRow[] = [
     ...analyses.map<AdminRow>((a) => ({
@@ -128,6 +135,7 @@ async function AdminList() {
       status: a.status,
       signal: String(a.score ?? 0),
       createdAt: a.createdAt,
+      reviewedAt: a.reviewedAt,
     })),
     ...factchecks.map<AdminRow>((f) => {
       let claimCount = 0;
@@ -148,6 +156,7 @@ async function AdminList() {
         status: f.status,
         signal: String(claimCount),
         createdAt: f.createdAt,
+        reviewedAt: f.reviewedAt,
       };
     }),
   ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
@@ -156,7 +165,25 @@ async function AdminList() {
     <div>
       <div className="flex items-start justify-between mb-6 gap-4 flex-wrap">
         <h1 className="font-serif text-3xl">Analyses</h1>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          <Link
+            href="/admin/metrics"
+            className="text-sm px-3 py-1.5 rounded-md border border-rule text-muted hover:text-foreground transition-colors"
+          >
+            Metrics →
+          </Link>
+          <Link
+            href="/admin/feedback"
+            className="text-sm px-3 py-1.5 rounded-md border border-rule text-muted hover:text-foreground transition-colors inline-flex items-center gap-2"
+          >
+            Feedback
+            {openFeedbackCount > 0 && (
+              <span className="inline-flex items-center justify-center text-xs px-1.5 py-0.5 rounded-full bg-[var(--severity-high)] text-background min-w-[1.25rem]">
+                {openFeedbackCount}
+              </span>
+            )}
+            <span>→</span>
+          </Link>
           <Link
             href="/admin/settings"
             className="text-sm px-3 py-1.5 rounded-md border border-rule text-muted hover:text-foreground transition-colors"
@@ -202,12 +229,15 @@ async function AdminList() {
                 Score / Claims
               </th>
               <th className="px-3 py-2 font-medium">Status</th>
+              <th className="px-3 py-2 font-medium" title="Mark as human-reviewed (removes the warning banner on the viewer)">
+                Rev.
+              </th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-3 py-8 text-center text-muted">
+                <td colSpan={9} className="px-3 py-8 text-center text-muted">
                   No analyses yet.
                 </td>
               </tr>
@@ -240,6 +270,27 @@ async function AdminList() {
                   <td className="px-3 py-2 text-right tabular-nums">{r.signal}</td>
                   <td className="px-3 py-2">
                     <StatusBadge status={r.status} />
+                  </td>
+                  <td className="px-3 py-2">
+                    <form action={toggleReviewedAction}>
+                      <input type="hidden" name="kind" value={r.kind} />
+                      <input type="hidden" name="id" value={r.id} />
+                      <button
+                        type="submit"
+                        title={
+                          r.reviewedAt
+                            ? `Reviewed ${formatDate(r.reviewedAt)} — click to unmark`
+                            : "Mark as reviewed (removes warning banner)"
+                        }
+                        className={`text-xs w-6 h-6 inline-flex items-center justify-center rounded-full border transition-colors ${
+                          r.reviewedAt
+                            ? "border-emerald-500/40 text-emerald-500 hover:border-emerald-500"
+                            : "border-rule text-muted hover:text-foreground"
+                        }`}
+                      >
+                        {r.reviewedAt ? "✓" : "○"}
+                      </button>
+                    </form>
                   </td>
                 </tr>
               );

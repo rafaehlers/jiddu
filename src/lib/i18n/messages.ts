@@ -72,6 +72,9 @@ export type Messages = {
   fc_show_sources: (n: number) => string;
   fc_hide_sources: (n: number) => string;
   fc_checking: string;
+  fc_report_wrong: string;
+  fc_report_prompt: string;
+  fc_report_thanks: string;
   fc_footer: (model: string) => string;
   fc_status_complete: string;
   fc_status_running: string;
@@ -162,6 +165,19 @@ export type Messages = {
   mobile_hint_dismiss: string;
   finding_from_text: string;
   finding_about_this_fallacy: string;
+
+  // Legal / terms page
+  legal_title: string;
+  legal_subtitle: string;
+  legal_last_updated: string;
+  legal_sections: Array<{ title: string; paragraphs: string[] }>;
+  nav_legal: string;
+
+  // "Not reviewed yet" banner shown on viewers until an admin marks the
+  // analysis as reviewed.
+  unreviewed_banner_title: string;
+  unreviewed_banner_body: string;
+  unreviewed_banner_link: string;
 
   // Live mode (beta)
   live_subtitle: string;
@@ -293,6 +309,9 @@ const en: Messages = {
   fc_show_sources: (n) => `Show sources (${n})`,
   fc_hide_sources: (n) => `Hide sources (${n})`,
   fc_checking: "checking",
+  fc_report_wrong: "Report this verdict as wrong",
+  fc_report_prompt: "Why is this verdict wrong? (optional)",
+  fc_report_thanks: "Thanks — we'll review it.",
   fc_footer: (model) =>
     `Claims extracted by ${model} via OpenRouter. Verdicts (when present) come from an automated web-search model and may be wrong. Jiddu does not assert that any claim is true or false — read the sources and judge for yourself.`,
   fc_status_complete: "Complete",
@@ -310,6 +329,60 @@ const en: Messages = {
   vd_contradicted: "Contradicted",
   vd_mixed: "Mixed",
   vd_unverified: "Unverified",
+
+  nav_legal: "Terms",
+  unreviewed_banner_title: "Automated, not yet human-reviewed",
+  unreviewed_banner_body:
+    "This analysis was produced by software and has not been checked by a human. It may contain errors. Always read the sources and judge for yourself.",
+  unreviewed_banner_link: "Read the terms",
+  legal_title: "Terms and disclaimers",
+  legal_subtitle:
+    "Read this before using Jiddu, especially before sharing an analysis publicly.",
+  legal_last_updated: "Last updated: 2026-05-18",
+  legal_sections: [
+    {
+      title: "1. What Jiddu does",
+      paragraphs: [
+        "Jiddu is an automated tool. It uses large language models (currently routed through OpenRouter to OpenAI, Anthropic, MiniMax and Perplexity Sonar) to (a) flag passages that may contain logical fallacies and (b) extract verifiable factual claims from text and offer a verdict based on a web search.",
+        "Jiddu does not employ human editors. Every output you see is produced by software. The tool is meant to assist critical reading — not to replace it.",
+      ],
+    },
+    {
+      title: "2. No claim of truth",
+      paragraphs: [
+        "The verdicts (\"supported\", \"contradicted\", \"mixed\", \"unverified\") and the fallacy labels are best-effort automated judgements. They can be wrong — sometimes confidently wrong.",
+        "Jiddu does not assert that any statement, person, or document is true, false, lying, or deceitful. The labels are signals to prompt your own verification. Always read the cited sources and form your own conclusion.",
+      ],
+    },
+    {
+      title: "3. Use at your own risk",
+      paragraphs: [
+        "You are responsible for how you use the analysis and what you share or publish. If you republish a Jiddu result, you adopt that content as your own — Jiddu's authors are not responsible for downstream uses.",
+        "Do not submit confidential, proprietary, or personal data. Submitted text is forwarded to the model providers above for processing and stored under a shareable id.",
+      ],
+    },
+    {
+      title: "4. Persons and public figures",
+      paragraphs: [
+        "Analyses about named persons (politicians, journalists, executives) are produced by software searching public web sources. The language Jiddu uses is intentionally cautious (\"evidence does not support\", \"we could not find\") — never adopt a stronger framing than the tool emits.",
+        "If you believe a verdict is unfair or unsupported, use the \"report wrong verdict\" button on the relevant claim. Repeated unfair flags against the same person may be removed at the operator's discretion.",
+      ],
+    },
+    {
+      title: "5. Privacy",
+      paragraphs: [
+        "Each analysis is assigned a short id and stored on a server in Brazil. Anyone with the URL can view it. There are no user accounts.",
+        "We log the request IP for rate-limiting and abuse detection. We do not sell or share that information.",
+        "Page traffic is measured via Google Analytics (gtag.js).",
+      ],
+    },
+    {
+      title: "6. Contact",
+      paragraphs: [
+        "Operator: Rafael de Menezes Ehlers. For takedown requests, corrections, or other concerns, contact via LinkedIn (linked in the footer).",
+      ],
+    },
+  ],
 
   analysis_failed: "Analysis failed",
   try_again: "Try again",
@@ -514,6 +587,9 @@ const pt: Messages = {
   fc_show_sources: (n) => `Mostrar fontes (${n})`,
   fc_hide_sources: (n) => `Esconder fontes (${n})`,
   fc_checking: "checando",
+  fc_report_wrong: "Reportar veredito errado",
+  fc_report_prompt: "Por que o veredito está errado? (opcional)",
+  fc_report_thanks: "Valeu — vamos revisar.",
   fc_footer: (model) =>
     `Afirmações extraídas por ${model} via OpenRouter. Os vereditos (quando presentes) vêm de um modelo com busca na web e podem estar errados. O Jiddu não afirma que qualquer alegação é verdadeira ou falsa — leia as fontes e julgue por conta própria.`,
   fc_status_complete: "Concluído",
@@ -531,6 +607,60 @@ const pt: Messages = {
   vd_contradicted: "Contradito",
   vd_mixed: "Misto",
   vd_unverified: "Não verificado",
+
+  nav_legal: "Termos",
+  unreviewed_banner_title: "Automatizado, ainda não revisado por humano",
+  unreviewed_banner_body:
+    "Esta análise foi produzida por software e não foi conferida por uma pessoa. Pode conter erros. Sempre leia as fontes e julgue por conta própria.",
+  unreviewed_banner_link: "Ler os termos",
+  legal_title: "Termos e isenções",
+  legal_subtitle:
+    "Leia antes de usar o Jiddu, especialmente antes de compartilhar uma análise publicamente.",
+  legal_last_updated: "Atualizado em: 2026-05-18",
+  legal_sections: [
+    {
+      title: "1. O que o Jiddu faz",
+      paragraphs: [
+        "O Jiddu é uma ferramenta automatizada. Ele usa modelos de linguagem (atualmente roteados via OpenRouter para OpenAI, Anthropic, MiniMax e Perplexity Sonar) para (a) sinalizar passagens que podem conter falácias lógicas e (b) extrair afirmações factuais verificáveis de um texto e oferecer um veredito baseado em busca na web.",
+        "O Jiddu não tem editores humanos. Todo resultado que você vê é produzido por software. A ferramenta serve como apoio à leitura crítica — não a substitui.",
+      ],
+    },
+    {
+      title: "2. Sem afirmação de verdade",
+      paragraphs: [
+        'Os vereditos ("sustentado", "contradito", "misto", "não verificado") e os rótulos de falácia são juízos automatizados de melhor esforço. Podem estar errados — às vezes com alta confiança.',
+        "O Jiddu não afirma que qualquer declaração, pessoa ou documento seja verdadeiro, falso, mentiroso ou enganoso. Os rótulos são sinais para acionar a sua própria verificação. Sempre leia as fontes citadas e tire sua própria conclusão.",
+      ],
+    },
+    {
+      title: "3. Uso por sua conta e risco",
+      paragraphs: [
+        "Você é responsável por como usa a análise e pelo que compartilha ou publica. Se você republicar um resultado do Jiddu, você adota aquele conteúdo como seu — os autores do Jiddu não são responsáveis por usos posteriores.",
+        "Não envie dados confidenciais, sigilosos ou pessoais. O texto enviado é repassado aos provedores de modelo listados acima para processamento e armazenado sob um id compartilhável.",
+      ],
+    },
+    {
+      title: "4. Pessoas e figuras públicas",
+      paragraphs: [
+        "Análises sobre pessoas nomeadas (políticos, jornalistas, executivos) são produzidas por software que pesquisa fontes públicas na web. A linguagem que o Jiddu usa é intencionalmente cuidadosa (\"a evidência não sustenta\", \"não encontramos\") — não adote uma formulação mais forte do que a ferramenta emite.",
+        "Se você acha que um veredito é injusto ou sem suporte, use o botão \"reportar veredito errado\" na afirmação correspondente. Flags repetidas e injustas contra a mesma pessoa podem ser removidas a critério do operador.",
+      ],
+    },
+    {
+      title: "5. Privacidade",
+      paragraphs: [
+        "Cada análise recebe um id curto e fica armazenada em um servidor no Brasil. Quem tem a URL pode ver. Não há contas de usuário.",
+        "Registramos o IP da requisição para limites de taxa e detecção de abuso. Não vendemos nem compartilhamos essa informação.",
+        "O tráfego das páginas é medido via Google Analytics (gtag.js).",
+      ],
+    },
+    {
+      title: "6. Contato",
+      paragraphs: [
+        "Operador: Rafael de Menezes Ehlers. Para solicitações de remoção, correções ou outras dúvidas, contate via LinkedIn (link no rodapé).",
+      ],
+    },
+  ],
 
   analysis_failed: "Falha na análise",
   try_again: "Tentar novamente",
@@ -735,6 +865,9 @@ const es: Messages = {
   fc_show_sources: (n) => `Ver fuentes (${n})`,
   fc_hide_sources: (n) => `Ocultar fuentes (${n})`,
   fc_checking: "verificando",
+  fc_report_wrong: "Reportar veredicto incorrecto",
+  fc_report_prompt: "¿Por qué el veredicto es incorrecto? (opcional)",
+  fc_report_thanks: "Gracias — revisaremos.",
   fc_footer: (model) =>
     `Afirmaciones extraídas por ${model} vía OpenRouter. Los veredictos (cuando están presentes) provienen de un modelo con búsqueda web y pueden estar equivocados. Jiddu no afirma que ninguna alegación sea verdadera o falsa — lee las fuentes y juzga por tu cuenta.`,
   fc_status_complete: "Completo",
@@ -752,6 +885,60 @@ const es: Messages = {
   vd_contradicted: "Contradicho",
   vd_mixed: "Mixto",
   vd_unverified: "No verificado",
+
+  nav_legal: "Términos",
+  unreviewed_banner_title: "Automatizado, aún no revisado por un humano",
+  unreviewed_banner_body:
+    "Este análisis fue producido por software y no ha sido revisado por una persona. Puede contener errores. Lee siempre las fuentes y juzga por tu cuenta.",
+  unreviewed_banner_link: "Leer los términos",
+  legal_title: "Términos y descargos",
+  legal_subtitle:
+    "Lee esto antes de usar Jiddu, especialmente antes de compartir un análisis públicamente.",
+  legal_last_updated: "Actualizado: 2026-05-18",
+  legal_sections: [
+    {
+      title: "1. Qué hace Jiddu",
+      paragraphs: [
+        "Jiddu es una herramienta automatizada. Usa modelos de lenguaje (actualmente enrutados vía OpenRouter a OpenAI, Anthropic, MiniMax y Perplexity Sonar) para (a) señalar pasajes que pueden contener falacias lógicas y (b) extraer afirmaciones factuales verificables de un texto y ofrecer un veredicto basado en búsqueda web.",
+        "Jiddu no tiene editores humanos. Todo resultado que ves es producido por software. La herramienta es un apoyo a la lectura crítica — no la reemplaza.",
+      ],
+    },
+    {
+      title: "2. Sin afirmación de verdad",
+      paragraphs: [
+        'Los veredictos ("respaldado", "contradicho", "mixto", "no verificado") y las etiquetas de falacia son juicios automatizados de mejor esfuerzo. Pueden estar equivocados — a veces con alta confianza.',
+        "Jiddu no afirma que ninguna declaración, persona o documento sea verdadero, falso, mentiroso o engañoso. Las etiquetas son señales para activar tu propia verificación. Siempre lee las fuentes citadas y forma tu propia conclusión.",
+      ],
+    },
+    {
+      title: "3. Uso bajo tu propio riesgo",
+      paragraphs: [
+        "Eres responsable de cómo usas el análisis y de lo que compartes o publicas. Si republicas un resultado de Jiddu, adoptas ese contenido como tuyo — los autores de Jiddu no son responsables de los usos posteriores.",
+        "No envíes datos confidenciales, propietarios o personales. El texto enviado se reenvía a los proveedores de modelos mencionados arriba para procesamiento y se almacena bajo un id compartible.",
+      ],
+    },
+    {
+      title: "4. Personas y figuras públicas",
+      paragraphs: [
+        "Los análisis sobre personas nombradas (políticos, periodistas, ejecutivos) son producidos por software que busca en fuentes públicas en la web. El lenguaje que usa Jiddu es intencionalmente cauto (\"la evidencia no respalda\", \"no encontramos\") — no adoptes una formulación más fuerte de la que emite la herramienta.",
+        "Si crees que un veredicto es injusto o sin sustento, usa el botón \"reportar veredicto incorrecto\" en la afirmación correspondiente. Flags repetidas e injustas contra la misma persona pueden ser eliminadas a criterio del operador.",
+      ],
+    },
+    {
+      title: "5. Privacidad",
+      paragraphs: [
+        "Cada análisis recibe un id corto y se almacena en un servidor en Brasil. Quien tenga la URL puede verlo. No hay cuentas de usuario.",
+        "Registramos el IP de la solicitud para límites de tasa y detección de abuso. No vendemos ni compartimos esa información.",
+        "El tráfico de las páginas se mide vía Google Analytics (gtag.js).",
+      ],
+    },
+    {
+      title: "6. Contacto",
+      paragraphs: [
+        "Operador: Rafael de Menezes Ehlers. Para solicitudes de remoción, correcciones u otras consultas, contacto vía LinkedIn (enlace en el pie de página).",
+      ],
+    },
+  ],
 
   analysis_failed: "Falló el análisis",
   try_again: "Reintentar",

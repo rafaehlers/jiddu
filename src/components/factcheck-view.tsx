@@ -15,6 +15,7 @@ import {
   Loader2,
   ShieldCheck,
   RefreshCw,
+  Flag,
 } from "lucide-react";
 import type { Sentence } from "@/lib/schema";
 import type { Claim, ClaimType } from "@/lib/claims-schema";
@@ -415,10 +416,11 @@ export function FactCheckView({
             <ol className="flex flex-col gap-3">
               {claims.map((c, idx) => {
                 const used = refreshCounts[c.id] ?? 0;
-                const canRefresh =
-                  verdicts.has(c.id) &&
-                  !verifyRunning &&
-                  used < maxRefreshPerClaim;
+                // Refresh button is shown both for claims with an existing
+                // verdict (re-verify) and for claims without one (verify
+                // now, no bulk required). The same per-claim counter caps
+                // both flows.
+                const canRefresh = !verifyRunning && used < maxRefreshPerClaim;
                 return (
                   <ClaimCard
                     key={c.id}
@@ -433,6 +435,7 @@ export function FactCheckView({
                     onRefresh={canRefresh ? () => refreshClaim(c.id) : undefined}
                     refreshUsed={used}
                     refreshMax={maxRefreshPerClaim}
+                    factCheckId={id}
                     active={active === c.id}
                     onClick={() => {
                       setActive(c.id);
@@ -460,6 +463,7 @@ function ClaimCard({
   onRefresh,
   refreshUsed,
   refreshMax,
+  factCheckId,
   active,
   onClick,
 }: {
@@ -471,6 +475,7 @@ function ClaimCard({
   onRefresh?: () => void;
   refreshUsed: number;
   refreshMax: number;
+  factCheckId: string;
   active: boolean;
   onClick: () => void;
 }) {
@@ -478,8 +483,31 @@ function ClaimCard({
   const meta = TYPE_META[claim.type] ?? TYPE_META.categorical;
   const Icon = meta.icon;
   const [sourcesOpen, setSourcesOpen] = useState(false);
+  const [reportState, setReportState] = useState<
+    "idle" | "sending" | "sent"
+  >("idle");
   const vMeta = verdict ? VERDICT_META[verdict.verdict] : null;
   const VIcon = vMeta?.icon;
+
+  async function reportWrong(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (reportState !== "idle") return;
+    const reason = window.prompt(t.fc_report_prompt) ?? "";
+    // null = user clicked Cancel — abort silently. Empty string still
+    // counts as a flag (the verdict is wrong, no explanation given).
+    if (reason === null) return;
+    setReportState("sending");
+    try {
+      await fetch(`/api/factcheck/${factCheckId}/claim/${claim.id}/feedback`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ reason }),
+      });
+      setReportState("sent");
+    } catch {
+      setReportState("idle");
+    }
+  }
 
   return (
     <li
@@ -515,37 +543,35 @@ function ClaimCard({
               )}
             </span>
           )}
-          {verdict && (
-            <>
-              {onRefresh ? (
-                <button
-                  type="button"
-                  title={`${t.fc_reverify_button} (${refreshUsed}/${refreshMax})`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onRefresh();
-                  }}
-                  disabled={refreshing}
-                  className="text-muted hover:text-foreground transition-colors disabled:opacity-50 inline-flex items-center gap-1"
-                >
-                  <RefreshCw
-                    className={cn("h-3.5 w-3.5", refreshing && "animate-spin")}
-                  />
-                  <span className="text-[10px] font-mono opacity-70">
-                    {refreshUsed}/{refreshMax}
-                  </span>
-                </button>
-              ) : (
-                refreshUsed >= refreshMax && (
-                  <span
-                    title="Refresh cap reached"
-                    className="text-[10px] font-mono text-muted opacity-60"
-                  >
-                    {refreshUsed}/{refreshMax}
-                  </span>
-                )
-              )}
-            </>
+          {onRefresh ? (
+            <button
+              type="button"
+              title={`${
+                verdict ? t.fc_reverify_button : t.fc_verify_button
+              } (${refreshUsed}/${refreshMax})`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onRefresh();
+              }}
+              disabled={refreshing}
+              className="text-muted hover:text-foreground transition-colors disabled:opacity-50 inline-flex items-center gap-1"
+            >
+              <RefreshCw
+                className={cn("h-3.5 w-3.5", refreshing && "animate-spin")}
+              />
+              <span className="text-[10px] font-mono opacity-70">
+                {refreshUsed}/{refreshMax}
+              </span>
+            </button>
+          ) : (
+            refreshUsed >= refreshMax && (
+              <span
+                title="Refresh cap reached"
+                className="text-[10px] font-mono text-muted opacity-60"
+              >
+                {refreshUsed}/{refreshMax}
+              </span>
+            )
           )}
           <span
             className={cn(
@@ -567,20 +593,40 @@ function ClaimCard({
         <p className="text-xs text-muted leading-snug">{claim.rationale}</p>
       )}
 
-      {verdict && verdict.sources.length > 0 && (
-        <div className="mt-1">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setSourcesOpen((o) => !o);
-            }}
-            className="text-xs text-muted hover:text-foreground transition-colors"
-          >
-            {sourcesOpen
-              ? t.fc_hide_sources(verdict.sources.length)
-              : t.fc_show_sources(verdict.sources.length)}
-          </button>
+      {verdict && (
+        <>
+          <div className="mt-1 flex items-center gap-4 flex-wrap">
+            {verdict.sources.length > 0 && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSourcesOpen((o) => !o);
+                }}
+                className="text-xs text-muted hover:text-foreground transition-colors"
+              >
+                {sourcesOpen
+                  ? t.fc_hide_sources(verdict.sources.length)
+                  : t.fc_show_sources(verdict.sources.length)}
+              </button>
+            )}
+            {reportState === "sent" ? (
+              <span className="text-xs text-muted ml-auto">
+                {t.fc_report_thanks}
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={reportWrong}
+                disabled={reportState === "sending"}
+                title={t.fc_report_wrong}
+                className="text-xs text-muted hover:text-[var(--severity-high)] transition-colors inline-flex items-center gap-1 disabled:opacity-50 ml-auto"
+              >
+                <Flag className="h-3 w-3" />
+                {t.fc_report_wrong}
+              </button>
+            )}
+          </div>
           {sourcesOpen && (
             <ul className="mt-2 flex flex-col gap-1.5">
               {verdict.sources.map((s, i) => (
@@ -599,7 +645,7 @@ function ClaimCard({
               ))}
             </ul>
           )}
-        </div>
+        </>
       )}
     </li>
   );

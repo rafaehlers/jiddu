@@ -26,12 +26,30 @@ model Analysis {
   errorMessage    String?
   createdAt       DateTime @default(now())
   finishedAt      DateTime?
+  reviewedAt      DateTime? // null = not yet human-reviewed; viewer shows a warning banner until set
 }
 
 model AppSetting {
   key       String   @id // dotted key, e.g. "rate.factcheck.capacity"
   value     String // JSON-encoded value (scalar or object)
   updatedAt DateTime @updatedAt
+}
+
+model VerdictFeedback {
+  id              String    @id @default(cuid())
+  factCheckId     String // links back to /f/[id]
+  claimId         String // claim id inside that FactCheck row
+  statement       String // snapshot of the claim statement at feedback time
+  verdictSnapshot String // JSON of the Verdict the user was complaining about
+  userReason      String? // free-text from user (optional)
+  status          String    @default("open") // "open" | "resolved" | "ignored"
+  ip              String? // abuse / dedup signal, never shown to users
+  resolutionNote  String? // admin's note on resolve/ignore
+  createdAt       DateTime  @default(now())
+  resolvedAt      DateTime?
+
+  @@index([status, createdAt])
+  @@index([factCheckId])
 }
 
 model ClaimVerdict {
@@ -71,4 +89,5 @@ model FactCheck {
   errorMessage    String?
   createdAt       DateTime  @default(now())
   finishedAt      DateTime?
+  reviewedAt      DateTime? // null = not yet human-reviewed; viewer shows a warning banner until set
 }

@@ -480,8 +480,8 @@ const insert = db.prepare(`
   INSERT OR REPLACE INTO FactCheck (
     id, status, source, sourceRef, title, text, language, provider, model,
     sentences, claims, verdicts, refreshCounts, verifyStatus, verifyModel,
-    verifyStartedAt, verifyFinishedAt, createdAt, finishedAt
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    verifyStartedAt, verifyFinishedAt, createdAt, finishedAt, reviewedAt
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `);
 
 const now = new Date().toISOString();
@@ -533,6 +533,9 @@ function seed(lang, profile) {
     now,
     now,
     now,
+    now,
+    // Mark demo rows as reviewed so the public viewer doesn't surface
+    // the "not yet reviewed" warning banner on them.
     now,
   );
   console.log(`✓ Seeded /f/${profile.id} (${claims.length} claims, ${verdicts.length} verdicts)`);

@@ -192,8 +192,8 @@ const PROFILES = {
 const insert = db.prepare(`
   INSERT OR REPLACE INTO Analysis (
     id, status, source, sourceRef, title, text, language, provider, model,
-    score, summary, sentences, findings, createdAt, finishedAt
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    score, summary, sentences, findings, createdAt, finishedAt, reviewedAt
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `);
 
 const now = new Date().toISOString();
@@ -306,6 +306,7 @@ function seedProfile(lang, profile) {
     JSON.stringify(findings),
     now,
     now,
+    now, // reviewedAt — demos are curated, no warning banner needed
   );
   console.log(`Seeded /a/${profile.id}`);
 }
@@ -340,6 +341,7 @@ insert.run(
   JSON.stringify(findingsPt),
   now,
   now,
+  now, // reviewedAt
 );
 console.log("Seeded legacy /a/demo123abc");
 

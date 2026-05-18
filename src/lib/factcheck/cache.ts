@@ -45,6 +45,9 @@ export type CachedVerdict = Verdict & { cached: true; cachedAt: Date };
 export async function getCachedVerdict(
   hash: string,
 ): Promise<CachedVerdict | null> {
+  // Piggyback the expired sweep on a cache lookup. The function rate-limits
+  // itself so this is essentially free on the hot path.
+  maybeSweepExpired();
   const row = await prisma.claimVerdict.findUnique({ where: { hash } });
   if (!row) return null;
   if (row.expiresAt.getTime() <= Date.now()) return null;
@@ -64,6 +67,38 @@ export async function getCachedVerdict(
     sources,
     model: row.verifyModel,
   };
+}
+
+// Opportunistic sweep of expired verdict rows. Runs at most once every
+// 30 minutes — anyone can call this on a hot path (we do it from
+// `getCachedVerdict` on a miss) and only one process actually issues the
+// DELETE. The sweep is fire-and-forget; failures are logged and ignored.
+const SWEEP_INTERVAL_MS = 30 * 60 * 1000;
+let lastSweepAt = 0;
+let sweepRunning = false;
+
+export function maybeSweepExpired(): void {
+  const now = Date.now();
+  if (sweepRunning) return;
+  if (now - lastSweepAt < SWEEP_INTERVAL_MS) return;
+  sweepRunning = true;
+  lastSweepAt = now;
+  // Detach from the calling request — sweeping in the background.
+  void prisma.claimVerdict
+    .deleteMany({ where: { expiresAt: { lt: new Date() } } })
+    .then((res) => {
+      if (res.count > 0) {
+        console.log(
+          `[claim-verdict-cache] swept ${res.count} expired row(s)`,
+        );
+      }
+    })
+    .catch((err) => {
+      console.warn("[claim-verdict-cache] sweep failed:", err);
+    })
+    .finally(() => {
+      sweepRunning = false;
+    });
 }
 
 export async function putCachedVerdict(
