@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n/provider";
 import type { Messages } from "@/lib/i18n/messages";
-import { MODEL_CATALOG } from "@/lib/llm";
 
 type Tab = "url" | "text" | "file";
 
@@ -13,6 +13,8 @@ type ErrorState = {
   message: string;
   code?: string;
 };
+
+type Mode = "detector" | "factcheck";
 
 type Props = {
   onSubmit: (
@@ -22,15 +24,32 @@ type Props = {
   ) => Promise<void>;
   error?: ErrorState | null;
   onClearError?: () => void;
+  /**
+   * Custom label for the submit button. Defaults to the localized
+   * "Analyze" string. Used by the fact-check composer to switch the CTA
+   * to "Extract claims" while reusing the same form scaffold.
+   */
+  submitLabel?: string;
+  /**
+   * Which mode this form is being rendered in. Drives the active state of
+   * the top-row mode toggle and gates the Live tab (only available in the
+   * fallacy detector mode).
+   */
+  mode?: Mode;
 };
 
-export function UploadForm({ onSubmit, error, onClearError }: Props) {
+export function UploadForm({
+  onSubmit,
+  error,
+  onClearError,
+  submitLabel,
+  mode = "detector",
+}: Props) {
   const { t, lang } = useI18n();
   const [tab, setTab] = useState<Tab>("url");
   const [url, setUrl] = useState("");
   const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
-  const [model, setModel] = useState<string>(MODEL_CATALOG[0].id);
   const [localError, setLocalError] = useState<ErrorState | null>(null);
 
   const visibleError = error ?? localError;
@@ -44,14 +63,13 @@ export function UploadForm({ onSubmit, error, onClearError }: Props) {
         if (!file) throw new Error("Choose a PDF or TXT file");
         const fd = new FormData();
         fd.set("file", file);
-        fd.set("model", model);
         fd.set("lang", lang);
         await onSubmit("file", fd, null);
       } else {
         const body = JSON.stringify(
           tab === "url"
-            ? { type: "url", url, model, lang }
-            : { type: "text", text, model, lang },
+            ? { type: "url", url, lang }
+            : { type: "text", text, lang },
         );
         await onSubmit(tab, body, "application/json");
       }
@@ -73,26 +91,31 @@ export function UploadForm({ onSubmit, error, onClearError }: Props) {
       onSubmit={handleSubmit}
       className="flex flex-col gap-5 bg-paper border border-rule rounded-lg p-5 shadow-sm"
     >
+      {/* Top row: mode toggle (Detector / Fact-check) sits before the
+          input-type tabs. Each pill is a Link, so the active state survives
+          page navigation. */}
+      <div className="flex items-center gap-1 bg-background border border-rule rounded-md p-1 self-start">
+        <ModeButton href="/" active={mode === "detector"}>
+          {t.mode_detector}
+        </ModeButton>
+        <ModeButton href="/factcheck" active={mode === "factcheck"}>
+          {t.mode_factcheck}
+        </ModeButton>
+      </div>
+
       <div className="flex flex-wrap items-center gap-2">
         <TabButton active={tab === "url"} onClick={() => setTab("url")}>{t.tab_url}</TabButton>
         <TabButton active={tab === "text"} onClick={() => setTab("text")}>{t.tab_paste}</TabButton>
         <TabButton active={tab === "file"} onClick={() => setTab("file")}>{t.tab_file}</TabButton>
-
-        <div className="ml-auto flex items-center gap-2 text-sm">
-          <label htmlFor="model" className="text-muted">{t.model}</label>
-          <select
-            id="model"
-            value={model}
-            onChange={(e) => setModel(e.target.value)}
-            className="bg-background border border-rule rounded-md px-2 py-1"
+        {mode === "detector" && (
+          <Link
+            href="/live"
+            className="px-3 py-1.5 rounded-md text-sm border border-rule text-muted hover:text-foreground transition-colors inline-flex items-center gap-1.5"
           >
-            {MODEL_CATALOG.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.label}
-              </option>
-            ))}
-          </select>
-        </div>
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--severity-high)] animate-pulse" aria-hidden />
+            {t.tab_live}
+          </Link>
+        )}
       </div>
 
       {tab === "url" && (
@@ -145,7 +168,7 @@ export function UploadForm({ onSubmit, error, onClearError }: Props) {
             "hover:opacity-90 transition-opacity",
           )}
         >
-          {t.analyze}
+          {submitLabel ?? t.analyze}
         </button>
       </div>
     </form>
@@ -225,6 +248,30 @@ function friendlyError(
     default:
       return { title: t.analysis_failed };
   }
+}
+
+function ModeButton({
+  href,
+  active,
+  children,
+}: {
+  href: string;
+  active: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className={cn(
+        "px-3 py-1.5 rounded text-sm font-medium transition-colors",
+        active
+          ? "bg-foreground text-background"
+          : "text-muted hover:text-foreground",
+      )}
+    >
+      {children}
+    </Link>
+  );
 }
 
 function TabButton({

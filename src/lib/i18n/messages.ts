@@ -18,6 +18,8 @@ export type Messages = {
   tab_url: string;
   tab_paste: string;
   tab_file: string;
+  tab_live: string;
+  tab_factcheck: string;
   url_placeholder: string;
   paste_placeholder: string;
   file_drop_hint: string;
@@ -41,6 +43,53 @@ export type Messages = {
   loader_paste: string[];
   loader_file: string[];
   loader_analysis: string[];
+  loader_factcheck: string[];
+
+  // Fact-check
+  factcheck_hero_title: string;
+  factcheck_hero_subtitle: string;
+  extract_claims: string;
+  factcheck_failed: string;
+  claims_found_one: string;
+  claims_found_many: string;
+
+  // Mode toggle on the home composer
+  mode_detector: string;
+  mode_factcheck: string;
+
+  // Fact-check viewer
+  fc_untitled: string;
+  fc_claims_one_extracted: string;
+  fc_claims_many_extracted: string;
+  fc_claims_header: string;
+  fc_extracting: string;
+  fc_no_claims: string;
+  fc_verify_panel_title: string;
+  fc_verify_panel_desc: string;
+  fc_verify_button: string;
+  fc_reverify_button: string;
+  fc_verify_label: string;
+  fc_show_sources: (n: number) => string;
+  fc_hide_sources: (n: number) => string;
+  fc_checking: string;
+  fc_footer: (model: string) => string;
+  fc_status_complete: string;
+  fc_status_running: string;
+  fc_status_failed: string;
+  fc_status_pending: string;
+
+  // Claim type labels
+  ct_numeric: string;
+  ct_date: string;
+  ct_quote: string;
+  ct_causal: string;
+  ct_categorical: string;
+
+  // Verdict labels
+  vd_supported: string;
+  vd_contradicted: string;
+  vd_mixed: string;
+  vd_unverified: string;
 
   // Errors
   analysis_failed: string;
@@ -158,6 +207,8 @@ const en: Messages = {
   tab_url: "URL",
   tab_paste: "Paste text",
   tab_file: "PDF / TXT",
+  tab_live: "Live",
+  tab_factcheck: "Fact-check",
   url_placeholder: "https://example.com/article",
   paste_placeholder: "Paste the text you want to analyze…",
   file_drop_hint: "Drop a PDF or TXT, or click to choose",
@@ -207,6 +258,58 @@ const en: Messages = {
     "Drafting the comments",
     "Weighing severity",
   ],
+  loader_factcheck: [
+    "Reading the text",
+    "Skipping opinion and rhetoric",
+    "Separating verifiable facts",
+    "Pulling out numbers and dates",
+    "Decontextualizing each claim",
+    "Writing the rationale",
+  ],
+
+  factcheck_hero_title: "Pull every verifiable claim out of any text.",
+  factcheck_hero_subtitle:
+    "Drop a URL, paste text, or upload a PDF. Jiddu extracts the numbers, dates, quotes and factual assertions worth checking — so you know exactly what to verify.",
+  extract_claims: "Extract claims",
+  factcheck_failed: "Claim extraction failed",
+  claims_found_one: "verifiable claim found so far",
+  claims_found_many: "verifiable claims found so far",
+
+  mode_detector: "Fallacy detector",
+  mode_factcheck: "Fact-check",
+
+  fc_untitled: "Untitled",
+  fc_claims_one_extracted: "claim extracted",
+  fc_claims_many_extracted: "claims extracted",
+  fc_claims_header: "Claims",
+  fc_extracting: "Extracting claims…",
+  fc_no_claims: "No verifiable claims were extracted from this text.",
+  fc_verify_panel_title: "Verify these claims",
+  fc_verify_panel_desc:
+    "Jiddu will run each claim through a web-search model and return an evidence-backed verdict with sources. Automated verifications can be wrong — always read the sources.",
+  fc_verify_button: "Verify claims",
+  fc_reverify_button: "Re-verify",
+  fc_verify_label: "Verify",
+  fc_show_sources: (n) => `Show sources (${n})`,
+  fc_hide_sources: (n) => `Hide sources (${n})`,
+  fc_checking: "checking",
+  fc_footer: (model) =>
+    `Claims extracted by ${model} via OpenRouter. Verdicts (when present) come from an automated web-search model and may be wrong. Jiddu does not assert that any claim is true or false — read the sources and judge for yourself.`,
+  fc_status_complete: "Complete",
+  fc_status_running: "Running",
+  fc_status_failed: "Failed",
+  fc_status_pending: "Pending",
+
+  ct_numeric: "Numeric",
+  ct_date: "Date",
+  ct_quote: "Quote",
+  ct_causal: "Causal",
+  ct_categorical: "Categorical",
+
+  vd_supported: "Supported",
+  vd_contradicted: "Contradicted",
+  vd_mixed: "Mixed",
+  vd_unverified: "Unverified",
 
   analysis_failed: "Analysis failed",
   try_again: "Try again",
@@ -325,6 +428,8 @@ const pt: Messages = {
   tab_url: "URL",
   tab_paste: "Colar texto",
   tab_file: "PDF / TXT",
+  tab_live: "Ao vivo",
+  tab_factcheck: "Checar fatos",
   url_placeholder: "https://exemplo.com/artigo",
   paste_placeholder: "Cole o texto que você quer analisar…",
   file_drop_hint: "Solte um PDF ou TXT, ou clique para escolher",
@@ -374,6 +479,58 @@ const pt: Messages = {
     "Redigindo os comentários",
     "Avaliando a severidade",
   ],
+  loader_factcheck: [
+    "Lendo o texto",
+    "Descartando opinião e retórica",
+    "Separando fatos verificáveis",
+    "Extraindo números e datas",
+    "Decontextualizando cada afirmação",
+    "Redigindo a justificativa",
+  ],
+
+  factcheck_hero_title: "Extraia todas as afirmações verificáveis de qualquer texto.",
+  factcheck_hero_subtitle:
+    "Solte uma URL, cole texto ou envie um PDF. O Jiddu separa os números, datas, citações e afirmações factuais que valem a pena conferir — pra você saber exatamente o que verificar.",
+  extract_claims: "Extrair afirmações",
+  factcheck_failed: "Falha na extração de afirmações",
+  claims_found_one: "afirmação verificável encontrada até agora",
+  claims_found_many: "afirmações verificáveis encontradas até agora",
+
+  mode_detector: "Detector de Falácias",
+  mode_factcheck: "Checar Fatos",
+
+  fc_untitled: "Sem título",
+  fc_claims_one_extracted: "afirmação extraída",
+  fc_claims_many_extracted: "afirmações extraídas",
+  fc_claims_header: "Afirmações",
+  fc_extracting: "Extraindo afirmações…",
+  fc_no_claims: "Nenhuma afirmação verificável foi extraída deste texto.",
+  fc_verify_panel_title: "Verificar estas afirmações",
+  fc_verify_panel_desc:
+    "O Jiddu vai passar cada afirmação por um modelo com busca na web e retornar um veredito com fontes. Verificações automatizadas podem errar — sempre confira as fontes.",
+  fc_verify_button: "Verificar afirmações",
+  fc_reverify_button: "Reverificar",
+  fc_verify_label: "Verificação",
+  fc_show_sources: (n) => `Mostrar fontes (${n})`,
+  fc_hide_sources: (n) => `Esconder fontes (${n})`,
+  fc_checking: "checando",
+  fc_footer: (model) =>
+    `Afirmações extraídas por ${model} via OpenRouter. Os vereditos (quando presentes) vêm de um modelo com busca na web e podem estar errados. O Jiddu não afirma que qualquer alegação é verdadeira ou falsa — leia as fontes e julgue por conta própria.`,
+  fc_status_complete: "Concluído",
+  fc_status_running: "Em andamento",
+  fc_status_failed: "Falhou",
+  fc_status_pending: "Pendente",
+
+  ct_numeric: "Numérica",
+  ct_date: "Data",
+  ct_quote: "Citação",
+  ct_causal: "Causal",
+  ct_categorical: "Categórica",
+
+  vd_supported: "Sustentado",
+  vd_contradicted: "Contradito",
+  vd_mixed: "Misto",
+  vd_unverified: "Não verificado",
 
   analysis_failed: "Falha na análise",
   try_again: "Tentar novamente",
@@ -492,6 +649,8 @@ const es: Messages = {
   tab_url: "URL",
   tab_paste: "Pegar texto",
   tab_file: "PDF / TXT",
+  tab_live: "En vivo",
+  tab_factcheck: "Verificar",
   url_placeholder: "https://ejemplo.com/articulo",
   paste_placeholder: "Pega el texto que quieres analizar…",
   file_drop_hint: "Suelta un PDF o TXT, o haz clic para elegir",
@@ -541,6 +700,58 @@ const es: Messages = {
     "Redactando los comentarios",
     "Evaluando la severidad",
   ],
+  loader_factcheck: [
+    "Leyendo el texto",
+    "Descartando opinión y retórica",
+    "Separando hechos verificables",
+    "Extrayendo números y fechas",
+    "Descontextualizando cada afirmación",
+    "Redactando la justificación",
+  ],
+
+  factcheck_hero_title: "Extrae cada afirmación verificable de cualquier texto.",
+  factcheck_hero_subtitle:
+    "Pega una URL, escribe el texto o sube un PDF. Jiddu separa los números, fechas, citas y afirmaciones factuales que vale la pena verificar — para que sepas exactamente qué chequear.",
+  extract_claims: "Extraer afirmaciones",
+  factcheck_failed: "Falló la extracción de afirmaciones",
+  claims_found_one: "afirmación verificable encontrada hasta ahora",
+  claims_found_many: "afirmaciones verificables encontradas hasta ahora",
+
+  mode_detector: "Detector de Falacias",
+  mode_factcheck: "Verificar Hechos",
+
+  fc_untitled: "Sin título",
+  fc_claims_one_extracted: "afirmación extraída",
+  fc_claims_many_extracted: "afirmaciones extraídas",
+  fc_claims_header: "Afirmaciones",
+  fc_extracting: "Extrayendo afirmaciones…",
+  fc_no_claims: "No se extrajeron afirmaciones verificables de este texto.",
+  fc_verify_panel_title: "Verificar estas afirmaciones",
+  fc_verify_panel_desc:
+    "Jiddu pasará cada afirmación por un modelo con búsqueda web y devolverá un veredicto con fuentes. Las verificaciones automatizadas pueden errar — siempre revisa las fuentes.",
+  fc_verify_button: "Verificar afirmaciones",
+  fc_reverify_button: "Reverificar",
+  fc_verify_label: "Verificación",
+  fc_show_sources: (n) => `Ver fuentes (${n})`,
+  fc_hide_sources: (n) => `Ocultar fuentes (${n})`,
+  fc_checking: "verificando",
+  fc_footer: (model) =>
+    `Afirmaciones extraídas por ${model} vía OpenRouter. Los veredictos (cuando están presentes) provienen de un modelo con búsqueda web y pueden estar equivocados. Jiddu no afirma que ninguna alegación sea verdadera o falsa — lee las fuentes y juzga por tu cuenta.`,
+  fc_status_complete: "Completo",
+  fc_status_running: "En curso",
+  fc_status_failed: "Falló",
+  fc_status_pending: "Pendiente",
+
+  ct_numeric: "Numérica",
+  ct_date: "Fecha",
+  ct_quote: "Cita",
+  ct_causal: "Causal",
+  ct_categorical: "Categórica",
+
+  vd_supported: "Respaldado",
+  vd_contradicted: "Contradicho",
+  vd_mixed: "Mixto",
+  vd_unverified: "No verificado",
 
   analysis_failed: "Falló el análisis",
   try_again: "Reintentar",

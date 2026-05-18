@@ -7,6 +7,9 @@ import { ingestText } from "@/lib/ingest/text";
 import { splitSentences } from "@/lib/sentences";
 import { chunkSentences } from "@/lib/chunker";
 import { getProvider } from "@/lib/llm";
+import { DEFAULT_MODEL_CHAIN, withModelFallback } from "@/lib/llm/fallback";
+import { consume, ipFromRequest, rateLimitResponse } from "@/lib/rate-limit";
+import { bucketFromSettings, loadSettings } from "@/lib/settings";
 import type { IngestedDocument } from "@/lib/ingest/url";
 import { IngestError } from "@/lib/ingest/errors";
 import type { Finding } from "@/lib/schema";
@@ -22,6 +25,15 @@ const MAX_TITLE_CHARS = 500;
 const MAX_SOURCE_REF_CHARS = 2_000;
 
 export async function POST(req: NextRequest) {
+  // Rate limits are admin-configurable — read fresh per request (the
+  // settings module caches for 30s so this is cheap).
+  const settings = await loadSettings();
+  const rl = consume(
+    `analyze:${ipFromRequest(req)}`,
+    bucketFromSettings(settings, "rate.analyze"),
+  );
+  if (!rl.allowed) return rateLimitResponse(rl.retryAfterSec);
+
   let doc: IngestedDocument;
   let modelId: string | undefined;
   let lang: Lang = "en";
@@ -79,10 +91,13 @@ export async function POST(req: NextRequest) {
   const sentences = splitSentences(doc.text);
   if (sentences.length === 0) return jsonError("No sentences detected", 422);
 
-  const chosenModel = resolveModel(modelId);
+  const modelChain: string[] = modelId
+    ? Array.from(new Set([resolveModel(modelId).id, ...DEFAULT_MODEL_CHAIN]))
+    : [...DEFAULT_MODEL_CHAIN];
+
   let llm;
   try {
-    llm = getProvider(chosenModel.id);
+    llm = getProvider(modelChain[0]);
   } catch (err) {
     return jsonError(err instanceof Error ? err.message : "Provider error", 400);
   }
@@ -153,9 +168,14 @@ export async function POST(req: NextRequest) {
             sentenceIds: chunk.sentences.map((s) => s.id),
           });
           try {
-            for await (const event of llm.analyzeStream(
-              { sentences: chunk.sentences, lang },
-              { signal: abortController.signal },
+            for await (const event of withModelFallback(
+              modelChain,
+              (model) =>
+                llm.analyzeStream(
+                  { sentences: chunk.sentences, lang },
+                  { model, signal: abortController.signal },
+                ),
+              abortController.signal,
             )) {
               if (event.type === "finding") {
                 allFindings.push(event.finding);

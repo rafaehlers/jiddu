@@ -1,6 +1,6 @@
 import type { AnalysisResult } from "../schema";
 import type { Sentence } from "../schema";
-import type { StreamEvent } from "./stream";
+import type { ClaimStreamEvent, StreamEvent } from "./stream";
 import type { Lang } from "../fallacies";
 
 export type ProviderId = "anthropic" | "openai";
@@ -31,4 +31,8 @@ export interface LlmProvider {
     input: AnalyzeInput,
     opts?: { model?: string; signal?: AbortSignal },
   ): AsyncGenerator<StreamEvent, { model: string }, void>;
+  extractClaimsStream(
+    input: AnalyzeInput,
+    opts?: { model?: string; signal?: AbortSignal },
+  ): AsyncGenerator<ClaimStreamEvent, { model: string }, void>;
 }

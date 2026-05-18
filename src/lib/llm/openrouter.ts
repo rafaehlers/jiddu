@@ -1,10 +1,20 @@
 import OpenAI from "openai";
 import { parse as partialParse } from "partial-json";
 import { AnalysisResultSchema, FindingSchema, type Finding } from "../schema";
+import {
+  ClaimExtractionResultSchema,
+  ClaimSchema,
+  type Claim,
+} from "../claims-schema";
+import { CLAIMS_JSON_SCHEMA } from "./claimsJsonSchema";
+import {
+  buildClaimsSystemPrompt,
+  buildClaimsUserPrompt,
+} from "../claims-prompt";
 import { buildSystemPrompt, buildUserPrompt } from "../prompt";
 import { ANALYSIS_JSON_SCHEMA } from "./jsonSchema";
 import type { AnalyzeInput, AnalyzeOutput, LlmProvider, ProviderId } from "./types";
-import type { StreamEvent } from "./stream";
+import type { ClaimStreamEvent, StreamEvent } from "./stream";
 
 // Curated catalog of OpenRouter models exposed in the UI dropdown. Each entry
 // pairs a stable internal id (used as the value in DB + form) with the
@@ -276,6 +286,125 @@ export class OpenRouterProvider implements LlmProvider {
     if (!emittedFields.has("score")) {
       yield { type: "score", score: final.score };
       emittedFields.add("score");
+    }
+
+    return { model: this.defaultModel };
+  }
+
+  async *extractClaimsStream(
+    input: AnalyzeInput,
+    opts?: { model?: string; signal?: AbortSignal },
+  ): AsyncGenerator<ClaimStreamEvent, { model: string }, void> {
+    const model = this.slug(opts?.model);
+    const lang = input.lang ?? "en";
+
+    const stream = await this.client.chat.completions.create(
+      {
+        model,
+        messages: [
+          { role: "system", content: buildClaimsSystemPrompt(lang) },
+          {
+            role: "user",
+            content: buildClaimsUserPrompt(
+              input.sentences,
+              lang,
+              input.contextSentences,
+            ),
+          },
+        ],
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "report_claims",
+              description:
+                "Report the extracted verifiable claims for the given text.",
+              parameters: CLAIMS_JSON_SCHEMA,
+            },
+          },
+        ],
+        tool_choice: this.toolChoiceFor(opts?.model),
+        stream: true,
+        ...this.openRouterExtras(opts?.model),
+      } as OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming,
+      opts?.signal ? { signal: opts.signal } : undefined,
+    );
+
+    let buffer = "";
+    const emittedClaims = new Set<number>();
+    let emittedLanguage = false;
+
+    function tryEmit(): ClaimStreamEvent[] {
+      const out: ClaimStreamEvent[] = [];
+      if (!buffer) return out;
+      let snap: Record<string, unknown> | null = null;
+      try {
+        snap = partialParse(buffer) as Record<string, unknown>;
+      } catch {
+        return out;
+      }
+      if (!snap || typeof snap !== "object") return out;
+      const claims = Array.isArray(snap.claims) ? snap.claims : [];
+      const lastIdx = claims.length - 1;
+      for (let i = 0; i < claims.length; i++) {
+        if (emittedClaims.has(i)) continue;
+        if (i === lastIdx) continue;
+        const parsed = ClaimSchema.safeParse(claims[i]);
+        if (parsed.success) {
+          emittedClaims.add(i);
+          out.push({ type: "claim", claim: parsed.data });
+        }
+      }
+      return out;
+    }
+
+    for await (const chunk of stream) {
+      const delta = chunk.choices[0]?.delta;
+      const tc = delta?.tool_calls?.[0];
+      const args = tc?.function?.arguments;
+      if (args) {
+        buffer += args;
+        for (const e of tryEmit()) yield e;
+      }
+    }
+
+    let final: ReturnType<typeof ClaimExtractionResultSchema.parse> | null = null;
+    try {
+      final = ClaimExtractionResultSchema.parse(JSON.parse(buffer));
+    } catch {
+      try {
+        const snap = partialParse(buffer) as Record<string, unknown> | null;
+        if (snap && typeof snap === "object") {
+          const claims = Array.isArray(snap.claims)
+            ? snap.claims
+                .map((c) => ClaimSchema.safeParse(c))
+                .filter((r): r is { success: true; data: Claim } => r.success)
+                .map((r) => r.data)
+            : [];
+          final = {
+            language: typeof snap.language === "string" ? snap.language : null,
+            claims,
+          };
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    if (!final) {
+      throw new Error(
+        `Failed to parse OpenRouter claims response (buffer length=${buffer.length})`,
+      );
+    }
+
+    for (let i = 0; i < final.claims.length; i++) {
+      if (emittedClaims.has(i)) continue;
+      emittedClaims.add(i);
+      yield { type: "claim", claim: final.claims[i] };
+    }
+    if (!emittedLanguage) {
+      yield { type: "language", language: final.language ?? null };
+      emittedLanguage = true;
     }
 
     return { model: this.defaultModel };

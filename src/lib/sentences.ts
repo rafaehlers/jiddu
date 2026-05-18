@@ -24,9 +24,42 @@ export function splitSentences(text: string): Sentence[] {
       let end = i + 1;
 
       if (ch === ".") {
+        // Don't split inside numbers like "4.1%" or "2.5 trillion".
+        const prevChar = normalized[i - 1];
+        const nextChar = normalized[i + 1];
+        if (
+          prevChar && /[0-9]/.test(prevChar) &&
+          nextChar && /[0-9]/.test(nextChar)
+        ) {
+          i++;
+          continue;
+        }
+
+        // Don't split inside initialisms like "U.S." or "E.U.A." — a single
+        // letter followed by "." and another single letter is treated as
+        // mid-word, not a sentence end.
+        if (
+          prevChar && /[A-Za-zÀ-ÿ]/.test(prevChar) &&
+          nextChar && /[A-Za-zÀ-ÿ]/.test(nextChar) &&
+          (i < 2 || !/[A-Za-zÀ-ÿ]/.test(normalized[i - 2] ?? ""))
+        ) {
+          i++;
+          continue;
+        }
+
+        // Trailing dot of an initialism: "U.S." — the period right after the
+        // last letter, when the char two back is itself ".", is part of the
+        // initialism, not a sentence end.
+        if (
+          prevChar && /[A-Za-zÀ-ÿ]/.test(prevChar) &&
+          normalized[i - 2] === "."
+        ) {
+          i++;
+          continue;
+        }
+
         const prevWord = normalized.slice(Math.max(0, i - 6), i).match(/([A-Za-zÀ-ÿ]+)$/);
         const abbr = prevWord?.[1]?.toLowerCase();
-        const nextChar = normalized[i + 1];
         const nextIsLower = nextChar && /[a-zà-ÿ]/.test(nextChar);
         const nextIsSpaceThenLower = nextChar === " " && /[a-zà-ÿ]/.test(normalized[i + 2] ?? "");
         if (abbr && ABBREVIATIONS.has(abbr) && (nextIsLower || nextIsSpaceThenLower || nextChar === " ")) {

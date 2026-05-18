@@ -1,4 +1,5 @@
 import type { Finding, Sentence } from "../schema";
+import type { Claim } from "../claims-schema";
 import type { ProviderId } from "./types";
 
 export type StreamEvent =
@@ -6,6 +7,10 @@ export type StreamEvent =
   | { type: "summary"; summary: string }
   | { type: "score"; score: number }
   | { type: "finding"; finding: Finding };
+
+export type ClaimStreamEvent =
+  | { type: "language"; language: string | null }
+  | { type: "claim"; claim: Claim };
 
 export type StreamMeta = {
   provider: ProviderId;

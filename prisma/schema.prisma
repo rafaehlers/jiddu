@@ -27,3 +27,48 @@ model Analysis {
   createdAt       DateTime @default(now())
   finishedAt      DateTime?
 }
+
+model AppSetting {
+  key       String   @id // dotted key, e.g. "rate.factcheck.capacity"
+  value     String // JSON-encoded value (scalar or object)
+  updatedAt DateTime @updatedAt
+}
+
+model ClaimVerdict {
+  hash        String    @id // sha256(normalize(statement) + ':' + lang)
+  statement   String // original — kept for debugging / inspection
+  language    String // "en" | "pt" | "es"
+  type        String // claim type at cache time (numeric | date | quote | causal | categorical)
+  verdict     String // "supported" | "contradicted" | "mixed" | "unverified"
+  confidence  Float
+  rationale   String
+  sources     String    @default("[]") // JSON array of { url, title?, snippet? }
+  verifyModel String // upstream model that produced the verdict
+  cachedAt    DateTime  @default(now())
+  expiresAt   DateTime
+
+  @@index([expiresAt])
+}
+
+model FactCheck {
+  id              String    @id
+  status          String    @default("pending") // "pending" | "running" | "complete" | "failed"
+  source          String    // "url" | "pdf" | "txt" | "paste"
+  sourceRef       String?   // URL or filename
+  title           String?
+  text            String    // full normalized text
+  language        String?   // "pt" | "en" | "es"
+  provider        String    // "openai" (mapped from MODEL_CATALOG family)
+  model           String    // catalog id, e.g. "gpt-5.4-mini"
+  sentences       String    @default("[]") // JSON array of {id,start,end,text}
+  claims          String    @default("[]") // JSON array of {id, sentenceIds, statement, type, rationale}
+  verdicts        String    @default("[]") // JSON array of {claimId, verdict, confidence, rationale, sources, model}
+  refreshCounts   String    @default("{}") // JSON map { claimId: count } — each verify call bumps the per-claim counter
+  verifyStatus    String    @default("none") // "none" | "running" | "complete" | "failed"
+  verifyModel     String?   // model id used for verification, e.g. "sonar-reasoning"
+  verifyStartedAt DateTime?
+  verifyFinishedAt DateTime?
+  errorMessage    String?
+  createdAt       DateTime  @default(now())
+  finishedAt      DateTime?
+}
