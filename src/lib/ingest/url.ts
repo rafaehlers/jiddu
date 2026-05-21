@@ -29,12 +29,7 @@ export async function ingestUrl(url: string): Promise<IngestedDocument> {
       const response = await fetch(currentUrl.toString(), {
         redirect: "manual",
         signal: ctrl.signal,
-        headers: {
-          "user-agent":
-            "Mozilla/5.0 (compatible; JidduBot/0.1; +https://jiddu.app/bot)",
-          accept: "text/html,application/xhtml+xml,*/*;q=0.8",
-          "accept-language": "en;q=0.9,*;q=0.5",
-        },
+        headers: browserHeaders(),
       });
 
       if (response.status >= 300 && response.status < 400) {
@@ -120,6 +115,42 @@ export async function ingestUrl(url: string): Promise<IngestedDocument> {
   }
 
   return { title, text, source: "url", sourceRef: currentUrl.toString() };
+}
+
+// Mimics a current Chrome on Windows. Most Brazilian outlets (Folha,
+// Estadão, G1, UOL, etc.) reject anything that looks like a bot UA but
+// happily serve any string that *parses* as a real browser. Cloudflare's
+// IUAM / TLS fingerprinting we can't beat from Node, but those represent
+// a minority of the sites users paste.
+const USER_AGENT =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
+
+function browserHeaders(): Record<string, string> {
+  return {
+    "user-agent": USER_AGENT,
+    accept:
+      "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+    // Brazilian Portuguese first — most user submissions are PT-BR sites.
+    "accept-language": "pt-BR,pt;q=0.9,en;q=0.7,en-US;q=0.6",
+    // Don't ask for br/zstd — undici sometimes negotiates them but then
+    // we'd need to decompress manually. gzip + deflate are decompressed
+    // transparently.
+    "accept-encoding": "gzip, deflate",
+    "cache-control": "no-cache",
+    pragma: "no-cache",
+    // Client hints — match the UA above. Helps with sites that compare
+    // sec-ch-ua against the UA string.
+    "sec-ch-ua": '"Chromium";v="130", "Google Chrome";v="130", "Not?A_Brand";v="99"',
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": '"Windows"',
+    // Fetch-mode signals identical to a top-level navigation from a
+    // bookmark / typed URL.
+    "sec-fetch-dest": "document",
+    "sec-fetch-mode": "navigate",
+    "sec-fetch-site": "none",
+    "sec-fetch-user": "?1",
+    "upgrade-insecure-requests": "1",
+  };
 }
 
 function parseAndValidateUrl(input: string): URL {
