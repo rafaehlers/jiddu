@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
+import { useI18n } from "@/lib/i18n/provider";
+import type { Messages } from "@/lib/i18n/messages";
+import type { Lang } from "@/lib/fallacies";
 import type { Sentence } from "@/lib/schema";
-import type { Claim, ClaimType } from "@/lib/claims-schema";
-import type { Verdict, VerdictValue } from "@/lib/verdict-schema";
+import type { Claim } from "@/lib/claims-schema";
+import type { Verdict } from "@/lib/verdict-schema";
 
 type ClaimWithId = Claim & { id: string };
 
@@ -20,21 +23,6 @@ type Props = {
   model: string;
   createdAt: Date;
   reviewedAt: Date | null;
-};
-
-const TYPE_LABEL: Record<ClaimType, string> = {
-  numeric: "Numeric",
-  date: "Date",
-  quote: "Quote",
-  causal: "Causal",
-  categorical: "Categorical",
-};
-
-const VERDICT_LABEL: Record<VerdictValue, string> = {
-  supported: "SUPPORTED",
-  contradicted: "CONTRADICTED",
-  mixed: "MIXED",
-  unverified: "UNVERIFIED",
 };
 
 // Print-optimized view of a fact-check. Loaded in a new tab; the layout
@@ -55,6 +43,7 @@ export function FactCheckPrintView({
   createdAt,
   reviewedAt,
 }: Props) {
+  const { t, lang } = useI18n();
   const verdictById = new Map(verdicts.map((v) => [v.claimId, v]));
 
   useEffect(() => {
@@ -78,51 +67,50 @@ export function FactCheckPrintView({
           <span className="print-brand-name">Jiddu</span>
           <span className="print-brand-tag">truth is a pathless land</span>
         </div>
-        <h1>{title ?? "Untitled"}</h1>
+        <h1>{title ?? t.fc_untitled}</h1>
         <dl className="print-meta">
           {sourceRef && source === "url" && (
             <>
-              <dt>Source</dt>
+              <dt>{t.print_meta_source}</dt>
               <dd>
                 <a href={sourceRef}>{sourceRef}</a>
               </dd>
             </>
           )}
-          <dt>Type</dt>
-          <dd>Fact-check</dd>
-          <dt>Generated</dt>
-          <dd>{fmt(createdAt)}</dd>
+          <dt>{t.print_meta_type}</dt>
+          <dd>{t.print_type_factcheck}</dd>
+          <dt>{t.print_meta_generated}</dt>
+          <dd>{fmt(createdAt, lang)}</dd>
           {reviewedAt && (
             <>
-              <dt>Human-reviewed</dt>
-              <dd>{fmt(reviewedAt)}</dd>
+              <dt>{t.print_meta_reviewed}</dt>
+              <dd>{fmt(reviewedAt, lang)}</dd>
             </>
           )}
-          <dt>Claim extraction</dt>
+          <dt>{t.print_meta_model}</dt>
           <dd>{model}</dd>
           {verifyModel && (
             <>
-              <dt>Verdict model</dt>
+              <dt>{t.fc_verify_label}</dt>
               <dd>{verifyModel}</dd>
             </>
           )}
-          <dt>Report URL</dt>
+          <dt>{t.print_meta_url}</dt>
           <dd>https://jiddu.app/f/{id}</dd>
         </dl>
       </header>
 
       <section className="print-section print-source-text">
-        <h2>Source text</h2>
+        <h2>{t.print_section_source_text}</h2>
         <p>{text}</p>
       </section>
 
       <section className="print-section">
         <h2>
-          Claims ({claims.length}
-          {verdicts.length > 0 ? ` · ${verdicts.length} verdicts` : ""})
+          {t.print_section_claims} ({claims.length})
         </h2>
         {claims.length === 0 ? (
-          <p className="print-muted">No verifiable claims extracted.</p>
+          <p className="print-muted">{t.print_no_claims}</p>
         ) : (
           <ol className="print-claims">
             {claims.map((c, i) => {
@@ -133,20 +121,22 @@ export function FactCheckPrintView({
                     <span className="print-claim-idx">#{i + 1}</span>
                     {v && (
                       <span className={`print-verdict print-verdict-${v.verdict}`}>
-                        {VERDICT_LABEL[v.verdict]}
+                        {(t[`vd_${v.verdict}` as keyof Messages] as string).toUpperCase()}
                         <span className="print-conf">
                           {Math.round(v.confidence * 100)}%
                         </span>
                       </span>
                     )}
-                    <span className="print-type">{TYPE_LABEL[c.type]}</span>
+                    <span className="print-type">
+                      {t[`ct_${c.type}` as keyof Messages] as string}
+                    </span>
                   </div>
                   <p className="print-statement">{c.statement}</p>
                   {v ? (
                     <p className="print-rationale">{v.rationale}</p>
                   ) : (
                     <p className="print-rationale print-muted">
-                      No verdict yet. Extraction rationale: {c.rationale}
+                      {c.rationale}
                     </p>
                   )}
                   {v && v.sources.length > 0 && (
@@ -167,21 +157,16 @@ export function FactCheckPrintView({
       </section>
 
       <footer className="print-footer">
-        <p>
-          This is an automated report. The verdicts may be wrong — always
-          read the cited sources and judge for yourself. See
-          https://jiddu.app/legal for the full terms.
-        </p>
-        <p className="print-muted">
-          Generated {fmt(new Date())} · jiddu.app
-        </p>
+        <p>{t.print_footer_factcheck}</p>
+        <p className="print-muted">{t.print_generated_at(fmt(new Date(), lang))}</p>
       </footer>
     </div>
   );
 }
 
-function fmt(d: Date): string {
-  return d.toLocaleString("en-US", {
+function fmt(d: Date, lang: Lang): string {
+  const locale = lang === "pt" ? "pt-BR" : lang === "es" ? "es-ES" : "en-US";
+  return d.toLocaleString(locale, {
     year: "numeric",
     month: "short",
     day: "numeric",

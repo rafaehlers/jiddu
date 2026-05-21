@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect } from "react";
+import { useI18n } from "@/lib/i18n/provider";
+import type { Messages } from "@/lib/i18n/messages";
 import type { Finding, Sentence } from "@/lib/schema";
-import { FALLACY_BY_ID } from "@/lib/fallacies";
+import { FALLACY_BY_ID, type Lang } from "@/lib/fallacies";
 
 type Props = {
   id: string;
@@ -19,13 +21,13 @@ type Props = {
   reviewedAt: Date | null;
 };
 
-const SCORE_LABEL = (s: number): string => {
-  if (s >= 81) return "Propagandistic";
-  if (s >= 61) return "Highly fallacious";
-  if (s >= 36) return "Several fallacies";
-  if (s >= 16) return "Minor issues";
-  return "Clean reasoning";
-};
+function scoreLabel(s: number, t: Messages): string {
+  if (s >= 81) return t.score_propagandistic;
+  if (s >= 61) return t.score_high;
+  if (s >= 36) return t.score_several;
+  if (s >= 16) return t.score_minor;
+  return t.score_clean;
+}
 
 // Print-optimized view of a fallacy analysis. Same approach as the
 // fact-check version: auto-print on mount, plain HTML + @media print rules.
@@ -43,6 +45,7 @@ export function AnalysisPrintView({
   createdAt,
   reviewedAt,
 }: Props) {
+  const { t, lang } = useI18n();
   useEffect(() => {
     if (typeof window !== "undefined" && window.location.search.includes("nopr")) {
       return;
@@ -60,51 +63,56 @@ export function AnalysisPrintView({
           <span className="print-brand-name">Jiddu</span>
           <span className="print-brand-tag">truth is a pathless land</span>
         </div>
-        <h1>{title ?? "Untitled"}</h1>
+        <h1>{title ?? t.fc_untitled}</h1>
         <div className="print-score">
           <span className="print-score-num">{score}</span>
-          <span className="print-score-label">/100 · {SCORE_LABEL(score)}</span>
+          <span className="print-score-label">/100 · {scoreLabel(score, t)}</span>
         </div>
         {summary && <p className="print-summary">{summary}</p>}
         <dl className="print-meta">
           {sourceRef && source === "url" && (
             <>
-              <dt>Source</dt>
+              <dt>{t.print_meta_source}</dt>
               <dd>
                 <a href={sourceRef}>{sourceRef}</a>
               </dd>
             </>
           )}
-          <dt>Type</dt>
-          <dd>Fallacy analysis</dd>
-          <dt>Generated</dt>
-          <dd>{fmt(createdAt)}</dd>
+          <dt>{t.print_meta_type}</dt>
+          <dd>{t.print_type_fallacy}</dd>
+          <dt>{t.print_meta_generated}</dt>
+          <dd>{fmt(createdAt, lang)}</dd>
           {reviewedAt && (
             <>
-              <dt>Human-reviewed</dt>
-              <dd>{fmt(reviewedAt)}</dd>
+              <dt>{t.print_meta_reviewed}</dt>
+              <dd>{fmt(reviewedAt, lang)}</dd>
             </>
           )}
-          <dt>Model</dt>
+          <dt>{t.print_meta_model}</dt>
           <dd>{model}</dd>
-          <dt>Report URL</dt>
+          <dt>{t.print_meta_url}</dt>
           <dd>https://jiddu.app/a/{id}</dd>
         </dl>
       </header>
 
       <section className="print-section print-source-text">
-        <h2>Source text</h2>
+        <h2>{t.print_section_source_text}</h2>
         <p>{text}</p>
       </section>
 
       <section className="print-section">
-        <h2>Findings ({findings.length})</h2>
+        <h2>
+          {t.print_section_findings} ({findings.length})
+        </h2>
         {findings.length === 0 ? (
-          <p className="print-muted">No fallacies flagged.</p>
+          <p className="print-muted">{t.print_no_findings}</p>
         ) : (
           <ol className="print-findings">
             {findings.map((f, i) => {
               const meta = FALLACY_BY_ID[f.fallacy];
+              // Fallacy names live in the catalog, keyed by lang. Fall back
+              // to EN when the chosen lang doesn't have a localized name.
+              const fallacyName = meta?.name[lang] ?? meta?.name.en ?? f.fallacy;
               return (
                 <li key={i} className="print-finding">
                   <div className="print-finding-head">
@@ -112,11 +120,9 @@ export function AnalysisPrintView({
                     <span
                       className={`print-sev print-sev-${f.severity}`}
                     >
-                      {f.severity.toUpperCase()}
+                      {(t[`severity_${f.severity}` as keyof Messages] as string).toUpperCase()}
                     </span>
-                    <span className="print-fallacy-name">
-                      {meta?.name.en ?? f.fallacy}
-                    </span>
+                    <span className="print-fallacy-name">{fallacyName}</span>
                   </div>
                   <blockquote className="print-quote">"{f.quote}"</blockquote>
                   <p className="print-explanation">{f.explanation}</p>
@@ -128,19 +134,16 @@ export function AnalysisPrintView({
       </section>
 
       <footer className="print-footer">
-        <p>
-          This is an automated report. The labels may be wrong — always read
-          the source text and judge for yourself. See https://jiddu.app/legal
-          for the full terms.
-        </p>
-        <p className="print-muted">Generated {fmt(new Date())} · jiddu.app</p>
+        <p>{t.print_footer_fallacy}</p>
+        <p className="print-muted">{t.print_generated_at(fmt(new Date(), lang))}</p>
       </footer>
     </div>
   );
 }
 
-function fmt(d: Date): string {
-  return d.toLocaleString("en-US", {
+function fmt(d: Date, lang: Lang): string {
+  const locale = lang === "pt" ? "pt-BR" : lang === "es" ? "es-ES" : "en-US";
+  return d.toLocaleString(locale, {
     year: "numeric",
     month: "short",
     day: "numeric",

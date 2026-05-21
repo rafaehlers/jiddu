@@ -222,14 +222,37 @@ export type Messages = {
   legal_sections: Array<{ title: string; paragraphs: string[] }>;
   nav_legal: string;
 
-  // "Not reviewed yet" banner shown on viewers until an admin marks the
-  // analysis as reviewed.
-  unreviewed_banner_title: string;
-  unreviewed_banner_body: string;
-  unreviewed_banner_link: string;
+  // How-it-works page — technical walkthrough of every pipeline
+  how_it_works_title: string;
+  how_it_works_subtitle: string;
+  how_it_works_sections: Array<{ title: string; paragraphs: string[] }>;
+  nav_how_it_works: string;
 
   // Export / print
   export_pdf: string;
+
+  // Print view labels — shared across the three print companions
+  // (/a/*/print, /f/*/print, /n/*/print).
+  print_type_fallacy: string;
+  print_type_factcheck: string;
+  print_type_neutrality: string;
+  print_meta_source: string;
+  print_meta_type: string;
+  print_meta_text_type: string;
+  print_meta_generated: string;
+  print_meta_reviewed: string;
+  print_meta_model: string;
+  print_meta_url: string;
+  print_section_source_text: string;
+  print_section_findings: string;
+  print_section_claims: string;
+  print_section_score: string;
+  print_no_claims: string;
+  print_no_findings: string;
+  print_footer_fallacy: string;
+  print_footer_factcheck: string;
+  print_footer_neutrality: string;
+  print_generated_at: (when: string) => string;
 
   // Live mode (beta)
   live_subtitle: string;
@@ -435,11 +458,32 @@ const en: Messages = {
   tt_social_media: "Social media",
 
   nav_legal: "Terms",
-  unreviewed_banner_title: "Automated, not yet human-reviewed",
-  unreviewed_banner_body:
-    "This analysis was produced by software and has not been checked by a human. It may contain errors. Always read the sources and judge for yourself.",
-  unreviewed_banner_link: "Read the terms",
+  nav_how_it_works: "How it works",
   export_pdf: "Export PDF",
+
+  print_type_fallacy: "Fallacy analysis",
+  print_type_factcheck: "Fact-check",
+  print_type_neutrality: "Neutrality assessment",
+  print_meta_source: "Source",
+  print_meta_type: "Type",
+  print_meta_text_type: "Text type",
+  print_meta_generated: "Generated",
+  print_meta_reviewed: "Human-reviewed",
+  print_meta_model: "Model",
+  print_meta_url: "Report URL",
+  print_section_source_text: "Source text",
+  print_section_findings: "Findings",
+  print_section_claims: "Claims",
+  print_section_score: "Score",
+  print_no_claims: "No verifiable claims extracted.",
+  print_no_findings: "No issues flagged.",
+  print_footer_fallacy:
+    "This is an automated report. The labels may be wrong — always read the source text and judge for yourself. See https://jiddu.app/legal for the full terms.",
+  print_footer_factcheck:
+    "This is an automated report. The verdicts may be wrong — always read the cited sources and judge for yourself. See https://jiddu.app/legal for the full terms.",
+  print_footer_neutrality:
+    "This is an automated report. Neutrality is a property of framing; the labels may be wrong — read the source text and the flagged passages. Jiddu does not classify partisan direction. See https://jiddu.app/legal for the full terms.",
+  print_generated_at: (when) => `Generated ${when} · jiddu.app`,
   legal_title: "Terms and disclaimers",
   legal_subtitle:
     "Read this before using Jiddu, especially before sharing an analysis publicly.",
@@ -492,6 +536,109 @@ const en: Messages = {
       title: "7. Contact",
       paragraphs: [
         "Operator: Rafael de Menezes Ehlers. For takedown requests, corrections, or other concerns, contact via LinkedIn (linked in the footer).",
+      ],
+    },
+  ],
+
+  how_it_works_title: "How Jiddu works",
+  how_it_works_subtitle:
+    "Technical walkthrough of every pipeline. Nothing is hidden — the source code is open under AGPL-3.0 at github.com/rafaehlers/jiddu, so anything described below can be cross-checked against the actual implementation.",
+  how_it_works_sections: [
+    {
+      title: "1. The big picture",
+      paragraphs: [
+        "Jiddu runs three independent analyses on the same input text: a fallacy detector, a fact-check pipeline (extraction + Sonar-based verdict), and a neutrality assessment. They are separate routes in the app (`/`, `/factcheck`, `/neutrality`) and separate database tables. None of them is required by the others.",
+        "Each analysis is a streaming request to an LLM via [OpenRouter](https://openrouter.ai). The model is told to call a function (OpenAI-style tool use) whose JSON Schema we control. We parse the tool-call arguments incrementally with [partial-json](https://github.com/promplate/partial-json) so findings show up in the UI while the model is still writing.",
+        "All output is in the user's UI language. The same prompt is used regardless of which model the user picks — the language difference comes from a single `OUTPUT LANGUAGE:` line in the system prompt.",
+      ],
+    },
+    {
+      title: "2. Input: ingestion and segmentation",
+      paragraphs: [
+        "**URL.** The fetch sends real-browser headers (current Chrome User-Agent, Accept-Language pt-BR, sec-ch-ua, sec-fetch-*) so naive bot-blockers don't reject it. Every redirect hop is DNS-resolved and rejected if the IP falls inside RFC1918, loopback, link-local, CGNAT, multicast or reserved IPv4/IPv6 ranges — that closes the SSRF door, including the AWS metadata IP (169.254.169.254) and the local NPM admin (port 81 on the VPS). Response body is capped at 5 MB. The HTML then passes through [@mozilla/readability](https://github.com/mozilla/readability) for article extraction.",
+        "**PDF.** Parsed in-process with [pdfjs-dist](https://mozilla.github.io/pdf.js/) — never sent to a remote service. The model only ever sees plain text.",
+        "**Paste.** Used as-is, only whitespace-normalized.",
+        "The extracted text is then split into sentences with an abbreviation-aware splitter (`src/lib/sentences.ts`) — it recognizes Portuguese abbreviations (`sr.`, `dr.`, `prof.`), keeps initialisms like `U.S.` intact, and doesn't break in the middle of numbers like `3,4%`. Sentences are grouped into chunks of ~12k characters (`src/lib/chunker.ts`) so long documents fit the model context window without losing sentence boundaries.",
+      ],
+    },
+    {
+      title: "3. Models and fallback",
+      paragraphs: [
+        "Two models are exposed in the picker: [🇺🇸 GPT-5.4 mini](https://openrouter.ai/openai/gpt-5.4-mini) (default) and [🇨🇳 MiniMax M2.7](https://openrouter.ai/minimax/minimax-m2.7). They were picked from opposite geopolitical backgrounds so a user worried about training-data bias can run the same text through both and compare.",
+        "If the user-picked model fails *before emitting any event* (rate-limit from upstream, 5xx, etc.), the request falls through to the other model automatically — client-side retry, no UI flicker. Once the model has emitted at least one finding/claim, we don't retry: we accept the partial output and let the partial-parse layer salvage it.",
+        "Sonar Reasoning Pro is used exclusively for fact-check verdicts (because it has built-in web search). It is never exposed in the model picker.",
+      ],
+    },
+    {
+      title: "4. Fallacy detector",
+      paragraphs: [
+        "Catalog of 28 fallacies covering relevance, ambiguity, presumption, emotional appeals, causal reasoning and evidence. Each fallacy has a stable id and a distinct color (golden-angle hue distribution) used to highlight passages. The full list is at [/fallacies](/fallacies).",
+        "The system prompt instructs the model to be rigorous and conservative — flag only when there is a clear, defensible fallacy. Two specific rules tighten this: a **disambiguation** clause (don't flag a sentence with multiple plausible readings unless context resolves it) and a **standalone-explanation** clause (each explanation must name the implied premise and conclusion so a reader doesn't need to re-read the source). Both clauses are distilled from the Claimify paper (Microsoft Research 2025).",
+        "Each finding has a binary severity (`low` / `high`). The overall fallacy score (0-100) is a weighted average across chunks, weighted by character count. The score range labels (`clean reasoning` / `minor issues` / `several fallacies` / `highly fallacious` / `propagandistic`) are spelled out in the prompt itself so the model has the same calibration the UI uses.",
+      ],
+    },
+    {
+      title: "5. Fact-check — claim extraction",
+      paragraphs: [
+        "Modelled on [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson, MSR 2025). The prompt asks the model to walk every sentence through four stages: **selection** (keep only sentences with a verifiable claim — opinions, value judgements, rhetorical questions get dropped), **disambiguation** (drop sentences with multiple plausible readings when context doesn't resolve them), **decomposition** (split multi-fact sentences into separate claims without chasing infinite atomicity), and **decontextualization** (every emitted claim must stand alone — resolve pronouns, add the year for a number that depends on it, attribute a quote to its source).",
+        "Each emitted claim is typed: `numeric`, `date`, `quote`, `causal`, or `categorical`. The type informs how the verifier later searches for evidence.",
+        "Hard cap of 50 claims per extraction (admin-tunable). The cap exists because each claim later costs Sonar credits to verify; an uncapped extraction on a 30-page PDF could rack up serious money before the user notices.",
+      ],
+    },
+    {
+      title: "6. Fact-check — per-claim verdict",
+      paragraphs: [
+        "Verdict is opt-in. Extraction alone is cheap (one LLM call). Verification is on demand: the user clicks **Verify claims** in the viewer and each claim is sent to [Perplexity Sonar Reasoning Pro](https://openrouter.ai/perplexity/sonar-reasoning-pro), one call per claim, with bounded concurrency (6 parallel by default).",
+        "Sonar returns a JSON payload with the verdict (`supported` / `contradicted` / `mixed` / `unverified`), a confidence between 0 and 1, a rationale, and a list of cited sources collected from Sonar's `annotations` channel. If confidence is below 0.5, the verdict is forced to `unverified` — better to surface 'not enough evidence' than to ship a confident wrong call.",
+        "Every cited source is classified into one of six tiers (per Goldfarb et al. 2025): `primary` (official data agencies, court rulings, peer-reviewed papers), `scholarly`, `think_tank`, `journalistic`, `commercial_content`, `informal`. A separate boolean flag marks `state-controlled` outlets (RT, CGTN, Xinhua, etc. — but not BBC/NPR/Deutsche Welle, which are state-FUNDED but editorially independent).",
+        "Verdict language is intentionally cautious about named people: never 'X is lying' or 'this is false' — always 'evidence does not support' / 'evidence contradicts the figure' / 'we could not find evidence that supports'. This is a hard rule in the system prompt.",
+      ],
+    },
+    {
+      title: "7. Fact-check — verdict cache",
+      paragraphs: [
+        "Each verified claim is hashed and stored. The hash is `sha256(lang + ':' + normalize(statement))` where `normalize` lowercases, strips combining-mark accents, collapses whitespace and removes trailing punctuation. That means rewordings of the same claim collide, but cross-language doesn't.",
+        "TTLs are per claim type. `numeric` 30 days (IBGE and friends revise series), `date` and `categorical` 365 days (historical facts and definitions are stable), `quote` and `causal` 90 days (re-examinable but unlikely to flip). A best-effort sweep deletes expired rows on the cache-miss path, rate-limited to once every 30 minutes so the hot path stays cheap.",
+        "The user can bypass the cache with a per-claim **refresh** button (forces a fresh Sonar call). That counts against an admin-tunable refresh quota — default is 2 refreshes per claim. After that, the button hides and the API returns 429.",
+      ],
+    },
+    {
+      title: "8. Neutrality",
+      paragraphs: [
+        "Distinct from fallacy detection: a text can be fallacy-free and factually accurate while still using loaded framing, asymmetric attribution or one-sided sourcing. Neutrality surfaces those patterns.",
+        "Eight issue types are flagged at the sentence level: `loaded_language`, `asymmetric_attribution`, `false_equivalence`, `selective_omission`, `source_asymmetry`, `both_sidesing`, `steering`, `genetic_framing`. The model also classifies the document into one of seven text types (informational / opinion / political speech / advocacy / analysis / marketing / social_media) which informs how strict the audit is.",
+        "The document-level verdict is one of `neutral` / `partisan_lean` / `explicitly_partisan` / `manipulation`. Jiddu **deliberately does not classify partisan direction** (left/right, pro-X/anti-Y). The Forum AI paper that inspired the methodology requires a bipartisan expert panel for that step; without one, partisan labels are unreliable and harmful. We surface specific patterns the reader can audit instead.",
+      ],
+    },
+    {
+      title: "9. Storage, privacy and reviewers",
+      paragraphs: [
+        "Persistence is a single SQLite file on a Hostinger VPS, mounted as a Docker volume. There are no user accounts. Each analysis gets a short id and lives under `/a/<id>`, `/f/<id>` or `/n/<id>`. Anyone with the URL can view.",
+        "The submitted text is sent to OpenRouter, which routes it to whichever upstream serves the picked model. We don't relay it anywhere else. We log the request IP for rate-limiting and abuse signalling and we don't sell or share that.",
+        "Each analysis has a `reviewedAt` timestamp. By default it's null, meaning the analysis is automated and has not been spot-checked by an operator. The admin (at `/admin`, password-gated) can mark individual analyses as reviewed.",
+      ],
+    },
+    {
+      title: "10. Cost and abuse controls",
+      paragraphs: [
+        "Every cost-incurring route has an in-memory token-bucket rate limit per IP. Defaults: 30 fallacy analyses / hour, 30 fact-check extractions / hour, 10 bulk verifications / hour, 20 per-claim refreshes / hour, 20 feedback flags / hour. All values are admin-tunable at runtime via `/admin/settings` — no redeploy needed. When a bucket empties, the API returns 429 with a `Retry-After` header.",
+        "The fact-check extraction caps at 50 claims per document. The per-claim refresh caps at 2 calls per claim. Both are admin-configurable. These are the structural defences against a single user racking up an unexpected bill.",
+      ],
+    },
+    {
+      title: "11. Feedback loop",
+      paragraphs: [
+        "Every fact-check claim card has a **🚩 Report wrong verdict** button. Clicking it captures an optional free-text reason and POSTs to a feedback endpoint, which snapshots the current statement + verdict (so the admin sees what the user was looking at, even if the verdict later gets re-verified).",
+        "Submitted flags land in an admin queue at `/admin/feedback` with status `open`. The operator can mark each as `resolved` (concur with the user, plan to fix) or `ignored` (the verdict was correct, or the flag was spam), or delete it. The admin home shows a red badge with the open count.",
+        "There is currently no automatic action on the verdict when flags accumulate — every entry is reviewed manually. Future improvement: a 'disputed' badge in the public viewer when N flags pile up on the same claim.",
+      ],
+    },
+    {
+      title: "12. Open source and methodology",
+      paragraphs: [
+        "Source code is at [github.com/rafaehlers/jiddu](https://github.com/rafaehlers/jiddu) under the [AGPL-3.0-or-later license](https://www.gnu.org/licenses/agpl-3.0.txt). AGPL closes the 'SaaS loophole' that GPL leaves open: anyone running a modified version as a network service must publish the modified source.",
+        "Two papers ground the design: [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson — Microsoft Research, 2025) for the four-stage claim extraction; and [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) (Goldfarb, Hall, Fisher, Salam, Wilde — Forum AI / Stanford, 2025) for the verdict assessment, the 6-tier source taxonomy and the neutrality framework. Jiddu is not affiliated with either group.",
+        "The full disclaimer about what Jiddu does and doesn't claim is at [/legal](/legal).",
       ],
     },
   ],
@@ -774,11 +921,33 @@ const pt: Messages = {
   tt_social_media: "Redes sociais",
 
   nav_legal: "Termos",
-  unreviewed_banner_title: "Automatizado, ainda não revisado por humano",
-  unreviewed_banner_body:
-    "Esta análise foi produzida por software e não foi conferida por uma pessoa. Pode conter erros. Sempre leia as fontes e julgue por conta própria.",
-  unreviewed_banner_link: "Ler os termos",
+  nav_how_it_works: "Como funciona",
   export_pdf: "Exportar PDF",
+
+  print_type_fallacy: "Análise de falácia",
+  print_type_factcheck: "Checagem de fatos",
+  print_type_neutrality: "Avaliação de imparcialidade",
+  print_meta_source: "Fonte",
+  print_meta_type: "Tipo",
+  print_meta_text_type: "Tipo de texto",
+  print_meta_generated: "Gerado em",
+  print_meta_reviewed: "Revisado por humano",
+  print_meta_model: "Modelo",
+  print_meta_url: "URL do relatório",
+  print_section_source_text: "Texto de origem",
+  print_section_findings: "Achados",
+  print_section_claims: "Afirmações",
+  print_section_score: "Nota",
+  print_no_claims: "Nenhuma afirmação verificável extraída.",
+  print_no_findings: "Nenhum padrão sinalizado.",
+  print_footer_fallacy:
+    "Este é um relatório automatizado. Os rótulos podem estar errados — sempre leia o texto original e julgue por conta própria. Termos completos em https://jiddu.app/legal.",
+  print_footer_factcheck:
+    "Este é um relatório automatizado. Os vereditos podem estar errados — sempre leia as fontes citadas e julgue por conta própria. Termos completos em https://jiddu.app/legal.",
+  print_footer_neutrality:
+    "Este é um relatório automatizado. Imparcialidade é uma propriedade do enquadramento; os rótulos podem estar errados — leia o texto original e os trechos sinalizados. O Jiddu não classifica direção partidária. Termos completos em https://jiddu.app/legal.",
+  print_generated_at: (when) => `Gerado em ${when} · jiddu.app`,
+
   legal_title: "Termos e isenções",
   legal_subtitle:
     "Leia antes de usar o Jiddu, especialmente antes de compartilhar uma análise publicamente.",
@@ -831,6 +1000,109 @@ const pt: Messages = {
       title: "7. Contato",
       paragraphs: [
         "Operador: Rafael de Menezes Ehlers. Para solicitações de remoção, correções ou outras dúvidas, contate via LinkedIn (link no rodapé).",
+      ],
+    },
+  ],
+
+  how_it_works_title: "Como o Jiddu funciona",
+  how_it_works_subtitle:
+    "Walkthrough técnico de cada pipeline. Nada é escondido — o código-fonte é aberto sob AGPL-3.0 em github.com/rafaehlers/jiddu, então qualquer coisa descrita abaixo pode ser conferida contra a implementação real.",
+  how_it_works_sections: [
+    {
+      title: "1. Visão geral",
+      paragraphs: [
+        "O Jiddu roda três análises independentes sobre o mesmo texto: um detector de falácias, um pipeline de checagem de fatos (extração + veredito via Sonar) e uma avaliação de imparcialidade. São rotas separadas no app (`/`, `/factcheck`, `/neutrality`) e tabelas separadas no banco. Nenhuma depende das outras.",
+        "Cada análise é uma requisição em streaming pra um LLM via [OpenRouter](https://openrouter.ai). O modelo é instruído a chamar uma função (tool use estilo OpenAI) cujo JSON Schema é nosso. A gente parseia os argumentos da chamada incrementalmente com [partial-json](https://github.com/promplate/partial-json), então os achados aparecem na UI enquanto o modelo ainda está escrevendo.",
+        "Todo o output é no idioma da UI escolhido pelo usuário. O mesmo prompt vai independente do modelo selecionado — a diferença de idioma vem de uma única linha `OUTPUT LANGUAGE:` no system prompt.",
+      ],
+    },
+    {
+      title: "2. Entrada: ingestão e segmentação",
+      paragraphs: [
+        "**URL.** O fetch manda headers de browser real (User-Agent do Chrome atual, Accept-Language pt-BR, sec-ch-ua, sec-fetch-*) pra que bloqueadores simples de bot não rejeitem. Cada hop de redirect tem o DNS resolvido e é rejeitado se o IP cair em RFC1918, loopback, link-local, CGNAT, multicast ou faixas reservadas IPv4/IPv6 — isso fecha a porta de SSRF, incluindo o IP de metadados da AWS (169.254.169.254) e o admin do NPM local (porta 81 do VPS). Corpo da resposta limitado a 5 MB. O HTML passa por [@mozilla/readability](https://github.com/mozilla/readability) pra extração do artigo.",
+        "**PDF.** Parseado in-process com [pdfjs-dist](https://mozilla.github.io/pdf.js/) — nunca enviado a serviço externo. O modelo só vê texto puro.",
+        "**Paste.** Usado como está, apenas com whitespace normalizado.",
+        "O texto extraído é segmentado por um divisor de sentenças que conhece abreviações (`src/lib/sentences.ts`) — reconhece abreviações em português (`sr.`, `dr.`, `prof.`), mantém siglas como `U.S.` inteiras, e não quebra no meio de números como `3,4%`. As sentenças são agrupadas em chunks de ~12k caracteres (`src/lib/chunker.ts`) pra documentos longos caberem no contexto do modelo sem perder fronteiras de sentença.",
+      ],
+    },
+    {
+      title: "3. Modelos e fallback",
+      paragraphs: [
+        "Dois modelos no seletor: [🇺🇸 GPT-5.4 mini](https://openrouter.ai/openai/gpt-5.4-mini) (padrão) e [🇨🇳 MiniMax M2.7](https://openrouter.ai/minimax/minimax-m2.7). Foram escolhidos por estarem em lados geopolíticos opostos — um usuário preocupado com viés do treinamento pode rodar o mesmo texto pelos dois e comparar.",
+        "Se o modelo escolhido falhar *antes de emitir qualquer evento* (rate-limit do upstream, 5xx etc.), a requisição cai automaticamente pro outro — retry client-side, sem flicker na UI. Quando o modelo já emitiu pelo menos um achado, a gente não retry: aceita o parcial e a camada de partial-parse salva o que dá.",
+        "Sonar Reasoning Pro é usado exclusivamente pros vereditos de fact-check (porque tem busca web embutida). Nunca aparece no seletor de modelo.",
+      ],
+    },
+    {
+      title: "4. Detector de falácias",
+      paragraphs: [
+        "Catálogo de 28 falácias cobrindo relevância, ambiguidade, presunção, apelos emocionais, raciocínio causal e evidência. Cada falácia tem id estável e uma cor distinta (distribuição por golden angle) usada pra destacar passagens. Lista completa em [/fallacies](/fallacies).",
+        "O system prompt instrui o modelo a ser rigoroso e conservador — só marcar quando há uma falácia clara e defensável. Duas cláusulas específicas apertam isso: **disambiguation** (não marcar sentença com múltiplas leituras plausíveis a menos que o contexto resolva) e **standalone-explanation** (cada explicação deve nomear a premissa implícita e a conclusão, pra leitor entender sem voltar à fonte). Ambas inspiradas no paper Claimify (Microsoft Research 2025).",
+        "Cada achado tem severidade binária (`baixa` / `alta`). A nota geral (0-100) é uma média ponderada por chunks, ponderada por contagem de caracteres. As faixas (`raciocínio limpo` / `questões menores` / `várias falácias` / `altamente falacioso` / `propagandístico`) estão escritas no próprio prompt pra o modelo ter a mesma calibração que a UI mostra.",
+      ],
+    },
+    {
+      title: "5. Checagem de fatos — extração de afirmações",
+      paragraphs: [
+        "Modelado a partir do [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson, MSR 2025). O prompt pede ao modelo pra passar cada sentença por quatro estágios: **selection** (manter só sentenças com afirmação verificável — opinião, juízo de valor e pergunta retórica saem), **disambiguation** (descartar sentenças com múltiplas leituras plausíveis quando o contexto não resolve), **decomposition** (quebrar sentenças com múltiplos fatos em afirmações separadas, sem perseguir atomicidade infinita) e **decontextualization** (cada afirmação emitida deve ficar de pé sozinha — resolver pronomes, adicionar o ano de um número que depende dele, atribuir uma citação à fonte).",
+        "Cada afirmação tem um tipo: `numeric`, `date`, `quote`, `causal`, ou `categorical`. O tipo informa como o verificador procura evidência depois.",
+        "Limite duro de 50 afirmações por extração (ajustável no admin). Existe porque cada afirmação depois custa créditos Sonar pra verificar; uma extração sem cap num PDF de 30 páginas poderia gastar bastante dinheiro antes do usuário perceber.",
+      ],
+    },
+    {
+      title: "6. Checagem de fatos — veredito por afirmação",
+      paragraphs: [
+        "Veredito é opt-in. A extração sozinha é barata (uma chamada LLM). A verificação é sob demanda: o usuário clica em **Verificar afirmações** no viewer e cada afirmação é enviada pro [Perplexity Sonar Reasoning Pro](https://openrouter.ai/perplexity/sonar-reasoning-pro), uma chamada por afirmação, com concorrência limitada (6 paralelas por padrão).",
+        "O Sonar retorna um JSON com o veredito (`sustentado` / `contradito` / `misto` / `não verificado`), uma confiança entre 0 e 1, uma justificativa, e uma lista de fontes citadas tiradas do canal `annotations` do Sonar. Se a confiança ficar abaixo de 0.5, o veredito é forçado pra `não verificado` — melhor sinalizar 'evidência insuficiente' do que entregar uma resposta confiantemente errada.",
+        "Toda fonte citada é classificada em um de seis tiers (segundo Goldfarb et al. 2025): `primary` (órgãos oficiais de dados, decisões judiciais, papers peer-reviewed), `scholarly`, `think_tank`, `journalistic`, `commercial_content`, `informal`. Uma flag boolean separada marca veículos `state-controlled` (RT, CGTN, Xinhua etc. — mas não BBC/NPR/Deutsche Welle, que são state-FUNDED mas editorialmente independentes).",
+        "A linguagem do veredito é intencionalmente cuidadosa com pessoas nomeadas: nunca 'X está mentindo' ou 'isso é falso' — sempre 'a evidência não sustenta' / 'a evidência contradiz o número' / 'não encontramos evidência que sustente'. É regra dura no system prompt.",
+      ],
+    },
+    {
+      title: "7. Checagem de fatos — cache de vereditos",
+      paragraphs: [
+        "Cada afirmação verificada é hashada e armazenada. O hash é `sha256(lang + ':' + normalize(statement))` onde `normalize` faz lowercase, tira acentos combinantes, colapsa espaços e remove pontuação final. Isso significa que reformulações da mesma afirmação colidem, mas idiomas diferentes não.",
+        "TTLs por tipo de afirmação. `numeric` 30 dias (IBGE e companhia revisam séries), `date` e `categorical` 365 dias (fatos históricos e definições são estáveis), `quote` e `causal` 90 dias (re-examináveis mas pouco prováveis de mudar). Uma varredura best-effort apaga linhas expiradas no caminho de cache-miss, limitada a uma vez a cada 30 minutos pra o hot path ficar barato.",
+        "O usuário pode burlar o cache com um botão **refresh** por afirmação (força uma chamada Sonar fresca). Conta contra um quota ajustável no admin — padrão é 2 refreshes por afirmação. Depois disso, o botão some e a API retorna 429.",
+      ],
+    },
+    {
+      title: "8. Imparcialidade",
+      paragraphs: [
+        "Diferente da detecção de falácia: um texto pode ser livre de falácia e factualmente correto e ainda assim usar enquadramento carregado, atribuição assimétrica ou seleção unilateral de fontes. A análise de imparcialidade sinaliza esses padrões.",
+        "Oito tipos de issue são sinalizados no nível da sentença: `loaded_language`, `asymmetric_attribution`, `false_equivalence`, `selective_omission`, `source_asymmetry`, `both_sidesing`, `steering`, `genetic_framing`. O modelo também classifica o documento num de sete tipos de texto (informativo / opinião / discurso político / advocacy / análise / marketing / redes sociais) — isso informa quão estrito o audit é.",
+        "O veredito a nível de documento é um de `neutral` / `partisan_lean` / `explicitly_partisan` / `manipulation`. O Jiddu **deliberadamente não classifica direção partidária** (esquerda/direita, pró-X/anti-Y). O paper da Forum AI que inspirou a metodologia exige um painel bipartisan de especialistas pra essa etapa; sem ele, rótulos partidários são pouco confiáveis e perigosos. Sinalizamos padrões específicos que o leitor pode auditar, em vez disso.",
+      ],
+    },
+    {
+      title: "9. Armazenamento, privacidade e revisão",
+      paragraphs: [
+        "A persistência é um único arquivo SQLite num VPS Hostinger, montado como volume Docker. Não há contas de usuário. Cada análise ganha um id curto e vive em `/a/<id>`, `/f/<id>` ou `/n/<id>`. Quem tem a URL vê.",
+        "O texto submetido é enviado ao OpenRouter, que roteia pro upstream que serve o modelo escolhido. A gente não repassa pra mais ninguém. Registramos o IP da requisição pra rate-limit e detecção de abuso, e não vendemos nem compartilhamos isso.",
+        "Cada análise tem um timestamp `reviewedAt`. Por padrão é nulo, significando que a análise é automatizada e não foi conferida por um operador. O admin (em `/admin`, protegido por senha) pode marcar análises individuais como revisadas.",
+      ],
+    },
+    {
+      title: "10. Controle de custo e abuso",
+      paragraphs: [
+        "Toda rota que gera custo tem um rate limit de token bucket in-memory por IP. Defaults: 30 análises de falácia / hora, 30 extrações de fact-check / hora, 10 verificações em massa / hora, 20 refreshes individuais / hora, 20 sinalizações de feedback / hora. Todos os valores são ajustáveis em runtime no `/admin/settings` — sem precisar redeployar. Quando o bucket esgota, a API retorna 429 com header `Retry-After`.",
+        "A extração de fact-check tem cap de 50 afirmações por documento. O refresh por afirmação tem cap de 2 chamadas. Ambos ajustáveis no admin. São as defesas estruturais contra um único usuário gerar uma conta inesperada.",
+      ],
+    },
+    {
+      title: "11. Loop de feedback",
+      paragraphs: [
+        "Todo card de afirmação tem um botão **🚩 Reportar veredito errado**. O clique captura um motivo opcional em texto livre e faz POST pra um endpoint de feedback, que tira snapshot do statement + veredito atuais (assim o admin vê o que o usuário tava vendo, mesmo se o veredito for re-verificado depois).",
+        "Flags enviadas caem numa fila em `/admin/feedback` com status `open`. O operador marca cada uma como `resolved` (concorda com o usuário, planeja consertar) ou `ignored` (o veredito tava certo, ou a flag era spam), ou deleta. A home do admin mostra um badge vermelho com a contagem aberta.",
+        "Hoje não há ação automática no veredito quando flags se acumulam — toda entrada é revisada manualmente. Melhoria futura: um badge 'disputed' no viewer público quando N flags juntarem na mesma afirmação.",
+      ],
+    },
+    {
+      title: "12. Open source e metodologia",
+      paragraphs: [
+        "Código fonte em [github.com/rafaehlers/jiddu](https://github.com/rafaehlers/jiddu) sob licença [AGPL-3.0-or-later](https://www.gnu.org/licenses/agpl-3.0.txt). A AGPL fecha o 'SaaS loophole' que a GPL deixa aberto: quem rodar uma versão modificada como serviço de rede tem que publicar o código modificado.",
+        "Dois papers fundamentam o design: [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson — Microsoft Research, 2025) pra extração em quatro estágios; e [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) (Goldfarb, Hall, Fisher, Salam, Wilde — Forum AI / Stanford, 2025) pra a avaliação de veredito, a taxonomia de 6 tiers de fonte e o framework de imparcialidade. O Jiddu não tem afiliação com nenhum dos grupos.",
+        "O disclaimer completo do que o Jiddu afirma e não afirma está em [/legal](/legal).",
       ],
     },
   ],
@@ -1113,11 +1385,33 @@ const es: Messages = {
   tt_social_media: "Redes sociales",
 
   nav_legal: "Términos",
-  unreviewed_banner_title: "Automatizado, aún no revisado por un humano",
-  unreviewed_banner_body:
-    "Este análisis fue producido por software y no ha sido revisado por una persona. Puede contener errores. Lee siempre las fuentes y juzga por tu cuenta.",
-  unreviewed_banner_link: "Leer los términos",
+  nav_how_it_works: "Cómo funciona",
   export_pdf: "Exportar PDF",
+
+  print_type_fallacy: "Análisis de falacias",
+  print_type_factcheck: "Verificación de hechos",
+  print_type_neutrality: "Evaluación de imparcialidad",
+  print_meta_source: "Fuente",
+  print_meta_type: "Tipo",
+  print_meta_text_type: "Tipo de texto",
+  print_meta_generated: "Generado",
+  print_meta_reviewed: "Revisado por humano",
+  print_meta_model: "Modelo",
+  print_meta_url: "URL del informe",
+  print_section_source_text: "Texto original",
+  print_section_findings: "Hallazgos",
+  print_section_claims: "Afirmaciones",
+  print_section_score: "Puntuación",
+  print_no_claims: "No se extrajeron afirmaciones verificables.",
+  print_no_findings: "Ningún patrón señalado.",
+  print_footer_fallacy:
+    "Este es un informe automatizado. Las etiquetas pueden estar equivocadas — siempre lee el texto original y juzga por tu cuenta. Términos completos en https://jiddu.app/legal.",
+  print_footer_factcheck:
+    "Este es un informe automatizado. Los veredictos pueden estar equivocados — siempre lee las fuentes citadas y juzga por tu cuenta. Términos completos en https://jiddu.app/legal.",
+  print_footer_neutrality:
+    "Este es un informe automatizado. La imparcialidad es una propiedad del encuadre; las etiquetas pueden estar equivocadas — lee el texto original y los pasajes señalados. Jiddu no clasifica dirección partidaria. Términos completos en https://jiddu.app/legal.",
+  print_generated_at: (when) => `Generado ${when} · jiddu.app`,
+
   legal_title: "Términos y descargos",
   legal_subtitle:
     "Lee esto antes de usar Jiddu, especialmente antes de compartir un análisis públicamente.",
@@ -1170,6 +1464,109 @@ const es: Messages = {
       title: "7. Contacto",
       paragraphs: [
         "Operador: Rafael de Menezes Ehlers. Para solicitudes de remoción, correcciones u otras consultas, contacto vía LinkedIn (enlace en el pie de página).",
+      ],
+    },
+  ],
+
+  how_it_works_title: "Cómo funciona Jiddu",
+  how_it_works_subtitle:
+    "Walkthrough técnico de cada pipeline. Nada se esconde — el código fuente es abierto bajo AGPL-3.0 en github.com/rafaehlers/jiddu, así que cualquier cosa descrita abajo puede ser contrastada con la implementación real.",
+  how_it_works_sections: [
+    {
+      title: "1. Visión general",
+      paragraphs: [
+        "Jiddu corre tres análisis independientes sobre el mismo texto: un detector de falacias, un pipeline de verificación de hechos (extracción + veredicto vía Sonar) y una evaluación de imparcialidad. Son rutas separadas en la app (`/`, `/factcheck`, `/neutrality`) y tablas separadas en la base. Ninguno depende de los otros.",
+        "Cada análisis es una petición en streaming a un LLM vía [OpenRouter](https://openrouter.ai). Se instruye al modelo a llamar una función (tool use estilo OpenAI) cuyo JSON Schema controlamos nosotros. Parseamos los argumentos de la tool-call incrementalmente con [partial-json](https://github.com/promplate/partial-json), así los hallazgos aparecen en la UI mientras el modelo todavía está escribiendo.",
+        "Todo el output va en el idioma de la UI elegido por el usuario. El mismo prompt se usa sin importar qué modelo elija el usuario — la diferencia de idioma viene de una única línea `OUTPUT LANGUAGE:` en el system prompt.",
+      ],
+    },
+    {
+      title: "2. Entrada: ingestión y segmentación",
+      paragraphs: [
+        "**URL.** El fetch envía headers de navegador real (User-Agent de Chrome actual, Accept-Language pt-BR, sec-ch-ua, sec-fetch-*) para que bloqueadores ingenuos de bots no rechacen. Cada salto de redirect tiene el DNS resuelto y se rechaza si el IP cae en RFC1918, loopback, link-local, CGNAT, multicast o rangos reservados IPv4/IPv6 — eso cierra la puerta de SSRF, incluyendo el IP de metadatos de AWS (169.254.169.254) y el admin local del NPM (puerto 81 del VPS). El cuerpo de la respuesta está limitado a 5 MB. El HTML pasa por [@mozilla/readability](https://github.com/mozilla/readability) para extraer el artículo.",
+        "**PDF.** Parseado en proceso con [pdfjs-dist](https://mozilla.github.io/pdf.js/) — nunca se manda a un servicio remoto. El modelo solo ve texto plano.",
+        "**Paste.** Usado tal cual, solo con espacios en blanco normalizados.",
+        "El texto extraído se segmenta en oraciones con un divisor consciente de abreviaturas (`src/lib/sentences.ts`) — reconoce abreviaturas en portugués (`sr.`, `dr.`, `prof.`), mantiene siglas como `U.S.` intactas y no rompe en medio de números como `3,4%`. Las oraciones se agrupan en chunks de ~12k caracteres (`src/lib/chunker.ts`) para que documentos largos quepan en la ventana de contexto del modelo sin perder fronteras de oración.",
+      ],
+    },
+    {
+      title: "3. Modelos y fallback",
+      paragraphs: [
+        "Dos modelos en el selector: [🇺🇸 GPT-5.4 mini](https://openrouter.ai/openai/gpt-5.4-mini) (por defecto) y [🇨🇳 MiniMax M2.7](https://openrouter.ai/minimax/minimax-m2.7). Fueron elegidos por estar en lados geopolíticos opuestos — un usuario preocupado por sesgo en los datos de entrenamiento puede pasar el mismo texto por los dos y comparar.",
+        "Si el modelo elegido falla *antes de emitir cualquier evento* (rate-limit del upstream, 5xx, etc.), la petición cae automáticamente al otro modelo — retry client-side, sin parpadeo en la UI. Una vez que el modelo ya emitió al menos un hallazgo/afirmación, no reintentamos: aceptamos la salida parcial y la capa de partial-parse rescata lo que pueda.",
+        "Sonar Reasoning Pro se usa exclusivamente para los veredictos de fact-check (porque tiene búsqueda web incorporada). Nunca aparece en el selector de modelo.",
+      ],
+    },
+    {
+      title: "4. Detector de falacias",
+      paragraphs: [
+        "Catálogo de 28 falacias cubriendo relevancia, ambigüedad, presunción, apelaciones emocionales, razonamiento causal y evidencia. Cada falacia tiene un id estable y un color distinto (distribución por golden angle) usado para resaltar pasajes. La lista completa está en [/fallacies](/fallacies).",
+        "El system prompt instruye al modelo a ser riguroso y conservador — marcar solo cuando hay una falacia clara y defendible. Dos cláusulas específicas aprietan esto: una cláusula de **disambiguation** (no marcar una oración con múltiples lecturas plausibles a menos que el contexto la resuelva) y una cláusula de **standalone-explanation** (cada explicación debe nombrar la premisa implícita y la conclusión para que el lector no tenga que volver a la fuente). Ambas destiladas del paper Claimify (Microsoft Research 2025).",
+        "Cada hallazgo tiene severidad binaria (`baja` / `alta`). La puntuación general de falacia (0-100) es un promedio ponderado entre chunks, ponderado por la cuenta de caracteres. Las etiquetas por rango (`razonamiento limpio` / `problemas menores` / `varias falacias` / `muy falaz` / `propagandístico`) están escritas en el propio prompt para que el modelo tenga la misma calibración que muestra la UI.",
+      ],
+    },
+    {
+      title: "5. Fact-check — extracción de afirmaciones",
+      paragraphs: [
+        "Modelado en [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson, MSR 2025). El prompt pide al modelo pasar cada oración por cuatro etapas: **selection** (mantener solo oraciones con una afirmación verificable — opiniones, juicios de valor, preguntas retóricas se descartan), **disambiguation** (descartar oraciones con múltiples lecturas plausibles cuando el contexto no resuelve), **decomposition** (partir oraciones con múltiples hechos en afirmaciones separadas sin perseguir atomicidad infinita) y **decontextualization** (cada afirmación emitida debe sostenerse sola — resolver pronombres, agregar el año a un número que dependa de él, atribuir una cita a su fuente).",
+        "Cada afirmación emitida tiene un tipo: `numeric`, `date`, `quote`, `causal` o `categorical`. El tipo informa cómo el verificador busca evidencia después.",
+        "Tope duro de 50 afirmaciones por extracción (ajustable en el admin). El tope existe porque cada afirmación después cuesta créditos de Sonar para verificar; una extracción sin tope sobre un PDF de 30 páginas podría acumular dinero serio antes de que el usuario lo note.",
+      ],
+    },
+    {
+      title: "6. Fact-check — veredicto por afirmación",
+      paragraphs: [
+        "El veredicto es opt-in. La extracción sola es barata (una llamada al LLM). La verificación es bajo demanda: el usuario hace clic en **Verificar afirmaciones** en el viewer y cada afirmación se manda a [Perplexity Sonar Reasoning Pro](https://openrouter.ai/perplexity/sonar-reasoning-pro), una llamada por afirmación, con concurrencia limitada (6 en paralelo por defecto).",
+        "Sonar devuelve un JSON con el veredicto (`respaldado` / `contradicho` / `mixto` / `no verificado`), una confianza entre 0 y 1, una justificación y una lista de fuentes citadas tomadas del canal `annotations` de Sonar. Si la confianza queda por debajo de 0.5, el veredicto se fuerza a `no verificado` — mejor exhibir 'evidencia insuficiente' que entregar una respuesta confiadamente equivocada.",
+        "Cada fuente citada se clasifica en uno de seis tiers (según Goldfarb et al. 2025): `primary` (agencias oficiales de datos, decisiones judiciales, papers peer-reviewed), `scholarly`, `think_tank`, `journalistic`, `commercial_content`, `informal`. Una flag booleana aparte marca medios `state-controlled` (RT, CGTN, Xinhua, etc. — pero no BBC/NPR/Deutsche Welle, que son state-FUNDED pero editorialmente independientes).",
+        "El lenguaje del veredicto es intencionalmente cauto con personas nombradas: nunca 'X miente' o 'esto es falso' — siempre 'la evidencia no respalda' / 'la evidencia contradice el número' / 'no encontramos evidencia que respalde'. Es una regla dura en el system prompt.",
+      ],
+    },
+    {
+      title: "7. Fact-check — caché de veredictos",
+      paragraphs: [
+        "Cada afirmación verificada se hashea y se almacena. El hash es `sha256(lang + ':' + normalize(statement))` donde `normalize` pasa a minúsculas, quita marcas combinantes de acento, colapsa espacios y elimina puntuación final. Eso significa que reformulaciones de la misma afirmación colisionan, pero idiomas distintos no.",
+        "Los TTL son por tipo de afirmación. `numeric` 30 días (IBGE y compañía revisan series), `date` y `categorical` 365 días (hechos históricos y definiciones son estables), `quote` y `causal` 90 días (re-examinables pero poco probables de cambiar). Un barrido best-effort borra filas expiradas en el camino de cache-miss, limitado a una vez cada 30 minutos para que el hot path siga barato.",
+        "El usuario puede saltarse el caché con un botón de **refresh** por afirmación (fuerza una llamada Sonar fresca). Cuenta contra una cuota de refresh ajustable en el admin — por defecto 2 refreshes por afirmación. Después de eso, el botón se oculta y la API devuelve 429.",
+      ],
+    },
+    {
+      title: "8. Imparcialidad",
+      paragraphs: [
+        "Distinto de la detección de falacias: un texto puede estar libre de falacias y ser fácticamente correcto y aun así usar encuadre cargado, atribución asimétrica o selección unilateral de fuentes. La evaluación de imparcialidad expone esos patrones.",
+        "Ocho tipos de issue se marcan a nivel de oración: `loaded_language`, `asymmetric_attribution`, `false_equivalence`, `selective_omission`, `source_asymmetry`, `both_sidesing`, `steering`, `genetic_framing`. El modelo también clasifica el documento en uno de siete tipos de texto (informativo / opinión / discurso político / advocacy / análisis / marketing / redes sociales) — eso informa qué tan estricta es la auditoría.",
+        "El veredicto a nivel documento es uno de `neutral` / `partisan_lean` / `explicitly_partisan` / `manipulation`. Jiddu **deliberadamente no clasifica dirección partidaria** (izquierda/derecha, pro-X/anti-Y). El paper de Forum AI que inspiró la metodología requiere un panel bipartidista de expertos para esa etapa; sin ese panel, las etiquetas partidarias son poco confiables y dañinas. En su lugar exhibimos patrones específicos que el lector puede auditar.",
+      ],
+    },
+    {
+      title: "9. Almacenamiento, privacidad y revisión",
+      paragraphs: [
+        "La persistencia es un único archivo SQLite en un VPS de Hostinger, montado como volumen Docker. No hay cuentas de usuario. Cada análisis recibe un id corto y vive bajo `/a/<id>`, `/f/<id>` o `/n/<id>`. Cualquiera con la URL puede verlo.",
+        "El texto enviado va a OpenRouter, que lo enruta al upstream que sirve el modelo elegido. No lo retransmitimos a ningún otro lugar. Registramos el IP de la petición para rate-limit y señales de abuso, y no lo vendemos ni compartimos.",
+        "Cada análisis tiene un timestamp `reviewedAt`. Por defecto es null, lo que significa que el análisis es automatizado y no fue revisado por un operador. El admin (en `/admin`, protegido por contraseña) puede marcar análisis individuales como revisados.",
+      ],
+    },
+    {
+      title: "10. Costo y controles de abuso",
+      paragraphs: [
+        "Cada ruta que incurre en costo tiene un rate limit de token bucket in-memory por IP. Defaults: 30 análisis de falacias / hora, 30 extracciones de fact-check / hora, 10 verificaciones masivas / hora, 20 refreshes individuales / hora, 20 flags de feedback / hora. Todos los valores son ajustables en runtime vía `/admin/settings` — sin redeploy. Cuando el bucket se vacía, la API devuelve 429 con header `Retry-After`.",
+        "La extracción de fact-check tiene tope de 50 afirmaciones por documento. El refresh por afirmación tiene tope de 2 llamadas por afirmación. Ambos configurables desde el admin. Son las defensas estructurales contra un único usuario acumulando una cuenta inesperada.",
+      ],
+    },
+    {
+      title: "11. Loop de feedback",
+      paragraphs: [
+        "Cada card de afirmación de fact-check tiene un botón **🚩 Reportar veredicto incorrecto**. Clicarlo captura una razón opcional en texto libre y hace POST a un endpoint de feedback, que toma snapshot del statement + veredicto actuales (así el admin ve lo que el usuario estaba viendo, aunque el veredicto se re-verifique después).",
+        "Las flags enviadas caen en una cola de admin en `/admin/feedback` con estado `open`. El operador puede marcar cada una como `resolved` (concuerda con el usuario, planea arreglar) o `ignored` (el veredicto estaba bien, o el flag era spam), o eliminarla. La home del admin muestra un badge rojo con el conteo abierto.",
+        "Por ahora no hay acción automática sobre el veredicto cuando las flags se acumulan — cada entrada se revisa manualmente. Mejora futura: un badge 'disputed' en el viewer público cuando se acumulen N flags sobre la misma afirmación.",
+      ],
+    },
+    {
+      title: "12. Open source y metodología",
+      paragraphs: [
+        "El código fuente está en [github.com/rafaehlers/jiddu](https://github.com/rafaehlers/jiddu) bajo licencia [AGPL-3.0-or-later](https://www.gnu.org/licenses/agpl-3.0.txt). AGPL cierra el 'SaaS loophole' que GPL deja abierto: cualquiera que corra una versión modificada como servicio de red debe publicar el código fuente modificado.",
+        "Dos papers fundamentan el diseño: [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson — Microsoft Research, 2025) para la extracción de afirmaciones en cuatro etapas; y [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) (Goldfarb, Hall, Fisher, Salam, Wilde — Forum AI / Stanford, 2025) para la evaluación de veredicto, la taxonomía de 6 tiers de fuentes y el framework de imparcialidad. Jiddu no está afiliado con ninguno de los dos grupos.",
+        "El disclaimer completo de lo que Jiddu afirma y no afirma está en [/legal](/legal).",
       ],
     },
   ],

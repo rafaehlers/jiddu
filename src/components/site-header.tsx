@@ -37,6 +37,12 @@ export function SiteHeader({ variant = "home", rightSlot }: Props) {
           >
             {t.nav_fallacies}
           </Link>
+          <Link
+            href="/how-it-works"
+            className="text-sm text-muted hover:text-foreground transition-colors hidden md:inline"
+          >
+            {t.nav_how_it_works}
+          </Link>
           {rightSlot}
           <LangSelector />
           <ThemeToggle />

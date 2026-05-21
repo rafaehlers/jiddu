@@ -22,6 +22,13 @@ export function SiteFooter() {
         </span>
         <span className="flex items-center gap-3 flex-wrap">
           <Link
+            href="/how-it-works"
+            className="underline decoration-rule hover:decoration-foreground transition-colors"
+          >
+            {t.nav_how_it_works}
+          </Link>
+          <span aria-hidden>·</span>
+          <Link
             href="/legal"
             className="underline decoration-rule hover:decoration-foreground transition-colors"
           >

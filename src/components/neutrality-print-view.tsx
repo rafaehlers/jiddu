@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
+import { useI18n } from "@/lib/i18n/provider";
+import type { Messages } from "@/lib/i18n/messages";
+import type { Lang } from "@/lib/fallacies";
 import type { Sentence } from "@/lib/schema";
 import type {
   NeutralityFinding,
@@ -26,34 +29,9 @@ type Props = {
   reviewedAt: Date | null;
 };
 
-const ISSUE_LABEL: Record<NeutralityIssue, string> = {
-  loaded_language: "Loaded language",
-  asymmetric_attribution: "Asymmetric attribution",
-  false_equivalence: "False equivalence",
-  selective_omission: "Selective omission",
-  source_asymmetry: "Source asymmetry",
-  both_sidesing: "Both-sidesing",
-  steering: "Steering",
-  genetic_framing: "Genetic framing",
-};
-
-const VERDICT_LABEL: Record<NeutralityVerdictValue, string> = {
-  neutral: "NEUTRAL",
-  partisan_lean: "PARTISAN LEAN",
-  explicitly_partisan: "EXPLICITLY PARTISAN",
-  manipulation: "MANIPULATION",
-};
-
-const TEXT_TYPE_LABEL: Record<TextType, string> = {
-  informational: "Informational",
-  opinion: "Opinion",
-  political_speech: "Political speech",
-  advocacy: "Advocacy",
-  analysis: "Analysis",
-  marketing: "Marketing",
-  social_media: "Social media",
-};
-
+// Print views read the user's locale via I18nProvider — print pages
+// share the root layout with the rest of the app, so localStorage-driven
+// language selection flows through unchanged.
 export function NeutralityPrintView({
   id,
   title,
@@ -70,6 +48,8 @@ export function NeutralityPrintView({
   createdAt,
   reviewedAt,
 }: Props) {
+  const { t, lang } = useI18n();
+
   useEffect(() => {
     if (typeof window !== "undefined" && window.location.search.includes("nopr")) {
       return;
@@ -87,49 +67,53 @@ export function NeutralityPrintView({
           <span className="print-brand-name">Jiddu</span>
           <span className="print-brand-tag">truth is a pathless land</span>
         </div>
-        <h1>{title ?? "Untitled"}</h1>
+        <h1>{title ?? t.fc_untitled}</h1>
         <div className={`print-verdict-pill print-verdict-${verdict}`}>
-          <span className="print-verdict-label">{VERDICT_LABEL[verdict]}</span>
+          <span className="print-verdict-label">
+            {(t[`nv_${verdict}` as keyof Messages] as string).toUpperCase()}
+          </span>
           <span className="print-conf">{Math.round(confidence * 100)}%</span>
         </div>
         {rationale && <p className="print-summary">{rationale}</p>}
         <dl className="print-meta">
           {sourceRef && source === "url" && (
             <>
-              <dt>Source</dt>
+              <dt>{t.print_meta_source}</dt>
               <dd>
                 <a href={sourceRef}>{sourceRef}</a>
               </dd>
             </>
           )}
-          <dt>Type</dt>
-          <dd>Neutrality assessment</dd>
-          <dt>Text type</dt>
-          <dd>{TEXT_TYPE_LABEL[textType]}</dd>
-          <dt>Generated</dt>
-          <dd>{fmt(createdAt)}</dd>
+          <dt>{t.print_meta_type}</dt>
+          <dd>{t.print_type_neutrality}</dd>
+          <dt>{t.print_meta_text_type}</dt>
+          <dd>{t[`tt_${textType}` as keyof Messages] as string}</dd>
+          <dt>{t.print_meta_generated}</dt>
+          <dd>{fmt(createdAt, lang)}</dd>
           {reviewedAt && (
             <>
-              <dt>Human-reviewed</dt>
-              <dd>{fmt(reviewedAt)}</dd>
+              <dt>{t.print_meta_reviewed}</dt>
+              <dd>{fmt(reviewedAt, lang)}</dd>
             </>
           )}
-          <dt>Model</dt>
+          <dt>{t.print_meta_model}</dt>
           <dd>{model}</dd>
-          <dt>Report URL</dt>
+          <dt>{t.print_meta_url}</dt>
           <dd>https://jiddu.app/n/{id}</dd>
         </dl>
       </header>
 
       <section className="print-section print-source-text">
-        <h2>Source text</h2>
+        <h2>{t.print_section_source_text}</h2>
         <p>{text}</p>
       </section>
 
       <section className="print-section">
-        <h2>Findings ({findings.length})</h2>
+        <h2>
+          {t.print_section_findings} ({findings.length})
+        </h2>
         {findings.length === 0 ? (
-          <p className="print-muted">No neutrality issues flagged.</p>
+          <p className="print-muted">{t.print_no_findings}</p>
         ) : (
           <ol className="print-findings">
             {findings.map((f, i) => (
@@ -137,9 +121,11 @@ export function NeutralityPrintView({
                 <div className="print-finding-head">
                   <span className="print-finding-idx">#{i + 1}</span>
                   <span className={`print-sev print-sev-${f.severity}`}>
-                    {f.severity.toUpperCase()}
+                    {(t[`severity_${f.severity}` as keyof Messages] as string).toUpperCase()}
                   </span>
-                  <span className="print-issue-name">{ISSUE_LABEL[f.issue]}</span>
+                  <span className="print-issue-name">
+                    {t[`ni_${f.issue as NeutralityIssue}` as keyof Messages] as string}
+                  </span>
                 </div>
                 <blockquote className="print-quote">"{f.quote}"</blockquote>
                 <p className="print-explanation">{f.explanation}</p>
@@ -150,20 +136,17 @@ export function NeutralityPrintView({
       </section>
 
       <footer className="print-footer">
-        <p>
-          This is an automated report. Neutrality is a property of framing;
-          the labels may be wrong — read the source text and the flagged
-          passages. Jiddu does not classify partisan direction. See
-          https://jiddu.app/legal for the full terms.
-        </p>
-        <p className="print-muted">Generated {fmt(new Date())} · jiddu.app</p>
+        <p>{t.print_footer_neutrality}</p>
+        <p className="print-muted">{t.print_generated_at(fmt(new Date(), lang))}</p>
       </footer>
     </div>
   );
 }
 
-function fmt(d: Date): string {
-  return d.toLocaleString("en-US", {
+// Locale-aware date format. Falls back to en-US if lang is somehow unset.
+function fmt(d: Date, lang: Lang): string {
+  const locale = lang === "pt" ? "pt-BR" : lang === "es" ? "es-ES" : "en-US";
+  return d.toLocaleString(locale, {
     year: "numeric",
     month: "short",
     day: "numeric",
