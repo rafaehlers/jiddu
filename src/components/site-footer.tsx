@@ -20,7 +20,7 @@ export function SiteFooter() {
             J. Krishnamurti
           </a>
         </span>
-        <span className="flex items-center gap-3">
+        <span className="flex items-center gap-3 flex-wrap">
           <Link
             href="/legal"
             className="underline decoration-rule hover:decoration-foreground transition-colors"
@@ -28,8 +28,21 @@ export function SiteFooter() {
             {t.nav_legal}
           </Link>
           <span aria-hidden>·</span>
+          {/* AGPL-3.0 §13 requires that operators of a network-accessible
+              service make the corresponding source available to users. A
+              link to the canonical repo from the footer satisfies that. */}
+          <a
+            href="https://github.com/rafaehlers/jiddu"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline decoration-rule hover:decoration-foreground transition-colors"
+            title="Source code (AGPL-3.0-or-later)"
+          >
+            {t.nav_source}
+          </a>
+          <span aria-hidden>·</span>
           <span>
-            ©{" "}
+            © 2026{" "}
             <a
               href="https://www.linkedin.com/in/rafael-m-ehlers/"
               target="_blank"

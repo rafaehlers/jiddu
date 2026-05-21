@@ -190,6 +190,7 @@ export type Messages = {
 
   // Header nav
   nav_fallacies: string;
+  nav_source: string;
 
   // Theme
   theme_to_dark: string;
@@ -545,6 +546,7 @@ const en: Messages = {
   guide_back: "Back to home",
 
   nav_fallacies: "Fallacy guide",
+  nav_source: "Source",
 
   theme_to_dark: "Switch to dark mode",
   theme_to_light: "Switch to light mode",
@@ -883,6 +885,7 @@ const pt: Messages = {
   guide_back: "Voltar para o início",
 
   nav_fallacies: "Guia de Falácias",
+  nav_source: "Código",
 
   theme_to_dark: "Mudar para tema escuro",
   theme_to_light: "Mudar para tema claro",
@@ -1221,6 +1224,7 @@ const es: Messages = {
   guide_back: "Volver al inicio",
 
   nav_fallacies: "Guía de falacias",
+  nav_source: "Código",
 
   theme_to_dark: "Cambiar a modo oscuro",
   theme_to_light: "Cambiar a modo claro",
