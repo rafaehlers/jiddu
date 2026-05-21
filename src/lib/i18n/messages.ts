@@ -179,6 +179,9 @@ export type Messages = {
   unreviewed_banner_body: string;
   unreviewed_banner_link: string;
 
+  // Export / print
+  export_pdf: string;
+
   // Live mode (beta)
   live_subtitle: string;
   live_source_mic: string;
@@ -335,6 +338,7 @@ const en: Messages = {
   unreviewed_banner_body:
     "This analysis was produced by software and has not been checked by a human. It may contain errors. Always read the sources and judge for yourself.",
   unreviewed_banner_link: "Read the terms",
+  export_pdf: "Export PDF",
   legal_title: "Terms and disclaimers",
   legal_subtitle:
     "Read this before using Jiddu, especially before sharing an analysis publicly.",
@@ -613,6 +617,7 @@ const pt: Messages = {
   unreviewed_banner_body:
     "Esta análise foi produzida por software e não foi conferida por uma pessoa. Pode conter erros. Sempre leia as fontes e julgue por conta própria.",
   unreviewed_banner_link: "Ler os termos",
+  export_pdf: "Exportar PDF",
   legal_title: "Termos e isenções",
   legal_subtitle:
     "Leia antes de usar o Jiddu, especialmente antes de compartilhar uma análise publicamente.",
@@ -891,6 +896,7 @@ const es: Messages = {
   unreviewed_banner_body:
     "Este análisis fue producido por software y no ha sido revisado por una persona. Puede contener errores. Lee siempre las fuentes y juzga por tu cuenta.",
   unreviewed_banner_link: "Leer los términos",
+  export_pdf: "Exportar PDF",
   legal_title: "Términos y descargos",
   legal_subtitle:
     "Lee esto antes de usar Jiddu, especialmente antes de compartir un análisis públicamente.",

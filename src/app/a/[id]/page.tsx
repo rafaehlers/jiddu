@@ -8,6 +8,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { AnalysisHeaderActions } from "@/components/analysis-header-actions";
 import { ScrollIndicator } from "@/components/scroll-indicator";
 import { UnreviewedBanner } from "@/components/unreviewed-banner";
+import { ExportPdfButton } from "@/components/export-pdf-button";
 import type { Finding, Sentence } from "@/lib/schema";
 
 type Props = { params: Promise<{ id: string }> };
@@ -61,6 +62,7 @@ export default async function AnalysisPage({ params }: Props) {
         variant="viewer"
         rightSlot={
           <>
+            <ExportPdfButton href={`/a/${a.id}/print`} />
             <ShareButton />
             <AnalysisHeaderActions />
           </>
