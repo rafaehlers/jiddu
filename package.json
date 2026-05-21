@@ -2,6 +2,13 @@
   "name": "jiddu",
   "version": "0.1.0",
   "private": true,
+  "license": "AGPL-3.0-or-later",
+  "author": "Rafael de Menezes Ehlers",
+  "homepage": "https://jiddu.app",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rafaehlers/jiddu.git"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",

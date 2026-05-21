@@ -251,4 +251,13 @@ See the inline comments in `Dockerfile`, `docker-compose.yml`, `docker-entrypoin
 
 ## License
 
-Private. Personal project.
+Licensed under the **GNU Affero General Public License v3.0 or later** (AGPL-3.0-or-later). See [LICENSE](./LICENSE) for the full text.
+
+In short:
+
+- You can use, modify and self-host Jiddu — for free.
+- If you run a modified version as a **network-accessible service**, you must publish the complete source code of your modified version (this is what AGPL adds on top of GPL — it closes the "SaaS loophole").
+- You can incorporate Jiddu's code into another project only if that project is itself released under AGPL-3.0-or-later.
+- "Jiddu" the name and the `jiddu.app` domain are not part of the license — they remain the operator's. Forks should pick a different name.
+
+If you want to use the code under non-AGPL terms (e.g. inside a closed-source product), contact the author for a commercial licence.
