@@ -23,6 +23,7 @@ import type { Verdict, VerdictValue, SourceTier } from "@/lib/verdict-schema";
 import { readSse } from "@/lib/sse";
 import { cn } from "@/lib/utils";
 import { ShareLinkBar } from "@/components/share-link-bar";
+import { ExportPdfButton } from "@/components/export-pdf-button";
 import { useI18n } from "@/lib/i18n/provider";
 import type { Messages } from "@/lib/i18n/messages";
 
@@ -329,7 +330,7 @@ export function FactCheckView({
         </div>
       </header>
 
-      <ShareLinkBar />
+      <ShareLinkBar rightSlot={<ExportPdfButton href={`/f/${id}/print`} />} />
 
       {/* Verify action bar */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 bg-paper border border-rule rounded-lg p-4">

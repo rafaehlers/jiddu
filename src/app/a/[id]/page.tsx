@@ -2,13 +2,11 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { AnalysisView } from "@/components/analysis-view";
-import { ShareButton } from "@/components/share-button";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { AnalysisHeaderActions } from "@/components/analysis-header-actions";
 import { ScrollIndicator } from "@/components/scroll-indicator";
 import { UnreviewedBanner } from "@/components/unreviewed-banner";
-import { ExportPdfButton } from "@/components/export-pdf-button";
 import type { Finding, Sentence } from "@/lib/schema";
 
 type Props = { params: Promise<{ id: string }> };
@@ -60,18 +58,13 @@ export default async function AnalysisPage({ params }: Props) {
     <main className="flex-1 flex flex-col">
       <SiteHeader
         variant="viewer"
-        rightSlot={
-          <>
-            <ExportPdfButton href={`/a/${a.id}/print`} />
-            <ShareButton />
-            <AnalysisHeaderActions />
-          </>
-        }
+        rightSlot={<AnalysisHeaderActions />}
       />
 
       {a.reviewedAt === null && <UnreviewedBanner />}
 
       <AnalysisView
+        id={a.id}
         title={a.title}
         sourceRef={a.sourceRef}
         source={a.source}

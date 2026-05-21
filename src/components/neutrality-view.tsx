@@ -24,10 +24,12 @@ import type {
 } from "@/lib/neutrality-schema";
 import { cn } from "@/lib/utils";
 import { ShareLinkBar } from "@/components/share-link-bar";
+import { ExportPdfButton } from "@/components/export-pdf-button";
 import { useI18n } from "@/lib/i18n/provider";
 import type { Messages } from "@/lib/i18n/messages";
 
 type Props = {
+  id: string;
   title: string | null;
   sourceRef: string | null;
   source: string;
@@ -123,6 +125,7 @@ function textTypeLabelKey(tt: TextType): keyof Messages {
 }
 
 export function NeutralityView({
+  id,
   title,
   sourceRef,
   source,
@@ -205,7 +208,7 @@ export function NeutralityView({
         </div>
       </header>
 
-      <ShareLinkBar />
+      <ShareLinkBar rightSlot={<ExportPdfButton href={`/n/${id}/print`} />} />
 
       {/* Top verdict panel — equivalent of the "score panel" in the fallacy
           view. Big visual statement of where the document landed. */}
@@ -222,7 +225,7 @@ export function NeutralityView({
               {t[vMeta.labelKey] as string}
             </span>
             <span className="text-sm opacity-70 font-mono">
-              {Math.round(confidence * 100)}% confidence
+              {Math.round(confidence * 100)}% {t.neutrality_confidence}
             </span>
           </div>
           {rationale && (
@@ -274,7 +277,7 @@ export function NeutralityView({
           </h2>
           {findings.length === 0 ? (
             <div className="text-sm text-muted bg-paper border border-rule rounded-lg p-6">
-              No neutrality issues flagged.
+              {t.neutrality_no_issues}
             </div>
           ) : (
             <ol className="flex flex-col gap-3">
@@ -334,11 +337,7 @@ export function NeutralityView({
         </aside>
       </div>
 
-      <p className="text-xs text-muted mt-2">
-        Assessed by {model} via OpenRouter. Neutrality is a property of the
-        framing — Jiddu does not classify partisan direction. Read the
-        flagged passages and judge for yourself.
-      </p>
+      <p className="text-xs text-muted mt-2">{t.neutrality_footer(model)}</p>
     </div>
   );
 }

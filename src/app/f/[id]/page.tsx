@@ -3,11 +3,9 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { ShareButton } from "@/components/share-button";
 import { ScrollIndicator } from "@/components/scroll-indicator";
 import { FactCheckView } from "@/components/factcheck-view";
 import { UnreviewedBanner } from "@/components/unreviewed-banner";
-import { ExportPdfButton } from "@/components/export-pdf-button";
 import type { Sentence } from "@/lib/schema";
 import type { Claim } from "@/lib/claims-schema";
 import type { Verdict } from "@/lib/verdict-schema";
@@ -57,15 +55,7 @@ export default async function FactCheckPageView({ params }: Props) {
 
   return (
     <main className="flex-1 flex flex-col">
-      <SiteHeader
-        variant="viewer"
-        rightSlot={
-          <>
-            <ExportPdfButton href={`/f/${f.id}/print`} />
-            <ShareButton />
-          </>
-        }
-      />
+      <SiteHeader variant="viewer" />
 
       {f.reviewedAt === null && <UnreviewedBanner />}
 

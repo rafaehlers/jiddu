@@ -6,7 +6,14 @@ import { Check, Link as LinkIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n/provider";
 
-export function ShareLinkBar() {
+export function ShareLinkBar({
+  rightSlot,
+}: {
+  // Inline content rendered to the right of the share button — used by the
+  // analysis viewers to place an "Export PDF" pill next to the share bar
+  // instead of pushing both into the top header.
+  rightSlot?: React.ReactNode;
+} = {}) {
   const { t } = useI18n();
   // pathname changes whenever the route does; computing the URL from it (plus
   // origin) keeps the displayed value in sync after router.replace without an
@@ -45,13 +52,13 @@ export function ShareLinkBar() {
   }
 
   return (
-    <div className="relative">
+    <div className="relative flex items-stretch gap-2">
       <button
         type="button"
         onClick={copy}
         title={t.share_link_hint}
         className={cn(
-          "group w-full flex items-center gap-3 px-3 py-2.5 rounded-md border text-sm text-left",
+          "group flex-1 min-w-0 flex items-center gap-3 px-3 py-2.5 rounded-md border text-sm text-left",
           "transition-all duration-200",
           copied
             ? "border-[var(--severity-low)] bg-[color-mix(in_oklab,var(--severity-low)_18%,transparent)]"
@@ -75,6 +82,8 @@ export function ShareLinkBar() {
           {displayUrl || "…"}
         </span>
       </button>
+
+      {rightSlot && <div className="shrink-0 flex items-center">{rightSlot}</div>}
 
       <div
         aria-hidden={!copied}

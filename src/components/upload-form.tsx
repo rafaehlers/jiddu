@@ -6,6 +6,7 @@ import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n/provider";
 import type { Messages } from "@/lib/i18n/messages";
+import { MODEL_CATALOG } from "@/lib/llm";
 
 type Tab = "url" | "text" | "file";
 
@@ -51,6 +52,7 @@ export function UploadForm({
   const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [localError, setLocalError] = useState<ErrorState | null>(null);
+  const [model, setModel] = useState<string>(MODEL_CATALOG[0].id);
 
   const visibleError = error ?? localError;
 
@@ -64,12 +66,13 @@ export function UploadForm({
         const fd = new FormData();
         fd.set("file", file);
         fd.set("lang", lang);
+        fd.set("model", model);
         await onSubmit("file", fd, null);
       } else {
         const body = JSON.stringify(
           tab === "url"
-            ? { type: "url", url, lang }
-            : { type: "text", text, lang },
+            ? { type: "url", url, lang, model }
+            : { type: "text", text, lang, model },
         );
         await onSubmit(tab, body, "application/json");
       }
@@ -114,6 +117,8 @@ export function UploadForm({
           <Link
             href="/live"
             className="px-3 py-1.5 rounded-md text-sm border border-rule text-muted hover:text-foreground transition-colors inline-flex items-center gap-1.5"
+            aria-label={t.tab_live}
+            title={t.tab_live}
           >
             <span className="h-1.5 w-1.5 rounded-full bg-[var(--severity-high)] animate-pulse" aria-hidden />
             {t.tab_live}
@@ -161,6 +166,34 @@ export function UploadForm({
       {visibleError && (
         <ErrorBox error={visibleError} t={t} onSwitchToPaste={switchToPaste} fromTab={tab} />
       )}
+
+      {/* Model picker — shown as flag-prefixed pills. Each model has a
+          country-of-origin flag so the user sees they're picking between a
+          US model and a Chinese model. The same prompt is sent either way
+          (apart from per-model tool_choice / provider-pin quirks). */}
+      <div className="flex flex-col gap-2">
+        <span className="text-xs uppercase tracking-wide text-muted">
+          {t.model}
+        </span>
+        <div className="flex items-center gap-2 flex-wrap">
+          {MODEL_CATALOG.map((m) => (
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => setModel(m.id)}
+              className={cn(
+                "px-3 py-1.5 rounded-md text-sm border transition-colors inline-flex items-center gap-2",
+                model === m.id
+                  ? "border-foreground bg-foreground text-background"
+                  : "border-rule text-muted hover:text-foreground",
+              )}
+            >
+              {m.flag && <span className="text-base leading-none">{m.flag}</span>}
+              {m.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <div className="flex items-center justify-between">
         <span className="text-xs text-muted">{t.form_hint}</span>

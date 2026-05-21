@@ -9,11 +9,13 @@ import { FallacyModal } from "@/components/fallacy-modal";
 import { FindingModal } from "@/components/finding-modal";
 import { MobileHintModal } from "@/components/mobile-hint-modal";
 import { ShareLinkBar } from "@/components/share-link-bar";
+import { ExportPdfButton } from "@/components/export-pdf-button";
 
 const MOBILE_BREAKPOINT = 1024; // matches Tailwind's `lg`
 const MOBILE_HINT_KEY = "mobileHintSeen";
 
 type Props = {
+  id: string;
   title: string | null;
   sourceRef: string | null;
   source: string;
@@ -29,6 +31,7 @@ type Props = {
 type FindingWithKey = Finding & { key: string };
 
 export function AnalysisView({
+  id,
   title,
   sourceRef,
   source,
@@ -292,7 +295,7 @@ export function AnalysisView({
       </div>
 
       <div className="mx-auto max-w-7xl w-full px-4 sm:px-6 pb-16 grid grid-cols-1 lg:grid-cols-[1fr_22rem] gap-8">
-        <ShareLinkBar />
+        <ShareLinkBar rightSlot={<ExportPdfButton href={`/a/${id}/print`} />} />
       </div>
 
       <FallacyModal

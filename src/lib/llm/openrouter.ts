@@ -37,6 +37,11 @@ import type {
 export type ModelChoice = {
   id: string;
   label: string;
+  // Country-of-origin emoji shown next to the model name in the UI. Used
+  // as a quick signal that the user is choosing between e.g. a Western
+  // and a Chinese model, which matters for political-content analysis
+  // where the model's training bias can flow through.
+  flag?: string;
   family:
     | ProviderId
     | "google"
@@ -61,12 +66,14 @@ export const MODEL_CATALOG: ModelChoice[] = [
   {
     id: "gpt-5.4-mini",
     label: "GPT-5.4 mini",
+    flag: "🇺🇸",
     family: "openai",
     openrouter: "openai/gpt-5.4-mini",
   },
   {
     id: "minimax-m2.7",
     label: "MiniMax M2.7",
+    flag: "🇨🇳",
     family: "minimax",
     openrouter: "minimax/minimax-m2.7",
     // The Minimax upstream rejects forced tool_choice ("auto" only), and

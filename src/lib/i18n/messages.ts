@@ -113,6 +113,9 @@ export type Messages = {
   loader_neutrality: string[];
   findings_found_one: string;
   findings_found_many: string;
+  neutrality_no_issues: string;
+  neutrality_confidence: string;
+  neutrality_footer: (model: string) => string;
 
   // Neutrality verdict labels
   nv_neutral: string;
@@ -403,6 +406,10 @@ const en: Messages = {
   ],
   findings_found_one: "issue found",
   findings_found_many: "issues found",
+  neutrality_no_issues: "No neutrality issues flagged.",
+  neutrality_confidence: "confidence",
+  neutrality_footer: (model) =>
+    `Assessed by ${model} via OpenRouter. Neutrality is a property of the framing — Jiddu does not classify partisan direction. Read the flagged passages and judge for yourself.`,
 
   nv_neutral: "Neutral",
   nv_partisan_lean: "Partisan lean",
@@ -476,7 +483,7 @@ const en: Messages = {
     {
       title: "6. Methodology",
       paragraphs: [
-        "Our claim extraction and verification pipeline is inspired by Claimify (Metropolitansky & Larson, MSR 2025) for the extraction stage, and by the evaluation framework described in \"Distilling Expert Judgment at Scale\" (Goldfarb, Hall, Fisher, Salam, Wilde — Forum AI / Stanford, 2025) for the verdict assessment and source-quality tiers.",
+        "Our claim extraction and verification pipeline is inspired by [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson, MSR 2025) for the extraction stage, and by the evaluation framework described in [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) (Goldfarb, Hall, Fisher, Salam, Wilde — Forum AI / Stanford, 2025) for the verdict assessment, source-quality tiers and neutrality dimension.",
         "Jiddu is not affiliated with either of those research groups; we cite them because the methodology behind the tool is grounded in their work, and users should know that the design choices have an academic basis.",
       ],
     },
@@ -737,6 +744,10 @@ const pt: Messages = {
   ],
   findings_found_one: "padrão encontrado",
   findings_found_many: "padrões encontrados",
+  neutrality_no_issues: "Nenhum padrão de imparcialidade sinalizado.",
+  neutrality_confidence: "confiança",
+  neutrality_footer: (model) =>
+    `Avaliado por ${model} via OpenRouter. Imparcialidade é uma propriedade do enquadramento — o Jiddu não classifica direção partidária. Leia os trechos sinalizados e julgue por conta própria.`,
 
   nv_neutral: "Neutro",
   nv_partisan_lean: "Inclinação partidária",
@@ -810,7 +821,7 @@ const pt: Messages = {
     {
       title: "6. Metodologia",
       paragraphs: [
-        "O pipeline de extração e verificação de afirmações é inspirado em Claimify (Metropolitansky & Larson, MSR 2025) para a etapa de extração, e no framework de avaliação descrito em \"Distilling Expert Judgment at Scale\" (Goldfarb, Hall, Fisher, Salam, Wilde — Forum AI / Stanford, 2025) para a avaliação de veredito e os tiers de qualidade de fonte.",
+        "O pipeline de extração e verificação de afirmações é inspirado em [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson, MSR 2025) para a etapa de extração, e no framework de avaliação descrito em [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) (Goldfarb, Hall, Fisher, Salam, Wilde — Forum AI / Stanford, 2025) para a avaliação de veredito, os tiers de qualidade de fonte e a dimensão de imparcialidade.",
         "O Jiddu não tem afiliação com nenhum desses grupos de pesquisa; citamos as referências porque a metodologia da ferramenta é fundamentada no trabalho deles, e os usuários devem saber que as decisões de design têm base acadêmica.",
       ],
     },
@@ -1071,6 +1082,10 @@ const es: Messages = {
   ],
   findings_found_one: "patrón encontrado",
   findings_found_many: "patrones encontrados",
+  neutrality_no_issues: "No se señalaron problemas de imparcialidad.",
+  neutrality_confidence: "confianza",
+  neutrality_footer: (model) =>
+    `Evaluado por ${model} vía OpenRouter. La imparcialidad es una propiedad del encuadre — Jiddu no clasifica dirección partidaria. Lee los pasajes señalados y juzga por tu cuenta.`,
 
   nv_neutral: "Neutro",
   nv_partisan_lean: "Inclinación partidaria",
@@ -1144,7 +1159,7 @@ const es: Messages = {
     {
       title: "6. Metodología",
       paragraphs: [
-        "Nuestro pipeline de extracción y verificación de afirmaciones se inspira en Claimify (Metropolitansky & Larson, MSR 2025) para la etapa de extracción, y en el framework de evaluación descrito en \"Distilling Expert Judgment at Scale\" (Goldfarb, Hall, Fisher, Salam, Wilde — Forum AI / Stanford, 2025) para la evaluación de veredicto y los niveles de calidad de fuente.",
+        "Nuestro pipeline de extracción y verificación de afirmaciones se inspira en [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson, MSR 2025) para la etapa de extracción, y en el framework de evaluación descrito en [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) (Goldfarb, Hall, Fisher, Salam, Wilde — Forum AI / Stanford, 2025) para la evaluación de veredicto, los niveles de calidad de fuente y la dimensión de imparcialidad.",
         "Jiddu no está afiliado a ninguno de estos grupos de investigación; los citamos porque la metodología detrás de la herramienta se basa en su trabajo, y los usuarios deben saber que las decisiones de diseño tienen base académica.",
       ],
     },
