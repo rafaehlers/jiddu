@@ -35,6 +35,28 @@ model AppSetting {
   updatedAt DateTime @updatedAt
 }
 
+model Neutrality {
+  id           String    @id
+  status       String    @default("pending") // "pending" | "running" | "complete" | "failed"
+  source       String // "url" | "pdf" | "txt" | "paste"
+  sourceRef    String?
+  title        String?
+  text         String
+  language     String?
+  provider     String
+  model        String
+  textType     String? // informational | opinion | political_speech | advocacy | analysis | marketing | social_media
+  verdict      String    @default("pending") // neutral | partisan_lean | explicitly_partisan | manipulation | pending
+  confidence   Float     @default(0)
+  rationale    String?
+  sentences    String    @default("[]") // JSON array of {id,start,end,text}
+  findings     String    @default("[]") // JSON array of NeutralityFinding
+  errorMessage String?
+  createdAt    DateTime  @default(now())
+  finishedAt   DateTime?
+  reviewedAt   DateTime?
+}
+
 model VerdictFeedback {
   id              String    @id @default(cuid())
   factCheckId     String // links back to /f/[id]

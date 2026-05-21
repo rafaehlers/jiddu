@@ -40,6 +40,16 @@ export async function toggleReviewedAction(formData: FormData): Promise<void> {
       where: { id },
       data: { reviewedAt: row.reviewedAt ? null : new Date() },
     });
+  } else if (kind === "neutrality") {
+    const row = await prisma.neutrality.findUnique({
+      where: { id },
+      select: { reviewedAt: true },
+    });
+    if (!row) return;
+    await prisma.neutrality.update({
+      where: { id },
+      data: { reviewedAt: row.reviewedAt ? null : new Date() },
+    });
   }
   revalidatePath("/admin");
 }

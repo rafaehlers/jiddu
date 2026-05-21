@@ -69,7 +69,7 @@ function LoginForm({ error }: { error?: string }) {
 }
 
 type AdminRow = {
-  kind: "fallacy" | "factcheck";
+  kind: "fallacy" | "factcheck" | "neutrality";
   id: string;
   title: string | null;
   source: string;
@@ -83,9 +83,9 @@ type AdminRow = {
 };
 
 async function AdminList() {
-  // Pull both row types in parallel, normalize to a common shape, then
+  // Pull all three row types in parallel, normalize to a common shape, then
   // merge by createdAt desc so the admin sees one unified table.
-  const [analyses, factchecks] = await Promise.all([
+  const [analyses, factchecks, neutralities] = await Promise.all([
     prisma.analysis.findMany({
       orderBy: { createdAt: "desc" },
       select: {
@@ -111,6 +111,22 @@ async function AdminList() {
         language: true,
         model: true,
         claims: true,
+        status: true,
+        createdAt: true,
+        reviewedAt: true,
+      },
+    }),
+    prisma.neutrality.findMany({
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        title: true,
+        source: true,
+        sourceRef: true,
+        language: true,
+        model: true,
+        findings: true,
+        verdict: true,
         status: true,
         createdAt: true,
         reviewedAt: true,
@@ -157,6 +173,30 @@ async function AdminList() {
         signal: String(claimCount),
         createdAt: f.createdAt,
         reviewedAt: f.reviewedAt,
+      };
+    }),
+    ...neutralities.map<AdminRow>((n) => {
+      let findingsCount = 0;
+      try {
+        const parsed = JSON.parse(n.findings);
+        if (Array.isArray(parsed)) findingsCount = parsed.length;
+      } catch {
+        // ignore
+      }
+      return {
+        kind: "neutrality" as const,
+        id: n.id,
+        title: n.title,
+        source: n.source,
+        sourceRef: n.sourceRef,
+        language: n.language,
+        model: n.model,
+        status: n.status,
+        // Show the verdict on the signal column for neutrality rows; it's
+        // more meaningful than a raw issue count.
+        signal: `${findingsCount} · ${n.verdict.replace(/_/g, " ")}`,
+        createdAt: n.createdAt,
+        reviewedAt: n.reviewedAt,
       };
     }),
   ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
@@ -207,12 +247,17 @@ async function AdminList() {
         </div>
       </div>
 
-      {/* Compact dashboard row — credits + analysis counts side by side. */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      {/* Compact dashboard row — credits + counts per analysis kind. */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
         <CreditsStat credits={credits} />
         <Stat label="Total" value={rows.length} />
         <Stat label="Fallacies" value={analyses.length} accent="amber" />
         <Stat label="Fact-checks" value={factchecks.length} accent="blue" />
+        <Stat
+          label="Neutrality"
+          value={neutralities.length}
+          accent="purple"
+        />
       </div>
 
       <div className="overflow-x-auto border border-rule rounded-lg">
@@ -243,7 +288,12 @@ async function AdminList() {
               </tr>
             )}
             {rows.map((r) => {
-              const viewerHref = r.kind === "fallacy" ? `/a/${r.id}` : `/f/${r.id}`;
+              const viewerHref =
+                r.kind === "fallacy"
+                  ? `/a/${r.id}`
+                  : r.kind === "factcheck"
+                    ? `/f/${r.id}`
+                    : `/n/${r.id}`;
               return (
                 <tr key={`${r.kind}:${r.id}`} className="border-t border-rule hover:bg-paper/50">
                   <td className="px-3 py-2 whitespace-nowrap text-muted">
@@ -310,7 +360,7 @@ function Stat({
 }: {
   label: string;
   value: string | number;
-  accent?: "amber" | "blue" | "red";
+  accent?: "amber" | "blue" | "red" | "purple";
   hint?: string;
 }) {
   const accentCls =
@@ -320,7 +370,9 @@ function Stat({
         ? "text-blue-500"
         : accent === "red"
           ? "text-[var(--severity-high)]"
-          : "";
+          : accent === "purple"
+            ? "text-purple-500"
+            : "";
   return (
     <div className="bg-paper border border-rule rounded-lg p-3 flex flex-col gap-0.5">
       <p className="text-xs text-muted uppercase tracking-wide">{label}</p>
@@ -382,12 +434,19 @@ function CreditsStat({
   );
 }
 
-function TypeBadge({ kind }: { kind: "fallacy" | "factcheck" }) {
+function TypeBadge({ kind }: { kind: "fallacy" | "factcheck" | "neutrality" }) {
   const cls =
     kind === "fallacy"
       ? "bg-amber-500/15 text-amber-500"
-      : "bg-blue-500/15 text-blue-500";
-  const label = kind === "fallacy" ? "Fallacy" : "Fact-check";
+      : kind === "factcheck"
+        ? "bg-blue-500/15 text-blue-500"
+        : "bg-purple-500/15 text-purple-500";
+  const label =
+    kind === "fallacy"
+      ? "Fallacy"
+      : kind === "factcheck"
+        ? "Fact-check"
+        : "Neutrality";
   return (
     <span className={`inline-block text-xs px-2 py-0.5 rounded-full ${cls}`}>
       {label}

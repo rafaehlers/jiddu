@@ -1,9 +1,12 @@
 import OpenAI from "openai";
+import { z } from "zod";
 import {
   CONFIDENCE_FLOOR,
+  SOURCE_TIERS,
   VerdictPayloadSchema,
   VerdictSourceSchema,
   applyConfidenceFloor,
+  type SourceTier,
   type Verdict,
   type VerdictSource,
 } from "../verdict-schema";
@@ -96,17 +99,23 @@ export async function verifyClaim(
 
   const json = extractJsonObject(content);
   const parsed = VerdictPayloadSchema.parse(json);
+  const tierIndex = extractSourceTierIndex(json);
 
-  // Sources from message.annotations[].url_citation. Deduplicate by URL and
-  // drop anything that fails URL parsing.
+  // Sources from message.annotations[].url_citation, deduped by URL. Tier
+  // / state-controlled flag come from the model's JSON (tierIndex). If the
+  // model omits a URL or returns a malformed entry, the source still ships
+  // — we just don't display a tier badge for it.
   const seen = new Set<string>();
   const sources: VerdictSource[] = [];
   for (const a of message?.annotations ?? []) {
     const u = a.url_citation?.url;
     if (!u || seen.has(u)) continue;
+    const tierInfo = tierIndex.get(u);
     const candidate = {
       url: u,
       title: a.url_citation?.title ?? null,
+      tier: tierInfo?.tier ?? null,
+      stateControlled: tierInfo?.stateControlled ?? null,
     };
     const result = VerdictSourceSchema.safeParse(candidate);
     if (!result.success) continue;
@@ -150,6 +159,42 @@ function extractJsonObject(text: string): unknown {
   }
   const slice = text.slice(first, last + 1);
   return JSON.parse(slice);
+}
+
+// Picks the optional sourceTiers[] array out of the model's JSON and
+// turns it into a URL → { tier, stateControlled } lookup. We're lenient:
+// if the field is missing or malformed, return an empty index and let the
+// sources flow through without tiers.
+const SourceTierItemSchema = z.object({
+  url: z.string(),
+  tier: z.string().optional().nullable(),
+  stateControlled: z.boolean().optional().nullable(),
+});
+
+function extractSourceTierIndex(
+  json: unknown,
+): Map<string, { tier: SourceTier | null; stateControlled: boolean | null }> {
+  const out = new Map<
+    string,
+    { tier: SourceTier | null; stateControlled: boolean | null }
+  >();
+  if (!json || typeof json !== "object") return out;
+  const arr = (json as { sourceTiers?: unknown }).sourceTiers;
+  if (!Array.isArray(arr)) return out;
+  for (const raw of arr) {
+    const parsed = SourceTierItemSchema.safeParse(raw);
+    if (!parsed.success) continue;
+    const t = parsed.data.tier?.toLowerCase().replace(/[\s-]+/g, "_");
+    const tier =
+      t && (SOURCE_TIERS as readonly string[]).includes(t)
+        ? (t as SourceTier)
+        : null;
+    out.set(parsed.data.url, {
+      tier,
+      stateControlled: parsed.data.stateControlled ?? null,
+    });
+  }
+  return out;
 }
 
 export { CONFIDENCE_FLOOR };

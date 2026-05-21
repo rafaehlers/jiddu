@@ -476,6 +476,26 @@ function buildSentences(text) {
 
 const VERIFY_MODEL = "perplexity/sonar-reasoning-pro";
 
+// URL→tier mapping for the demo verdicts. Real verdicts get their tier
+// from the live Sonar response (see lib/llm/verifyClaim.ts). This is just
+// so /f/demo-* shows the badges with curated, sensible values.
+function tierForUrl(url) {
+  const u = url.toLowerCase();
+  // Primary — official data agencies, gov databases, primary docs.
+  if (u.includes("bls.gov") || u.includes("ibge.gov.br") || u.includes("bcb.gov.br")) return "primary";
+  if (u.includes("indec.gob.ar") || u.includes("cbo.gov") || u.includes("ec.europa.eu/eurostat")) return "primary";
+  if (u.includes("imf.org/external/datamapper") || u.includes("data.worldbank.org") || u.includes("worldbank.org/country")) return "primary";
+  // Scholarly — peer-reviewed working papers.
+  if (u.includes("nber.org/papers")) return "scholarly";
+  // Think tank — research orgs, IMF analytical pages.
+  if (u.includes("imf.org/external/pubs") || u.includes("imf.org/en/publications") || u.includes("cbo.gov/publication")) return "think_tank";
+  // Journalistic — Reuters, Agência Brasil, La Nación, Folha, BBC, etc.
+  if (u.includes("reuters.com") || u.includes("agenciabrasil.ebc.com.br") || u.includes("foxnews.com")) return "journalistic";
+  if (u.includes("folha.uol.com.br") || u.includes("lanacion.com.ar")) return "journalistic";
+  // Default informal for anything else (linkedin, blogs, etc.)
+  return "informal";
+}
+
 const insert = db.prepare(`
   INSERT OR REPLACE INTO FactCheck (
     id, status, source, sourceRef, title, text, language, provider, model,
@@ -510,6 +530,8 @@ function seed(lang, profile) {
     sources: c.verdict.sources.map((s) => ({
       url: s.url,
       title: s.title ?? null,
+      tier: tierForUrl(s.url),
+      stateControlled: false,
     })),
     model: VERIFY_MODEL,
   }));

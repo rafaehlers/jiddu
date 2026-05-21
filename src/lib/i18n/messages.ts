@@ -94,6 +94,51 @@ export type Messages = {
   vd_mixed: string;
   vd_unverified: string;
 
+  // Source quality tiers (Goldfarb et al. 2025)
+  st_primary: string;
+  st_scholarly: string;
+  st_think_tank: string;
+  st_journalistic: string;
+  st_commercial_content: string;
+  st_informal: string;
+  st_state_controlled: string;
+
+  // Neutrality dimension
+  mode_neutrality: string;
+  tab_neutrality: string;
+  neutrality_hero_title: string;
+  neutrality_hero_subtitle: string;
+  assess_neutrality: string;
+  neutrality_failed: string;
+  loader_neutrality: string[];
+  findings_found_one: string;
+  findings_found_many: string;
+
+  // Neutrality verdict labels
+  nv_neutral: string;
+  nv_partisan_lean: string;
+  nv_explicitly_partisan: string;
+  nv_manipulation: string;
+
+  // Issue type labels
+  ni_loaded_language: string;
+  ni_asymmetric_attribution: string;
+  ni_false_equivalence: string;
+  ni_selective_omission: string;
+  ni_source_asymmetry: string;
+  ni_both_sidesing: string;
+  ni_steering: string;
+  ni_genetic_framing: string;
+
+  // Text-type labels
+  tt_informational: string;
+  tt_opinion: string;
+  tt_political_speech: string;
+  tt_advocacy: string;
+  tt_analysis: string;
+  tt_marketing: string;
+  tt_social_media: string;
+
   // Errors
   analysis_failed: string;
   try_again: string;
@@ -333,6 +378,54 @@ const en: Messages = {
   vd_mixed: "Mixed",
   vd_unverified: "Unverified",
 
+  st_primary: "Primary",
+  st_scholarly: "Scholarly",
+  st_think_tank: "Think tank",
+  st_journalistic: "Journalistic",
+  st_commercial_content: "Commercial",
+  st_informal: "Informal",
+  st_state_controlled: "State-controlled",
+
+  mode_neutrality: "Neutrality",
+  tab_neutrality: "Neutrality",
+  neutrality_hero_title: "Spot framing, attribution and source-selection patterns.",
+  neutrality_hero_subtitle:
+    "Drop a URL, paste text, or upload a PDF. Jiddu flags loaded language, asymmetric attribution, false equivalence and other framing patterns — without trying to label a partisan direction.",
+  assess_neutrality: "Assess neutrality",
+  neutrality_failed: "Neutrality assessment failed",
+  loader_neutrality: [
+    "Reading the text",
+    "Spotting word-choice patterns",
+    "Checking attribution symmetry",
+    "Looking for selective omission",
+    "Auditing source mix",
+    "Drafting the verdict",
+  ],
+  findings_found_one: "issue found",
+  findings_found_many: "issues found",
+
+  nv_neutral: "Neutral",
+  nv_partisan_lean: "Partisan lean",
+  nv_explicitly_partisan: "Explicitly partisan",
+  nv_manipulation: "Manipulation",
+
+  ni_loaded_language: "Loaded language",
+  ni_asymmetric_attribution: "Asymmetric attribution",
+  ni_false_equivalence: "False equivalence",
+  ni_selective_omission: "Selective omission",
+  ni_source_asymmetry: "Source asymmetry",
+  ni_both_sidesing: "Both-sidesing",
+  ni_steering: "Steering",
+  ni_genetic_framing: "Genetic framing",
+
+  tt_informational: "Informational",
+  tt_opinion: "Opinion",
+  tt_political_speech: "Political speech",
+  tt_advocacy: "Advocacy",
+  tt_analysis: "Analysis",
+  tt_marketing: "Marketing",
+  tt_social_media: "Social media",
+
   nav_legal: "Terms",
   unreviewed_banner_title: "Automated, not yet human-reviewed",
   unreviewed_banner_body:
@@ -381,7 +474,14 @@ const en: Messages = {
       ],
     },
     {
-      title: "6. Contact",
+      title: "6. Methodology",
+      paragraphs: [
+        "Our claim extraction and verification pipeline is inspired by Claimify (Metropolitansky & Larson, MSR 2025) for the extraction stage, and by the evaluation framework described in \"Distilling Expert Judgment at Scale\" (Goldfarb, Hall, Fisher, Salam, Wilde — Forum AI / Stanford, 2025) for the verdict assessment and source-quality tiers.",
+        "Jiddu is not affiliated with either of those research groups; we cite them because the methodology behind the tool is grounded in their work, and users should know that the design choices have an academic basis.",
+      ],
+    },
+    {
+      title: "7. Contact",
       paragraphs: [
         "Operator: Rafael de Menezes Ehlers. For takedown requests, corrections, or other concerns, contact via LinkedIn (linked in the footer).",
       ],
@@ -612,6 +712,54 @@ const pt: Messages = {
   vd_mixed: "Misto",
   vd_unverified: "Não verificado",
 
+  st_primary: "Fonte primária",
+  st_scholarly: "Acadêmico",
+  st_think_tank: "Think tank",
+  st_journalistic: "Jornalismo",
+  st_commercial_content: "Comercial",
+  st_informal: "Informal",
+  st_state_controlled: "Controlado pelo Estado",
+
+  mode_neutrality: "Imparcialidade",
+  tab_neutrality: "Imparcialidade",
+  neutrality_hero_title: "Identifique padrões de enquadramento, atribuição e seleção de fontes.",
+  neutrality_hero_subtitle:
+    "Solte uma URL, cole texto ou envie um PDF. O Jiddu sinaliza palavras carregadas, atribuição assimétrica, falsa equivalência e outros padrões de enquadramento — sem tentar rotular direção partidária.",
+  assess_neutrality: "Avaliar imparcialidade",
+  neutrality_failed: "Falha na análise de imparcialidade",
+  loader_neutrality: [
+    "Lendo o texto",
+    "Observando escolhas de palavras",
+    "Verificando simetria de atribuição",
+    "Procurando omissão seletiva",
+    "Auditando o mix de fontes",
+    "Redigindo o veredito",
+  ],
+  findings_found_one: "padrão encontrado",
+  findings_found_many: "padrões encontrados",
+
+  nv_neutral: "Neutro",
+  nv_partisan_lean: "Inclinação partidária",
+  nv_explicitly_partisan: "Explicitamente partidário",
+  nv_manipulation: "Manipulação",
+
+  ni_loaded_language: "Linguagem carregada",
+  ni_asymmetric_attribution: "Atribuição assimétrica",
+  ni_false_equivalence: "Falsa equivalência",
+  ni_selective_omission: "Omissão seletiva",
+  ni_source_asymmetry: "Assimetria de fontes",
+  ni_both_sidesing: "Falso debate",
+  ni_steering: "Indução",
+  ni_genetic_framing: "Ataque à origem",
+
+  tt_informational: "Informativo",
+  tt_opinion: "Opinião",
+  tt_political_speech: "Discurso político",
+  tt_advocacy: "Advocacy",
+  tt_analysis: "Análise",
+  tt_marketing: "Marketing",
+  tt_social_media: "Redes sociais",
+
   nav_legal: "Termos",
   unreviewed_banner_title: "Automatizado, ainda não revisado por humano",
   unreviewed_banner_body:
@@ -660,7 +808,14 @@ const pt: Messages = {
       ],
     },
     {
-      title: "6. Contato",
+      title: "6. Metodologia",
+      paragraphs: [
+        "O pipeline de extração e verificação de afirmações é inspirado em Claimify (Metropolitansky & Larson, MSR 2025) para a etapa de extração, e no framework de avaliação descrito em \"Distilling Expert Judgment at Scale\" (Goldfarb, Hall, Fisher, Salam, Wilde — Forum AI / Stanford, 2025) para a avaliação de veredito e os tiers de qualidade de fonte.",
+        "O Jiddu não tem afiliação com nenhum desses grupos de pesquisa; citamos as referências porque a metodologia da ferramenta é fundamentada no trabalho deles, e os usuários devem saber que as decisões de design têm base acadêmica.",
+      ],
+    },
+    {
+      title: "7. Contato",
       paragraphs: [
         "Operador: Rafael de Menezes Ehlers. Para solicitações de remoção, correções ou outras dúvidas, contate via LinkedIn (link no rodapé).",
       ],
@@ -891,6 +1046,54 @@ const es: Messages = {
   vd_mixed: "Mixto",
   vd_unverified: "No verificado",
 
+  st_primary: "Fuente primaria",
+  st_scholarly: "Académico",
+  st_think_tank: "Think tank",
+  st_journalistic: "Periodismo",
+  st_commercial_content: "Comercial",
+  st_informal: "Informal",
+  st_state_controlled: "Controlado por el Estado",
+
+  mode_neutrality: "Imparcialidad",
+  tab_neutrality: "Imparcialidad",
+  neutrality_hero_title: "Identifica patrones de encuadre, atribución y selección de fuentes.",
+  neutrality_hero_subtitle:
+    "Pega una URL, escribe el texto o sube un PDF. Jiddu marca palabras cargadas, atribución asimétrica, falsa equivalencia y otros patrones de encuadre — sin intentar etiquetar dirección partidaria.",
+  assess_neutrality: "Evaluar imparcialidad",
+  neutrality_failed: "Falló el análisis de imparcialidad",
+  loader_neutrality: [
+    "Leyendo el texto",
+    "Observando elecciones de palabras",
+    "Verificando simetría de atribución",
+    "Buscando omisión selectiva",
+    "Auditando el mix de fuentes",
+    "Redactando el veredicto",
+  ],
+  findings_found_one: "patrón encontrado",
+  findings_found_many: "patrones encontrados",
+
+  nv_neutral: "Neutro",
+  nv_partisan_lean: "Inclinación partidaria",
+  nv_explicitly_partisan: "Explícitamente partidario",
+  nv_manipulation: "Manipulación",
+
+  ni_loaded_language: "Lenguaje cargado",
+  ni_asymmetric_attribution: "Atribución asimétrica",
+  ni_false_equivalence: "Falsa equivalencia",
+  ni_selective_omission: "Omisión selectiva",
+  ni_source_asymmetry: "Asimetría de fuentes",
+  ni_both_sidesing: "Falso debate",
+  ni_steering: "Conducción",
+  ni_genetic_framing: "Ataque al origen",
+
+  tt_informational: "Informativo",
+  tt_opinion: "Opinión",
+  tt_political_speech: "Discurso político",
+  tt_advocacy: "Advocacy",
+  tt_analysis: "Análisis",
+  tt_marketing: "Marketing",
+  tt_social_media: "Redes sociales",
+
   nav_legal: "Términos",
   unreviewed_banner_title: "Automatizado, aún no revisado por un humano",
   unreviewed_banner_body:
@@ -939,7 +1142,14 @@ const es: Messages = {
       ],
     },
     {
-      title: "6. Contacto",
+      title: "6. Metodología",
+      paragraphs: [
+        "Nuestro pipeline de extracción y verificación de afirmaciones se inspira en Claimify (Metropolitansky & Larson, MSR 2025) para la etapa de extracción, y en el framework de evaluación descrito en \"Distilling Expert Judgment at Scale\" (Goldfarb, Hall, Fisher, Salam, Wilde — Forum AI / Stanford, 2025) para la evaluación de veredicto y los niveles de calidad de fuente.",
+        "Jiddu no está afiliado a ninguno de estos grupos de investigación; los citamos porque la metodología detrás de la herramienta se basa en su trabajo, y los usuarios deben saber que las decisiones de diseño tienen base académica.",
+      ],
+    },
+    {
+      title: "7. Contacto",
       paragraphs: [
         "Operador: Rafael de Menezes Ehlers. Para solicitudes de remoción, correcciones u otras consultas, contacto vía LinkedIn (enlace en el pie de página).",
       ],

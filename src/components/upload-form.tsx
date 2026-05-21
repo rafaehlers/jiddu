@@ -14,7 +14,7 @@ type ErrorState = {
   code?: string;
 };
 
-type Mode = "detector" | "factcheck";
+type Mode = "detector" | "factcheck" | "neutrality";
 
 type Props = {
   onSubmit: (
@@ -94,12 +94,15 @@ export function UploadForm({
       {/* Top row: mode toggle (Detector / Fact-check) sits before the
           input-type tabs. Each pill is a Link, so the active state survives
           page navigation. */}
-      <div className="flex items-center gap-1 bg-background border border-rule rounded-md p-1 self-start">
+      <div className="flex items-center gap-1 bg-background border border-rule rounded-md p-1 self-start flex-wrap">
         <ModeButton href="/" active={mode === "detector"}>
           {t.mode_detector}
         </ModeButton>
         <ModeButton href="/factcheck" active={mode === "factcheck"}>
           {t.mode_factcheck}
+        </ModeButton>
+        <ModeButton href="/neutrality" active={mode === "neutrality"}>
+          {t.mode_neutrality}
         </ModeButton>
       </div>
 

@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import type { Sentence } from "@/lib/schema";
 import type { Claim, ClaimType } from "@/lib/claims-schema";
-import type { Verdict, VerdictValue } from "@/lib/verdict-schema";
+import type { Verdict, VerdictValue, SourceTier } from "@/lib/verdict-schema";
 import { readSse } from "@/lib/sse";
 import { cn } from "@/lib/utils";
 import { ShareLinkBar } from "@/components/share-link-bar";
@@ -628,9 +628,9 @@ function ClaimCard({
             )}
           </div>
           {sourcesOpen && (
-            <ul className="mt-2 flex flex-col gap-1.5">
+            <ul className="mt-2 flex flex-col gap-2">
               {verdict.sources.map((s, i) => (
-                <li key={i} className="text-xs">
+                <li key={i} className="text-xs flex flex-col gap-1">
                   <a
                     href={s.url}
                     target="_blank"
@@ -641,6 +641,19 @@ function ClaimCard({
                     <ExternalLink className="h-3 w-3 shrink-0 mt-0.5" />
                     <span>{s.title ?? s.url}</span>
                   </a>
+                  {(s.tier || s.stateControlled) && (
+                    <div className="flex items-center gap-1.5 flex-wrap ml-4">
+                      {s.tier && <SourceTierBadge tier={s.tier} />}
+                      {s.stateControlled && (
+                        <span
+                          className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full border border-[var(--severity-high)]/50 text-[var(--severity-high)]"
+                          title={t.st_state_controlled}
+                        >
+                          ⚠ {t.st_state_controlled}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
@@ -648,6 +661,37 @@ function ClaimCard({
         </>
       )}
     </li>
+  );
+}
+
+// Per-tier visual identity. The "primary" / "scholarly" tiers earn the
+// most legible colors; commercial and informal are dimmed to signal
+// lower trust at a glance.
+const TIER_BADGE_CLS: Record<SourceTier, string> = {
+  primary: "border-emerald-500/50 text-emerald-500",
+  scholarly: "border-blue-500/50 text-blue-500",
+  think_tank: "border-purple-500/40 text-purple-500",
+  journalistic: "border-rule text-foreground",
+  commercial_content: "border-amber-500/40 text-amber-500",
+  informal: "border-rule text-muted",
+};
+
+function SourceTierBadge({ tier }: { tier: SourceTier }) {
+  const { t } = useI18n();
+  const labelKey =
+    `st_${tier}` as
+      | "st_primary"
+      | "st_scholarly"
+      | "st_think_tank"
+      | "st_journalistic"
+      | "st_commercial_content"
+      | "st_informal";
+  return (
+    <span
+      className={`inline-flex items-center text-[10px] px-1.5 py-0.5 rounded-full border ${TIER_BADGE_CLS[tier]}`}
+    >
+      {t[labelKey]}
+    </span>
   );
 }
 

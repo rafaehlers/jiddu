@@ -11,10 +11,25 @@ import {
   buildClaimsSystemPrompt,
   buildClaimsUserPrompt,
 } from "../claims-prompt";
+import {
+  NeutralityFindingSchema,
+  NeutralityResultSchema,
+  type NeutralityFinding,
+  type NeutralityResult,
+} from "../neutrality-schema";
+import { NEUTRALITY_JSON_SCHEMA } from "./neutralityJsonSchema";
+import {
+  buildNeutralitySystemPrompt,
+  buildNeutralityUserPrompt,
+} from "../neutrality-prompt";
 import { buildSystemPrompt, buildUserPrompt } from "../prompt";
 import { ANALYSIS_JSON_SCHEMA } from "./jsonSchema";
 import type { AnalyzeInput, AnalyzeOutput, LlmProvider, ProviderId } from "./types";
-import type { ClaimStreamEvent, StreamEvent } from "./stream";
+import type {
+  ClaimStreamEvent,
+  NeutralityStreamEvent,
+  StreamEvent,
+} from "./stream";
 
 // Curated catalog of OpenRouter models exposed in the UI dropdown. Each entry
 // pairs a stable internal id (used as the value in DB + form) with the
@@ -405,6 +420,145 @@ export class OpenRouterProvider implements LlmProvider {
     if (!emittedLanguage) {
       yield { type: "language", language: final.language ?? null };
       emittedLanguage = true;
+    }
+
+    return { model: this.defaultModel };
+  }
+
+  async *analyzeNeutralityStream(
+    input: AnalyzeInput,
+    opts?: { model?: string; signal?: AbortSignal },
+  ): AsyncGenerator<NeutralityStreamEvent, { model: string }, void> {
+    const model = this.slug(opts?.model);
+    const lang = input.lang ?? "en";
+
+    const stream = await this.client.chat.completions.create(
+      {
+        model,
+        messages: [
+          { role: "system", content: buildNeutralitySystemPrompt(lang) },
+          {
+            role: "user",
+            content: buildNeutralityUserPrompt(
+              input.sentences,
+              lang,
+              input.contextSentences,
+            ),
+          },
+        ],
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "report_neutrality",
+              description:
+                "Report the neutrality assessment for the given text.",
+              parameters: NEUTRALITY_JSON_SCHEMA,
+            },
+          },
+        ],
+        tool_choice: this.toolChoiceFor(opts?.model),
+        stream: true,
+        ...this.openRouterExtras(opts?.model),
+      } as OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming,
+      opts?.signal ? { signal: opts.signal } : undefined,
+    );
+
+    let buffer = "";
+    const emittedFindings = new Set<number>();
+    const emittedFields = new Set<string>();
+
+    function tryEmit(): NeutralityStreamEvent[] {
+      const out: NeutralityStreamEvent[] = [];
+      if (!buffer) return out;
+      let snap: Record<string, unknown> | null = null;
+      try {
+        snap = partialParse(buffer) as Record<string, unknown>;
+      } catch {
+        return out;
+      }
+      if (!snap || typeof snap !== "object") return out;
+      const findings = Array.isArray(snap.findings) ? snap.findings : [];
+      const lastIdx = findings.length - 1;
+      for (let i = 0; i < findings.length; i++) {
+        if (emittedFindings.has(i)) continue;
+        if (i === lastIdx) continue;
+        const parsed = NeutralityFindingSchema.safeParse(findings[i]);
+        if (parsed.success) {
+          emittedFindings.add(i);
+          out.push({ type: "finding", finding: parsed.data });
+        }
+      }
+      return out;
+    }
+
+    for await (const chunk of stream) {
+      const delta = chunk.choices[0]?.delta;
+      const tc = delta?.tool_calls?.[0];
+      const args = tc?.function?.arguments;
+      if (args) {
+        buffer += args;
+        for (const e of tryEmit()) yield e;
+      }
+    }
+
+    // Strict parse first; fall back to partial salvage on truncated output.
+    let final: NeutralityResult | null = null;
+    try {
+      final = NeutralityResultSchema.parse(JSON.parse(buffer));
+    } catch {
+      try {
+        const snap = partialParse(buffer) as Record<string, unknown> | null;
+        if (snap && typeof snap === "object") {
+          const findings = Array.isArray(snap.findings)
+            ? snap.findings
+                .map((f) => NeutralityFindingSchema.safeParse(f))
+                .filter(
+                  (r): r is { success: true; data: NeutralityFinding } =>
+                    r.success,
+                )
+                .map((r) => r.data)
+            : [];
+          // Run the whole snapshot through the schema with safeParse so we
+          // benefit from the lenient coercions defined there.
+          const parsedAll = NeutralityResultSchema.safeParse({
+            ...snap,
+            findings,
+          });
+          if (parsedAll.success) final = parsedAll.data;
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    if (!final) {
+      throw new Error(
+        `Failed to parse OpenRouter neutrality response (buffer length=${buffer.length})`,
+      );
+    }
+
+    for (let i = 0; i < final.findings.length; i++) {
+      if (emittedFindings.has(i)) continue;
+      emittedFindings.add(i);
+      yield { type: "finding", finding: final.findings[i] };
+    }
+    if (!emittedFields.has("language")) {
+      yield { type: "language", language: final.language ?? null };
+      emittedFields.add("language");
+    }
+    if (!emittedFields.has("textType")) {
+      yield { type: "textType", textType: final.textType };
+      emittedFields.add("textType");
+    }
+    if (!emittedFields.has("verdict")) {
+      yield {
+        type: "verdict",
+        verdict: final.verdict,
+        confidence: final.confidence,
+        rationale: final.rationale,
+      };
+      emittedFields.add("verdict");
     }
 
     return { model: this.defaultModel };

@@ -35,10 +35,44 @@ const VerdictValueSchema = z.preprocess((v) => {
   return "unverified";
 }, z.enum(VERDICT_VALUES));
 
+// Source quality tiers, inspired by Goldfarb et al. (Forum AI / Stanford,
+// 2025) — "Distilling Expert Judgment at Scale". The taxonomy is the
+// 6-class system they validated against expert raters with α ≈ 0.83.
+export const SOURCE_TIERS = [
+  "primary", // official primary source: gov data agency, court ruling, peer-reviewed paper
+  "scholarly", // academic article, university research, NBER working paper
+  "think_tank", // research org with a known editorial line (CBO, IMF, IPEA, FGV)
+  "journalistic", // mainstream / IFCN-aligned journalism (Reuters, AP, BBC, G1, Folha)
+  "commercial_content", // marketing, branded content, press release
+  "informal", // social media post, blog, forum, video commentary
+] as const;
+export type SourceTier = (typeof SOURCE_TIERS)[number];
+
+const SourceTierSchema = z.preprocess((v) => {
+  if (typeof v !== "string") return "informal";
+  const s = v.toLowerCase().trim().replace(/[\s-]+/g, "_");
+  if ((SOURCE_TIERS as readonly string[]).includes(s)) return s;
+  // Lenient mapping for sloppy outputs.
+  if (["gov", "government", "official", "primary_source"].includes(s)) return "primary";
+  if (["academic", "peer_reviewed", "research"].includes(s)) return "scholarly";
+  if (["think-tank", "policy_org"].includes(s)) return "think_tank";
+  if (["news", "media", "press", "newspaper"].includes(s)) return "journalistic";
+  if (["marketing", "branded", "press_release", "advertorial", "advertising"].includes(s))
+    return "commercial_content";
+  if (["social", "blog", "forum", "video", "podcast", "social_media"].includes(s))
+    return "informal";
+  return "informal";
+}, z.enum(SOURCE_TIERS));
+
 export const VerdictSourceSchema = z.object({
   url: z.string().url(),
   title: z.string().nullable().optional(),
   snippet: z.string().nullable().optional(),
+  tier: SourceTierSchema.nullable().optional(),
+  // State-controlled = editorial independence compromised (RT, CGTN,
+  // Xinhua, Sputnik, Telesur). State-FUNDED but editorially independent
+  // (BBC, NPR, Deutsche Welle) does NOT count.
+  stateControlled: z.boolean().nullable().optional(),
 });
 export type VerdictSource = z.infer<typeof VerdictSourceSchema>;
 
