@@ -5,7 +5,6 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { ScrollIndicator } from "@/components/scroll-indicator";
 import { NeutralityView } from "@/components/neutrality-view";
-import { UnreviewedBanner } from "@/components/unreviewed-banner";
 import type { Sentence } from "@/lib/schema";
 import type {
   NeutralityFinding,
@@ -50,8 +49,6 @@ export default async function NeutralityViewerPage({ params }: Props) {
   return (
     <main className="flex-1 flex flex-col">
       <SiteHeader variant="viewer" />
-
-      {n.reviewedAt === null && <UnreviewedBanner />}
 
       <NeutralityView
         id={n.id}

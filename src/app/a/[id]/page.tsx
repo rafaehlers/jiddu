@@ -6,7 +6,6 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { AnalysisHeaderActions } from "@/components/analysis-header-actions";
 import { ScrollIndicator } from "@/components/scroll-indicator";
-import { UnreviewedBanner } from "@/components/unreviewed-banner";
 import type { Finding, Sentence } from "@/lib/schema";
 
 type Props = { params: Promise<{ id: string }> };
@@ -60,8 +59,6 @@ export default async function AnalysisPage({ params }: Props) {
         variant="viewer"
         rightSlot={<AnalysisHeaderActions />}
       />
-
-      {a.reviewedAt === null && <UnreviewedBanner />}
 
       <AnalysisView
         id={a.id}
