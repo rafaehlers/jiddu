@@ -20,13 +20,6 @@ Backlog vivo. Atualize à medida que cada item entrar ou sair de prioridade. Ite
 
 ## P1 — Médio prazo
 
-### Open source + financiamento
-- [ ] **Tornar repo público no GitHub**. Pré-requisito pra grants.
-- [ ] **Aplicar pros 3 créditos LLM zero-fricção**: Anthropic Startup Program (~$1k), OpenAI Pioneer Program (~$1-5k), OpenRouter via email pro `team@openrouter.ai`.
-- [ ] **Aplicar pra NLnet NGI Zero Commons Fund**. Pitch técnico de ~3-5 páginas. Já temos: produto operacional, 3 línguas, demos, métricas, roadmap, base acadêmica (paper Claimify + Distilling Expert Judgment). Pode rascunhar a partir de `docs/fact-check-roadmap.md`.
-- [ ] **Aplicar pra Mozilla Technology Fund** quando call abrir.
-- [ ] **Partnership outreach**: Lupa, Aos Fatos, Estadão Verifica. Email-cego oferecendo Jiddu como ferramenta auxiliar de redação. Vale 10× em qualquer grant subsequente.
-
 ### Métricas / observabilidade
 - [ ] **Métricas no `/admin/metrics`** que faltam: top 10 vereditos mais reportados, complaint rate por modelo (gpt vs minimax), rationale com maior taxa de feedback. Tudo derivado das tabelas existentes.
 
@@ -60,6 +53,9 @@ A peça mais pesada que sobrou do roadmap original. Híbrido: classifier por cla
 ---
 
 ## P3 — Niche / opcional (faz se aparecer demanda)
+
+### Novos formatos de input (parser unificado)
+- [ ] **Migrar pra [LiteParse](https://github.com/run-llama/liteparse) (Apache-2.0, npm `@llamaindex/liteparse`)** quando quisermos suportar mais que PDF/HTML/paste. Ganhos: `.docx` / `.pptx` / `.xlsx` (briefings, relatórios de ONG, peças de marketing chegam nesses formatos), PDF escaneado via OCR, layout-aware (preserva colunas e tabelas em papers acadêmicos). Custo: binário Rust nativo (verificar prebuilt pro alvo do Docker), e pra Office docs precisa LibreOffice + ImageMagick no container (~500MB+), pra OCR precisa Tesseract bundled. Não substituir `pdfjs-dist` só por substituir — só quando um dos formatos novos virar pedido real.
 
 - [ ] **CSV export** de claims+verdicts pra planilha.
 - [ ] **Wikipedia adapter** — sub-caso da Fase 4, mais barato. Útil pra claims sobre pessoas/lugares.
