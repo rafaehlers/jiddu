@@ -32,6 +32,14 @@ Backlog vivo. Atualize à medida que cada item entrar ou sair de prioridade. Ite
 
 ## P2 — Fase 4 (semanas de trabalho, sessão dedicada)
 
+### Painel multi-modelo + Q&A (inspirado no paper Lenz)
+
+Resposta ao achado do paper [Lenz Research (Jordanov, 2026)](https://lenz.io/research/llm-disagreement): 5 LLMs frontier discordam em 67% dos claims. Single-model verdict (nosso atual) é frágil. Três features em camada, todas a custo controlado:
+
+- [ ] **Painel automático "barato" — GPT + MiniMax como juízes da evidência do Sonar.** Em cada `/api/factcheck/[id]/claim/[claimId]/verify`, depois do Sonar devolver `verdict + sources[]`, dispara 2 chamadas paralelas: GPT-5.4-mini e MiniMax M2.7 recebem o claim + as fontes que o Sonar achou e respondem apenas se a *evidência* sustenta o veredito (`supported / contradicted / mixed / unverified` — sem busca, só avaliando o que o Sonar trouxe). Schema novo `verdictPanel: { auto: [{model, verdict}], agreement: "unanimous" | "majority" | "contested" }`. UI: badge ao lado do verdict — "✓ Painel ratifica" / "~ Painel divergente" / "⚠️ Painel contradiz". Pega o erro mais danoso (Sonar tirou conclusão mais forte do que as fontes permitem) sem +3× custo Sonar. +20-30% por claim.
+- [ ] **Follow-up Q&A no card de claim** (equivalente ao `/ask/{id}` da Lenz). Botão "Tenho uma dúvida sobre este veredito" abre textarea pequena → POST envia pra Sonar com contexto completo (claim + veredito atual + rationale + fontes citadas) → resposta vira novo bloco abaixo do card. Cura o "veredito de 1 linha não basta pra entender". Rate-limit em `/admin/settings` (default 3 perguntas por claim por IP). Schema novo `ClaimQuestion { id, claimId, question, answer, createdAt }`.
+- [ ] **Deep verify manual com modelos "porrada" — Claude Opus 4.8 + GPT-5.5 via OpenRouter.** Botão "Verificação profunda" no card de claim (gated atrás do painel mostrar "contested" OU sempre disponível). Dispara 2 chamadas em paralelo: Opus 4.8 e GPT-5.5 recebem claim + fontes do Sonar e respondem com verdict + rationale próprio. Vira terceiro veredito ao lado do Sonar e do painel barato. Caro por chamada (~$0.10-0.15 cada), mas user-triggered = custo bounded. Cap: 1 deep-verify por claim (igual ao refresh), ajustável no admin. Sinal mais forte de "essa é a verdade do estado da arte 2026".
+
 ### Adapters BR + CRUD de fontes whitelisted
 
 A peça mais pesada que sobrou do roadmap original. Híbrido: classifier por claim → estrutura quando dá, Sonar quando não. Plano detalhado em `docs/fact-check-roadmap.md` §"Fase 4".
@@ -59,7 +67,6 @@ A peça mais pesada que sobrou do roadmap original. Híbrido: classifier por cla
 
 - [ ] **CSV export** de claims+verdicts pra planilha.
 - [ ] **Wikipedia adapter** — sub-caso da Fase 4, mais barato. Útil pra claims sobre pessoas/lugares.
-- [ ] **Multi-pass verification** — pra claims "quentes" (alta confiança ou alto interesse), rodar Sonar 3× e tirar maioria. +3× custo; reduz variância.
 - [ ] **API key access** pra uso programático. Permite jornalistas scripted-em-cima.
 - [ ] **Embed widget** — `<iframe>` de um único claim+veredict pra incorporar em blog post.
 - [ ] **Domínio jurídico** — modo específico pra decisões / processos. STF/STJ adapter já cobre boa parte.
@@ -70,6 +77,7 @@ A peça mais pesada que sobrou do roadmap original. Híbrido: classifier por cla
 
 - ~~**Compare two FactChecks side-by-side**~~ — usuário disse "não gostei" (2026-05-21).
 - ~~**Phase 3b — custom retriever**~~ — decidido manter Sonar (2026-05-18).
+- ~~**Multi-pass verification (mesmo modelo 3×)**~~ — o [paper Lenz](https://lenz.io/research/llm-disagreement) mostra que a variância real está entre modelos, não entre passes do mesmo modelo a temp 0. Substituído pelo "Painel multi-modelo + Deep verify" em P2 (2026-05-30).
 
 ---
 
