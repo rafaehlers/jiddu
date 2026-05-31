@@ -78,6 +78,20 @@ const TYPE_META: Record<
   },
 };
 
+// Explicit RGB values that mirror the Tailwind palette used in
+// TYPE_META.cls above. Needed because mark.highlight reads its tint
+// from a CSS custom property, and Tailwind class names don't carry a
+// directly-readable color value. Keep these in sync with TYPE_META —
+// changing one without the other will break the visual match between
+// the sentence highlight and the claim-card dot.
+const TYPE_COLOR: Record<ClaimType, string> = {
+  numeric: "rgb(59, 130, 246)", // blue-500
+  date: "rgb(168, 85, 247)", // purple-500
+  quote: "rgb(245, 158, 11)", // amber-500
+  causal: "rgb(16, 185, 129)", // emerald-500
+  categorical: "rgb(236, 72, 153)", // pink-500
+};
+
 const VERDICT_META: Record<
   VerdictValue,
   { icon: typeof Check; labelKey: keyof Messages; cls: string }
@@ -379,25 +393,39 @@ export function FactCheckView({
               {para.map((s, sIdx) => {
                 const claimsForSentence = claimsBySentence.get(s.id);
                 const hasClaim = !!claimsForSentence?.length;
+                if (!hasClaim) {
+                  return (
+                    <span key={s.id} id={`s-${s.id}`}>
+                      {s.text}
+                      {sIdx < para.length - 1 && " "}
+                    </span>
+                  );
+                }
+                // Multi-claim sentences: take the first claim's color
+                // so the highlight aligns with the first card a click
+                // would scroll to. Rare case.
+                const firstClaim = claimsForSentence![0];
+                const color =
+                  TYPE_COLOR[firstClaim.type] ?? "currentColor";
+                const isActive =
+                  active &&
+                  claimsForSentence!.some((c) => c.id === active);
                 return (
-                  <span
+                  <mark
                     key={s.id}
                     id={`s-${s.id}`}
-                    className={cn(
-                      hasClaim &&
-                        "underline decoration-dotted decoration-2 decoration-rule cursor-pointer hover:decoration-foreground transition-colors",
-                      active && claimsForSentence?.some((c) => c.id === active) &&
-                        "bg-paper rounded px-0.5",
-                    )}
-                    onClick={() => {
-                      if (claimsForSentence?.length) {
-                        scrollToClaim(claimsForSentence[0].id);
-                      }
-                    }}
+                    className="highlight"
+                    data-active={isActive ? "true" : undefined}
+                    style={
+                      {
+                        "--highlight-color": color,
+                      } as React.CSSProperties
+                    }
+                    onClick={() => scrollToClaim(firstClaim.id)}
                   >
                     {s.text}
                     {sIdx < para.length - 1 && " "}
-                  </span>
+                  </mark>
                 );
               })}
             </p>
@@ -520,7 +548,14 @@ function ClaimCard({
       onClick={onClick}
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="text-xs text-muted font-mono">#{index + 1}</span>
+        <span className="text-xs text-muted font-mono inline-flex items-center gap-1.5">
+          <span
+            aria-hidden
+            className="inline-block h-2 w-2 rounded-full shrink-0"
+            style={{ backgroundColor: TYPE_COLOR[claim.type] }}
+          />
+          #{index + 1}
+        </span>
         <div className="flex items-center gap-1.5">
           {verifying && (
             <span className="inline-flex items-center gap-1 text-xs text-muted">

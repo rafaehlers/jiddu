@@ -90,3 +90,22 @@ mark.fallacy:hover,
 mark.fallacy[data-active="true"] {
   background: color-mix(in oklab, var(--fallacy-color, currentColor) 42%, transparent);
 }
+
+/* Generic in-text highlight used by the fact-check and neutrality
+   viewers. Same visual recipe as mark.fallacy — a transparent tint of
+   the per-finding color — so the three viewers share one reading idiom:
+   colored sentences on the left, color-matched dot on the corresponding
+   card on the right. The custom property name is generic
+   (--highlight-color) so callers from any pipeline can drive it. */
+mark.highlight {
+  background: color-mix(in oklab, var(--highlight-color, currentColor) 22%, transparent);
+  color: inherit;
+  padding: 0 2px;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+mark.highlight:hover,
+mark.highlight[data-active="true"] {
+  background: color-mix(in oklab, var(--highlight-color, currentColor) 42%, transparent);
+}

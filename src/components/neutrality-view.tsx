@@ -94,6 +94,23 @@ const ISSUE_META: Record<
   },
 };
 
+// Explicit RGB values that mirror the Tailwind palette used in
+// ISSUE_META.cls above. Needed because mark.highlight reads its tint
+// from a CSS custom property, and Tailwind class names don't carry a
+// directly-readable color value. Keep these in sync with ISSUE_META —
+// changing one without the other will break the visual match between
+// the sentence highlight and the finding-card dot.
+const ISSUE_COLOR: Record<NeutralityIssue, string> = {
+  loaded_language: "rgb(239, 68, 68)", // red-500
+  asymmetric_attribution: "rgb(245, 158, 11)", // amber-500
+  false_equivalence: "rgb(168, 85, 247)", // purple-500
+  selective_omission: "rgb(59, 130, 246)", // blue-500
+  source_asymmetry: "rgb(236, 72, 153)", // pink-500
+  both_sidesing: "rgb(16, 185, 129)", // emerald-500
+  steering: "rgb(6, 182, 212)", // cyan-500
+  genetic_framing: "rgb(249, 115, 22)", // orange-500
+};
+
 const VERDICT_META: Record<
   NeutralityVerdictValue,
   { icon: typeof CheckCircle; labelKey: keyof Messages; cls: string }
@@ -245,24 +262,39 @@ export function NeutralityView({
               {para.map((s, sIdx) => {
                 const flags = findingsBySentence.get(s.id);
                 const hasFlag = !!flags?.length;
+                if (!hasFlag) {
+                  return (
+                    <span key={s.id} id={`s-${s.id}`}>
+                      {s.text}
+                      {sIdx < para.length - 1 && " "}
+                    </span>
+                  );
+                }
+                // Multi-issue sentences: take the first finding's color
+                // so the highlight aligns with the first card a click
+                // would scroll to.
+                const firstFinding = flags![0];
+                const color =
+                  ISSUE_COLOR[firstFinding.issue] ?? "currentColor";
+                const firstIdx = findings.indexOf(firstFinding);
+                const isActive =
+                  active === `finding-${firstIdx}`;
                 return (
-                  <span
+                  <mark
                     key={s.id}
                     id={`s-${s.id}`}
-                    className={cn(
-                      hasFlag &&
-                        "underline decoration-wavy decoration-2 decoration-amber-500/60 cursor-pointer hover:decoration-foreground transition-colors",
-                    )}
-                    onClick={() => {
-                      if (flags?.length) {
-                        const idx = findings.indexOf(flags[0]);
-                        scrollToFinding(idx);
-                      }
-                    }}
+                    className="highlight"
+                    data-active={isActive ? "true" : undefined}
+                    style={
+                      {
+                        "--highlight-color": color,
+                      } as React.CSSProperties
+                    }
+                    onClick={() => scrollToFinding(firstIdx)}
                   >
                     {s.text}
                     {sIdx < para.length - 1 && " "}
-                  </span>
+                  </mark>
                 );
               })}
             </p>
@@ -298,7 +330,15 @@ export function NeutralityView({
                     }}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs text-muted font-mono">
+                      <span className="text-xs text-muted font-mono inline-flex items-center gap-1.5">
+                        <span
+                          aria-hidden
+                          className="inline-block h-2 w-2 rounded-full shrink-0"
+                          style={{
+                            backgroundColor:
+                              ISSUE_COLOR[f.issue] ?? "currentColor",
+                          }}
+                        />
                         #{idx + 1}
                       </span>
                       <div className="flex items-center gap-1.5">
