@@ -191,10 +191,8 @@ export function JidduComposer() {
             full-width trust card. Visible to anyone weighing whether to
             trust an automated fact-checker. Stays subdued in tone (paper
             bg, single accent check) so it doesn't read as a sales claim. */}
-        <a
-          href="https://github.com/rafaehlers/jiddu/blob/main/docs/benchmark-politifact.md"
-          target="_blank"
-          rel="noopener noreferrer"
+        <Link
+          href="/benchmark"
           className="flex items-start gap-3 sm:gap-4 p-4 sm:p-5 bg-paper border border-rule rounded-lg hover:border-foreground/40 transition-colors group"
         >
           <span
@@ -211,10 +209,10 @@ export function JidduComposer() {
               {t.quality_card_body}
             </p>
             <span className="text-sm underline decoration-rule group-hover:decoration-foreground transition-colors self-start mt-0.5">
-              {t.quality_card_link} <span aria-hidden>↗</span>
+              {t.quality_card_link} <span aria-hidden>→</span>
             </span>
           </div>
-        </a>
+        </Link>
 
         <div className="text-sm text-muted">
           <span className="font-medium text-foreground">{t.privacy}</span>{" "}
