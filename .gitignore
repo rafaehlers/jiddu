@@ -51,3 +51,6 @@ next-env.d.ts
 
 # uploads
 /uploads
+
+# benchmark data + results (downloaded datasets, run artifacts)
+/scripts/data

@@ -10,6 +10,8 @@ export type Messages = {
   privacy_body: string;
   see_demo: string;
   see_demo_hint: string;
+  bench_badge_label: string;
+  bench_badge_link: string;
 
   // Footer
   footer_quote: string;
@@ -292,6 +294,9 @@ const en: Messages = {
     "your text is sent to the selected model (OpenAI or MiniMax, routed via OpenRouter) for analysis and stored locally under a shareable id.",
   see_demo: "See a demo",
   see_demo_hint: "Want a quick look without running an analysis?",
+  bench_badge_label:
+    "Pipeline validated · 67.5% match with PolitiFact in a 200-claim benchmark",
+  bench_badge_link: "view report",
 
   footer_quote: "“The moment you follow someone, you cease to follow truth.”",
 
@@ -528,8 +533,9 @@ const en: Messages = {
     {
       title: "6. Methodology",
       paragraphs: [
-        "Our claim extraction and verification pipeline is inspired by [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson, MSR 2025) for the extraction stage, and by the evaluation framework described in [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) (Goldfarb, Hall, Fisher, Salam, Wilde — Forum AI / Stanford, 2025) for the verdict assessment, source-quality tiers and neutrality dimension.",
-        "Jiddu is not affiliated with either of those research groups; we cite them because the methodology behind the tool is grounded in their work, and users should know that the design choices have an academic basis.",
+        "Our claim extraction and verification pipeline is inspired by [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson, MSR 2025) for the extraction stage, and by the evaluation framework described in [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) (Goldfarb, Hall, Fisher, Salam, Wilde — Forum AI / Stanford, 2025) for the verdict assessment, source-quality tiers and neutrality dimension. Our choice of 4 verdict classes (supported / contradicted / mixed / unverified) rather than the 5- or 6-class schemes used by some fact-checking outlets is informed by [Sahitaj et al. 2025](https://arxiv.org/abs/2502.08909), who found that 3-class labeling outperforms 5-class for LLM-based fact-checking — the additional categories in the middle introduce ambiguity without improving accuracy.",
+        "Jiddu is not affiliated with any of those research groups; we cite them because the methodology behind the tool is grounded in their work, and users should know that the design choices have an academic basis.",
+        "The fact-check pipeline has been benchmarked against the [PolitiFact](https://www.politifact.com) human-labeled corpus (via the [LIAR2 dataset](https://github.com/chengxuphd/liar2), Apache-2.0). On 200 claims from PolitiFact's polar buckets, Jiddu's verdict matched the human verdict in 67.5% of cases overall and 81.3% on the unambiguous true / false / pants-on-fire buckets, with strict polar disagreement in only 4.5%. Full methodology, confusion matrix and disagreement analysis at [docs/benchmark-politifact.md](https://github.com/rafaehlers/jiddu/blob/main/docs/benchmark-politifact.md).",
       ],
     },
     {
@@ -592,6 +598,7 @@ const en: Messages = {
         "Sonar returns a JSON payload with the verdict (`supported` / `contradicted` / `mixed` / `unverified`), a confidence between 0 and 1, a rationale, and a list of cited sources collected from Sonar's `annotations` channel. If confidence is below 0.5, the verdict is forced to `unverified` — better to surface 'not enough evidence' than to ship a confident wrong call.",
         "Every cited source is classified into one of six tiers (per Goldfarb et al. 2025): `primary` (official data agencies, court rulings, peer-reviewed papers), `scholarly`, `think_tank`, `journalistic`, `commercial_content`, `informal`. A separate boolean flag marks `state-controlled` outlets (RT, CGTN, Xinhua, etc. — but not BBC/NPR/Deutsche Welle, which are state-FUNDED but editorially independent).",
         "Verdict language is intentionally cautious about named people: never 'X is lying' or 'this is false' — always 'evidence does not support' / 'evidence contradicts the figure' / 'we could not find evidence that supports'. This is a hard rule in the system prompt.",
+        "How accurate is this in practice? We benchmarked the pipeline against [PolitiFact's human-labeled corpus](https://github.com/rafaehlers/jiddu/blob/main/docs/benchmark-politifact.md). On 200 claims drawn from PolitiFact's four polar buckets (true / mostly-true / false / pants-on-fire, 2020-onward), Jiddu's verdict matched the human polar verdict in 67.5% of cases overall and 81.3% on the unambiguous true / false / pants-on-fire buckets. Strict polar disagreement — Jiddu calling a claim the opposite of the human — happened in only 4.5% of cases (9 of 200). The remaining ~28% were Jiddu returning `mixed` or `unverified` instead of a polar verdict, concentrated on PolitiFact's `mostly_true` bucket (where 58% became `mixed` — a structural overlap, not a miss, since both labels describe partial truth). Full methodology, confusion matrix and disagreement analysis at the link.",
       ],
     },
     {
@@ -634,7 +641,15 @@ const en: Messages = {
       ],
     },
     {
-      title: "12. Open source and methodology",
+      title: "12. Live mode (beta)",
+      paragraphs: [
+        "A separate pipeline at [/live](/live): the page captures audio from the user's microphone or, on Chromium browsers, from a browser tab via `getDisplayMedia`. The audio is streamed *directly from the browser to OpenAI's Realtime API* over WebRTC — it never passes through the Jiddu server. The transcription model is `gpt-realtime-whisper`, and the language is honored from the i18n header selector (EN / PT / ES).",
+        "How the wiring works: when the user presses **Start**, the browser calls `POST /api/live/token` to mint a short-lived ephemeral client secret (the Jiddu server holds the actual `OPENAI_API_KEY`; the browser never sees it). The browser then opens the WebRTC peer-connection to OpenAI using that secret and starts receiving transcript deltas. Every ~500 new characters (or every 30 seconds, whichever comes first), a separate SSE call to `POST /api/live/analyze` ships the cumulative transcript and runs the same fallacy prompt used everywhere else — findings stream back into the UI in near-real-time. On **Stop**, a final `finalize: true` call commits the session as a normal `/a/<id>` analysis, indistinguishable downstream from a pasted-text analysis.",
+        "Cost is bounded by a hard 60-minute session cap (≈ \\$1 of Realtime + LLM analysis cost per session). The raw audio is never stored — only the transcript and the detected findings are persisted. The page is intentionally not linked from the nav while in beta — reach it by typing `/live` in the URL bar. Tab-audio capture works in Chrome / Edge only because Safari and Firefox don't expose tab audio through `getDisplayMedia`; the microphone source works everywhere.",
+      ],
+    },
+    {
+      title: "13. Open source and methodology",
       paragraphs: [
         "Source code is at [github.com/rafaehlers/jiddu](https://github.com/rafaehlers/jiddu) under the [AGPL-3.0-or-later license](https://www.gnu.org/licenses/agpl-3.0.txt). AGPL closes the 'SaaS loophole' that GPL leaves open: anyone running a modified version as a network service must publish the modified source.",
         "Two papers ground the design: [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson — Microsoft Research, 2025) for the four-stage claim extraction; and [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) (Goldfarb, Hall, Fisher, Salam, Wilde — Forum AI / Stanford, 2025) for the verdict assessment, the 6-tier source taxonomy and the neutrality framework. Jiddu is not affiliated with either group.",
@@ -754,6 +769,9 @@ const pt: Messages = {
     "seu texto é enviado ao modelo selecionado (OpenAI ou MiniMax, roteado via OpenRouter) para análise e armazenado localmente sob um id compartilhável.",
   see_demo: "Ver demonstração",
   see_demo_hint: "Quer uma amostra rápida sem rodar uma análise?",
+  bench_badge_label:
+    "Pipeline validado · 67,5% de concordância com PolitiFact em benchmark de 200 claims",
+  bench_badge_link: "ver relatório",
 
   footer_quote:
     "“No momento em que você segue alguém, deixa de seguir a verdade.”",
@@ -992,8 +1010,9 @@ const pt: Messages = {
     {
       title: "6. Metodologia",
       paragraphs: [
-        "O pipeline de extração e verificação de afirmações é inspirado em [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson, MSR 2025) para a etapa de extração, e no framework de avaliação descrito em [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) (Goldfarb, Hall, Fisher, Salam, Wilde — Forum AI / Stanford, 2025) para a avaliação de veredito, os tiers de qualidade de fonte e a dimensão de imparcialidade.",
+        "O pipeline de extração e verificação de afirmações é inspirado em [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson, MSR 2025) para a etapa de extração, e no framework de avaliação descrito em [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) (Goldfarb, Hall, Fisher, Salam, Wilde — Forum AI / Stanford, 2025) para a avaliação de veredito, os tiers de qualidade de fonte e a dimensão de imparcialidade. Nossa escolha de 4 classes de veredito (sustentado / contradito / misto / não verificado) em vez dos esquemas de 5 ou 6 classes usados por alguns outlets de fact-check é baseada em [Sahitaj et al. 2025](https://arxiv.org/abs/2502.08909), que mostraram empiricamente que rotulagem 3-classes supera 5-classes para fact-check com LLMs — as categorias adicionais no meio criam ambiguidade sem ganho de acurácia.",
         "O Jiddu não tem afiliação com nenhum desses grupos de pesquisa; citamos as referências porque a metodologia da ferramenta é fundamentada no trabalho deles, e os usuários devem saber que as decisões de design têm base acadêmica.",
+        "O pipeline de fact-check foi medido contra o corpus humano do [PolitiFact](https://www.politifact.com) (via o [dataset LIAR2](https://github.com/chengxuphd/liar2), Apache-2.0). Em 200 afirmações tiradas dos quatro buckets polares do PolitiFact, o veredito do Jiddu coincidiu com o veredito humano em 67,5% dos casos no total e em 81,3% nas categorias menos ambíguas (true / false / pants-on-fire), com discordância estrita em apenas 4,5%. Metodologia completa, matriz de confusão e análise das discordâncias em [docs/benchmark-politifact.md](https://github.com/rafaehlers/jiddu/blob/main/docs/benchmark-politifact.md).",
       ],
     },
     {
@@ -1056,6 +1075,7 @@ const pt: Messages = {
         "O Sonar retorna um JSON com o veredito (`sustentado` / `contradito` / `misto` / `não verificado`), uma confiança entre 0 e 1, uma justificativa, e uma lista de fontes citadas tiradas do canal `annotations` do Sonar. Se a confiança ficar abaixo de 0.5, o veredito é forçado pra `não verificado` — melhor sinalizar 'evidência insuficiente' do que entregar uma resposta confiantemente errada.",
         "Toda fonte citada é classificada em um de seis tiers (segundo Goldfarb et al. 2025): `primary` (órgãos oficiais de dados, decisões judiciais, papers peer-reviewed), `scholarly`, `think_tank`, `journalistic`, `commercial_content`, `informal`. Uma flag boolean separada marca veículos `state-controlled` (RT, CGTN, Xinhua etc. — mas não BBC/NPR/Deutsche Welle, que são state-FUNDED mas editorialmente independentes).",
         "A linguagem do veredito é intencionalmente cuidadosa com pessoas nomeadas: nunca 'X está mentindo' ou 'isso é falso' — sempre 'a evidência não sustenta' / 'a evidência contradiz o número' / 'não encontramos evidência que sustente'. É regra dura no system prompt.",
+        "Qual a accuracy disso na prática? A gente rodou um [benchmark contra o corpus humano do PolitiFact](https://github.com/rafaehlers/jiddu/blob/main/docs/benchmark-politifact.md). Em 200 afirmações puxadas das quatro categorias polares do PolitiFact (true / mostly-true / false / pants-on-fire, de 2020 pra cá), o veredito do Jiddu coincidiu com o veredito humano polar em 67.5% dos casos no total e 81.3% nas categorias menos ambíguas (true / false / pants-on-fire). Discordância estrita — Jiddu dizer o oposto polar do humano — aconteceu em só 4.5% dos casos (9 de 200). Os ~28% restantes foram Jiddu devolvendo `mixed` ou `unverified` no lugar de um veredito polar, concentrados no bucket `mostly_true` do PolitiFact (58% viraram `mixed` — sobreposição estrutural, não erro, já que ambos os rótulos descrevem verdade parcial). Metodologia, matriz de confusão e análise das discordâncias no link.",
       ],
     },
     {
@@ -1098,7 +1118,15 @@ const pt: Messages = {
       ],
     },
     {
-      title: "12. Open source e metodologia",
+      title: "12. Modo Live (beta)",
+      paragraphs: [
+        "Pipeline separado em [/live](/live): a página captura áudio do microfone do usuário ou, em browsers Chromium, de uma aba do navegador via `getDisplayMedia`. O áudio é transmitido *direto do browser pra Realtime API da OpenAI* via WebRTC — nunca passa pelo servidor do Jiddu. O modelo de transcrição é `gpt-realtime-whisper`, e o idioma respeita o seletor do header (EN / PT / ES).",
+        "Como o cabeamento funciona: quando o usuário clica em **Iniciar**, o browser chama `POST /api/live/token` pra cunhar um client secret efêmero de curta duração (o servidor do Jiddu guarda a `OPENAI_API_KEY` real; o browser nunca vê). O browser então abre a peer-connection WebRTC pra OpenAI usando esse secret e começa a receber deltas de transcrição. A cada ~500 caracteres novos (ou a cada 30 segundos, o que vier primeiro), uma chamada SSE separada pra `POST /api/live/analyze` envia o transcript cumulativo e roda o mesmo prompt de falácia usado em qualquer lugar — os achados aparecem na UI quase em tempo real. No **Parar**, uma última chamada com `finalize: true` commita a sessão como uma análise `/a/<id>` normal, indistinguível downstream de uma análise feita via paste.",
+        "Custo é limitado por um cap duro de 60 minutos por sessão (≈ \\$1 de Realtime + custo de análise LLM). O áudio bruto nunca é armazenado — só a transcrição e os achados detectados persistem. A página é deliberadamente fora do nav enquanto está em beta — chega-se digitando `/live` na barra. Captura de áudio de aba funciona só em Chrome / Edge porque Safari e Firefox não expõem áudio de aba via `getDisplayMedia`; o microfone funciona em qualquer lugar.",
+      ],
+    },
+    {
+      title: "13. Open source e metodologia",
       paragraphs: [
         "Código fonte em [github.com/rafaehlers/jiddu](https://github.com/rafaehlers/jiddu) sob licença [AGPL-3.0-or-later](https://www.gnu.org/licenses/agpl-3.0.txt). A AGPL fecha o 'SaaS loophole' que a GPL deixa aberto: quem rodar uma versão modificada como serviço de rede tem que publicar o código modificado.",
         "Dois papers fundamentam o design: [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson — Microsoft Research, 2025) pra extração em quatro estágios; e [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) (Goldfarb, Hall, Fisher, Salam, Wilde — Forum AI / Stanford, 2025) pra a avaliação de veredito, a taxonomia de 6 tiers de fonte e o framework de imparcialidade. O Jiddu não tem afiliação com nenhum dos grupos.",
@@ -1218,6 +1246,9 @@ const es: Messages = {
     "tu texto se envía al modelo seleccionado (OpenAI o MiniMax, enrutado vía OpenRouter) para análisis y se almacena localmente bajo un id compartible.",
   see_demo: "Ver demostración",
   see_demo_hint: "¿Quieres un vistazo rápido sin ejecutar un análisis?",
+  bench_badge_label:
+    "Pipeline validado · 67,5% de concordancia con PolitiFact en benchmark de 200 claims",
+  bench_badge_link: "ver informe",
 
   footer_quote:
     "“En el momento en que sigues a alguien, dejas de seguir la verdad.”",
@@ -1456,8 +1487,9 @@ const es: Messages = {
     {
       title: "6. Metodología",
       paragraphs: [
-        "Nuestro pipeline de extracción y verificación de afirmaciones se inspira en [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson, MSR 2025) para la etapa de extracción, y en el framework de evaluación descrito en [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) (Goldfarb, Hall, Fisher, Salam, Wilde — Forum AI / Stanford, 2025) para la evaluación de veredicto, los niveles de calidad de fuente y la dimensión de imparcialidad.",
+        "Nuestro pipeline de extracción y verificación de afirmaciones se inspira en [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson, MSR 2025) para la etapa de extracción, y en el framework de evaluación descrito en [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) (Goldfarb, Hall, Fisher, Salam, Wilde — Forum AI / Stanford, 2025) para la evaluación de veredicto, los niveles de calidad de fuente y la dimensión de imparcialidad. Nuestra elección de 4 clases de veredicto (respaldado / contradicho / mixto / no verificado) en lugar de los esquemas de 5 o 6 clases usados por algunos outlets de fact-check se basa en [Sahitaj et al. 2025](https://arxiv.org/abs/2502.08909), que mostraron empíricamente que el etiquetado de 3 clases supera al de 5 clases para fact-check con LLMs — las categorías adicionales en el medio introducen ambigüedad sin mejorar la precisión.",
         "Jiddu no está afiliado a ninguno de estos grupos de investigación; los citamos porque la metodología detrás de la herramienta se basa en su trabajo, y los usuarios deben saber que las decisiones de diseño tienen base académica.",
+        "El pipeline de fact-check se midió contra el corpus humano de [PolitiFact](https://www.politifact.com) (vía el [dataset LIAR2](https://github.com/chengxuphd/liar2), Apache-2.0). En 200 afirmaciones tomadas de los cuatro buckets polares de PolitiFact, el veredicto de Jiddu coincidió con el veredicto humano en 67,5% de los casos en total y en 81,3% en las categorías menos ambiguas (true / false / pants-on-fire), con desacuerdo estricto en apenas 4,5%. Metodología completa, matriz de confusión y análisis de desacuerdos en [docs/benchmark-politifact.md](https://github.com/rafaehlers/jiddu/blob/main/docs/benchmark-politifact.md).",
       ],
     },
     {
@@ -1520,6 +1552,7 @@ const es: Messages = {
         "Sonar devuelve un JSON con el veredicto (`respaldado` / `contradicho` / `mixto` / `no verificado`), una confianza entre 0 y 1, una justificación y una lista de fuentes citadas tomadas del canal `annotations` de Sonar. Si la confianza queda por debajo de 0.5, el veredicto se fuerza a `no verificado` — mejor exhibir 'evidencia insuficiente' que entregar una respuesta confiadamente equivocada.",
         "Cada fuente citada se clasifica en uno de seis tiers (según Goldfarb et al. 2025): `primary` (agencias oficiales de datos, decisiones judiciales, papers peer-reviewed), `scholarly`, `think_tank`, `journalistic`, `commercial_content`, `informal`. Una flag booleana aparte marca medios `state-controlled` (RT, CGTN, Xinhua, etc. — pero no BBC/NPR/Deutsche Welle, que son state-FUNDED pero editorialmente independientes).",
         "El lenguaje del veredicto es intencionalmente cauto con personas nombradas: nunca 'X miente' o 'esto es falso' — siempre 'la evidencia no respalda' / 'la evidencia contradice el número' / 'no encontramos evidencia que respalde'. Es una regla dura en el system prompt.",
+        "¿Qué tan preciso es esto en la práctica? Corrimos un [benchmark contra el corpus humano de PolitiFact](https://github.com/rafaehlers/jiddu/blob/main/docs/benchmark-politifact.md). En 200 afirmaciones tomadas de las cuatro categorías polares de PolitiFact (true / mostly-true / false / pants-on-fire, desde 2020), el veredicto de Jiddu coincidió con el veredicto humano polar en 67.5% de los casos en total y 81.3% en las categorías menos ambiguas (true / false / pants-on-fire). Desacuerdo estricto — Jiddu diciendo lo opuesto polar del humano — ocurrió solo en 4.5% de los casos (9 de 200). El ~28% restante fue Jiddu devolviendo `mixed` o `unverified` en lugar de un veredicto polar, concentrado en el bucket `mostly_true` de PolitiFact (58% se volvieron `mixed` — solapamiento estructural, no error, ya que ambas etiquetas describen verdad parcial). Metodología, matriz de confusión y análisis de desacuerdos en el enlace.",
       ],
     },
     {
@@ -1562,7 +1595,15 @@ const es: Messages = {
       ],
     },
     {
-      title: "12. Open source y metodología",
+      title: "12. Modo Live (beta)",
+      paragraphs: [
+        "Pipeline separado en [/live](/live): la página captura audio del micrófono del usuario o, en navegadores Chromium, de una pestaña del navegador vía `getDisplayMedia`. El audio se transmite *directamente del navegador a la Realtime API de OpenAI* por WebRTC — nunca pasa por el servidor de Jiddu. El modelo de transcripción es `gpt-realtime-whisper`, y el idioma respeta el selector del header (EN / PT / ES).",
+        "Cómo funciona el cableado: cuando el usuario hace clic en **Iniciar**, el navegador llama a `POST /api/live/token` para acuñar un client secret efímero de corta vida (el servidor de Jiddu guarda la `OPENAI_API_KEY` real; el navegador nunca la ve). El navegador abre entonces la peer-connection WebRTC con OpenAI usando ese secret y empieza a recibir deltas de transcripción. Cada ~500 caracteres nuevos (o cada 30 segundos, lo que ocurra primero), una llamada SSE separada a `POST /api/live/analyze` envía el transcript acumulado y corre el mismo prompt de falacia usado en cualquier lugar — los hallazgos aparecen en la UI casi en tiempo real. Al **Detener**, una última llamada con `finalize: true` commitea la sesión como un análisis `/a/<id>` normal, indistinguible aguas abajo de uno hecho vía paste.",
+        "El costo está acotado por un cap duro de 60 minutos por sesión (≈ \\$1 de Realtime + costo del análisis LLM). El audio bruto nunca se almacena — solo la transcripción y los hallazgos detectados persisten. La página deliberadamente no está enlazada desde el nav mientras está en beta — se llega tecleando `/live` en la barra. La captura de audio de pestaña funciona solo en Chrome / Edge porque Safari y Firefox no exponen audio de pestaña vía `getDisplayMedia`; el micrófono funciona en todos lados.",
+      ],
+    },
+    {
+      title: "13. Open source y metodología",
       paragraphs: [
         "El código fuente está en [github.com/rafaehlers/jiddu](https://github.com/rafaehlers/jiddu) bajo licencia [AGPL-3.0-or-later](https://www.gnu.org/licenses/agpl-3.0.txt). AGPL cierra el 'SaaS loophole' que GPL deja abierto: cualquiera que corra una versión modificada como servicio de red debe publicar el código fuente modificado.",
         "Dos papers fundamentan el diseño: [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson — Microsoft Research, 2025) para la extracción de afirmaciones en cuatro etapas; y [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) (Goldfarb, Hall, Fisher, Salam, Wilde — Forum AI / Stanford, 2025) para la evaluación de veredicto, la taxonomía de 6 tiers de fuentes y el framework de imparcialidad. Jiddu no está afiliado con ninguno de los dos grupos.",

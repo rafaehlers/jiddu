@@ -125,6 +125,22 @@ export function JidduComposer() {
             {t.hero_title}
           </h1>
           <p className="text-muted text-base sm:text-lg max-w-2xl">{t.hero_subtitle}</p>
+          {/* Quality badge — anchored to docs/benchmark-politifact.md. Links to
+              the full report so the headline number is independently auditable. */}
+          <a
+            href="https://github.com/rafaehlers/jiddu/blob/main/docs/benchmark-politifact.md"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="self-start inline-flex items-center gap-2 text-xs sm:text-sm px-3 py-1.5 rounded-full border border-rule hover:border-foreground transition-colors text-foreground/85 hover:text-foreground"
+          >
+            <span aria-hidden className="text-[var(--severity-low)]">✓</span>
+            <span>{t.bench_badge_label}</span>
+            <span className="text-muted">·</span>
+            <span className="underline decoration-rule">
+              {t.bench_badge_link}
+            </span>
+            <span aria-hidden className="text-muted">↗</span>
+          </a>
         </div>
         <UploadForm
           onSubmit={startStream}
