@@ -92,7 +92,7 @@ export function UploadForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-5 bg-paper border border-rule rounded-lg p-5 shadow-sm"
+      className="flex flex-col gap-4 sm:gap-5 bg-paper border border-rule rounded-lg p-4 sm:p-5 shadow-sm"
     >
       {/* Top row: mode toggle (Detector / Fact-check) sits before the
           input-type tabs. Each pill is a Link, so the active state survives
@@ -149,7 +149,7 @@ export function UploadForm({
       )}
 
       {tab === "file" && (
-        <label className="flex flex-col items-center justify-center border border-dashed border-rule rounded-md py-10 cursor-pointer hover:bg-background/40 transition-colors">
+        <label className="flex flex-col items-center justify-center border border-dashed border-rule rounded-md py-8 sm:py-10 cursor-pointer hover:bg-background/40 transition-colors">
           <input
             type="file"
             accept=".pdf,application/pdf,.txt,text/plain"

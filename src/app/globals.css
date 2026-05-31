@@ -5,7 +5,10 @@
   --foreground: rgb(236, 230, 216);
   --paper: rgb(26, 24, 21);
   --ink: rgb(236, 230, 216);
-  --muted: rgb(142, 136, 125);
+  /* Bumped from 142,136,125 (≈5.5:1 against bg, borderline AA) to
+     178,170,153 (≈7.5:1, comfortably AAA for body text). Secondary
+     content stops feeling washed out on the warm-black background. */
+  --muted: rgb(178, 170, 153);
   --rule: rgb(44, 42, 37);
   --accent: rgb(215, 106, 68);
   --severity-low: rgb(228, 178, 102);
@@ -41,10 +44,34 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  /* Geist is variable; 450 lands halfway between Regular and Medium and
+     keeps body text from feeling thin against the warm-black background
+     while still reading naturally on the cream light-mode bg. */
+  font-weight: 450;
+  font-feature-settings: "ss01", "cv11";
 }
 
 .font-serif {
   font-family: var(--font-serif);
+  letter-spacing: -0.005em;
+}
+
+/* Cormorant Garamond is a high-contrast didone — beautiful for display
+   but its default 400 weight looks anemic at headline sizes against
+   the warm-black background. Bump to 600 only for display-sized serif
+   text (xl and up). Body-sized serif (the paste textarea and the
+   reading article in the viewer) keeps the natural weight so it doesn't
+   feel bold-printed.
+
+   The responsive Tailwind classes (e.g. `sm:text-4xl`) are covered too:
+   any element that ever lands on a display size at any breakpoint will
+   have at least one matching class name. */
+.font-serif:is(
+  .text-xl, .text-2xl, .text-3xl, .text-4xl, .text-5xl,
+  .sm\:text-xl, .sm\:text-2xl, .sm\:text-3xl, .sm\:text-4xl, .sm\:text-5xl,
+  .md\:text-xl, .md\:text-2xl, .md\:text-3xl, .md\:text-4xl, .md\:text-5xl
+) {
+  font-weight: 600;
 }
 
 .text-balance {

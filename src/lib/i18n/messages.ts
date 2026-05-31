@@ -12,6 +12,14 @@ export type Messages = {
   see_demo_hint: string;
   bench_badge_label: string;
   bench_badge_link: string;
+  pipelines_heading: string;
+  pipelines_subheading: string;
+  pipeline_fallacy_desc: string;
+  pipeline_factcheck_desc: string;
+  pipeline_neutrality_desc: string;
+  quality_card_heading: string;
+  quality_card_body: string;
+  quality_card_link: string;
 
   // Footer
   footer_quote: string;
@@ -297,6 +305,19 @@ const en: Messages = {
   bench_badge_label:
     "Pipeline validated · 67.5% match with PolitiFact in a 200-claim benchmark",
   bench_badge_link: "view report",
+  pipelines_heading: "Three lenses on the same text",
+  pipelines_subheading:
+    "Pick a mode in the form above, or open a sample analysis to see what each one looks like.",
+  pipeline_fallacy_desc:
+    "Highlights every passage that contains a logical fallacy and explains each one in a Word-style margin comment. Outputs a fallacy score from 0 to 100.",
+  pipeline_factcheck_desc:
+    "Pulls every verifiable claim — numbers, dates, quotes, causal and categorical assertions — and optionally checks each against the live web via Perplexity Sonar with cited sources.",
+  pipeline_neutrality_desc:
+    "Surfaces the framing, attribution and source-selection patterns that make a text partisan even when nothing is factually false. Deliberately does NOT classify left/right.",
+  quality_card_heading: "Quality, measured against humans",
+  quality_card_body:
+    "We benchmarked the fact-check pipeline against 200 PolitiFact-labeled claims. Jiddu's verdict matched the human verdict on 81.3% of the unambiguous true / false / pants-on-fire claims, with strict polar disagreement in only 4.5% of cases.",
+  quality_card_link: "Full methodology and confusion matrix",
 
   footer_quote: "“The moment you follow someone, you cease to follow truth.”",
 
@@ -772,6 +793,19 @@ const pt: Messages = {
   bench_badge_label:
     "Pipeline validado · 67,5% de concordância com PolitiFact em benchmark de 200 claims",
   bench_badge_link: "ver relatório",
+  pipelines_heading: "Três lentes sobre o mesmo texto",
+  pipelines_subheading:
+    "Escolha um modo no formulário acima, ou abra uma análise de exemplo para ver como cada um fica.",
+  pipeline_fallacy_desc:
+    "Destaca cada trecho que contém uma falácia lógica e explica cada uma em um comentário na margem (estilo Word). Dá uma nota de falácia de 0 a 100.",
+  pipeline_factcheck_desc:
+    "Extrai cada afirmação verificável — números, datas, citações, alegações causais e categóricas — e opcionalmente checa cada uma na web ao vivo via Perplexity Sonar com fontes citadas.",
+  pipeline_neutrality_desc:
+    "Sinaliza padrões de enquadramento, atribuição e seleção de fontes que tornam um texto partidário mesmo quando não há nenhuma falsidade factual. Deliberadamente NÃO classifica esquerda/direita.",
+  quality_card_heading: "Qualidade medida contra humanos",
+  quality_card_body:
+    "Medimos o pipeline de fact-check contra 200 afirmações rotuladas humanamente pelo PolitiFact. O veredito do Jiddu coincidiu com o veredito humano em 81,3% das afirmações inequívocas (true / false / pants-on-fire), com discordância estrita em apenas 4,5% dos casos.",
+  quality_card_link: "Metodologia completa e matriz de confusão",
 
   footer_quote:
     "“No momento em que você segue alguém, deixa de seguir a verdade.”",
@@ -1249,6 +1283,19 @@ const es: Messages = {
   bench_badge_label:
     "Pipeline validado · 67,5% de concordancia con PolitiFact en benchmark de 200 claims",
   bench_badge_link: "ver informe",
+  pipelines_heading: "Tres lentes sobre el mismo texto",
+  pipelines_subheading:
+    "Elige un modo en el formulario de arriba, o abre un análisis de muestra para ver cómo se ve cada uno.",
+  pipeline_fallacy_desc:
+    "Resalta cada pasaje que contiene una falacia lógica y explica cada una en un comentario al margen (estilo Word). Da una puntuación de falacias de 0 a 100.",
+  pipeline_factcheck_desc:
+    "Extrae cada afirmación verificable — números, fechas, citas, aseveraciones causales y categóricas — y opcionalmente revisa cada una en la web en vivo vía Perplexity Sonar con fuentes citadas.",
+  pipeline_neutrality_desc:
+    "Expone patrones de encuadre, atribución y selección de fuentes que vuelven un texto partidario aun cuando nada es factualmente falso. Deliberadamente NO clasifica izquierda/derecha.",
+  quality_card_heading: "Calidad medida contra humanos",
+  quality_card_body:
+    "Medimos el pipeline de fact-check contra 200 afirmaciones etiquetadas humanamente por PolitiFact. El veredicto de Jiddu coincidió con el veredicto humano en 81,3% de las afirmaciones inequívocas (true / false / pants-on-fire), con desacuerdo estricto en apenas 4,5% de los casos.",
+  quality_card_link: "Metodología completa y matriz de confusión",
 
   footer_quote:
     "“En el momento en que sigues a alguien, dejas de seguir la verdad.”",
