@@ -538,13 +538,26 @@ function ClaimCard({
     }
   }
 
+  // When the card is active we (a) borrow the claim-type color for the
+  // border so the card visually echoes the sentence highlight on the
+  // left, and (b) attach .card-active to fire the radial pulse keyframe
+  // defined in globals.css. --card-color drives both effects.
+  const color = TYPE_COLOR[claim.type] ?? "currentColor";
   return (
     <li
       id={`claim-${claim.id}`}
       className={cn(
-        "bg-paper border border-rule rounded-lg p-4 flex flex-col gap-2 cursor-pointer transition-colors",
-        active && "border-foreground",
+        "bg-paper border rounded-lg p-4 flex flex-col gap-2 cursor-pointer transition-colors",
+        active ? "card-active" : "border-rule",
       )}
+      style={
+        active
+          ? ({
+              borderColor: color,
+              "--card-color": color,
+            } as React.CSSProperties)
+          : undefined
+      }
       onClick={onClick}
     >
       <div className="flex items-center justify-between gap-2">
@@ -552,7 +565,7 @@ function ClaimCard({
           <span
             aria-hidden
             className="inline-block h-2 w-2 rounded-full shrink-0"
-            style={{ backgroundColor: TYPE_COLOR[claim.type] }}
+            style={{ backgroundColor: color }}
           />
           #{index + 1}
         </span>

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Cormorant_Garamond } from "next/font/google";
+import { Geist, Geist_Mono, Newsreader } from "next/font/google";
 import { I18nProvider } from "@/lib/i18n/provider";
 import "./globals.css";
 
@@ -13,7 +13,12 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const serif = Cormorant_Garamond({
+// Newsreader (Production Type, Google Fonts) is a digital-first serif:
+// less stroke contrast than the previous Cormorant Garamond, so
+// medium-sized headings (text-lg / text-xl) hold up on the warm-black
+// background instead of feeling anemic. Still serif/editorial — keeps
+// the "newspaper / book" tone the site is going for.
+const serif = Newsreader({
   variable: "--font-serif",
   weight: ["400", "500", "600", "700"],
   subsets: ["latin"],

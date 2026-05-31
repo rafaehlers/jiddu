@@ -58,14 +58,20 @@ body {
 
 /* Cormorant Garamond is a high-contrast didone — beautiful for display
    but its default 400 weight looks anemic at headline sizes against
-   the warm-black background. Bump to 600 only for display-sized serif
-   text (xl and up). Body-sized serif (the paste textarea and the
-   reading article in the viewer) keeps the natural weight so it doesn't
-   feel bold-printed.
+   the warm-black background. Bump to 600 for two cases:
+   (1) any semantic heading h1-h6 carrying `font-serif`, regardless of
+       size — covers card-title h3s at text-lg that the size-only rule
+       would miss.
+   (2) non-heading serif at display sizes (text-xl+) — catches display
+       spans/p such as the LoadingPanel stage text and the score badges.
+   Body-sized serif on non-headings (the paste textarea, the reading
+   articles in the viewers) stays at natural weight so it doesn't feel
+   bold-printed.
 
-   The responsive Tailwind classes (e.g. `sm:text-4xl`) are covered too:
-   any element that ever lands on a display size at any breakpoint will
-   have at least one matching class name. */
+   Responsive Tailwind classes (e.g. `sm:text-4xl`) are covered because
+   an element that lands on a display size at any breakpoint still
+   carries the base class in its className. */
+:where(h1, h2, h3, h4, h5, h6).font-serif,
 .font-serif:is(
   .text-xl, .text-2xl, .text-3xl, .text-4xl, .text-5xl,
   .sm\:text-xl, .sm\:text-2xl, .sm\:text-3xl, .sm\:text-4xl, .sm\:text-5xl,
@@ -108,4 +114,24 @@ mark.highlight {
 mark.highlight:hover,
 mark.highlight[data-active="true"] {
   background: color-mix(in oklab, var(--highlight-color, currentColor) 42%, transparent);
+}
+
+/* Card-activation pulse — drives a single radiating glow when a
+   finding/claim card transitions to the "active" state. Driven by the
+   --card-color custom property (set inline alongside the matching
+   border color) so the pulse is the same hue as the sentence highlight
+   it's anchored to. Browsers re-fire CSS animations when the class is
+   added, so the standard React pattern of toggling a className based
+   on `active` triggers the animation naturally — no JS keying needed. */
+@keyframes card-pulse {
+  0% {
+    box-shadow:
+      0 0 0 0 color-mix(in oklab, var(--card-color, currentColor) 75%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 8px transparent;
+  }
+}
+.card-active {
+  animation: card-pulse 600ms ease-out;
 }

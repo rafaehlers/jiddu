@@ -241,6 +241,7 @@ export function AnalysisView({
             const def = FALLACY_BY_ID[f.fallacy];
             const offset = commentOffsets.get(f.key) ?? 0;
             const color = def?.color ?? "currentColor";
+            const isActive = active === f.key;
             return (
               <div
                 key={f.key}
@@ -250,16 +251,24 @@ export function AnalysisView({
                 onClick={() => focusFinding(f.key)}
                 className={cn(
                   "lg:absolute lg:left-0 lg:right-0 cursor-pointer",
-                  "bg-paper border border-rule rounded-md p-3 shadow-sm",
-                  "transition-all hover:border-foreground",
-                  active === f.key && "border-foreground ring-2",
+                  "bg-paper border rounded-md p-3 shadow-sm transition-colors",
+                  isActive ? "card-active" : "border-rule hover:border-foreground",
                 )}
                 style={
                   {
                     top: `${offset}px`,
                     "--fallacy-color": color,
-                    ...(active === f.key
-                      ? { boxShadow: `0 0 0 2px ${color}55` }
+                    // Active state: borrow the fallacy color for the
+                    // border so the card visually echoes the sentence
+                    // highlight, and feed --card-color to the shared
+                    // card-pulse keyframe in globals.css. The pulse
+                    // fires once when the class flips to active;
+                    // afterwards the colored border persists.
+                    ...(isActive
+                      ? {
+                          borderColor: color,
+                          "--card-color": color,
+                        }
                       : {}),
                   } as React.CSSProperties
                 }

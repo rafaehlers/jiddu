@@ -316,14 +316,28 @@ export function NeutralityView({
               {findings.map((f, idx) => {
                 const meta = ISSUE_META[f.issue] ?? ISSUE_META.loaded_language;
                 const Icon = meta.icon;
+                // When this card is active we borrow the issue-type color
+                // for the border (matching the sentence highlight on the
+                // left) and attach .card-active to fire the radial pulse
+                // defined in globals.css. --card-color drives both.
+                const isActive = active === `finding-${idx}`;
+                const color = ISSUE_COLOR[f.issue] ?? "currentColor";
                 return (
                   <li
                     key={idx}
                     id={`finding-${idx}`}
                     className={cn(
-                      "bg-paper border border-rule rounded-lg p-4 flex flex-col gap-2 cursor-pointer transition-colors",
-                      active === `finding-${idx}` && "border-foreground",
+                      "bg-paper border rounded-lg p-4 flex flex-col gap-2 cursor-pointer transition-colors",
+                      isActive ? "card-active" : "border-rule",
                     )}
+                    style={
+                      isActive
+                        ? ({
+                            borderColor: color,
+                            "--card-color": color,
+                          } as React.CSSProperties)
+                        : undefined
+                    }
                     onClick={() => {
                       setActive(`finding-${idx}`);
                       scrollToSentence(f.sentenceIds);
@@ -334,10 +348,7 @@ export function NeutralityView({
                         <span
                           aria-hidden
                           className="inline-block h-2 w-2 rounded-full shrink-0"
-                          style={{
-                            backgroundColor:
-                              ISSUE_COLOR[f.issue] ?? "currentColor",
-                          }}
+                          style={{ backgroundColor: color }}
                         />
                         #{idx + 1}
                       </span>
