@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
 import { useI18n } from "@/lib/i18n/provider";
 
@@ -8,10 +8,21 @@ type Theme = "light" | "dark";
 
 export function ThemeToggle() {
   const { t } = useI18n();
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof window === "undefined") return "dark";
-    return document.documentElement.classList.contains("light") ? "light" : "dark";
-  });
+
+  // Must initialize as "dark" (the default) on both server and client.
+  // The themeInitScript in layout.tsx adds the ".light" class to <html>
+  // before React hydrates, so a lazy-initializer that reads
+  // document.documentElement.classList would return "light" for those
+  // users *during* hydration — server said "dark", client says "light",
+  // React throws #418. Move the DOM read to useEffect so it only runs
+  // after hydration is complete.
+  const [theme, setTheme] = useState<Theme>("dark");
+
+  useEffect(() => {
+    if (document.documentElement.classList.contains("light")) {
+      setTheme("light");
+    }
+  }, []);
 
   function toggle() {
     const next: Theme = theme === "light" ? "dark" : "light";
@@ -28,7 +39,6 @@ export function ThemeToggle() {
       aria-label={label}
       title={label}
       className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-rule text-muted hover:text-foreground hover:border-foreground transition-colors"
-      suppressHydrationWarning
     >
       {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
     </button>
