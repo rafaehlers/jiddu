@@ -63,17 +63,23 @@ export function AnalysisView({
   const [active, setActive] = useState<string | null>(null);
   const [modalFallacyId, setModalFallacyId] = useState<string | null>(null);
   const [findingForModal, setFindingForModal] = useState<FindingWithKey | null>(null);
-  const [showHint, setShowHint] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
+  // Must start as `false` on both server and client so hydration produces
+  // the same HTML. The lazy-initializer pattern (checking window.innerWidth
+  // and localStorage directly in useState) runs during client hydration —
+  // not after it — which made server ("false") and client ("maybe true")
+  // disagree and triggered React error #418. Move the check to a useEffect
+  // so it only fires after hydration is complete.
+  const [showHint, setShowHint] = useState<boolean>(false);
+  useEffect(() => {
     try {
-      return (
+      if (
         window.innerWidth < MOBILE_BREAKPOINT &&
         localStorage.getItem(MOBILE_HINT_KEY) !== "1"
-      );
-    } catch {
-      return false;
-    }
-  });
+      ) {
+        setShowHint(true);
+      }
+    } catch {}
+  }, []);
 
   function dismissHint() {
     setShowHint(false);
