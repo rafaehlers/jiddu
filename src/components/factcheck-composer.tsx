@@ -147,6 +147,28 @@ export function FactCheckComposer() {
                 {t.see_demo} <span aria-hidden>→</span>
               </Link>
             </div>
+            <Link
+              href="/benchmark"
+              className="flex items-start gap-3 sm:gap-4 p-4 sm:p-5 bg-paper border border-rule rounded-lg hover:border-foreground/40 transition-colors group"
+            >
+              <span
+                aria-hidden
+                className="text-[var(--severity-low)] text-xl leading-none mt-0.5"
+              >
+                ✓
+              </span>
+              <div className="flex flex-col gap-1.5 flex-1">
+                <h3 className="text-sm font-medium text-foreground">
+                  {t.quality_card_heading}
+                </h3>
+                <p className="text-sm text-foreground/80 leading-relaxed">
+                  {t.quality_card_body}
+                </p>
+                <span className="text-sm underline decoration-rule group-hover:decoration-foreground transition-colors self-start mt-0.5">
+                  {t.quality_card_link} <span aria-hidden>→</span>
+                </span>
+              </div>
+            </Link>
             <div className="text-sm text-muted">
               <span className="font-medium text-foreground">{t.privacy}</span>{" "}
               {t.privacy_body}
