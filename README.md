@@ -343,10 +343,12 @@ The app ships in a multi-stage Docker image (Next standalone output + Prisma CLI
 ### Deploy
 
 ```
-pnpm run deploy  →  git push origin main  →  SSH into VPS  →  /opt/deploy-jiddu.sh
+bash scripts/deploy.sh  →  git push origin main  →  SSH into VPS  →  /opt/deploy-jiddu.sh
 ```
 
-Deploys are triggered from your machine with `pnpm run deploy` (see `scripts/deploy.sh`): it refuses to run with uncommitted changes, pushes `main` to GitHub, SSHes into the VPS to run the deploy script, and health-checks the live site. The SSH target defaults to the `jiddu-vps` host alias in `~/.ssh/config` (override with `JIDDU_SSH_HOST`).
+Deploys are triggered from your machine with `bash scripts/deploy.sh`: it refuses to run with uncommitted changes, pushes `main` to GitHub, SSHes into the VPS to run the deploy script, and health-checks the live site (with retry while the container boots). The SSH target defaults to the `jiddu-vps` host alias in `~/.ssh/config` (override with `JIDDU_SSH_HOST`).
+
+> Call the script directly with `bash` rather than `pnpm run deploy`. The pnpm alias exists, but `pnpm run` first verifies dependencies and may trigger an install — the script itself only needs git/ssh/curl, so `bash` is the robust path in any environment.
 
 This replaced the previous GitHub Actions workflow — the Actions runner is blocked from reaching the VPS on port 22, while SSH from a local machine works fine. The entrypoint (`docker-entrypoint.sh`) runs `prisma migrate deploy` and re-seeds the 3 demos (idempotent via `INSERT OR REPLACE`) on every container start.
 
