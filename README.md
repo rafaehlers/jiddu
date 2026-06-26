@@ -340,13 +340,15 @@ The app ships in a multi-stage Docker image (Next standalone output + Prisma CLI
 | SSL              | Let's Encrypt via NPM                                    |
 | SSE              | Custom nginx block in NPM advanced config — disables `proxy_buffering` on `/api/analyze` so findings stream in real time |
 
-### CI/CD
+### Deploy
 
 ```
-git push origin main  →  GitHub Actions  →  SSH into VPS  →  /opt/deploy-jiddu.sh
+pnpm run deploy  →  git push origin main  →  SSH into VPS  →  /opt/deploy-jiddu.sh
 ```
 
-`.github/workflows/deploy.yml` SSHes into the VPS using the `VPS_SSH_KEY` secret and runs the deploy script. The entrypoint (`docker-entrypoint.sh`) runs `prisma migrate deploy` and re-seeds the 3 demos (idempotent via `INSERT OR REPLACE`) on every container start.
+Deploys are triggered from your machine with `pnpm run deploy` (see `scripts/deploy.sh`): it refuses to run with uncommitted changes, pushes `main` to GitHub, SSHes into the VPS to run the deploy script, and health-checks the live site. The SSH target defaults to the `jiddu-vps` host alias in `~/.ssh/config` (override with `JIDDU_SSH_HOST`).
+
+This replaced the previous GitHub Actions workflow — the Actions runner is blocked from reaching the VPS on port 22, while SSH from a local machine works fine. The entrypoint (`docker-entrypoint.sh`) runs `prisma migrate deploy` and re-seeds the 3 demos (idempotent via `INSERT OR REPLACE`) on every container start.
 
 ### First-time setup
 
