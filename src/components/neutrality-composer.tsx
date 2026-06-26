@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { UploadForm } from "@/components/upload-form";
+import { PipelineSidebar } from "@/components/pipeline-sidebar";
 import { readSse } from "@/lib/sse";
 import { useI18n } from "@/lib/i18n/provider";
 
@@ -118,34 +119,39 @@ export function NeutralityComposer() {
 
   if (!live) {
     return (
-      <section className="mx-auto max-w-3xl w-full px-4 sm:px-6 py-10 sm:py-16 flex flex-col gap-8 sm:gap-10">
-        <div className="flex flex-col gap-4">
-          <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl leading-tight text-balance">
-            {t.neutrality_hero_title}
-          </h1>
-          <p className="text-muted text-base sm:text-lg max-w-2xl">
-            {t.neutrality_hero_subtitle}
-          </p>
-        </div>
-        <UploadForm
-          onSubmit={startStream}
-          error={submitError}
-          onClearError={() => setSubmitError(null)}
-          submitLabel={t.assess_neutrality}
-          mode="neutrality"
-        />
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm">
-          <span className="text-muted">{t.see_demo_hint}</span>
-          <Link
-            href={`/n/demo-${lang}`}
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md border border-rule hover:border-foreground transition-colors self-start sm:self-auto"
-          >
-            {t.see_demo} <span aria-hidden>→</span>
-          </Link>
-        </div>
-        <div className="text-sm text-muted">
-          <span className="font-medium text-foreground">{t.privacy}</span>{" "}
-          {t.privacy_body}
+      <section className="mx-auto max-w-7xl w-full px-4 sm:px-6 py-8 sm:py-14">
+        <div className="flex flex-col lg:flex-row gap-8 lg:gap-10 lg:items-start">
+          <div className="flex-1 min-w-0 flex flex-col gap-8 sm:gap-10 order-1">
+            <div className="flex flex-col gap-4">
+              <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl leading-tight text-balance">
+                {t.neutrality_hero_title}
+              </h1>
+              <p className="text-muted text-base sm:text-lg max-w-2xl">
+                {t.neutrality_hero_subtitle}
+              </p>
+            </div>
+            <UploadForm
+              onSubmit={startStream}
+              error={submitError}
+              onClearError={() => setSubmitError(null)}
+              submitLabel={t.assess_neutrality}
+              mode="neutrality"
+            />
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm">
+              <span className="text-muted">{t.see_demo_hint}</span>
+              <Link
+                href={`/n/demo-${lang}`}
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md border border-rule hover:border-foreground transition-colors self-start sm:self-auto"
+              >
+                {t.see_demo} <span aria-hidden>→</span>
+              </Link>
+            </div>
+            <div className="text-sm text-muted">
+              <span className="font-medium text-foreground">{t.privacy}</span>{" "}
+              {t.privacy_body}
+            </div>
+          </div>
+          <PipelineSidebar activeMode="neutrality" />
         </div>
       </section>
     );

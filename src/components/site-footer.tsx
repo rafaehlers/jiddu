@@ -51,12 +51,12 @@ export function SiteFooter() {
           <span>
             © 2026{" "}
             <a
-              href="https://www.linkedin.com/in/rafael-m-ehlers/"
+              href="https://rafaelmehlers.com.br"
               target="_blank"
               rel="noopener noreferrer"
               className="underline decoration-rule hover:decoration-foreground transition-colors"
             >
-              Rafael de Menezes Ehlers
+              Rafael M. Ehlers
             </a>
           </span>
         </span>

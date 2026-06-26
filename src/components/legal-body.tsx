@@ -14,7 +14,7 @@ export function LegalBody() {
   const { t } = useI18n();
   const sections = t.legal_sections;
   return (
-    <article className="mx-auto max-w-2xl w-full px-4 sm:px-6 py-10 sm:py-16 flex flex-col gap-8">
+    <article className="mx-auto max-w-3xl w-full px-4 sm:px-6 py-10 sm:py-16 flex flex-col gap-8">
       <header className="flex flex-col gap-2">
         <h1 className="font-serif text-3xl sm:text-4xl">{t.legal_title}</h1>
         <p className="text-sm text-muted">{t.legal_subtitle}</p>
