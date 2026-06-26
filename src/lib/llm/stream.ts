@@ -5,6 +5,7 @@ import type {
   NeutralityVerdictValue,
   TextType,
 } from "../neutrality-schema";
+import type { ExplainFinding } from "../explain-schema";
 import type { ProviderId } from "./types";
 
 export type StreamEvent =
@@ -27,6 +28,11 @@ export type NeutralityStreamEvent =
       rationale: string;
     }
   | { type: "finding"; finding: NeutralityFinding };
+
+export type ExplainStreamEvent =
+  | { type: "language"; language: string | null }
+  | { type: "overview"; overview: string }
+  | { type: "finding"; finding: ExplainFinding };
 
 export type StreamMeta = {
   provider: ProviderId;

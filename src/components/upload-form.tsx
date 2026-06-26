@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n/provider";
 import type { Messages } from "@/lib/i18n/messages";
 import { MODEL_CATALOG } from "@/lib/llm";
+import { EXPLAIN_LEVELS, type ExplainLevel } from "@/lib/explain-schema";
 
 type Tab = "url" | "text" | "file";
 
@@ -15,7 +16,7 @@ type ErrorState = {
   code?: string;
 };
 
-type Mode = "detector" | "factcheck" | "neutrality";
+type Mode = "detector" | "factcheck" | "neutrality" | "explain";
 
 type Props = {
   onSubmit: (
@@ -53,6 +54,9 @@ export function UploadForm({
   const [file, setFile] = useState<File | null>(null);
   const [localError, setLocalError] = useState<ErrorState | null>(null);
   const [model, setModel] = useState<string>(MODEL_CATALOG[0].id);
+  // Explanation audience level. Only sent (and only shown) in explain mode;
+  // "undergrad" is the sensible default for an academic paper.
+  const [level, setLevel] = useState<ExplainLevel>("undergrad");
 
   const visibleError = error ?? localError;
 
@@ -67,12 +71,15 @@ export function UploadForm({
         fd.set("file", file);
         fd.set("lang", lang);
         fd.set("model", model);
+        if (mode === "explain") fd.set("level", level);
         await onSubmit("file", fd, null);
       } else {
-        const body = JSON.stringify(
+        const base =
           tab === "url"
             ? { type: "url", url, lang, model }
-            : { type: "text", text, lang, model },
+            : { type: "text", text, lang, model };
+        const body = JSON.stringify(
+          mode === "explain" ? { ...base, level } : base,
         );
         await onSubmit(tab, body, "application/json");
       }
@@ -106,6 +113,9 @@ export function UploadForm({
         </ModeButton>
         <ModeButton href="/neutrality" active={mode === "neutrality"}>
           {t.mode_neutrality}
+        </ModeButton>
+        <ModeButton href="/explain" active={mode === "explain"}>
+          {t.mode_explain}
         </ModeButton>
       </div>
 
@@ -165,6 +175,33 @@ export function UploadForm({
 
       {visibleError && (
         <ErrorBox error={visibleError} t={t} onSwitchToPaste={switchToPaste} fromTab={tab} />
+      )}
+
+      {/* Explanation level — only in explain mode. Picks the audience the
+          paragraph-by-paragraph explanations are written for. */}
+      {mode === "explain" && (
+        <div className="flex flex-col gap-2">
+          <span className="text-xs uppercase tracking-wide text-muted">
+            {t.explain_level}
+          </span>
+          <div className="flex items-center gap-2 flex-wrap">
+            {EXPLAIN_LEVELS.map((lvl) => (
+              <button
+                key={lvl}
+                type="button"
+                onClick={() => setLevel(lvl)}
+                className={cn(
+                  "px-3 py-1.5 rounded-md text-sm border transition-colors",
+                  level === lvl
+                    ? "border-foreground bg-foreground text-background"
+                    : "border-rule text-muted hover:text-foreground",
+                )}
+              >
+                {t[`level_${lvl}` as keyof Messages] as string}
+              </button>
+            ))}
+          </div>
+        </div>
       )}
 
       {/* Model picker — shown as flag-prefixed pills. Each model has a

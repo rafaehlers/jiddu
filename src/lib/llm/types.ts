@@ -2,10 +2,12 @@ import type { AnalysisResult } from "../schema";
 import type { Sentence } from "../schema";
 import type {
   ClaimStreamEvent,
+  ExplainStreamEvent,
   NeutralityStreamEvent,
   StreamEvent,
 } from "./stream";
 import type { Lang } from "../fallacies";
+import type { ExplainLevel } from "../explain-schema";
 
 export type ProviderId = "anthropic" | "openai";
 
@@ -43,4 +45,8 @@ export interface LlmProvider {
     input: AnalyzeInput,
     opts?: { model?: string; signal?: AbortSignal },
   ): AsyncGenerator<NeutralityStreamEvent, { model: string }, void>;
+  explainStream(
+    input: AnalyzeInput,
+    opts: { model?: string; signal?: AbortSignal; level: ExplainLevel },
+  ): AsyncGenerator<ExplainStreamEvent, { model: string }, void>;
 }

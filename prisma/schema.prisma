@@ -57,6 +57,26 @@ model Neutrality {
   reviewedAt   DateTime?
 }
 
+model Explanation {
+  id           String    @id
+  status       String    @default("pending") // "pending" | "running" | "complete" | "failed"
+  source       String // "url" | "pdf" | "txt" | "paste"
+  sourceRef    String?
+  title        String?
+  text         String
+  language     String?
+  provider     String
+  model        String
+  level        String    @default("undergrad") // eli5 | high_school | undergrad | expert
+  overview     String? // plain-language abstract of the whole paper at the chosen level
+  blocks       String    @default("[]") // JSON array of {id,start,end,text} paragraph blocks
+  findings     String    @default("[]") // JSON array of ExplainFinding {blockIds, role, explanation}
+  errorMessage String?
+  createdAt    DateTime  @default(now())
+  finishedAt   DateTime?
+  reviewedAt   DateTime?
+}
+
 model VerdictFeedback {
   id              String    @id @default(cuid())
   factCheckId     String // links back to /f/[id]

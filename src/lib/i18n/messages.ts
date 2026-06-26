@@ -152,6 +152,32 @@ export type Messages = {
   tt_marketing: string;
   tt_social_media: string;
 
+  // Explain dimension (paper explainer)
+  mode_explain: string;
+  explain_hero_title: string;
+  explain_hero_subtitle: string;
+  explain_cta: string;
+  explain_failed: string;
+  loader_explain: string[];
+  explain_level: string;
+  level_eli5: string;
+  level_high_school: string;
+  level_undergrad: string;
+  level_expert: string;
+  role_background: string;
+  role_objective: string;
+  role_method: string;
+  role_result: string;
+  role_interpretation: string;
+  role_limitation: string;
+  role_conclusion: string;
+  explain_overview_label: string;
+  explanations_count_one: string;
+  explanations_count_many: string;
+  explain_empty: string;
+  explain_footer: (model: string) => string;
+  pipeline_explain_desc: string;
+
   // Errors
   analysis_failed: string;
   try_again: string;
@@ -262,6 +288,11 @@ export type Messages = {
   print_footer_fallacy: string;
   print_footer_factcheck: string;
   print_footer_neutrality: string;
+  print_type_explain: string;
+  print_meta_level: string;
+  print_section_explanations: string;
+  print_no_explanations: string;
+  print_footer_explain: string;
   print_generated_at: (when: string) => string;
 
   // Live mode (beta)
@@ -305,7 +336,7 @@ const en: Messages = {
   bench_badge_label:
     "Pipeline validated · 67.5% match with PolitiFact in a 200-claim benchmark",
   bench_badge_link: "view report",
-  pipelines_heading: "Three lenses on the same text",
+  pipelines_heading: "Four lenses on the same text",
   pipelines_subheading:
     "Pick a mode in the form above, or open a sample analysis to see what each one looks like.",
   pipeline_fallacy_desc:
@@ -483,6 +514,41 @@ const en: Messages = {
   tt_marketing: "Marketing",
   tt_social_media: "Social media",
 
+  // Explain dimension (paper explainer)
+  mode_explain: "Explain",
+  explain_hero_title: "Understand any paper, paragraph by paragraph.",
+  explain_hero_subtitle:
+    "Upload a paper or paste its text, pick a level, and Jiddu explains every paragraph in the margin — decoding the jargon and showing how each part fits the argument.",
+  explain_cta: "Explain",
+  explain_failed: "Explanation failed",
+  loader_explain: [
+    "Reading the paper",
+    "Mapping its structure",
+    "Explaining each paragraph",
+    "Translating the jargon",
+    "Connecting the argument",
+  ],
+  explain_level: "Explanation level",
+  level_eli5: "Child",
+  level_high_school: "High school",
+  level_undergrad: "Undergraduate",
+  level_expert: "Expert",
+  role_background: "Background",
+  role_objective: "Objective",
+  role_method: "Method",
+  role_result: "Results",
+  role_interpretation: "Interpretation",
+  role_limitation: "Limitations",
+  role_conclusion: "Conclusion",
+  explain_overview_label: "In plain words",
+  explanations_count_one: "explanation",
+  explanations_count_many: "explanations",
+  explain_empty: "No explanations were produced for this document.",
+  explain_footer: (model) =>
+    `Explained by ${model} via Jiddu. Automated explanations can misread a paper — always check against the source.`,
+  pipeline_explain_desc:
+    "Upload a paper and get a plain-language explanation of every paragraph, at the level you choose — from child to expert.",
+
   nav_legal: "Terms",
   nav_how_it_works: "How it works",
   export_pdf: "Export PDF",
@@ -509,6 +575,12 @@ const en: Messages = {
     "This is an automated report. The verdicts may be wrong — always read the cited sources and judge for yourself. See https://jiddu.app/legal for the full terms.",
   print_footer_neutrality:
     "This is an automated report. Neutrality is a property of framing; the labels may be wrong — read the source text and the flagged passages. Jiddu does not classify partisan direction. See https://jiddu.app/legal for the full terms.",
+  print_type_explain: "Paper explanation",
+  print_meta_level: "Level",
+  print_section_explanations: "Explanations",
+  print_no_explanations: "No explanations were produced.",
+  print_footer_explain:
+    "This is an automated explanation. It can misread or oversimplify the paper — always read the source text and the cited work yourself. See https://jiddu.app/legal for the full terms.",
   print_generated_at: (when) => `Generated ${when} · jiddu.app`,
   legal_title: "Terms and disclaimers",
   legal_subtitle:
@@ -560,7 +632,16 @@ const en: Messages = {
       ],
     },
     {
-      title: "7. Contact",
+      title: "7. Explain feature",
+      paragraphs: [
+        "The Explain pipeline produces automated plain-language interpretations of academic papers and technical documents. It does not assess the truth, accuracy, or validity of the paper's claims — it only explains what each paragraph says and how it fits the argument.",
+        "The audience level you choose (Child / High school / Undergraduate / Expert) adjusts prose complexity only. It does not filter, validate, or change the meaning of the underlying content.",
+        "Paragraph role tags (Background, Objective, Method, Result, Interpretation, Limitation, Conclusion) are algorithmic predictions. They may be incorrect, especially for interdisciplinary papers or documents that don't follow a standard structure.",
+        "Explanations work best on structured academic papers. Results on unstructured prose, blog posts, or non-academic documents may be lower quality.",
+      ],
+    },
+    {
+      title: "8. Contact",
       paragraphs: [
         "Operator: Rafael de Menezes Ehlers. For takedown requests, corrections, or other concerns, contact via LinkedIn (linked in the footer).",
       ],
@@ -574,7 +655,7 @@ const en: Messages = {
     {
       title: "1. The big picture",
       paragraphs: [
-        "Jiddu runs three independent analyses on the same input text: a fallacy detector, a fact-check pipeline (extraction + Sonar-based verdict), and a neutrality assessment. They are separate routes in the app (`/`, `/factcheck`, `/neutrality`) and separate database tables. None of them is required by the others.",
+        "Jiddu runs four independent analyses on the same input text: a fallacy detector, a fact-check pipeline (extraction + Sonar-based verdict), a neutrality assessment, and a paragraph-by-paragraph paper explainer. They are separate routes in the app (`/`, `/factcheck`, `/neutrality`, `/explain`) and separate database tables. None of them is required by the others.",
         "Each analysis is a streaming request to an LLM via [OpenRouter](https://openrouter.ai). The model is told to call a function (OpenAI-style tool use) whose JSON Schema we control. We parse the tool-call arguments incrementally with [partial-json](https://github.com/promplate/partial-json) so findings show up in the UI while the model is still writing.",
         "All output is in the user's UI language. The same prompt is used regardless of which model the user picks — the language difference comes from a single `OUTPUT LANGUAGE:` line in the system prompt.",
       ],
@@ -670,7 +751,16 @@ const en: Messages = {
       ],
     },
     {
-      title: "13. Open source and methodology",
+      title: "13. Explain — paper explainer",
+      paragraphs: [
+        "The Explain pipeline (`/explain`, results at `/e/:id`) takes an academic paper or technical document and produces a paragraph-by-paragraph plain-language explanation. Each paragraph gets a role tag (Background / Objective / Method / Result / Interpretation / Limitation / Conclusion) and an explanation written at the chosen audience level. A whole-document overview is generated first.",
+        "Audience levels: **Child** (ELI5, everyday analogies, no jargon), **High school** (clear language, a few technical terms explained), **Undergraduate** (standard academic register, assumes field familiarity), **Expert** (concise, peer-level, full terminology retained). The level controls prose complexity only — it does not filter or validate content.",
+        "Role tagging is algorithmic. The model reads each paragraph in context and assigns the role that best describes its function in the argument. Interdisciplinary papers or documents with non-standard structure may receive incorrect tags.",
+        "Unlike the other three pipelines, Explain is optimised for structured academic papers. Results on blog posts, legal filings, or unstructured prose will be lower quality.",
+      ],
+    },
+    {
+      title: "14. Open source and methodology",
       paragraphs: [
         "Source code is at [github.com/rafaehlers/jiddu](https://github.com/rafaehlers/jiddu) under the [AGPL-3.0-or-later license](https://www.gnu.org/licenses/agpl-3.0.txt). AGPL closes the 'SaaS loophole' that GPL leaves open: anyone running a modified version as a network service must publish the modified source.",
         "Two papers ground the design: [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson — Microsoft Research, 2025) for the four-stage claim extraction; and [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) (Goldfarb, Hall, Fisher, Salam, Wilde — Forum AI / Stanford, 2025) for the verdict assessment, the 6-tier source taxonomy and the neutrality framework. Jiddu is not affiliated with either group.",
@@ -793,7 +883,7 @@ const pt: Messages = {
   bench_badge_label:
     "Pipeline validado · 67,5% de concordância com PolitiFact em benchmark de 200 claims",
   bench_badge_link: "ver relatório",
-  pipelines_heading: "Três lentes sobre o mesmo texto",
+  pipelines_heading: "Quatro lentes sobre o mesmo texto",
   pipelines_subheading:
     "Escolha um modo no formulário acima, ou abra uma análise de exemplo para ver como cada um fica.",
   pipeline_fallacy_desc:
@@ -972,6 +1062,41 @@ const pt: Messages = {
   tt_marketing: "Marketing",
   tt_social_media: "Redes sociais",
 
+  // Explain dimension (paper explainer)
+  mode_explain: "Explicar",
+  explain_hero_title: "Entenda qualquer paper, parágrafo por parágrafo.",
+  explain_hero_subtitle:
+    "Suba um paper ou cole o texto, escolha um nível, e o Jiddu explica cada parágrafo na margem — traduzindo o jargão e mostrando como cada parte se encaixa no argumento.",
+  explain_cta: "Explicar",
+  explain_failed: "Falha na explicação",
+  loader_explain: [
+    "Lendo o paper",
+    "Mapeando a estrutura",
+    "Explicando cada parágrafo",
+    "Traduzindo o jargão",
+    "Conectando o argumento",
+  ],
+  explain_level: "Nível de explicação",
+  level_eli5: "Criança",
+  level_high_school: "Ensino médio",
+  level_undergrad: "Graduação",
+  level_expert: "Especialista",
+  role_background: "Contexto",
+  role_objective: "Objetivo",
+  role_method: "Método",
+  role_result: "Resultados",
+  role_interpretation: "Interpretação",
+  role_limitation: "Limitações",
+  role_conclusion: "Conclusão",
+  explain_overview_label: "Em poucas palavras",
+  explanations_count_one: "explicação",
+  explanations_count_many: "explicações",
+  explain_empty: "Nenhuma explicação foi gerada para este documento.",
+  explain_footer: (model) =>
+    `Explicado por ${model} via Jiddu. Explicações automáticas podem interpretar mal um paper — sempre confira no original.`,
+  pipeline_explain_desc:
+    "Suba um paper e receba uma explicação em linguagem simples de cada parágrafo, no nível que você escolher — de criança a especialista.",
+
   nav_legal: "Termos",
   nav_how_it_works: "Como funciona",
   export_pdf: "Exportar PDF",
@@ -998,6 +1123,12 @@ const pt: Messages = {
     "Este é um relatório automatizado. Os vereditos podem estar errados — sempre leia as fontes citadas e julgue por conta própria. Termos completos em https://jiddu.app/legal.",
   print_footer_neutrality:
     "Este é um relatório automatizado. Imparcialidade é uma propriedade do enquadramento; os rótulos podem estar errados — leia o texto original e os trechos sinalizados. O Jiddu não classifica direção partidária. Termos completos em https://jiddu.app/legal.",
+  print_type_explain: "Explicação de paper",
+  print_meta_level: "Nível",
+  print_section_explanations: "Explicações",
+  print_no_explanations: "Nenhuma explicação foi gerada.",
+  print_footer_explain:
+    "Esta é uma explicação automatizada. Ela pode interpretar mal ou simplificar demais o paper — sempre leia o texto original e os trabalhos citados. Termos completos em https://jiddu.app/legal.",
   print_generated_at: (when) => `Gerado em ${when} · jiddu.app`,
 
   legal_title: "Termos e isenções",
@@ -1050,7 +1181,16 @@ const pt: Messages = {
       ],
     },
     {
-      title: "7. Contato",
+      title: "7. Funcionalidade Explain",
+      paragraphs: [
+        "O pipeline Explain produz interpretações em linguagem simples de artigos acadêmicos e documentos técnicos de forma automatizada. Ele não avalia a veracidade, precisão ou validade das afirmações do documento — apenas explica o que cada parágrafo diz e como ele se encaixa no argumento.",
+        "O nível de audiência escolhido (Criança / Ensino médio / Graduação / Expert) ajusta apenas a complexidade do texto. Ele não filtra, valida nem altera o significado do conteúdo original.",
+        "As tags de papel do parágrafo (Background, Objetivo, Método, Resultado, Interpretação, Limitação, Conclusão) são previsões algorítmicas. Podem estar incorretas, especialmente em artigos interdisciplinares ou documentos que não seguem uma estrutura padrão.",
+        "As explicações funcionam melhor em artigos acadêmicos estruturados. Resultados em textos não estruturados, posts de blog ou documentos não acadêmicos podem ser de menor qualidade.",
+      ],
+    },
+    {
+      title: "8. Contato",
       paragraphs: [
         "Operador: Rafael de Menezes Ehlers. Para solicitações de remoção, correções ou outras dúvidas, contate via LinkedIn (link no rodapé).",
       ],
@@ -1064,7 +1204,7 @@ const pt: Messages = {
     {
       title: "1. Visão geral",
       paragraphs: [
-        "O Jiddu roda três análises independentes sobre o mesmo texto: um detector de falácias, um pipeline de checagem de fatos (extração + veredito via Sonar) e uma avaliação de imparcialidade. São rotas separadas no app (`/`, `/factcheck`, `/neutrality`) e tabelas separadas no banco. Nenhuma depende das outras.",
+        "O Jiddu roda quatro análises independentes sobre o mesmo texto: um detector de falácias, um pipeline de checagem de fatos (extração + veredito via Sonar), uma avaliação de imparcialidade e um explicador de papers parágrafo a parágrafo. São rotas separadas no app (`/`, `/factcheck`, `/neutrality`, `/explain`) e tabelas separadas no banco. Nenhuma depende das outras.",
         "Cada análise é uma requisição em streaming pra um LLM via [OpenRouter](https://openrouter.ai). O modelo é instruído a chamar uma função (tool use estilo OpenAI) cujo JSON Schema é nosso. A gente parseia os argumentos da chamada incrementalmente com [partial-json](https://github.com/promplate/partial-json), então os achados aparecem na UI enquanto o modelo ainda está escrevendo.",
         "Todo o output é no idioma da UI escolhido pelo usuário. O mesmo prompt vai independente do modelo selecionado — a diferença de idioma vem de uma única linha `OUTPUT LANGUAGE:` no system prompt.",
       ],
@@ -1160,7 +1300,16 @@ const pt: Messages = {
       ],
     },
     {
-      title: "13. Open source e metodologia",
+      title: "13. Explain — explicador de artigos",
+      paragraphs: [
+        "O pipeline Explain (`/explain`, resultados em `/e/:id`) recebe um artigo acadêmico ou documento técnico e produz uma explicação parágrafo a parágrafo em linguagem simples. Cada parágrafo recebe uma tag de papel (Background / Objetivo / Método / Resultado / Interpretação / Limitação / Conclusão) e uma explicação escrita no nível de audiência escolhido. Uma visão geral do documento é gerada primeiro.",
+        "Níveis de audiência: **Criança** (ELI5, analogias do cotidiano, sem jargão), **Ensino médio** (linguagem clara, poucos termos técnicos explicados), **Graduação** (registro acadêmico padrão, pressupõe familiaridade com a área), **Expert** (conciso, nível de pares, terminologia completa mantida). O nível controla apenas a complexidade do texto — não filtra nem valida o conteúdo.",
+        "A tag de papel é algorítmica. O modelo lê cada parágrafo em contexto e atribui o papel que melhor descreve sua função no argumento. Artigos interdisciplinares ou documentos com estrutura não padrão podem receber tags incorretas.",
+        "Ao contrário dos outros três pipelines, o Explain é otimizado para artigos acadêmicos estruturados. Resultados em posts de blog, petições jurídicas ou textos não estruturados serão de menor qualidade.",
+      ],
+    },
+    {
+      title: "14. Open source e metodologia",
       paragraphs: [
         "Código fonte em [github.com/rafaehlers/jiddu](https://github.com/rafaehlers/jiddu) sob licença [AGPL-3.0-or-later](https://www.gnu.org/licenses/agpl-3.0.txt). A AGPL fecha o 'SaaS loophole' que a GPL deixa aberto: quem rodar uma versão modificada como serviço de rede tem que publicar o código modificado.",
         "Dois papers fundamentam o design: [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson — Microsoft Research, 2025) pra extração em quatro estágios; e [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) (Goldfarb, Hall, Fisher, Salam, Wilde — Forum AI / Stanford, 2025) pra a avaliação de veredito, a taxonomia de 6 tiers de fonte e o framework de imparcialidade. O Jiddu não tem afiliação com nenhum dos grupos.",
@@ -1283,7 +1432,7 @@ const es: Messages = {
   bench_badge_label:
     "Pipeline validado · 67,5% de concordancia con PolitiFact en benchmark de 200 claims",
   bench_badge_link: "ver informe",
-  pipelines_heading: "Tres lentes sobre el mismo texto",
+  pipelines_heading: "Cuatro lentes sobre el mismo texto",
   pipelines_subheading:
     "Elige un modo en el formulario de arriba, o abre un análisis de muestra para ver cómo se ve cada uno.",
   pipeline_fallacy_desc:
@@ -1462,6 +1611,41 @@ const es: Messages = {
   tt_marketing: "Marketing",
   tt_social_media: "Redes sociales",
 
+  // Explain dimension (paper explainer)
+  mode_explain: "Explicar",
+  explain_hero_title: "Entiende cualquier paper, párrafo por párrafo.",
+  explain_hero_subtitle:
+    "Sube un paper o pega el texto, elige un nivel, y Jiddu explica cada párrafo en el margen — descifrando la jerga y mostrando cómo cada parte encaja en el argumento.",
+  explain_cta: "Explicar",
+  explain_failed: "Falló la explicación",
+  loader_explain: [
+    "Leyendo el paper",
+    "Mapeando su estructura",
+    "Explicando cada párrafo",
+    "Traduciendo la jerga",
+    "Conectando el argumento",
+  ],
+  explain_level: "Nivel de explicación",
+  level_eli5: "Niño",
+  level_high_school: "Secundaria",
+  level_undergrad: "Grado",
+  level_expert: "Experto",
+  role_background: "Contexto",
+  role_objective: "Objetivo",
+  role_method: "Método",
+  role_result: "Resultados",
+  role_interpretation: "Interpretación",
+  role_limitation: "Limitaciones",
+  role_conclusion: "Conclusión",
+  explain_overview_label: "En palabras simples",
+  explanations_count_one: "explicación",
+  explanations_count_many: "explicaciones",
+  explain_empty: "No se generaron explicaciones para este documento.",
+  explain_footer: (model) =>
+    `Explicado por ${model} vía Jiddu. Las explicaciones automáticas pueden malinterpretar un paper — verifica siempre con el original.`,
+  pipeline_explain_desc:
+    "Sube un paper y obtén una explicación en lenguaje claro de cada párrafo, al nivel que elijas — de niño a experto.",
+
   nav_legal: "Términos",
   nav_how_it_works: "Cómo funciona",
   export_pdf: "Exportar PDF",
@@ -1488,6 +1672,12 @@ const es: Messages = {
     "Este es un informe automatizado. Los veredictos pueden estar equivocados — siempre lee las fuentes citadas y juzga por tu cuenta. Términos completos en https://jiddu.app/legal.",
   print_footer_neutrality:
     "Este es un informe automatizado. La imparcialidad es una propiedad del encuadre; las etiquetas pueden estar equivocadas — lee el texto original y los pasajes señalados. Jiddu no clasifica dirección partidaria. Términos completos en https://jiddu.app/legal.",
+  print_type_explain: "Explicación de paper",
+  print_meta_level: "Nivel",
+  print_section_explanations: "Explicaciones",
+  print_no_explanations: "No se generaron explicaciones.",
+  print_footer_explain:
+    "Esta es una explicación automatizada. Puede malinterpretar o simplificar en exceso el paper — lee siempre el texto original y los trabajos citados. Términos completos en https://jiddu.app/legal.",
   print_generated_at: (when) => `Generado ${when} · jiddu.app`,
 
   legal_title: "Términos y descargos",
@@ -1540,7 +1730,16 @@ const es: Messages = {
       ],
     },
     {
-      title: "7. Contacto",
+      title: "7. Funcionalidad Explain",
+      paragraphs: [
+        "El pipeline Explain produce interpretaciones automatizadas en lenguaje sencillo de artículos académicos y documentos técnicos. No evalúa la veracidad, precisión o validez de las afirmaciones del documento — solo explica qué dice cada párrafo y cómo encaja en el argumento.",
+        "El nivel de audiencia elegido (Niño / Secundaria / Universitario / Experto) ajusta únicamente la complejidad del texto. No filtra, valida ni cambia el significado del contenido original.",
+        "Las etiquetas de rol del párrafo (Background, Objetivo, Método, Resultado, Interpretación, Limitación, Conclusión) son predicciones algorítmicas. Pueden ser incorrectas, especialmente en artículos interdisciplinarios o documentos que no siguen una estructura estándar.",
+        "Las explicaciones funcionan mejor en artículos académicos estructurados. Los resultados en textos no estructurados, posts de blog o documentos no académicos pueden ser de menor calidad.",
+      ],
+    },
+    {
+      title: "8. Contacto",
       paragraphs: [
         "Operador: Rafael de Menezes Ehlers. Para solicitudes de remoción, correcciones u otras consultas, contacto vía LinkedIn (enlace en el pie de página).",
       ],
@@ -1554,7 +1753,7 @@ const es: Messages = {
     {
       title: "1. Visión general",
       paragraphs: [
-        "Jiddu corre tres análisis independientes sobre el mismo texto: un detector de falacias, un pipeline de verificación de hechos (extracción + veredicto vía Sonar) y una evaluación de imparcialidad. Son rutas separadas en la app (`/`, `/factcheck`, `/neutrality`) y tablas separadas en la base. Ninguno depende de los otros.",
+        "Jiddu corre cuatro análisis independientes sobre el mismo texto: un detector de falacias, un pipeline de verificación de hechos (extracción + veredicto vía Sonar), una evaluación de imparcialidad y un explicador de papers párrafo a párrafo. Son rutas separadas en la app (`/`, `/factcheck`, `/neutrality`, `/explain`) y tablas separadas en la base. Ninguno depende de los otros.",
         "Cada análisis es una petición en streaming a un LLM vía [OpenRouter](https://openrouter.ai). Se instruye al modelo a llamar una función (tool use estilo OpenAI) cuyo JSON Schema controlamos nosotros. Parseamos los argumentos de la tool-call incrementalmente con [partial-json](https://github.com/promplate/partial-json), así los hallazgos aparecen en la UI mientras el modelo todavía está escribiendo.",
         "Todo el output va en el idioma de la UI elegido por el usuario. El mismo prompt se usa sin importar qué modelo elija el usuario — la diferencia de idioma viene de una única línea `OUTPUT LANGUAGE:` en el system prompt.",
       ],
@@ -1650,7 +1849,16 @@ const es: Messages = {
       ],
     },
     {
-      title: "13. Open source y metodología",
+      title: "13. Explain — explicador de artículos",
+      paragraphs: [
+        "El pipeline Explain (`/explain`, resultados en `/e/:id`) recibe un artículo académico o documento técnico y produce una explicación párrafo a párrafo en lenguaje sencillo. Cada párrafo recibe una etiqueta de rol (Background / Objetivo / Método / Resultado / Interpretación / Limitación / Conclusión) y una explicación escrita en el nivel de audiencia elegido. Primero se genera un resumen general del documento.",
+        "Niveles de audiencia: **Niño** (ELI5, analogías cotidianas, sin jerga), **Secundaria** (lenguaje claro, pocos términos técnicos explicados), **Universitario** (registro académico estándar, asume familiaridad con el campo), **Experto** (conciso, nivel de pares, terminología completa conservada). El nivel controla solo la complejidad del texto — no filtra ni valida el contenido.",
+        "La etiqueta de rol es algorítmica. El modelo lee cada párrafo en contexto y asigna el rol que mejor describe su función en el argumento. Los artículos interdisciplinarios o los documentos con estructura no estándar pueden recibir etiquetas incorrectas.",
+        "A diferencia de los otros tres pipelines, Explain está optimizado para artículos académicos estructurados. Los resultados en posts de blog, escritos legales o textos no estructurados serán de menor calidad.",
+      ],
+    },
+    {
+      title: "14. Open source y metodología",
       paragraphs: [
         "El código fuente está en [github.com/rafaehlers/jiddu](https://github.com/rafaehlers/jiddu) bajo licencia [AGPL-3.0-or-later](https://www.gnu.org/licenses/agpl-3.0.txt). AGPL cierra el 'SaaS loophole' que GPL deja abierto: cualquiera que corra una versión modificada como servicio de red debe publicar el código fuente modificado.",
         "Dos papers fundamentan el diseño: [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson — Microsoft Research, 2025) para la extracción de afirmaciones en cuatro etapas; y [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) (Goldfarb, Hall, Fisher, Salam, Wilde — Forum AI / Stanford, 2025) para la evaluación de veredicto, la taxonomía de 6 tiers de fuentes y el framework de imparcialidad. Jiddu no está afiliado con ninguno de los dos grupos.",
