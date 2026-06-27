@@ -236,6 +236,12 @@ async function AdminList() {
           >
             Cache →
           </Link>
+          <Link
+            href="/admin/api-keys"
+            className="text-sm px-3 py-1.5 rounded-md border border-rule text-muted hover:text-foreground transition-colors"
+          >
+            API keys →
+          </Link>
           <form action={logoutAction}>
             <button
               type="submit"

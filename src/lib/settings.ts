@@ -28,6 +28,15 @@ export const DEFAULT_SETTINGS = {
   // Fact-check cost caps
   "factcheck.maxClaims": 50,
   "factcheck.maxRefreshPerClaim": 2,
+
+  // Public REST/MCP API (per-key buckets, independent of the web UI's
+  // per-IP limits above). Fact-check via the API does extract + verify
+  // (Sonar) so it gets a tighter bucket and its own claim cap.
+  "rate.api.capacity": 20,
+  "rate.api.perHour": 60,
+  "rate.apiFactcheck.capacity": 5,
+  "rate.apiFactcheck.perHour": 15,
+  "api.maxClaims": 10,
 } as const;
 
 export type SettingKey = keyof typeof DEFAULT_SETTINGS;
@@ -89,14 +98,38 @@ export async function deleteSetting(key: SettingKey): Promise<void> {
 
 // Build the shape consumed by the rate-limit token bucket from a paired
 // (capacity, perHour) setting.
+export type RateBucketPrefix =
+  | "rate.analyze"
+  | "rate.factcheck"
+  | "rate.verify"
+  | "rate.singleVerify"
+  | "rate.api"
+  | "rate.apiFactcheck";
+
 export function bucketFromSettings(
   s: Record<SettingKey, number>,
-  prefix: "rate.analyze" | "rate.factcheck" | "rate.verify" | "rate.singleVerify",
+  prefix: RateBucketPrefix,
 ): { capacity: number; refillPerSec: number } {
   const cap = s[`${prefix}.capacity` as SettingKey];
   const perHour = s[`${prefix}.perHour` as SettingKey];
   return {
     capacity: Math.max(1, Math.floor(cap)),
     refillPerSec: Math.max(0, perHour / 3600),
+  };
+}
+
+// Like bucketFromSettings but lets an individual API key override the global
+// capacity / per-hour rate. Null overrides fall back to the global setting.
+export function bucketFor(
+  s: Record<SettingKey, number>,
+  prefix: RateBucketPrefix,
+  key: { rateCapacity: number | null; ratePerHour: number | null },
+): { capacity: number; refillPerSec: number } {
+  const base = bucketFromSettings(s, prefix);
+  return {
+    capacity:
+      key.rateCapacity != null ? Math.max(1, Math.floor(key.rateCapacity)) : base.capacity,
+    refillPerSec:
+      key.ratePerHour != null ? Math.max(0, key.ratePerHour / 3600) : base.refillPerSec,
   };
 }

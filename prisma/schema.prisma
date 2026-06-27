@@ -35,6 +35,21 @@ model AppSetting {
   updatedAt DateTime @updatedAt
 }
 
+model ApiKey {
+  id           String    @id // nanoid(12) — public identifier, safe to log
+  keyHash      String    @unique // sha256("jiddu-api:" + secret) — the secret itself is never stored
+  prefix       String // first chars of the secret, shown in admin to identify the key
+  label        String // human label set at creation
+  createdAt    DateTime  @default(now())
+  lastUsedAt   DateTime?
+  revokedAt    DateTime? // null = active
+  rateCapacity Int? // per-key burst override (null = use global settings)
+  ratePerHour  Int? // per-key sustained-rate override (null = use global settings)
+
+  @@index([keyHash])
+  @@index([revokedAt])
+}
+
 model Neutrality {
   id           String    @id
   status       String    @default("pending") // "pending" | "running" | "complete" | "failed"
