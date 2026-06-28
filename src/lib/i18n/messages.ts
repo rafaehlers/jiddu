@@ -595,7 +595,7 @@ const en: Messages = {
     {
       title: "Getting a key",
       paragraphs: [
-        "Keys are issued manually for now. Request one via [LinkedIn](https://www.linkedin.com/in/rafael-m-ehlers/) or open an issue on [GitHub](https://github.com/rafaehlers/jiddu).",
+        "Keys are issued manually for now. Open an issue on [GitHub](https://github.com/rafaehlers/jiddu) to request one.",
       ],
     },
   ],
@@ -1185,7 +1185,7 @@ const pt: Messages = {
     {
       title: "Obter uma chave",
       paragraphs: [
-        "As chaves são emitidas manualmente por enquanto. Solicite uma pelo [LinkedIn](https://www.linkedin.com/in/rafael-m-ehlers/) ou abra uma issue no [GitHub](https://github.com/rafaehlers/jiddu).",
+        "As chaves são emitidas manualmente por enquanto. Abra uma issue no [GitHub](https://github.com/rafaehlers/jiddu) para solicitar uma.",
       ],
     },
   ],
@@ -1776,7 +1776,7 @@ const es: Messages = {
     {
       title: "Obtener una clave",
       paragraphs: [
-        "Las claves se emiten manualmente por ahora. Solicita una por [LinkedIn](https://www.linkedin.com/in/rafael-m-ehlers/) o abre un issue en [GitHub](https://github.com/rafaehlers/jiddu).",
+        "Las claves se emiten manualmente por ahora. Abre un issue en [GitHub](https://github.com/rafaehlers/jiddu) para solicitar una.",
       ],
     },
   ],
