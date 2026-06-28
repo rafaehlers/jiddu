@@ -1,0 +1,18 @@
+{
+  "e01": { "roles": ["background"] },
+  "e02": { "roles": ["objective"] },
+  "e03": { "roles": ["method"] },
+  "e04": { "roles": ["result"] },
+  "e05": { "roles": ["interpretation"] },
+  "e06": { "roles": ["limitation"] },
+  "e07": { "roles": ["conclusion"] },
+  "e08": { "roles": ["background"] },
+  "e09": { "roles": ["objective"] },
+  "e10": { "roles": ["method"] },
+  "e11": { "roles": ["result"] },
+  "e12": { "roles": ["interpretation"] },
+  "e13": { "roles": ["limitation"] },
+  "e14": { "roles": ["conclusion"] },
+  "e15": { "roles": ["background"] },
+  "e16": { "roles": ["method"] }
+}

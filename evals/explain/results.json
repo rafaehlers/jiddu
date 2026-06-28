@@ -1,0 +1,322 @@
+[
+  {
+    "id": "e01",
+    "pass": true,
+    "detail": "roles [background] (want one of [background])",
+    "expected": {
+      "roles": [
+        "background"
+      ]
+    },
+    "response": {
+      "overview": "This paper addresses the challenge of predicting protein 3D structures from amino acid sequences. Protein folding — the process by which a linear chain of amino acids spontaneously arranges itself into a complex 3D shape — has been a central unsolved problem in biology for decades. Earlier computational methods attempted to solve this \"protein folding problem\" but achieved limited success in accurately predicting structures. The paper likely proposes a new computational approach to improve structure prediction.",
+      "level": "high_school",
+      "paragraphs": [
+        {
+          "role": "background",
+          "explanation": "This opening paragraph establishes the core scientific problem: protein folding. A protein is a large biological molecule made of a chain of building blocks called amino acids. When a protein is synthesized, it must fold into a specific three-dimensional (3D) shape to function properly — and predicting that shape from the sequence of amino acids alone has been extremely difficult. The paragraph acknowledges that previous computational (computer-based) approaches have tried and largely failed to solve this problem, setting up the motivation for the paper's own approach."
+        }
+      ]
+    }
+  },
+  {
+    "id": "e02",
+    "pass": true,
+    "detail": "roles [objective] (want one of [objective])",
+    "expected": {
+      "roles": [
+        "objective"
+      ]
+    },
+    "response": {
+      "overview": "This paper investigates whether sleep duration causally influences memory consolidation in adolescents aged 13-17. The study focuses specifically on the teenage years, a developmental period marked by significant brain changes and shifts in sleep patterns. By emphasizing \"causal\" effects rather than mere correlation, the authors signal their intent to use methods capable of establishing a cause-and-effect relationship between how long teenagers sleep and how well their memories consolidate.",
+      "level": "undergrad",
+      "paragraphs": [
+        {
+          "role": "objective",
+          "explanation": "This opening statement defines the study's central aim: testing whether daily sleep duration has a causal effect on memory consolidation in teenagers between 13 and 17 years old. The choice of adolescents is significant because this developmental stage involves notable changes in both sleep architecture (the pattern of sleep stages) and cognitive maturation. By framing the question as causal rather than correlational, the authors signal their use of methods designed to support causal inference—distinguishing this from studies that merely observe that sleep and memory are related."
+        }
+      ]
+    }
+  },
+  {
+    "id": "e03",
+    "pass": true,
+    "detail": "roles [method] (want one of [method])",
+    "expected": {
+      "roles": [
+        "method"
+      ]
+    },
+    "response": {
+      "overview": "This brief passage describes the experimental training setup for a convolutional neural network. The researchers used a standard dataset of 50,000 labeled images and applied stochastic gradient descent—an optimization algorithm commonly used to train neural networks—with a learning rate of 0.01 across 100 complete passes through the data. A validation set of 10 percent was held out to monitor the model's performance during training. This is a methodological description that establishes the baseline experimental conditions for whatever results or analysis follow.",
+      "level": "undergrad",
+      "paragraphs": [
+        {
+          "role": "method",
+          "explanation": "This paragraph describes the training configuration for the neural network experiment. The dataset consists of 50,000 labeled images (likely a standard benchmark like CIFAR-10 or a subset of ImageNet). Stochastic gradient descent (SGD) with a learning rate of 0.01 is a conventional optimizer setting for image classification tasks. Training for 100 epochs means the model has seen the entire dataset 100 times, allowing it to iteratively adjust its weights to minimize prediction errors. The 10 percent validation split is a standard practice to evaluate how well the model generalizes to unseen data without overfitting to the training set. Together, these hyperparameters define a baseline training run whose results would be the focus of subsequent analysis."
+        }
+      ]
+    }
+  },
+  {
+    "id": "e04",
+    "pass": true,
+    "detail": "roles [result] (want one of [result])",
+    "expected": {
+      "roles": [
+        "result"
+      ]
+    },
+    "response": {
+      "overview": "This paper describes a machine learning model for a classification task. The authors report that their model achieved 94.2% accuracy on a held-out test set, which is a meaningful improvement over the previous best result of 88.7% from earlier research. In other words, the new model correctly classifies about 6 percentage points more examples than the prior approach.",
+      "level": "high_school",
+      "paragraphs": [
+        {
+          "role": "result",
+          "explanation": "This paragraph reports the main result of the study: the model's accuracy (how often it makes correct predictions) was 94.2%, which is substantially higher than the 88.7% accuracy achieved by an earlier baseline system. A 'held-out test set' is a collection of data the model never saw during training, used to measure how well it generalizes to new examples. This result is the paper's key evidence that the proposed approach is an improvement over prior methods."
+        }
+      ]
+    }
+  },
+  {
+    "id": "e05",
+    "pass": false,
+    "detail": "roles [conclusion] (want one of [interpretation])",
+    "expected": {
+      "roles": [
+        "interpretation"
+      ]
+    },
+    "response": {
+      "overview": "This paper presents findings about the causes of global warming over the past century. The core conclusion is that observed warming is primarily attributable to human activities—specifically greenhouse-gas emissions—rather than to natural variations in Earth's climate system. This framing positions the research as evidence supporting the scientific consensus on anthropogenic climate change.",
+      "level": "undergrad",
+      "paragraphs": [
+        {
+          "role": "conclusion",
+          "explanation": "This sentence presents the paper's main finding: that the warming observed over the past hundred years is driven mainly by human greenhouse-gas emissions, not by natural climate fluctuations. The authors are drawing a causal link between human activity (emissions) and observed temperature trends, distinguishing this from alternative explanations like solar cycles or volcanic activity. This conclusion likely emerges from some form of attribution analysis—comparing climate model simulations with and without human forcing."
+        }
+      ]
+    }
+  },
+  {
+    "id": "e06",
+    "pass": true,
+    "detail": "roles [limitation] (want one of [limitation])",
+    "expected": {
+      "roles": [
+        "limitation"
+      ]
+    },
+    "response": {
+      "overview": "This appears to be a brief methodological note or paper excerpt describing an analysis conducted at a single urban hospital involving 80 patients. The paragraph explicitly acknowledges the study's limited external validity—findings may not generalize beyond this specific setting and sample.",
+      "level": "expert",
+      "paragraphs": [
+        {
+          "role": "limitation",
+          "explanation": "The authors concede that their study's scope is constrained by a small, geographically specific sample (one urban hospital, 80 patients). This is a standard threat-to-validity statement: the results cannot be reliably extended to rural populations or other demographic groups not represented in the sample. Such language is typical in medical/clinical research to set appropriate expectations for the reader before they interpret the findings."
+        }
+      ]
+    }
+  },
+  {
+    "id": "e07",
+    "pass": true,
+    "detail": "roles [conclusion] (want one of [conclusion])",
+    "expected": {
+      "roles": [
+        "conclusion"
+      ]
+    },
+    "response": {
+      "overview": "This appears to be a conclusion paragraph from a research paper about machine learning model training. The paper investigated how the amount of pretraining data affects a model's ability to perform downstream tasks (specific problems the model is later applied to). The main finding is that using more pretraining data consistently leads to better performance, and the authors suggest future research should explore this relationship in multilingual and low-resource language contexts.",
+      "level": "high_school",
+      "paragraphs": [
+        {
+          "role": "conclusion",
+          "explanation": "This paragraph summarizes the paper's key takeaway: more pretraining data leads to better downstream performance — a consistent and reliable relationship. 'Downstream performance' means how well the model solves real tasks (like translation or classification) after being initially trained on large datasets. The authors also point toward future work in multilingual and low-resource settings, which are contexts where a language or domain has limited available training data — an important frontier in making AI systems more broadly useful."
+        }
+      ]
+    }
+  },
+  {
+    "id": "e08",
+    "pass": true,
+    "detail": "roles [background] (want one of [background])",
+    "expected": {
+      "roles": [
+        "background"
+      ]
+    },
+    "response": {
+      "overview": "This brief paragraph introduces the topic of climate change. It defines climate change simply as long-term changes in temperatures and weather patterns, and states that figuring out what causes these changes has become one of the most important science questions that scientists are working on today.",
+      "level": "eli5",
+      "paragraphs": [
+        {
+          "role": "background",
+          "explanation": "This opening sentence does two things: it defines what climate change means (shifts in temperatures and weather that last a long time, not just a few days or weeks), and it tells us why scientists care so much about it — because understanding what causes these shifts is a big deal right now. Think of it like a scientist saying 'here's the problem we're trying to solve.'"
+        }
+      ]
+    }
+  },
+  {
+    "id": "e09",
+    "pass": true,
+    "detail": "roles [objective] (want one of [objective])",
+    "expected": {
+      "roles": [
+        "objective"
+      ]
+    },
+    "response": {
+      "overview": "This paper investigates a core debate in labor economics about minimum wage policy. The authors test whether increasing the minimum wage produces a beneficial effect for employers—reduced employee turnover—without the harmful effect economists typically fear: higher unemployment. This represents a test of whether minimum wage increases might be a \"win-win\" for both workers (who earn more) and employers (who face lower turnover costs), rather than the traditional trade-off economists worry about.",
+      "level": "undergrad",
+      "paragraphs": [
+        {
+          "role": "objective",
+          "explanation": "This paragraph announces the paper's central research question. The hypothesis being tested has two parts: (1) that a higher minimum wage leads to lower employee turnover (workers stay in jobs longer, reducing costs for employers), and (2) that this wage increase does not cause significant job losses. The phrasing 'without significantly raising unemployment' tells us the authors expect to measure both effects and are specifically interested in whether the turnover benefit comes at the cost of employment, or whether it might avoid that cost altogether."
+        }
+      ]
+    }
+  },
+  {
+    "id": "e10",
+    "pass": true,
+    "detail": "roles [method] (want one of [method])",
+    "expected": {
+      "roles": [
+        "method"
+      ]
+    },
+    "response": {
+      "overview": "This paper describes a double-blind randomized controlled trial (RCT) evaluating an active compound against a placebo over an eight-week treatment period, with weekly outcome measurements. The study employs a rigorous experimental design standard in clinical research for establishing causal efficacy. Given only this single paragraph is available, the contribution appears to be methodological — specifying the rigorous RCT framework used to test the compound's effects.",
+      "level": "expert",
+      "paragraphs": [
+        {
+          "role": "method",
+          "explanation": "This paragraph lays out the core experimental design: a double-blind randomized controlled trial (RCT). Key features are randomization (participants assigned to treatment arms), double-blinding (neither participants nor researchers know who gets active compound vs. placebo, preventing expectation and observer biases), placebo control, an 8-week treatment duration, and weekly outcome measurements. This design is the gold standard in clinical research for establishing causal efficacy of an intervention, as it isolates the compound's effect from placebo responses and time-based changes."
+        }
+      ]
+    }
+  },
+  {
+    "id": "e11",
+    "pass": true,
+    "detail": "roles [result] (want one of [result])",
+    "expected": {
+      "roles": [
+        "result"
+      ]
+    },
+    "response": {
+      "overview": "This appears to be a brief research findings statement, likely from a clinical trial or intervention study. The paper reports a comparison between two groups: participants who received an experimental treatment versus those who did not (the control group). The key finding is that the experimental group showed a substantially greater reduction in symptoms (30%) compared to the control group (5%), and this difference was determined to be statistically significant—meaning it is unlikely to have occurred by random chance alone, suggesting the treatment itself caused the improvement.",
+      "level": "high_school",
+      "paragraphs": [
+        {
+          "role": "result",
+          "explanation": "This paragraph presents the main empirical finding of the study. The 'experimental group' refers to participants who received the treatment being tested, while the 'control group' refers to participants who did not receive the treatment (they may have received a placebo or standard care instead). The experimental group showed a 30% reduction in symptoms compared to just 5% in the control group—a difference of 25 percentage points. The phrase 'statistically significant' is a technical term meaning this large difference is very unlikely to have occurred by random chance; instead, it suggests the treatment itself caused the greater improvement in symptoms."
+        }
+      ]
+    }
+  },
+  {
+    "id": "e12",
+    "pass": false,
+    "detail": "roles [conclusion] (want one of [interpretation])",
+    "expected": {
+      "roles": [
+        "interpretation"
+      ]
+    },
+    "response": {
+      "overview": "This paper investigates whether attention mechanisms — a core component of modern neural architectures like Transformers — can replace recurrence (the defining feature of older models like RNNs and LSTMs) for processing sequential data. The authors' central finding is that attention alone is sufficient for capturing long-range dependencies in sequence modeling tasks.",
+      "level": "undergrad",
+      "paragraphs": [
+        {
+          "role": "conclusion",
+          "explanation": "This sentence presents the paper's central thesis: that attention mechanisms can do the work of tracking relationships between distant elements in a sequence without needing recurrent structures at all. 'Long-range dependencies' refers to meaningful connections between positions that are far apart — for example, a subject at the start of a long sentence and its verb at the end. The claim is significant because for decades, recurrence was considered essential to sequence modeling; this paper argues attention makes recurrence unnecessary."
+        }
+      ]
+    }
+  },
+  {
+    "id": "e13",
+    "pass": true,
+    "detail": "roles [limitation] (want one of [limitation])",
+    "expected": {
+      "roles": [
+        "limitation"
+      ]
+    },
+    "response": {
+      "overview": "This appears to be a methodological limitation paragraph from a paper involving multilingual evaluation. The authors acknowledge that their dataset's restriction to English-language documents undermines their ability to make valid claims about multilingual performance or generalizability.",
+      "level": "expert",
+      "paragraphs": [
+        {
+          "role": "limitation",
+          "explanation": "The authors concede that their dataset is English-only, which creates a fundamental threat to any multilingual claims made in the study. External validity refers to whether findings can be generalized beyond the specific context studied—in this case, to other languages. By restricting the data to English documents, any conclusions about how the method or model performs across languages are weakened, since they lack evidence from the very languages they purport to address."
+        }
+      ]
+    }
+  },
+  {
+    "id": "e14",
+    "pass": true,
+    "detail": "roles [conclusion] (want one of [conclusion])",
+    "expected": {
+      "roles": [
+        "conclusion"
+      ]
+    },
+    "response": {
+      "overview": "This appears to be the final paragraph of an academic paper, serving as a conclusion. The authors summarize their main contribution: a method they developed that is both practical (usable in real-world situations) and scalable (can handle large amounts of data or users). They position their work as an improvement over existing approaches and commit to open science by releasing their code and data publicly so other researchers can verify and build upon their work.",
+      "level": "high_school",
+      "paragraphs": [
+        {
+          "role": "conclusion",
+          "explanation": "This is the closing statement of the paper, where the authors make their final pitch for their work. They claim their method is 'practical' (meaning it can actually be used in real applications) and 'scalable' (meaning it can handle growing amounts of data or users without breaking). By calling it an 'alternative to existing approaches,' they suggest their method competes with or improves upon prior solutions. The decision to release code and data publicly reflects a commitment to transparency and reproducibility — letting other researchers test their claims and use their method for new projects."
+        }
+      ]
+    }
+  },
+  {
+    "id": "e15",
+    "pass": true,
+    "detail": "roles [background] (want one of [background])",
+    "expected": {
+      "roles": [
+        "background"
+      ]
+    },
+    "response": {
+      "overview": "This brief paper addresses a gap in urban transportation research by noting that while private vehicles have been extensively studied, the effects of investing in public transit on air quality remain comparatively under-examined. The authors position public transit investment as a potentially underutilized lever for improving urban air quality, framing this gap as the motivation for their study. The paper's core point is simply to establish this research gap as the justification for focusing on public transit's air quality impacts.",
+      "level": "undergrad",
+      "paragraphs": [
+        {
+          "role": "background",
+          "explanation": "This opening paragraph establishes what the authors see as a missing piece in the existing literature on urban transportation. It explains that research has predominantly examined private vehicles (cars, motorcycles, etc.) and their effects on air quality, but has given less attention to how investing in public transit systems might improve or worsen air quality. By noting this gap, the authors signal that their work will contribute by focusing on an understudied angle: the relationship between public transit investment and air quality outcomes."
+        }
+      ]
+    }
+  },
+  {
+    "id": "e16",
+    "pass": true,
+    "detail": "roles [method] (want one of [method])",
+    "expected": {
+      "roles": [
+        "method"
+      ]
+    },
+    "response": {
+      "overview": "This brief paper reports on a survey study of commuters in five cities. The researchers collected responses from 2,000 participants and used a statistical technique called mixed-effects regression to analyze the data, while accounting for two important demographic factors: income and age. The study's methodology suggests it aims to understand how commuting patterns or experiences vary across different populations.",
+      "level": "high_school",
+      "paragraphs": [
+        {
+          "role": "method",
+          "explanation": "This paragraph describes the study's data and analytical approach. The researchers gathered survey responses from 2,000 commuters (a reasonably large sample) spread across five different cities, which allows them to compare urban commuting experiences. They analyzed the data using a mixed-effects regression model, which is a statistical technique good for handling data structured in groups (like people in different cities). They controlled for income and age, meaning they accounted for these factors so they could isolate the effect of whatever they were primarily studying rather than having the results confused by income or age differences."
+        }
+      ]
+    }
+  }
+]

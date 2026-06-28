@@ -1,0 +1,344 @@
+[
+  {
+    "id": "c01",
+    "pass": false,
+    "detail": "overall questionable (want reliable); 1 claims",
+    "expected": {
+      "overall_verdict": "reliable"
+    },
+    "response": {
+      "claims": [
+        {
+          "claim": "Water boils at 100 degrees Celsius at sea level under standard atmospheric pressure.",
+          "verdict": "misleading",
+          "explanation": "Most reference sources state that pure water boils at 100°C at sea level under standard atmospheric pressure, but more precise thermodynamic data place the boiling point slightly below 100°C (about 99.97°C at 1 atm or 99.61°C at 1 bar), so the figure is correct as a conventional rounded value rather than an exact one.",
+          "confidence": "high"
+        }
+      ],
+      "overall_verdict": "questionable",
+      "truncated": false
+    }
+  },
+  {
+    "id": "c02",
+    "pass": true,
+    "detail": "overall reliable (want reliable); 2 claims",
+    "expected": {
+      "overall_verdict": "reliable"
+    },
+    "response": {
+      "claims": [
+        {
+          "claim": "The Great Wall of China is located in China.",
+          "verdict": "true",
+          "explanation": "Multiple reliable references describe the Great Wall of China explicitly as a series of fortifications in northern China and within the country of China, confirming it is located in China.",
+          "confidence": "high"
+        },
+        {
+          "claim": "The Great Wall of China stretches for thousands of kilometers.",
+          "verdict": "true",
+          "explanation": "Multiple reliable sources report that the cumulative length of the Great Wall of China is about 21,196 kilometers, which clearly qualifies as stretching for thousands of kilometers.",
+          "confidence": "high"
+        }
+      ],
+      "overall_verdict": "reliable",
+      "truncated": false
+    }
+  },
+  {
+    "id": "c03",
+    "pass": true,
+    "detail": "overall reliable (want reliable); 1 claims",
+    "expected": {
+      "overall_verdict": "reliable"
+    },
+    "response": {
+      "claims": [
+        {
+          "claim": "Mount Everest is the highest mountain above sea level on Earth.",
+          "verdict": "true",
+          "explanation": "Multiple authoritative sources state that Mount Everest’s summit, at about 8,848.86–8,849 meters above mean sea level, is the highest elevation of any mountain on Earth, and no higher above-sea-level mountain is reported in global records.",
+          "confidence": "high"
+        }
+      ],
+      "overall_verdict": "reliable",
+      "truncated": false
+    }
+  },
+  {
+    "id": "c04",
+    "pass": true,
+    "detail": "overall reliable (want reliable); 1 claims",
+    "expected": {
+      "overall_verdict": "reliable"
+    },
+    "response": {
+      "claims": [
+        {
+          "claim": "The human heart has four chambers: two atria and two ventricles.",
+          "verdict": "true",
+          "explanation": "Multiple authoritative anatomy and medical references state that the human heart consists of four chambers: two upper atria (right and left) and two lower ventricles (right and left), which directly matches the claim.",
+          "confidence": "high"
+        }
+      ],
+      "overall_verdict": "reliable",
+      "truncated": false
+    }
+  },
+  {
+    "id": "c05",
+    "pass": true,
+    "detail": "overall reliable (want reliable); 2 claims",
+    "expected": {
+      "overall_verdict": "reliable"
+    },
+    "response": {
+      "claims": [
+        {
+          "claim": "The chemical symbol for gold is Au.",
+          "verdict": "true",
+          "explanation": "Multiple authoritative chemistry and scientific databases state that gold is the chemical element with the symbol Au, derived from the Latin word aurum, so the claim matches established chemical nomenclature.",
+          "confidence": "high"
+        },
+        {
+          "claim": "The chemical symbol Au is derived from the Latin name aurum.",
+          "verdict": "true",
+          "explanation": "Multiple reputable chemistry and reference sources state that the chemical symbol Au for gold is derived from its Latin name aurum, which is explicitly identified as the source of the symbol.",
+          "confidence": "high"
+        }
+      ],
+      "overall_verdict": "reliable",
+      "truncated": false
+    }
+  },
+  {
+    "id": "c06",
+    "pass": true,
+    "detail": "overall reliable (want reliable); 3 claims",
+    "expected": {
+      "overall_verdict": "reliable"
+    },
+    "response": {
+      "claims": [
+        {
+          "claim": "Australia is a sovereign country.",
+          "verdict": "true",
+          "explanation": "Multiple authoritative sources describe Australia, officially the Commonwealth of Australia, as an independent state with its own government and constitution, and explicitly as a sovereign country. These sources confirm that Australia exercises full sovereignty in domestic and foreign affairs and is recognized internationally as a sovereign nation.",
+          "confidence": "high"
+        },
+        {
+          "claim": "Australia is a continent.",
+          "verdict": "true",
+          "explanation": "Multiple reputable geographic and reference sources describe Australia as one of the world’s continents, specifically the smallest continent, which directly supports the claim that Australia is a continent.",
+          "confidence": "high"
+        },
+        {
+          "claim": "Australia is located in the Southern Hemisphere.",
+          "verdict": "true",
+          "explanation": "Multiple reliable geographic references state that Australia lies between the Indian and Pacific Oceans entirely south of the equator and explicitly describe it as being located in the Southern Hemisphere, matching the claim.",
+          "confidence": "high"
+        }
+      ],
+      "overall_verdict": "reliable",
+      "truncated": false
+    }
+  },
+  {
+    "id": "c07",
+    "pass": true,
+    "detail": "overall reliable (want reliable); 1 claims",
+    "expected": {
+      "overall_verdict": "reliable"
+    },
+    "response": {
+      "claims": [
+        {
+          "claim": "The speed of light in a vacuum is approximately 300,000 kilometers per second.",
+          "verdict": "true",
+          "explanation": "Authoritative measurements define the speed of light in vacuum as exactly 299,792.458 kilometers per second, so describing it as approximately 300,000 kilometers per second is a standard and accurate rounding used in science education and popular explanations.",
+          "confidence": "high"
+        }
+      ],
+      "overall_verdict": "reliable",
+      "truncated": false
+    }
+  },
+  {
+    "id": "c08",
+    "pass": true,
+    "detail": "overall unreliable (want unreliable); 1 claims",
+    "expected": {
+      "overall_verdict": "unreliable"
+    },
+    "response": {
+      "claims": [
+        {
+          "claim": "The Sun revolves around the Earth once every twenty-four hours.",
+          "verdict": "false",
+          "explanation": "Evidence shows that Earth rotates on its axis in about 24 hours, causing the Sun’s apparent daily motion in the sky, while Earth revolves around the Sun in about 365 days; the Sun does not revolve around Earth every 24 hours, and the Sun’s own rotation period is around 25–36 Earth days depending on latitude.",
+          "confidence": "high"
+        }
+      ],
+      "overall_verdict": "unreliable",
+      "truncated": false
+    }
+  },
+  {
+    "id": "c09",
+    "pass": true,
+    "detail": "overall unreliable (want unreliable); 1 claims",
+    "expected": {
+      "overall_verdict": "unreliable"
+    },
+    "response": {
+      "claims": [
+        {
+          "claim": "Humans use only ten percent of their brains and the rest stays permanently dormant.",
+          "verdict": "false",
+          "explanation": "Neuroscience evidence shows that humans use essentially all regions of their brain over time, with widespread activity even during rest and sleep, and no large portion remains permanently dormant, so the idea that only ten percent is used and the rest stays inactive is a myth.",
+          "confidence": "high"
+        }
+      ],
+      "overall_verdict": "unreliable",
+      "truncated": false
+    }
+  },
+  {
+    "id": "c10",
+    "pass": true,
+    "detail": "overall unreliable (want unreliable); 1 claims",
+    "expected": {
+      "overall_verdict": "unreliable"
+    },
+    "response": {
+      "claims": [
+        {
+          "claim": "The Great Wall of China is easily visible from the Moon with the naked eye.",
+          "verdict": "false",
+          "explanation": "Multiple authoritative sources, including NASA, astronauts from Apollo missions, and scientific analyses, state that the Great Wall of China cannot be seen from the Moon with the naked eye; even from low Earth orbit it is barely or not visible without magnification, so the claim that it is easily visible from the Moon is contradicted by the evidence.",
+          "confidence": "high"
+        }
+      ],
+      "overall_verdict": "unreliable",
+      "truncated": false
+    }
+  },
+  {
+    "id": "c11",
+    "pass": true,
+    "detail": "overall unreliable (want unreliable); 2 claims",
+    "expected": {
+      "overall_verdict": "unreliable"
+    },
+    "response": {
+      "claims": [
+        {
+          "claim": "Mount Kilimanjaro is the tallest mountain on Earth.",
+          "verdict": "false",
+          "explanation": "Evidence from authoritative geographic and scientific sources shows that Mount Kilimanjaro is not the tallest mountain on Earth by any common definition. Mount Everest is the highest mountain above sea level, while Mauna Kea is the tallest when measured from base to peak, and sources specifically note that Kilimanjaro is only the highest mountain in Africa, not the world.",
+          "confidence": "high"
+        },
+        {
+          "claim": "Mount Kilimanjaro rises more than 12,000 meters above sea level.",
+          "verdict": "false",
+          "explanation": "Multiple reliable sources report Mount Kilimanjaro’s elevation at about 5,895 meters above sea level, which is less than half of the claimed 12,000 meters, so the numeric claim is contradicted by the evidence.",
+          "confidence": "high"
+        }
+      ],
+      "overall_verdict": "unreliable",
+      "truncated": false
+    }
+  },
+  {
+    "id": "c12",
+    "pass": true,
+    "detail": "overall unreliable (want unreliable); 2 claims",
+    "expected": {
+      "overall_verdict": "unreliable"
+    },
+    "response": {
+      "claims": [
+        {
+          "claim": "The chemical symbol for gold is Gd.",
+          "verdict": "false",
+          "explanation": "Authoritative chemistry references state that the chemical symbol for gold is Au, not Gd, and Gd is the symbol for the distinct element gadolinium, so the claim is contradicted by the evidence.",
+          "confidence": "high"
+        },
+        {
+          "claim": "Gd appears on the periodic table next to silver.",
+          "verdict": "false",
+          "explanation": "Evidence shows that gadolinium (Gd, atomic number 64) is a lanthanide in period 6, located between europium (Eu) and terbium (Tb) and above curium, while silver (Ag, atomic number 47) is a transition metal in period 5, group 11; they are not adjacent to each other on standard periodic tables.",
+          "confidence": "high"
+        }
+      ],
+      "overall_verdict": "unreliable",
+      "truncated": false
+    }
+  },
+  {
+    "id": "c13",
+    "pass": true,
+    "detail": "overall unreliable (want unreliable); 2 claims",
+    "expected": {
+      "overall_verdict": "unreliable"
+    },
+    "response": {
+      "claims": [
+        {
+          "claim": "Albert Einstein developed the theory of evolution by natural selection.",
+          "verdict": "false",
+          "explanation": "Reliable historical and educational sources attribute the development of the theory of evolution by natural selection to Charles Darwin (and independently Alfred Russel Wallace), while Albert Einstein is credited with the theory of relativity and made no contributions to formulating natural selection as an evolutionary mechanism. The claim that Einstein developed the theory of evolution by natural selection is therefore contradicted by the evidence.",
+          "confidence": "high"
+        },
+        {
+          "claim": "The theory of evolution by natural selection was developed in the 1850s.",
+          "verdict": "misleading",
+          "explanation": "Evidence shows Darwin formulated the basic outline of evolution by natural selection in the late 1830s, then continued developing and refining the theory over the following decades, with public announcement in 1858 and full publication in 1859. Saying it was developed in the 1850s captures the period when the theory was named, jointly presented, and widely disseminated, but it overlooks that its core ideas were already developed well before 1850.",
+          "confidence": "medium"
+        }
+      ],
+      "overall_verdict": "unreliable",
+      "truncated": false
+    }
+  },
+  {
+    "id": "c14",
+    "pass": true,
+    "detail": "overall unreliable (want unreliable); 1 claims",
+    "expected": {
+      "overall_verdict": "unreliable"
+    },
+    "response": {
+      "claims": [
+        {
+          "claim": "The Pacific Ocean is the smallest of the world's five oceans by surface area.",
+          "verdict": "false",
+          "explanation": "Evidence from authoritative geographic and oceanographic sources shows that the Pacific Ocean is the largest, not the smallest, of the world's five oceans by surface area; rankings by area place the Pacific first and the Arctic as the smallest.",
+          "confidence": "high"
+        }
+      ],
+      "overall_verdict": "unreliable",
+      "truncated": false
+    }
+  },
+  {
+    "id": "c15",
+    "pass": true,
+    "detail": "overall unreliable (want unreliable); 1 claims",
+    "expected": {
+      "overall_verdict": "unreliable"
+    },
+    "response": {
+      "claims": [
+        {
+          "claim": "Lightning can never strike the same place twice because the ground becomes immune to subsequent strikes.",
+          "verdict": "false",
+          "explanation": "Evidence shows lightning can and does strike the same place multiple times, especially tall or isolated objects like skyscrapers, and previous strikes do not make the ground immune or less likely to be struck again. Meteorological and scientific sources explain that lightning follows paths of least resistance and has no 'memory' of past strikes, so the claim that the ground becomes immune and cannot be struck twice is contradicted by observed data and expert explanation.",
+          "confidence": "high"
+        }
+      ],
+      "overall_verdict": "unreliable",
+      "truncated": false
+    }
+  }
+]

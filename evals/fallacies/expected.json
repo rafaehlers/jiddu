@@ -1,0 +1,18 @@
+{
+  "f01": { "verdict": "fallacies_found", "fallacies": ["ad hominem"] },
+  "f02": { "verdict": "fallacies_found", "fallacies": ["straw"] },
+  "f03": { "verdict": "fallacies_found", "fallacies": ["authority"] },
+  "f04": { "verdict": "fallacies_found", "fallacies": ["emotion"] },
+  "f05": { "verdict": "fallacies_found", "fallacies": ["dichotomy"] },
+  "f06": { "verdict": "fallacies_found", "fallacies": ["slippery"] },
+  "f07": { "verdict": "fallacies_found", "fallacies": ["popularity"] },
+  "f08": { "verdict": "fallacies_found", "fallacies": ["circular"] },
+  "f09": { "verdict": "fallacies_found", "fallacies": ["tradition"] },
+  "f10": { "verdict": "fallacies_found", "fallacies": ["nature"] },
+  "f11": { "verdict": "fallacies_found", "fallacies": ["loaded question"] },
+  "f12": { "verdict": "fallacies_found", "fallacies": ["red herring"] },
+  "f13": { "verdict": "fallacies_found", "fallacies": ["anecdot"] },
+  "f14": { "verdict": "clean", "fallacies": [] },
+  "f15": { "verdict": "clean", "fallacies": [] },
+  "f16": { "verdict": "clean", "fallacies": [] }
+}

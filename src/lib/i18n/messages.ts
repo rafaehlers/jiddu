@@ -264,6 +264,12 @@ export type Messages = {
   how_it_works_sections: Array<{ title: string; paragraphs: string[] }>;
   nav_how_it_works: string;
 
+  // API access page — public REST API + MCP server docs
+  api_access_title: string;
+  api_access_subtitle: string;
+  api_access_sections: Array<{ title: string; paragraphs: string[] }>;
+  nav_api: string;
+
   // Export / print
   export_pdf: string;
 
@@ -551,6 +557,48 @@ const en: Messages = {
 
   nav_legal: "Terms",
   nav_how_it_works: "How it works",
+  nav_api: "API",
+  api_access_title: "Jiddu API & MCP",
+  api_access_subtitle:
+    "Use Jiddu's four reading tools from your own code or agent — a documented REST API and an MCP server.",
+  api_access_sections: [
+    {
+      title: "Endpoints",
+      paragraphs: [
+        "Jiddu exposes its four analysis pipelines as a public REST API. Every endpoint takes a JSON body with a `text` field (40–2000 characters) plus an optional `lang` (`en` / `pt` / `es`), and returns structured JSON.",
+        "```\nPOST /api/v1/detect-fallacies\nPOST /api/v1/fact-check\nPOST /api/v1/assess-neutrality\nPOST /api/v1/explain\n```",
+        "`detect-fallacies`, `assess-neutrality` and `explain` are fast. `fact-check` extracts each claim and verifies it against live web search, so it is slower and metered.",
+      ],
+    },
+    {
+      title: "Authentication",
+      paragraphs: [
+        "Send your API key in the `X-Jiddu-Key` header. Keys are issued by the operator — see “Getting a key” below.",
+        "```\ncurl -X POST https://jiddu.app/api/v1/detect-fallacies \\\n  -H \"content-type: application/json\" \\\n  -H \"X-Jiddu-Key: YOUR_KEY\" \\\n  -d '{\"text\": \"Everyone agrees this is best, so critics must be fools.\"}'\n```",
+      ],
+    },
+    {
+      title: "MCP server",
+      paragraphs: [
+        "For agents, the [jiddu-mcp](https://www.npmjs.com/package/jiddu-mcp) package wraps the API as a Model Context Protocol server with four tools. Add it to your MCP client (e.g. Claude Desktop):",
+        "```\n{\n  \"mcpServers\": {\n    \"jiddu\": {\n      \"command\": \"npx\",\n      \"args\": [\"-y\", \"jiddu-mcp\"],\n      \"env\": { \"JIDDU_API_KEY\": \"your-key-here\" }\n    }\n  }\n}\n```",
+        "Machine-oriented docs — when to use each tool, response shapes, and how to chain them — live in [AGENT.md](https://github.com/rafaehlers/jiddu/blob/main/packages/jiddu-mcp/AGENT.md).",
+      ],
+    },
+    {
+      title: "Limits & reliability",
+      paragraphs: [
+        "Text is capped at 2000 characters per request. Rate limits are per key; exceeding them returns HTTP 429 with a `retry_after_seconds` field. Outputs are automated and can be wrong — treat them as signals to prompt verification, not as final authority.",
+        "Quality is measured against fixed test sets published in the repo: [evals/report.md](https://github.com/rafaehlers/jiddu/blob/main/evals/report.md).",
+      ],
+    },
+    {
+      title: "Getting a key",
+      paragraphs: [
+        "Keys are issued manually for now. Request one via [LinkedIn](https://www.linkedin.com/in/rafael-m-ehlers/) or open an issue on [GitHub](https://github.com/rafaehlers/jiddu).",
+      ],
+    },
+  ],
   export_pdf: "Export PDF",
 
   print_type_fallacy: "Fallacy analysis",
@@ -1099,6 +1147,48 @@ const pt: Messages = {
 
   nav_legal: "Termos",
   nav_how_it_works: "Como funciona",
+  nav_api: "API",
+  api_access_title: "API & MCP do Jiddu",
+  api_access_subtitle:
+    "Use as quatro ferramentas de leitura do Jiddu no seu próprio código ou agente — uma REST API documentada e um servidor MCP.",
+  api_access_sections: [
+    {
+      title: "Endpoints",
+      paragraphs: [
+        "O Jiddu expõe seus quatro pipelines de análise como uma REST API pública. Todo endpoint recebe um corpo JSON com um campo `text` (40–2000 caracteres) e um `lang` opcional (`en` / `pt` / `es`), e retorna JSON estruturado.",
+        "```\nPOST /api/v1/detect-fallacies\nPOST /api/v1/fact-check\nPOST /api/v1/assess-neutrality\nPOST /api/v1/explain\n```",
+        "`detect-fallacies`, `assess-neutrality` e `explain` são rápidos. O `fact-check` extrai cada afirmação e a verifica com busca na web ao vivo, então é mais lento e medido.",
+      ],
+    },
+    {
+      title: "Autenticação",
+      paragraphs: [
+        "Envie sua chave de API no cabeçalho `X-Jiddu-Key`. As chaves são emitidas pelo operador — veja “Obter uma chave” abaixo.",
+        "```\ncurl -X POST https://jiddu.app/api/v1/detect-fallacies \\\n  -H \"content-type: application/json\" \\\n  -H \"X-Jiddu-Key: SUA_CHAVE\" \\\n  -d '{\"text\": \"Todo mundo concorda que isso é o melhor, então quem critica é tolo.\"}'\n```",
+      ],
+    },
+    {
+      title: "Servidor MCP",
+      paragraphs: [
+        "Para agentes, o pacote [jiddu-mcp](https://www.npmjs.com/package/jiddu-mcp) embrulha a API como um servidor Model Context Protocol com quatro ferramentas. Adicione ao seu cliente MCP (ex.: Claude Desktop):",
+        "```\n{\n  \"mcpServers\": {\n    \"jiddu\": {\n      \"command\": \"npx\",\n      \"args\": [\"-y\", \"jiddu-mcp\"],\n      \"env\": { \"JIDDU_API_KEY\": \"sua-chave-aqui\" }\n    }\n  }\n}\n```",
+        "A documentação orientada a máquina — quando usar cada ferramenta, formatos de resposta e como encadeá-las — está em [AGENT.md](https://github.com/rafaehlers/jiddu/blob/main/packages/jiddu-mcp/AGENT.md).",
+      ],
+    },
+    {
+      title: "Limites & confiabilidade",
+      paragraphs: [
+        "O texto é limitado a 2000 caracteres por requisição. Os limites de taxa são por chave; ao excedê-los, a resposta é HTTP 429 com um campo `retry_after_seconds`. As saídas são automatizadas e podem errar — trate-as como sinais para verificação, não como autoridade final.",
+        "A qualidade é medida contra conjuntos de teste fixos publicados no repositório: [evals/report.md](https://github.com/rafaehlers/jiddu/blob/main/evals/report.md).",
+      ],
+    },
+    {
+      title: "Obter uma chave",
+      paragraphs: [
+        "As chaves são emitidas manualmente por enquanto. Solicite uma pelo [LinkedIn](https://www.linkedin.com/in/rafael-m-ehlers/) ou abra uma issue no [GitHub](https://github.com/rafaehlers/jiddu).",
+      ],
+    },
+  ],
   export_pdf: "Exportar PDF",
 
   print_type_fallacy: "Análise de falácia",
@@ -1648,6 +1738,48 @@ const es: Messages = {
 
   nav_legal: "Términos",
   nav_how_it_works: "Cómo funciona",
+  nav_api: "API",
+  api_access_title: "API y MCP de Jiddu",
+  api_access_subtitle:
+    "Usa las cuatro herramientas de lectura de Jiddu desde tu propio código o agente — una REST API documentada y un servidor MCP.",
+  api_access_sections: [
+    {
+      title: "Endpoints",
+      paragraphs: [
+        "Jiddu expone sus cuatro pipelines de análisis como una REST API pública. Cada endpoint recibe un cuerpo JSON con un campo `text` (40–2000 caracteres) y un `lang` opcional (`en` / `pt` / `es`), y devuelve JSON estructurado.",
+        "```\nPOST /api/v1/detect-fallacies\nPOST /api/v1/fact-check\nPOST /api/v1/assess-neutrality\nPOST /api/v1/explain\n```",
+        "`detect-fallacies`, `assess-neutrality` y `explain` son rápidos. `fact-check` extrae cada afirmación y la verifica con búsqueda web en vivo, por lo que es más lento y medido.",
+      ],
+    },
+    {
+      title: "Autenticación",
+      paragraphs: [
+        "Envía tu clave de API en el encabezado `X-Jiddu-Key`. Las claves las emite el operador — consulta “Obtener una clave” más abajo.",
+        "```\ncurl -X POST https://jiddu.app/api/v1/detect-fallacies \\\n  -H \"content-type: application/json\" \\\n  -H \"X-Jiddu-Key: TU_CLAVE\" \\\n  -d '{\"text\": \"Todos están de acuerdo en que esto es lo mejor, así que quien critica es un tonto.\"}'\n```",
+      ],
+    },
+    {
+      title: "Servidor MCP",
+      paragraphs: [
+        "Para agentes, el paquete [jiddu-mcp](https://www.npmjs.com/package/jiddu-mcp) envuelve la API como un servidor Model Context Protocol con cuatro herramientas. Agrégalo a tu cliente MCP (p. ej. Claude Desktop):",
+        "```\n{\n  \"mcpServers\": {\n    \"jiddu\": {\n      \"command\": \"npx\",\n      \"args\": [\"-y\", \"jiddu-mcp\"],\n      \"env\": { \"JIDDU_API_KEY\": \"tu-clave-aquí\" }\n    }\n  }\n}\n```",
+        "La documentación orientada a máquinas — cuándo usar cada herramienta, formatos de respuesta y cómo encadenarlas — está en [AGENT.md](https://github.com/rafaehlers/jiddu/blob/main/packages/jiddu-mcp/AGENT.md).",
+      ],
+    },
+    {
+      title: "Límites y fiabilidad",
+      paragraphs: [
+        "El texto está limitado a 2000 caracteres por solicitud. Los límites de tasa son por clave; al excederlos, la respuesta es HTTP 429 con un campo `retry_after_seconds`. Las salidas son automatizadas y pueden equivocarse — trátalas como señales para verificar, no como autoridad final.",
+        "La calidad se mide contra conjuntos de prueba fijos publicados en el repositorio: [evals/report.md](https://github.com/rafaehlers/jiddu/blob/main/evals/report.md).",
+      ],
+    },
+    {
+      title: "Obtener una clave",
+      paragraphs: [
+        "Las claves se emiten manualmente por ahora. Solicita una por [LinkedIn](https://www.linkedin.com/in/rafael-m-ehlers/) o abre un issue en [GitHub](https://github.com/rafaehlers/jiddu).",
+      ],
+    },
+  ],
   export_pdf: "Exportar PDF",
 
   print_type_fallacy: "Análisis de falacias",

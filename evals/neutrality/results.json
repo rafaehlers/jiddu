@@ -1,0 +1,298 @@
+[
+  {
+    "id": "n01",
+    "pass": true,
+    "detail": "label neutral (want neutral); direction ok; score 0.94",
+    "expected": {
+      "label": "neutral",
+      "biased": false
+    },
+    "response": {
+      "score": 0.94,
+      "label": "neutral",
+      "signals": [],
+      "summary": "The text is a brief factual report of a city council vote that presents both opponents and supporters symmetrically using parallel verb structures (\"cited\" vs. \"pointed to\") and balanced attribution, with no loaded language or steering toward a conclusion."
+    }
+  },
+  {
+    "id": "n02",
+    "pass": true,
+    "detail": "label neutral (want neutral); direction ok; score 0.95",
+    "expected": {
+      "label": "neutral",
+      "biased": false
+    },
+    "response": {
+      "score": 0.95,
+      "label": "neutral",
+      "signals": [],
+      "summary": "This is a straightforward factual report citing an official statistical agency and summarizing analyst commentary without framing that would steer readers toward a particular interpretation. No loaded language, asymmetric attribution, or selective omission detected."
+    }
+  },
+  {
+    "id": "n03",
+    "pass": true,
+    "detail": "label highly_biased (want highly_biased); direction ok; score 0.03",
+    "expected": {
+      "label": "highly_biased",
+      "biased": true
+    },
+    "response": {
+      "score": 0.03,
+      "label": "highly_biased",
+      "signals": [
+        {
+          "type": "loaded_language",
+          "excerpt": "The regime's thugs once again brutalized peaceful, freedom-loving citizens, while the puppet press shamelessly parroted the dictator's pathetic lies about restoring order.",
+          "explanation": "The sentence deploys multiple layers of loaded language: 'regime' and 'dictator' delegitimize the government; 'thugs' criminalizes its agents; 'brutalized' implies savagery; 'peaceful, freedom-loving citizens' idealizes the opposition; 'puppet press' dismisses media as tools; 'shamelessly parroted' and 'pathetic lies' further demean the opposing narrative. These word choices collectively construct a narrative of pure villainy versus pure victimhood with no nuance."
+        },
+        {
+          "type": "framing",
+          "excerpt": "brutalized peaceful, freedom-loving citizens",
+          "explanation": "Verbs and descriptors are applied asymmetrically: one side's actions are characterized through violent and criminalizing language ('thugs,' 'brutalized') while the opposing citizens are framed as inherently virtuous ('peaceful, freedom-loving'), with no comparable characterization applied to the other side's perspective."
+        }
+      ],
+      "summary": "This single sentence uses a cluster of highly loaded terms—'regime's thugs,' 'puppet press,' 'dictator's pathetic lies,' 'brutalized,' 'peaceful, freedom-loving citizens'—that combine emotional charging with wholesale demonization of one side and glorification of the other, going beyond legitimate advocacy into rhetorical manipulation."
+    }
+  },
+  {
+    "id": "n04",
+    "pass": true,
+    "detail": "label highly_biased (want highly_biased); direction ok; score 0.23",
+    "expected": {
+      "label": "highly_biased",
+      "biased": true
+    },
+    "response": {
+      "score": 0.23,
+      "label": "highly_biased",
+      "signals": [
+        {
+          "type": "loaded_language",
+          "excerpt": "Our courageous leader delivered yet another triumphant, visionary speech, exposing the corrupt elites and their treacherous schemes against the hardworking, patriotic people of this great nation.",
+          "explanation": "Every descriptive term is either openly laudatory (courageous, triumphant, visionary, hardworking, patriotic, great) or overtly pejorative (corrupt, elites, treacherous, schemes). This consistent asymmetric framing treats one side as heroic and the other as villainous without any qualifying language or acknowledgment of competing perspectives."
+        }
+      ],
+      "summary": "The single sentence uses uniformly heroic vocabulary for the \"leader\" and \"people\" while employing entirely pejorative terms for opponents, creating a binary moral framing with no pretense of balance or competing perspectives."
+    }
+  },
+  {
+    "id": "n05",
+    "pass": true,
+    "detail": "label neutral (want neutral); direction ok; score 0.95",
+    "expected": {
+      "label": "neutral",
+      "biased": false
+    },
+    "response": {
+      "score": 0.95,
+      "label": "neutral",
+      "signals": [],
+      "summary": "The text presents three straightforward factual statements about a merger announcement with no evaluative language, asymmetric framing, or selective emphasis. Word choices like \"announced,\" \"employ,\" and \"review the deal under standard competition rules\" are neutral descriptors. This is a balanced, unadorned news-style report."
+    }
+  },
+  {
+    "id": "n06",
+    "pass": false,
+    "detail": "label highly_biased (want biased); direction ok; score 0.25",
+    "expected": {
+      "label": "biased",
+      "biased": true
+    },
+    "response": {
+      "score": 0.25,
+      "label": "highly_biased",
+      "signals": [],
+      "summary": "The single sentence uses multiple stacked framing choices that systematically favor critics over the government: \"so-called\" dismisses the reform label, \"greedy\" corporations is loaded language, \"rather unconvincingly\" pre-judges the government's argument as weak, and \"somehow benefit\" is dismissive of the pro-government claim. This creates a clear directional bias despite being framed as neutral reporting."
+    }
+  },
+  {
+    "id": "n07",
+    "pass": true,
+    "detail": "label neutral (want neutral); direction ok; score 0.9",
+    "expected": {
+      "label": "neutral",
+      "biased": false
+    },
+    "response": {
+      "score": 0.9,
+      "label": "neutral",
+      "signals": [],
+      "summary": "The text is a bare-bones description of a study's methodology and findings, accurately reporting that it is peer-reviewed, the sample size, duration, and the authors' own cautious caveats about the correlation. No loaded language, asymmetric framing, or selective omission is present."
+    }
+  },
+  {
+    "id": "n08",
+    "pass": true,
+    "detail": "label highly_biased (want highly_biased); direction ok; score 0.23",
+    "expected": {
+      "label": "highly_biased",
+      "biased": true
+    },
+    "response": {
+      "score": 0.23,
+      "label": "highly_biased",
+      "signals": [
+        {
+          "type": "loaded_language",
+          "excerpt": "Naturally, every reasonable person already understands that this disastrous policy is a catastrophe.",
+          "explanation": "The phrase pairs 'disastrous policy' with 'catastrophe' using emphatic intensifiers, and pre-empts disagreement by framing all who might disagree as 'unreasonable.' The word 'Naturally' implies the conclusion is self-evident, foreclosing debate."
+        },
+        {
+          "type": "loaded_language",
+          "excerpt": "Only the willfully ignorant could possibly defend such an obviously reckless and dangerous idea.",
+          "explanation": "The phrase 'willfully ignorant' characterizes all defenders of the opposing view as deliberately blind rather than as people making a reasoned argument. 'Obviously reckless and dangerous' applies three loaded adjectives to the same policy, with no attribution or sourcing."
+        },
+        {
+          "type": "framing",
+          "excerpt": "Every reasonable person / Only the willfully ignorant",
+          "explanation": "The two sentences construct a binary: 'reasonable' people agree with the author, while those who disagree are dismissed as 'willfully ignorant.' This dismisses the opposing view by characterizing who holds it rather than engaging with the substance of their argument."
+        }
+      ],
+      "summary": "The text uses consistently loaded language (\"disastrous,\" \"catastrophe,\" \"reckless,\" \"dangerous,\" \"willfully ignorant\") to characterize both the policy and its defenders, with no engagement with opposing arguments or balanced framing."
+    }
+  },
+  {
+    "id": "n09",
+    "pass": true,
+    "detail": "label neutral (want neutral); direction ok; score 0.94",
+    "expected": {
+      "label": "neutral",
+      "biased": false
+    },
+    "response": {
+      "score": 0.94,
+      "label": "neutral",
+      "signals": [],
+      "summary": "This is a straightforward weather advisory presenting factual information from authorities without framing bias, loaded language, or selective omission. The content is balanced, describing both the weather hazard and the recommended precautions in neutral terms."
+    }
+  },
+  {
+    "id": "n10",
+    "pass": true,
+    "detail": "label highly_biased (want highly_biased); direction ok; score 0.23",
+    "expected": {
+      "label": "highly_biased",
+      "biased": true
+    },
+    "response": {
+      "score": 0.23,
+      "label": "highly_biased",
+      "signals": [
+        {
+          "type": "loaded_language",
+          "excerpt": "heroic whistleblower bravely exposed the truth, the cowardly officials scrambled to cover their tracks and protect their cushy, undeserved positions of power",
+          "explanation": "The entire sentence employs a systematic pattern of loaded word choice: the whistleblower is described as 'heroic' and 'brave' who 'exposed the truth' (implying virtue and factual accuracy), while officials are called 'cowardly' who 'scrambled to cover their tracks' and hold 'cushy, undeserved positions of power' (implying deceit and illegitimacy). This consistent framing pre-judges the situation without acknowledging any complexity or alternative interpretation."
+        }
+      ],
+      "summary": "The sentence uses consistently loaded language throughout, pairing laudatory terms for the whistleblower (\"heroic,\" \"bravely,\" \"exposed the truth\") with pejorative terms for officials (\"cowardly,\" \"scrambled,\" \"cover their tracks,\" \"cushy, undeserved positions\"), clearly taking a side without presenting any countervailing perspective."
+    }
+  },
+  {
+    "id": "n11",
+    "pass": true,
+    "detail": "label neutral (want neutral); direction ok; score 0.94",
+    "expected": {
+      "label": "neutral",
+      "biased": false
+    },
+    "response": {
+      "score": 0.94,
+      "label": "neutral",
+      "signals": [],
+      "summary": "The text presents a straightforward factual report of a policy change, attributing concerns to business groups and support to labor unions with appropriately balanced language (\"warned\" vs \"welcomed\"). The statement that the measure \"passed along party lines\" is a factual observation, not an editorial characterization."
+    }
+  },
+  {
+    "id": "n12",
+    "pass": true,
+    "detail": "label neutral (want neutral); direction ok; score 0.95",
+    "expected": {
+      "label": "neutral",
+      "biased": false
+    },
+    "response": {
+      "score": 0.95,
+      "label": "neutral",
+      "signals": [],
+      "summary": "The text consists of two straightforward factual statements about a quarterly report and a personnel announcement, with neutral language, no attributions requiring different verb treatments, and no selective omission of material context."
+    }
+  },
+  {
+    "id": "n13",
+    "pass": true,
+    "detail": "label highly_biased (want highly_biased); direction ok; score 0.04",
+    "expected": {
+      "label": "highly_biased",
+      "biased": true
+    },
+    "response": {
+      "score": 0.04,
+      "label": "highly_biased",
+      "signals": [
+        {
+          "type": "loaded_language",
+          "excerpt": "anyone with half a brain can see it is a total scam designed to fleece taxpayers",
+          "explanation": "The phrase 'total scam' is a pejorative characterization, 'fleece' implies deliberate exploitation, and 'anyone with half a brain' is an ad hominem that dismisses anyone who disagrees as unintelligent. These terms consistently frame the program in maximalist negative terms throughout the sentence."
+        },
+        {
+          "type": "framing",
+          "excerpt": "Some say the program has flaws and others praise its results, but honestly anyone with half a brain can see it is a total scam",
+          "explanation": "The 'some say...others praise...but' structure pretends to acknowledge both sides before using loaded language to close off legitimate debate. The word 'but' signals that the author considers the praise side unworthy of serious engagement."
+        }
+      ],
+      "summary": "The text acknowledges that \"some say\" the program has flaws and \"others praise\" its results, but immediately uses strongly pejorative language (\"total scam,\" \"fleece taxpayers\") and an ad hominem dismissal (\"anyone with half a brain\") to pre-judge the issue. The surface-level acknowledgment of differing views functions as false balance while the loaded framing steers readers strongly toward one conclusion."
+    }
+  },
+  {
+    "id": "n14",
+    "pass": true,
+    "detail": "label neutral (want neutral); direction ok; score 0.9",
+    "expected": {
+      "label": "neutral",
+      "biased": false
+    },
+    "response": {
+      "score": 0.9,
+      "label": "neutral",
+      "signals": [],
+      "summary": "The text consists of two purely procedural sentences announcing a public hearing and the comment submission process. No framing, loaded language, or source asymmetry is present, but the brevity of the text limits the basis for a confident assessment."
+    }
+  },
+  {
+    "id": "n15",
+    "pass": true,
+    "detail": "label neutral (want neutral); direction ok; score 0.92",
+    "expected": {
+      "label": "neutral",
+      "biased": false
+    },
+    "response": {
+      "score": 0.92,
+      "label": "neutral",
+      "signals": [],
+      "summary": "The passage presents three distinct stakeholder perspectives (government minister, opposition, independent economists) with balanced attribution. The characterizations (\"balanced compromise,\" \"insufficient,\" \"mixed assessments\") are attributed to their respective sources rather than editorialized by the reporter, and the verbs used (\"described,\" \"called,\" \"offered\") are applied symmetrically without bias toward any side."
+    }
+  },
+  {
+    "id": "n16",
+    "pass": true,
+    "detail": "label highly_biased (want highly_biased); direction ok; score 0.03",
+    "expected": {
+      "label": "highly_biased",
+      "biased": true
+    },
+    "response": {
+      "score": 0.03,
+      "label": "highly_biased",
+      "signals": [
+        {
+          "type": "loaded_language",
+          "excerpt": "spineless bureaucrats have once again betrayed us all with their pathetic, gutless surrender to foreign interests that despise everything we stand for",
+          "explanation": "The phrase deploys multiple layers of loaded language: 'spineless bureaucrats' and 'gutless surrender' use physical/moral metaphors to demean officials; 'betrayed us all' is an accusatory framing; 'foreign interests that despise everything we stand for' creates a hostile outgroup. These choices pre-judge the targets and seek to generate outrage rather than inform."
+        }
+      ],
+      "summary": "The single sentence uses extreme pejorative language (\"spineless bureaucrats,\" \"pathetic,\" \"gutless surrender\") and emotional charging (\"betrayed us all,\" \"foreign interests that despise everything we stand for\") designed to inflame rather than inform, crossing the line from partisan opinion into rhetorical manipulation."
+    }
+  }
+]

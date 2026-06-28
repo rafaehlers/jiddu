@@ -199,7 +199,25 @@ src/
         └── index.ts                   getProvider() + MODEL_CATALOG (🇺🇸 GPT, 🇨🇳 MiniMax)
 ```
 
-## API
+## Public API & MCP (for agents)
+
+The four pipelines are also exposed as a documented, **synchronous** REST API (request → JSON, no SSE) for agents and scripts, plus an MCP server. Docs page: [`/api-access`](https://jiddu.app/api-access).
+
+```
+POST /api/v1/detect-fallacies
+POST /api/v1/fact-check
+POST /api/v1/assess-neutrality
+POST /api/v1/explain
+```
+
+Body is `{ "text": "…" }` (40–2000 chars) plus optional `lang` (`en`/`pt`/`es`) and, for explain, `level`. Authenticate with an `X-Jiddu-Key` header. Keys are **admin-issued** at `/admin/api-keys` (hashed, shown once) with per-key rate overrides; public limits are tuned via `rate.api*` in admin settings. `fact-check` extracts and verifies each claim via Sonar, capped by `api.maxClaims`.
+
+- **MCP server:** [`packages/jiddu-mcp`](./packages/jiddu-mcp) — a thin wrapper over the REST API, published to npm as `jiddu-mcp` (`npx -y jiddu-mcp`). Machine-oriented docs in [`packages/jiddu-mcp/AGENT.md`](./packages/jiddu-mcp/AGENT.md).
+- **Evals:** fixed test sets in [`evals/`](./evals) (15–16 inputs per tool). Run `JIDDU_API_KEY=<key> npx tsx evals/run-evals.ts`; published accuracy in [`evals/report.md`](./evals/report.md).
+
+## API (internal SSE endpoints)
+
+These are the streaming endpoints the web app itself uses.
 
 ### `POST /api/analyze`
 

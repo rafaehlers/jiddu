@@ -6,12 +6,12 @@ import { nanoid } from "nanoid";
 import { prisma } from "@/lib/db";
 import { ADMIN_COOKIE_NAME, adminTokenIsValid } from "../auth";
 import { generateKey } from "@/lib/api/auth";
+import { NEW_KEY_COOKIE } from "./cookie";
 
 // The freshly-minted secret is shown exactly once. We stash it in a short-
 // lived httpOnly cookie (read by the page on the next render) instead of
 // putting it in the redirect URL, so it never lands in browser history,
 // proxy logs, or a Referer header.
-export const NEW_KEY_COOKIE = "jiddu_new_api_key";
 
 async function assertAdmin(): Promise<void> {
   const jar = await cookies();

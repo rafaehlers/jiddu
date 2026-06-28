@@ -46,6 +46,15 @@ export function SiteHeader({ variant = "home", rightSlot }: Props) {
           >
             {t.nav_how_it_works}
           </Link>
+          <span aria-hidden className="text-muted text-sm hidden md:inline">
+            ·
+          </span>
+          <Link
+            href="/api-access"
+            className="text-sm text-muted hover:text-foreground transition-colors hidden md:inline"
+          >
+            {t.nav_api}
+          </Link>
           {rightSlot}
           <LangSelector />
           <ThemeToggle />

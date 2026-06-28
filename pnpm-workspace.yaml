@@ -1,3 +1,10 @@
+# The Next.js app (root) plus the standalone MCP server package. The MCP
+# package has its own deps/lockfile and is published to npm separately; the
+# Docker image (npm ci, root package-lock.json) never builds it.
+packages:
+  - "."
+  - "packages/*"
+
 # Native dependencies allowed to run install/build scripts. pnpm blocks
 # these by default (supply-chain hardening); we opt them in explicitly so
 # `pnpm install` doesn't abort with ERR_PNPM_IGNORED_BUILDS.

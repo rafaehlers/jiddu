@@ -1,0 +1,18 @@
+{
+  "n01": { "label": "neutral", "biased": false },
+  "n02": { "label": "neutral", "biased": false },
+  "n03": { "label": "highly_biased", "biased": true },
+  "n04": { "label": "highly_biased", "biased": true },
+  "n05": { "label": "neutral", "biased": false },
+  "n06": { "label": "biased", "biased": true },
+  "n07": { "label": "neutral", "biased": false },
+  "n08": { "label": "highly_biased", "biased": true },
+  "n09": { "label": "neutral", "biased": false },
+  "n10": { "label": "highly_biased", "biased": true },
+  "n11": { "label": "neutral", "biased": false },
+  "n12": { "label": "neutral", "biased": false },
+  "n13": { "label": "highly_biased", "biased": true },
+  "n14": { "label": "neutral", "biased": false },
+  "n15": { "label": "neutral", "biased": false },
+  "n16": { "label": "highly_biased", "biased": true }
+}

@@ -1,0 +1,17 @@
+{
+  "c01": { "overall_verdict": "reliable" },
+  "c02": { "overall_verdict": "reliable" },
+  "c03": { "overall_verdict": "reliable" },
+  "c04": { "overall_verdict": "reliable" },
+  "c05": { "overall_verdict": "reliable" },
+  "c06": { "overall_verdict": "reliable" },
+  "c07": { "overall_verdict": "reliable" },
+  "c08": { "overall_verdict": "unreliable" },
+  "c09": { "overall_verdict": "unreliable" },
+  "c10": { "overall_verdict": "unreliable" },
+  "c11": { "overall_verdict": "unreliable" },
+  "c12": { "overall_verdict": "unreliable" },
+  "c13": { "overall_verdict": "unreliable" },
+  "c14": { "overall_verdict": "unreliable" },
+  "c15": { "overall_verdict": "unreliable" }
+}

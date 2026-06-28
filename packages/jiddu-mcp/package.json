@@ -1,0 +1,35 @@
+{
+  "name": "jiddu-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for Jiddu — detect logical fallacies, fact-check claims, assess neutrality, and explain papers in any text.",
+  "type": "module",
+  "license": "AGPL-3.0-or-later",
+  "author": "Rafael M. Ehlers",
+  "homepage": "https://jiddu.app",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rafaehlers/jiddu.git",
+    "directory": "packages/jiddu-mcp"
+  },
+  "keywords": ["mcp", "model-context-protocol", "fact-check", "fallacy", "claude", "agents"],
+  "bin": {
+    "jiddu-mcp": "dist/index.js"
+  },
+  "files": ["dist", "AGENT.md", "README.md"],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --clean --target node18",
+    "dev": "tsup src/index.ts --format esm --watch",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.0",
+    "typescript": "^5.6.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

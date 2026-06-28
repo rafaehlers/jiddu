@@ -11,3 +11,5 @@ dev.db-journal
 README.md
 .vscode
 src/generated/prisma
+packages
+evals

@@ -1,0 +1,355 @@
+[
+  {
+    "id": "f01",
+    "pass": true,
+    "detail": "verdict fallacies_found (want fallacies_found); matched 1/1 [ad hominem]",
+    "expected": {
+      "verdict": "fallacies_found",
+      "fallacies": [
+        "ad hominem"
+      ]
+    },
+    "response": {
+      "fallacies": [
+        {
+          "name": "Ad hominem",
+          "excerpt": "You can't trust anything Dr. Lopez says about climate policy.",
+          "explanation": "This sentence urges the reader to reject Dr. Lopez's climate-policy claims based on who she is, rather than on the content or evidence of her arguments. The implied conclusion is that her views are unreliable because of her person, which is an ad hominem attack."
+        },
+        {
+          "name": "Ad hominem",
+          "excerpt": "She's a vegan activist who failed her own startup, so her economic analysis is worthless.",
+          "explanation": "The sentence treats Dr. Lopez's activism and business failure as proof that her economic analysis has no value. The implied premise is that personal background and past career failure determine whether her analysis is correct, but that does not logically establish that her economic claims are false or worthless. This is an ad hominem fallacy."
+        }
+      ],
+      "fallacy_count": 2,
+      "verdict": "fallacies_found"
+    }
+  },
+  {
+    "id": "f02",
+    "pass": false,
+    "detail": "verdict fallacies_found (want fallacies_found); matched 0/1 [straw]",
+    "expected": {
+      "verdict": "fallacies_found",
+      "fallacies": [
+        "straw"
+      ]
+    },
+    "response": {
+      "fallacies": [
+        {
+          "name": "Slippery slope",
+          "excerpt": "basically wants to leave the country completely defenseless and hand it over to our enemies",
+          "explanation": "This sentence jumps from the premise that the opponent supports a 2% defense-budget cut to the conclusion that the country would become completely defenseless and be handed over to enemies. That extreme outcome is presented as if it naturally follows, but no causal chain or evidence is given to justify such a drastic escalation."
+        },
+        {
+          "name": "Appeal to fear",
+          "excerpt": "leave the country completely defenseless and hand it over to our enemies",
+          "explanation": "The argument tries to persuade by invoking a frightening image of national vulnerability and enemy takeover. Instead of explaining why the proposed cut is harmful, it uses alarmist language to provoke fear and push the audience toward rejecting the policy."
+        }
+      ],
+      "fallacy_count": 2,
+      "verdict": "fallacies_found"
+    }
+  },
+  {
+    "id": "f03",
+    "pass": true,
+    "detail": "verdict fallacies_found (want fallacies_found); matched 1/1 [authority]",
+    "expected": {
+      "verdict": "fallacies_found",
+      "fallacies": [
+        "authority"
+      ]
+    },
+    "response": {
+      "fallacies": [
+        {
+          "name": "Appeal to authority",
+          "excerpt": "This supplement must work because a famous celebrity doctor with millions of followers endorsed it on television last week.",
+          "explanation": "The implied premise is that a famous doctor with many followers would only endorse products that are effective, and the conclusion is that the supplement therefore works. That is a fallacious appeal to authority: the endorsement itself is not evidence of efficacy, especially when the authority is a celebrity figure whose fame and follower count are irrelevant to whether the supplement actually works."
+        }
+      ],
+      "fallacy_count": 1,
+      "verdict": "fallacies_found"
+    }
+  },
+  {
+    "id": "f04",
+    "pass": true,
+    "detail": "verdict fallacies_found (want fallacies_found); matched 1/1 [emotion]",
+    "expected": {
+      "verdict": "fallacies_found",
+      "fallacies": [
+        "emotion"
+      ]
+    },
+    "response": {
+      "fallacies": [
+        {
+          "name": "Appeal to emotion",
+          "excerpt": "Think of the children.",
+          "explanation": "This phrase appeals to concern for children to encourage agreement with the speaker’s position, but it does not provide any reasoned evidence that the surveillance bill is effective or justified."
+        },
+        {
+          "name": "Appeal to fear",
+          "excerpt": "If you vote against this surveillance bill, you are choosing to let predators roam free",
+          "explanation": "The sentence pressures the audience by implying that rejecting the bill will directly empower dangerous criminals. The implied premise is that voting against the bill causes predators to roam free; the conclusion is that one must support the bill to avoid that outcome. That causal claim is asserted as a fear-based warning without justification."
+        },
+        {
+          "name": "Appeal to emotion",
+          "excerpt": "you will have their suffering on your conscience.",
+          "explanation": "This tries to induce guilt and moral shame instead of arguing for the bill on its merits. The implied premise is that a no vote makes the voter personally responsible for future victims’ suffering, which is an emotional manipulation rather than a logical argument."
+        }
+      ],
+      "fallacy_count": 3,
+      "verdict": "fallacies_found"
+    }
+  },
+  {
+    "id": "f05",
+    "pass": true,
+    "detail": "verdict fallacies_found (want fallacies_found); matched 1/1 [dichotomy]",
+    "expected": {
+      "verdict": "fallacies_found",
+      "fallacies": [
+        "dichotomy"
+      ]
+    },
+    "response": {
+      "fallacies": [
+        {
+          "name": "False dichotomy",
+          "excerpt": "Either we ban all cars from the city center immediately, or we accept that our children will choke to death on pollution.\n[s1] There is no middle ground here.",
+          "explanation": "This argues that the only choices are an immediate total car ban or accepting lethal pollution, which excludes other realistic options such as partial restrictions, phased implementation, cleaner transport policies, or targeted emissions controls. The added claim that 'There is no middle ground here' explicitly denies alternatives without justification, making the dichotomy false."
+        },
+        {
+          "name": "Appeal to fear",
+          "excerpt": "or we accept that our children will choke to death on pollution.",
+          "explanation": "The sentence pushes acceptance of the proposed ban by invoking a terrifying image of children dying from pollution. The implied premise is that rejecting the ban leads to this catastrophic outcome, but that conclusion is asserted through fear rather than established evidence or careful causal reasoning."
+        }
+      ],
+      "fallacy_count": 2,
+      "verdict": "fallacies_found"
+    }
+  },
+  {
+    "id": "f06",
+    "pass": true,
+    "detail": "verdict fallacies_found (want fallacies_found); matched 1/1 [slippery]",
+    "expected": {
+      "verdict": "fallacies_found",
+      "fallacies": [
+        "slippery"
+      ]
+    },
+    "response": {
+      "fallacies": [
+        {
+          "name": "Slippery slope",
+          "excerpt": "If we allow students to redo one failed exam, soon they will demand to redo every test, then homework will be optional, and eventually no one will ever be graded at all.",
+          "explanation": "This argues that a limited policy change—letting students redo one failed exam—will inevitably trigger a cascade to much larger outcomes: unlimited retakes, optional homework, and no grades at all. The implied premise is that each step will naturally and inevitably lead to the next, but no evidence is given for that chain. Because the conclusion depends on an unsupported progression of extremes, this is a slippery slope fallacy."
+        }
+      ],
+      "fallacy_count": 1,
+      "verdict": "fallacies_found"
+    }
+  },
+  {
+    "id": "f07",
+    "pass": true,
+    "detail": "verdict fallacies_found (want fallacies_found); matched 1/1 [popularity]",
+    "expected": {
+      "verdict": "fallacies_found",
+      "fallacies": [
+        "popularity"
+      ]
+    },
+    "response": {
+      "fallacies": [
+        {
+          "name": "Appeal to popularity (ad populum)",
+          "excerpt": "Everybody is switching to this new phone.",
+          "explanation": "The argument implies that because many people are adopting the phone, it must be the best choice. That conclusion does not follow from popularity alone; the premise is how many people are switching, while the conclusion is that the device is objectively the best one to buy."
+        }
+      ],
+      "fallacy_count": 1,
+      "verdict": "fallacies_found"
+    }
+  },
+  {
+    "id": "f08",
+    "pass": true,
+    "detail": "verdict fallacies_found (want fallacies_found); matched 1/1 [circular]",
+    "expected": {
+      "verdict": "fallacies_found",
+      "fallacies": [
+        "circular"
+      ]
+    },
+    "response": {
+      "fallacies": [
+        {
+          "name": "Circular reasoning",
+          "excerpt": "The Bible is true because it is the word of God, and we know it is the word of God because the Bible itself says so in several passages.",
+          "explanation": "The argument’s premise is that the Bible is the word of God, and its conclusion is that the Bible is true. But the only support offered for the premise is that the Bible says it is the word of God. That makes the reasoning circular: the Bible is being validated by appealing to its own claim, so no independent evidence is actually provided."
+        }
+      ],
+      "fallacy_count": 1,
+      "verdict": "fallacies_found"
+    }
+  },
+  {
+    "id": "f09",
+    "pass": true,
+    "detail": "verdict fallacies_found (want fallacies_found); matched 1/1 [tradition]",
+    "expected": {
+      "verdict": "fallacies_found",
+      "fallacies": [
+        "tradition"
+      ]
+    },
+    "response": {
+      "fallacies": [
+        {
+          "name": "Appeal to tradition",
+          "excerpt": "We should keep celebrating this holiday exactly the way our grandparents did. It has been done this way for two hundred years, so it must be the right way.",
+          "explanation": "The author implies that because the holiday has been celebrated this way for two hundred years, that history itself proves it should continue unchanged. The conclusion that the current method is the right one does not follow from its age alone; the argument relies on tradition as the deciding reason rather than on evidence about whether the practice is actually better."
+        }
+      ],
+      "fallacy_count": 1,
+      "verdict": "fallacies_found"
+    }
+  },
+  {
+    "id": "f10",
+    "pass": true,
+    "detail": "verdict fallacies_found (want fallacies_found); matched 1/1 [nature]",
+    "expected": {
+      "verdict": "fallacies_found",
+      "fallacies": [
+        "nature"
+      ]
+    },
+    "response": {
+      "fallacies": [
+        {
+          "name": "Appeal to nature",
+          "excerpt": "This remedy is completely natural, with no artificial chemicals at all, which is why it is far healthier and safer than anything made in a laboratory.",
+          "explanation": "The implied premise is that because the remedy is 'completely natural' and contains 'no artificial chemicals,' it must therefore be 'far healthier and safer.' That conclusion does not follow: natural substances can be harmful, and laboratory-made products can be safe and effective. The argument substitutes naturalness for evidence about actual health and safety."
+        }
+      ],
+      "fallacy_count": 1,
+      "verdict": "fallacies_found"
+    }
+  },
+  {
+    "id": "f11",
+    "pass": true,
+    "detail": "verdict fallacies_found (want fallacies_found); matched 1/1 [loaded question]",
+    "expected": {
+      "verdict": "fallacies_found",
+      "fallacies": [
+        "loaded question"
+      ]
+    },
+    "response": {
+      "fallacies": [
+        {
+          "name": "Loaded question",
+          "excerpt": "Have you stopped lying to your voters about the tax plan?",
+          "explanation": "This question presupposes that the person has been lying to voters about the tax plan. It forces a yes/no answer while smuggling in the unproven premise of prior dishonesty, so the implied conclusion is that the voter has already been deceived rather than leaving that claim to be demonstrated."
+        }
+      ],
+      "fallacy_count": 1,
+      "verdict": "fallacies_found"
+    }
+  },
+  {
+    "id": "f12",
+    "pass": false,
+    "detail": "verdict fallacies_found (want fallacies_found); matched 0/1 [red herring]",
+    "expected": {
+      "verdict": "fallacies_found",
+      "fallacies": [
+        "red herring"
+      ]
+    },
+    "response": {
+      "fallacies": [
+        {
+          "name": "Ad hominem",
+          "excerpt": "let's not forget that the journalist who wrote it once got a parking ticket downtown",
+          "explanation": "This attacks the reporter's character instead of addressing the substance of the fraud findings. The implied premise is that the report should be discounted because the journalist had a minor traffic violation, and the conclusion pushed is that the fraud report is therefore less credible. That reasoning is fallacious because the parking ticket is irrelevant to the accuracy of the accounting evidence."
+        }
+      ],
+      "fallacy_count": 1,
+      "verdict": "fallacies_found"
+    }
+  },
+  {
+    "id": "f13",
+    "pass": true,
+    "detail": "verdict fallacies_found (want fallacies_found); matched 1/1 [anecdot]",
+    "expected": {
+      "verdict": "fallacies_found",
+      "fallacies": [
+        "anecdot"
+      ]
+    },
+    "response": {
+      "fallacies": [
+        {
+          "name": "Anecdotal evidence",
+          "excerpt": "My grandfather smoked a pack of cigarettes every day and lived to ninety-five.\nClearly all this panic about smoking causing cancer is wildly overblown nonsense.",
+          "explanation": "The argument takes one grandfather’s unusually long life as proof that smoking is not dangerous. The implied premise is that because this individual smoked and did not die young, smoking cannot meaningfully increase cancer risk; the conclusion is that public concern about smoking and cancer is nonsense. That is a classic anecdotal fallacy: an isolated exception cannot override broader evidence about risks across many people."
+        }
+      ],
+      "fallacy_count": 1,
+      "verdict": "fallacies_found"
+    }
+  },
+  {
+    "id": "f14",
+    "pass": true,
+    "detail": "verdict clean (want clean); matched 0/0 [—]",
+    "expected": {
+      "verdict": "clean",
+      "fallacies": []
+    },
+    "response": {
+      "fallacies": [],
+      "fallacy_count": 0,
+      "verdict": "clean"
+    }
+  },
+  {
+    "id": "f15",
+    "pass": true,
+    "detail": "verdict clean (want clean); matched 0/0 [—]",
+    "expected": {
+      "verdict": "clean",
+      "fallacies": []
+    },
+    "response": {
+      "fallacies": [],
+      "fallacy_count": 0,
+      "verdict": "clean"
+    }
+  },
+  {
+    "id": "f16",
+    "pass": true,
+    "detail": "verdict clean (want clean); matched 0/0 [—]",
+    "expected": {
+      "verdict": "clean",
+      "fallacies": []
+    },
+    "response": {
+      "fallacies": [],
+      "fallacy_count": 0,
+      "verdict": "clean"
+    }
+  }
+]

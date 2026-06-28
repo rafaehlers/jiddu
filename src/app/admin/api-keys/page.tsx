@@ -5,7 +5,8 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { prisma } from "@/lib/db";
 import { ADMIN_COOKIE_NAME, adminTokenIsValid } from "../auth";
-import { createApiKeyAction, revokeApiKeyAction, NEW_KEY_COOKIE } from "./actions";
+import { createApiKeyAction, revokeApiKeyAction } from "./actions";
+import { NEW_KEY_COOKIE } from "./cookie";
 
 export const dynamic = "force-dynamic";
 export const metadata = {

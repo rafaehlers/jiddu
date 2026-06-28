@@ -1,0 +1,18 @@
+[
+  { "id": "e01", "level": "high_school", "text": "Protein folding has puzzled biologists for decades, and earlier computational approaches struggled to predict three-dimensional structures accurately from amino acid sequences alone." },
+  { "id": "e02", "level": "undergrad", "text": "In this study, we aim to determine whether daily sleep duration causally affects memory consolidation in adolescents aged 13 to 17." },
+  { "id": "e03", "level": "undergrad", "text": "We trained a convolutional neural network on 50,000 labeled images using stochastic gradient descent with a learning rate of 0.01 over 100 epochs, holding out 10 percent of the data for validation." },
+  { "id": "e04", "level": "high_school", "text": "The model achieved an accuracy of 94.2 percent on the held-out test set, outperforming the previous baseline of 88.7 percent reported in prior work." },
+  { "id": "e05", "level": "undergrad", "text": "These results suggest that the observed warming trend over the past century is driven primarily by human greenhouse-gas emissions rather than natural climate variability." },
+  { "id": "e06", "level": "expert", "text": "Our analysis was limited to a single urban hospital and a sample of 80 patients, so the findings may not generalize to rural settings or other demographic groups." },
+  { "id": "e07", "level": "high_school", "text": "In summary, increasing the volume of pretraining data consistently improved downstream performance, and future work should investigate multilingual and low-resource settings." },
+  { "id": "e08", "level": "eli5", "text": "Climate change refers to long-term shifts in temperatures and weather patterns, and understanding its causes has become one of the central scientific questions of our era." },
+  { "id": "e09", "level": "undergrad", "text": "The primary objective of this paper is to test the hypothesis that a higher minimum wage reduces employee turnover without significantly raising unemployment." },
+  { "id": "e10", "level": "expert", "text": "Participants completed a double-blind randomized controlled trial in which they received either the active compound or a placebo over an eight-week period, with outcomes measured weekly." },
+  { "id": "e11", "level": "high_school", "text": "After treatment, the experimental group showed a 30 percent reduction in symptoms compared with a 5 percent reduction in the control group, a difference that was statistically significant." },
+  { "id": "e12", "level": "undergrad", "text": "We interpret these findings as evidence that attention mechanisms, rather than recurrence, are sufficient for capturing long-range dependencies in sequence modeling." },
+  { "id": "e13", "level": "expert", "text": "A key limitation is that our dataset contained only English-language documents, which constrains the external validity of the multilingual claims we set out to evaluate." },
+  { "id": "e14", "level": "high_school", "text": "To conclude, the proposed method offers a practical and scalable alternative to existing approaches, and we release our code and data to support replication." },
+  { "id": "e15", "level": "undergrad", "text": "Prior research on urban transportation has largely focused on private vehicles, leaving the effects of public transit investment on air quality comparatively understudied." },
+  { "id": "e16", "level": "high_school", "text": "We collected survey responses from 2,000 commuters across five cities and analyzed them using a mixed-effects regression model that controlled for income and age." }
+]
