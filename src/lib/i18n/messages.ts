@@ -633,12 +633,12 @@ const en: Messages = {
   legal_title: "Terms and disclaimers",
   legal_subtitle:
     "Read this before using Jiddu, especially before sharing an analysis publicly.",
-  legal_last_updated: "Last updated: 2026-05-18",
+  legal_last_updated: "Last updated: 2026-06-28",
   legal_sections: [
     {
       title: "1. What Jiddu does",
       paragraphs: [
-        "Jiddu is an automated tool. It uses large language models (currently routed through OpenRouter to OpenAI, Anthropic, MiniMax and Perplexity Sonar) to (a) flag passages that may contain logical fallacies and (b) extract verifiable factual claims from text and offer a verdict based on a web search.",
+        "Jiddu is an automated tool. It uses large language models (currently routed through OpenRouter to OpenAI, Anthropic, MiniMax and Perplexity Sonar) to (a) flag passages that may contain logical fallacies, (b) extract verifiable factual claims and offer a verdict based on a web search, (c) assess how neutral or biased a text is, and (d) explain a document paragraph by paragraph at a chosen reading level. The same tools are available through a public API and an MCP server.",
         "Jiddu does not employ human editors. Every output you see is produced by software. The tool is meant to assist critical reading — not to replace it.",
       ],
     },
@@ -647,6 +647,7 @@ const en: Messages = {
       paragraphs: [
         "The verdicts (\"supported\", \"contradicted\", \"mixed\", \"unverified\") and the fallacy labels are best-effort automated judgements. They can be wrong — sometimes confidently wrong.",
         "Jiddu does not assert that any statement, person, or document is true, false, lying, or deceitful. The labels are signals to prompt your own verification. Always read the cited sources and form your own conclusion.",
+        "Neutrality scores and the paragraph-by-paragraph explanations are likewise automated interpretations, not statements of fact — the explanations describe what a text says and how it is structured, never whether its claims are correct. Audience level changes only the prose; section-role tags are best-effort guesses.",
       ],
     },
     {
@@ -680,18 +681,9 @@ const en: Messages = {
       ],
     },
     {
-      title: "7. Explain feature",
+      title: "7. Contact",
       paragraphs: [
-        "The Explain pipeline produces automated plain-language interpretations of academic papers and technical documents. It does not assess the truth, accuracy, or validity of the paper's claims — it only explains what each paragraph says and how it fits the argument.",
-        "The audience level you choose (Child / High school / Undergraduate / Expert) adjusts prose complexity only. It does not filter, validate, or change the meaning of the underlying content.",
-        "Paragraph role tags (Background, Objective, Method, Result, Interpretation, Limitation, Conclusion) are algorithmic predictions. They may be incorrect, especially for interdisciplinary papers or documents that don't follow a standard structure.",
-        "Explanations work best on structured academic papers. Results on unstructured prose, blog posts, or non-academic documents may be lower quality.",
-      ],
-    },
-    {
-      title: "8. Contact",
-      paragraphs: [
-        "Operator: Rafael de Menezes Ehlers. For takedown requests, corrections, or other concerns, contact via LinkedIn (linked in the footer).",
+        "Operator: Rafael de Menezes Ehlers. For takedown requests, corrections, or other concerns, open an issue on [GitHub](https://github.com/rafaehlers/jiddu).",
       ],
     },
   ],
@@ -808,7 +800,16 @@ const en: Messages = {
       ],
     },
     {
-      title: "14. Open source and methodology",
+      title: "14. Public API & MCP (for agents)",
+      paragraphs: [
+        "Beyond the web app, all four pipelines are exposed as a public REST API for agents and scripts: `POST /api/v1/detect-fallacies`, `/fact-check`, `/assess-neutrality`, `/explain`. Unlike the internal SSE routes above, these are synchronous — one JSON request in (`{ text }`, 40–2000 chars, plus optional `lang` and, for explain, `level`), one JSON response out. They drive the same generators to completion over a single chunk and never persist a row.",
+        "Requests authenticate with an `X-Jiddu-Key` header. Keys are admin-issued at `/admin/api-keys` (stored only as a sha256 hash, shown once) and rate-limited per key, separately from the web app's per-IP limits. Fact-check via the API both extracts and verifies each claim, capped by a per-request claim limit so one call can't fan out unboundedly to the paid Sonar verifier.",
+        "An MCP server exposes the same four tools to agents. It is hosted in-process at `POST /api/mcp` (via mcp-handler), so any MCP client can connect by URL through the public `mcp-remote` bridge — nothing to install or publish. The tools call the internal pipeline layer directly, with no extra HTTP hop. The same four tools also ship as a standalone `jiddu-mcp` package for local use. Setup snippets and machine-oriented docs are at [/api-access](/api-access).",
+        "Quality is tracked by a fixed eval suite (15–16 cases per tool) committed in the repo and scored against expected results; the published report lives at [evals/report.md](https://github.com/rafaehlers/jiddu/blob/main/evals/report.md).",
+      ],
+    },
+    {
+      title: "15. Open source and methodology",
       paragraphs: [
         "Source code is at [github.com/rafaehlers/jiddu](https://github.com/rafaehlers/jiddu) under the [AGPL-3.0-or-later license](https://www.gnu.org/licenses/agpl-3.0.txt). AGPL closes the 'SaaS loophole' that GPL leaves open: anyone running a modified version as a network service must publish the modified source.",
         "Two papers ground the design: [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson — Microsoft Research, 2025) for the four-stage claim extraction; and [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) (Goldfarb, Hall, Fisher, Salam, Wilde — Forum AI / Stanford, 2025) for the verdict assessment, the 6-tier source taxonomy and the neutrality framework. Jiddu is not affiliated with either group.",
@@ -1224,12 +1225,12 @@ const pt: Messages = {
   legal_title: "Termos e isenções",
   legal_subtitle:
     "Leia antes de usar o Jiddu, especialmente antes de compartilhar uma análise publicamente.",
-  legal_last_updated: "Atualizado em: 2026-05-18",
+  legal_last_updated: "Atualizado em: 2026-06-28",
   legal_sections: [
     {
       title: "1. O que o Jiddu faz",
       paragraphs: [
-        "O Jiddu é uma ferramenta automatizada. Ele usa modelos de linguagem (atualmente roteados via OpenRouter para OpenAI, Anthropic, MiniMax e Perplexity Sonar) para (a) sinalizar passagens que podem conter falácias lógicas e (b) extrair afirmações factuais verificáveis de um texto e oferecer um veredito baseado em busca na web.",
+        "O Jiddu é uma ferramenta automatizada. Ele usa modelos de linguagem (atualmente roteados via OpenRouter para OpenAI, Anthropic, MiniMax e Perplexity Sonar) para (a) sinalizar passagens que podem conter falácias lógicas, (b) extrair afirmações factuais verificáveis e oferecer um veredito baseado em busca na web, (c) avaliar quão neutro ou enviesado um texto é, e (d) explicar um documento parágrafo por parágrafo no nível de leitura escolhido. As mesmas ferramentas estão disponíveis via uma API pública e um servidor MCP.",
         "O Jiddu não tem editores humanos. Todo resultado que você vê é produzido por software. A ferramenta serve como apoio à leitura crítica — não a substitui.",
       ],
     },
@@ -1238,6 +1239,7 @@ const pt: Messages = {
       paragraphs: [
         'Os vereditos ("sustentado", "contradito", "misto", "não verificado") e os rótulos de falácia são juízos automatizados de melhor esforço. Podem estar errados — às vezes com alta confiança.',
         "O Jiddu não afirma que qualquer declaração, pessoa ou documento seja verdadeiro, falso, mentiroso ou enganoso. Os rótulos são sinais para acionar a sua própria verificação. Sempre leia as fontes citadas e tire sua própria conclusão.",
+        "As pontuações de imparcialidade e as explicações parágrafo a parágrafo também são interpretações automatizadas, não afirmações de fato — as explicações descrevem o que um texto diz e como ele está estruturado, nunca se as suas afirmações estão corretas. O nível de audiência muda apenas o texto; as tags de papel das seções são apenas suposições de melhor esforço.",
       ],
     },
     {
@@ -1271,18 +1273,9 @@ const pt: Messages = {
       ],
     },
     {
-      title: "7. Funcionalidade Explain",
+      title: "7. Contato",
       paragraphs: [
-        "O pipeline Explain produz interpretações em linguagem simples de artigos acadêmicos e documentos técnicos de forma automatizada. Ele não avalia a veracidade, precisão ou validade das afirmações do documento — apenas explica o que cada parágrafo diz e como ele se encaixa no argumento.",
-        "O nível de audiência escolhido (Criança / Ensino médio / Graduação / Expert) ajusta apenas a complexidade do texto. Ele não filtra, valida nem altera o significado do conteúdo original.",
-        "As tags de papel do parágrafo (Background, Objetivo, Método, Resultado, Interpretação, Limitação, Conclusão) são previsões algorítmicas. Podem estar incorretas, especialmente em artigos interdisciplinares ou documentos que não seguem uma estrutura padrão.",
-        "As explicações funcionam melhor em artigos acadêmicos estruturados. Resultados em textos não estruturados, posts de blog ou documentos não acadêmicos podem ser de menor qualidade.",
-      ],
-    },
-    {
-      title: "8. Contato",
-      paragraphs: [
-        "Operador: Rafael de Menezes Ehlers. Para solicitações de remoção, correções ou outras dúvidas, contate via LinkedIn (link no rodapé).",
+        "Operador: Rafael de Menezes Ehlers. Para solicitações de remoção, correções ou outras dúvidas, abra uma issue no [GitHub](https://github.com/rafaehlers/jiddu).",
       ],
     },
   ],
@@ -1399,7 +1392,16 @@ const pt: Messages = {
       ],
     },
     {
-      title: "14. Open source e metodologia",
+      title: "14. API pública & MCP (para agentes)",
+      paragraphs: [
+        "Além do app web, os quatro pipelines são expostos como uma API REST pública para agentes e scripts: `POST /api/v1/detect-fallacies`, `/fact-check`, `/assess-neutrality`, `/explain`. Diferente das rotas SSE internas acima, estas são síncronas — uma requisição JSON entra (`{ text }`, 40–2000 caracteres, mais `lang` opcional e, no explain, `level`), uma resposta JSON sai. Elas dirigem os mesmos geradores até o fim sobre um único chunk e nunca persistem uma linha no banco.",
+        "As requisições se autenticam com o cabeçalho `X-Jiddu-Key`. As chaves são emitidas pelo admin em `/admin/api-keys` (guardadas só como hash sha256, mostradas uma vez) e têm limite de taxa por chave, separado dos limites por IP do app web. O fact-check via API extrai e verifica cada afirmação, com um teto de afirmações por requisição pra que uma chamada não dispare verificações ilimitadas no Sonar pago.",
+        "Um servidor MCP expõe as mesmas quatro ferramentas a agentes. Ele é hospedado no próprio processo em `POST /api/mcp` (via mcp-handler), então qualquer cliente MCP conecta por URL através do bridge público `mcp-remote` — nada para instalar ou publicar. As ferramentas chamam a camada de pipeline interna direto, sem hop HTTP extra. As mesmas quatro ferramentas também vêm como o pacote standalone `jiddu-mcp` para uso local. Snippets de configuração e docs orientadas a máquina em [/api-access](/api-access).",
+        "A qualidade é acompanhada por um conjunto fixo de evals (15–16 casos por ferramenta) versionado no repositório e comparado com resultados esperados; o relatório publicado está em [evals/report.md](https://github.com/rafaehlers/jiddu/blob/main/evals/report.md).",
+      ],
+    },
+    {
+      title: "15. Open source e metodologia",
       paragraphs: [
         "Código fonte em [github.com/rafaehlers/jiddu](https://github.com/rafaehlers/jiddu) sob licença [AGPL-3.0-or-later](https://www.gnu.org/licenses/agpl-3.0.txt). A AGPL fecha o 'SaaS loophole' que a GPL deixa aberto: quem rodar uma versão modificada como serviço de rede tem que publicar o código modificado.",
         "Dois papers fundamentam o design: [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson — Microsoft Research, 2025) pra extração em quatro estágios; e [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) (Goldfarb, Hall, Fisher, Salam, Wilde — Forum AI / Stanford, 2025) pra a avaliação de veredito, a taxonomia de 6 tiers de fonte e o framework de imparcialidade. O Jiddu não tem afiliação com nenhum dos grupos.",
@@ -1815,12 +1817,12 @@ const es: Messages = {
   legal_title: "Términos y descargos",
   legal_subtitle:
     "Lee esto antes de usar Jiddu, especialmente antes de compartir un análisis públicamente.",
-  legal_last_updated: "Actualizado: 2026-05-18",
+  legal_last_updated: "Actualizado: 2026-06-28",
   legal_sections: [
     {
       title: "1. Qué hace Jiddu",
       paragraphs: [
-        "Jiddu es una herramienta automatizada. Usa modelos de lenguaje (actualmente enrutados vía OpenRouter a OpenAI, Anthropic, MiniMax y Perplexity Sonar) para (a) señalar pasajes que pueden contener falacias lógicas y (b) extraer afirmaciones factuales verificables de un texto y ofrecer un veredicto basado en búsqueda web.",
+        "Jiddu es una herramienta automatizada. Usa modelos de lenguaje (actualmente enrutados vía OpenRouter a OpenAI, Anthropic, MiniMax y Perplexity Sonar) para (a) señalar pasajes que pueden contener falacias lógicas, (b) extraer afirmaciones factuales verificables y ofrecer un veredicto basado en búsqueda web, (c) evaluar qué tan neutral o sesgado es un texto, y (d) explicar un documento párrafo por párrafo en el nivel de lectura elegido. Las mismas herramientas están disponibles vía una API pública y un servidor MCP.",
         "Jiddu no tiene editores humanos. Todo resultado que ves es producido por software. La herramienta es un apoyo a la lectura crítica — no la reemplaza.",
       ],
     },
@@ -1829,6 +1831,7 @@ const es: Messages = {
       paragraphs: [
         'Los veredictos ("respaldado", "contradicho", "mixto", "no verificado") y las etiquetas de falacia son juicios automatizados de mejor esfuerzo. Pueden estar equivocados — a veces con alta confianza.',
         "Jiddu no afirma que ninguna declaración, persona o documento sea verdadero, falso, mentiroso o engañoso. Las etiquetas son señales para activar tu propia verificación. Siempre lee las fuentes citadas y forma tu propia conclusión.",
+        "Las puntuaciones de imparcialidad y las explicaciones párrafo por párrafo también son interpretaciones automatizadas, no afirmaciones de hecho — las explicaciones describen qué dice un texto y cómo está estructurado, nunca si sus afirmaciones son correctas. El nivel de audiencia cambia solo la prosa; las etiquetas de rol de las secciones son solo conjeturas de mejor esfuerzo.",
       ],
     },
     {
@@ -1862,18 +1865,9 @@ const es: Messages = {
       ],
     },
     {
-      title: "7. Funcionalidad Explain",
+      title: "7. Contacto",
       paragraphs: [
-        "El pipeline Explain produce interpretaciones automatizadas en lenguaje sencillo de artículos académicos y documentos técnicos. No evalúa la veracidad, precisión o validez de las afirmaciones del documento — solo explica qué dice cada párrafo y cómo encaja en el argumento.",
-        "El nivel de audiencia elegido (Niño / Secundaria / Universitario / Experto) ajusta únicamente la complejidad del texto. No filtra, valida ni cambia el significado del contenido original.",
-        "Las etiquetas de rol del párrafo (Background, Objetivo, Método, Resultado, Interpretación, Limitación, Conclusión) son predicciones algorítmicas. Pueden ser incorrectas, especialmente en artículos interdisciplinarios o documentos que no siguen una estructura estándar.",
-        "Las explicaciones funcionan mejor en artículos académicos estructurados. Los resultados en textos no estructurados, posts de blog o documentos no académicos pueden ser de menor calidad.",
-      ],
-    },
-    {
-      title: "8. Contacto",
-      paragraphs: [
-        "Operador: Rafael de Menezes Ehlers. Para solicitudes de remoción, correcciones u otras consultas, contacto vía LinkedIn (enlace en el pie de página).",
+        "Operador: Rafael de Menezes Ehlers. Para solicitudes de remoción, correcciones u otras consultas, abre un issue en [GitHub](https://github.com/rafaehlers/jiddu).",
       ],
     },
   ],
@@ -1990,7 +1984,16 @@ const es: Messages = {
       ],
     },
     {
-      title: "14. Open source y metodología",
+      title: "14. API pública & MCP (para agentes)",
+      paragraphs: [
+        "Además del app web, los cuatro pipelines se exponen como una API REST pública para agentes y scripts: `POST /api/v1/detect-fallacies`, `/fact-check`, `/assess-neutrality`, `/explain`. A diferencia de las rutas SSE internas de arriba, estas son síncronas — entra una solicitud JSON (`{ text }`, 40–2000 caracteres, más `lang` opcional y, en explain, `level`), sale una respuesta JSON. Conducen los mismos generadores hasta el final sobre un único chunk y nunca persisten una fila.",
+        "Las solicitudes se autentican con el encabezado `X-Jiddu-Key`. Las claves las emite el admin en `/admin/api-keys` (guardadas solo como hash sha256, mostradas una vez) y tienen límite de tasa por clave, separado de los límites por IP del app web. El fact-check vía API extrae y verifica cada afirmación, con un tope de afirmaciones por solicitud para que una llamada no dispare verificaciones ilimitadas en el Sonar pago.",
+        "Un servidor MCP expone las mismas cuatro herramientas a los agentes. Está alojado en el mismo proceso en `POST /api/mcp` (vía mcp-handler), así que cualquier cliente MCP se conecta por URL mediante el puente público `mcp-remote` — nada que instalar ni publicar. Las herramientas llaman directamente a la capa de pipeline interna, sin salto HTTP extra. Las mismas cuatro herramientas también vienen como el paquete standalone `jiddu-mcp` para uso local. Snippets de configuración y docs orientadas a máquinas en [/api-access](/api-access).",
+        "La calidad se monitorea con un conjunto fijo de evals (15–16 casos por herramienta) versionado en el repositorio y comparado con resultados esperados; el informe publicado está en [evals/report.md](https://github.com/rafaehlers/jiddu/blob/main/evals/report.md).",
+      ],
+    },
+    {
+      title: "15. Open source y metodología",
       paragraphs: [
         "El código fuente está en [github.com/rafaehlers/jiddu](https://github.com/rafaehlers/jiddu) bajo licencia [AGPL-3.0-or-later](https://www.gnu.org/licenses/agpl-3.0.txt). AGPL cierra el 'SaaS loophole' que GPL deja abierto: cualquiera que corra una versión modificada como servicio de red debe publicar el código fuente modificado.",
         "Dos papers fundamentan el diseño: [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson — Microsoft Research, 2025) para la extracción de afirmaciones en cuatro etapas; y [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) (Goldfarb, Hall, Fisher, Salam, Wilde — Forum AI / Stanford, 2025) para la evaluación de veredicto, la taxonomía de 6 tiers de fuentes y el framework de imparcialidad. Jiddu no está afiliado con ninguno de los dos grupos.",
