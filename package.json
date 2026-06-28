@@ -25,6 +25,7 @@
     "clsx": "^2.1.1",
     "jsdom": "^29.1.1",
     "lucide-react": "^1.16.0",
+    "mcp-handler": "^1.1.0",
     "nanoid": "^5.1.11",
     "next": "16.2.6",
     "openai": "^6.38.0",

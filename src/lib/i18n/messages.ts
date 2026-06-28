@@ -580,8 +580,8 @@ const en: Messages = {
     {
       title: "MCP server",
       paragraphs: [
-        "For agents, the [jiddu-mcp](https://www.npmjs.com/package/jiddu-mcp) package wraps the API as a Model Context Protocol server with four tools. Add it to your MCP client (e.g. Claude Desktop):",
-        "```\n{\n  \"mcpServers\": {\n    \"jiddu\": {\n      \"command\": \"npx\",\n      \"args\": [\"-y\", \"jiddu-mcp\"],\n      \"env\": { \"JIDDU_API_KEY\": \"your-key-here\" }\n    }\n  }\n}\n```",
+        "For agents, connect to the hosted Jiddu MCP server by URL — nothing to install or clone. It exposes the same four tools and bridges to your MCP client (e.g. Claude Desktop) via the public `mcp-remote` helper:",
+        "```\n{\n  \"mcpServers\": {\n    \"jiddu\": {\n      \"command\": \"npx\",\n      \"args\": [\"-y\", \"mcp-remote\", \"https://jiddu.app/api/mcp\", \"--header\", \"X-Jiddu-Key:your-key-here\"]\n    }\n  }\n}\n```",
         "Machine-oriented docs — when to use each tool, response shapes, and how to chain them — live in [AGENT.md](https://github.com/rafaehlers/jiddu/blob/main/packages/jiddu-mcp/AGENT.md).",
       ],
     },
@@ -1170,8 +1170,8 @@ const pt: Messages = {
     {
       title: "Servidor MCP",
       paragraphs: [
-        "Para agentes, o pacote [jiddu-mcp](https://www.npmjs.com/package/jiddu-mcp) embrulha a API como um servidor Model Context Protocol com quatro ferramentas. Adicione ao seu cliente MCP (ex.: Claude Desktop):",
-        "```\n{\n  \"mcpServers\": {\n    \"jiddu\": {\n      \"command\": \"npx\",\n      \"args\": [\"-y\", \"jiddu-mcp\"],\n      \"env\": { \"JIDDU_API_KEY\": \"sua-chave-aqui\" }\n    }\n  }\n}\n```",
+        "Para agentes, conecte-se ao servidor MCP hospedado do Jiddu por URL — nada para instalar ou clonar. Ele expõe as mesmas quatro ferramentas e faz a ponte com seu cliente MCP (ex.: Claude Desktop) via o utilitário público `mcp-remote`:",
+        "```\n{\n  \"mcpServers\": {\n    \"jiddu\": {\n      \"command\": \"npx\",\n      \"args\": [\"-y\", \"mcp-remote\", \"https://jiddu.app/api/mcp\", \"--header\", \"X-Jiddu-Key:sua-chave-aqui\"]\n    }\n  }\n}\n```",
         "A documentação orientada a máquina — quando usar cada ferramenta, formatos de resposta e como encadeá-las — está em [AGENT.md](https://github.com/rafaehlers/jiddu/blob/main/packages/jiddu-mcp/AGENT.md).",
       ],
     },
@@ -1761,8 +1761,8 @@ const es: Messages = {
     {
       title: "Servidor MCP",
       paragraphs: [
-        "Para agentes, el paquete [jiddu-mcp](https://www.npmjs.com/package/jiddu-mcp) envuelve la API como un servidor Model Context Protocol con cuatro herramientas. Agrégalo a tu cliente MCP (p. ej. Claude Desktop):",
-        "```\n{\n  \"mcpServers\": {\n    \"jiddu\": {\n      \"command\": \"npx\",\n      \"args\": [\"-y\", \"jiddu-mcp\"],\n      \"env\": { \"JIDDU_API_KEY\": \"tu-clave-aquí\" }\n    }\n  }\n}\n```",
+        "Para agentes, conéctate al servidor MCP alojado de Jiddu por URL — nada que instalar ni clonar. Expone las mismas cuatro herramientas y hace de puente con tu cliente MCP (p. ej. Claude Desktop) mediante el utilitario público `mcp-remote`:",
+        "```\n{\n  \"mcpServers\": {\n    \"jiddu\": {\n      \"command\": \"npx\",\n      \"args\": [\"-y\", \"mcp-remote\", \"https://jiddu.app/api/mcp\", \"--header\", \"X-Jiddu-Key:tu-clave-aquí\"]\n    }\n  }\n}\n```",
         "La documentación orientada a máquinas — cuándo usar cada herramienta, formatos de respuesta y cómo encadenarlas — está en [AGENT.md](https://github.com/rafaehlers/jiddu/blob/main/packages/jiddu-mcp/AGENT.md).",
       ],
     },

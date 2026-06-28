@@ -9,16 +9,18 @@ MCP server for [Jiddu](https://jiddu.app) — read any text with a critical mind
 
 It's a thin wrapper over the Jiddu public REST API. You need an API key — ask for one at [jiddu.app/api-access](https://jiddu.app/api-access).
 
-## Install
+> **Most users don't need this package.** The recommended way to use Jiddu over MCP is the **hosted remote server** — point any MCP client at `https://jiddu.app/api/mcp` via [`mcp-remote`](https://www.npmjs.com/package/mcp-remote), nothing to install. See [jiddu.app/api-access](https://jiddu.app/api-access). This package is for **local / offline use, run from source** (it is intentionally not published to npm).
 
-Add it to your MCP client. For Claude Desktop (`claude_desktop_config.json`):
+## Install (local, from source)
+
+Build it (see [Develop](#develop)), then point your MCP client at the built file. For Claude Desktop (`claude_desktop_config.json`):
 
 ```json
 {
   "mcpServers": {
     "jiddu": {
-      "command": "npx",
-      "args": ["-y", "jiddu-mcp"],
+      "command": "node",
+      "args": ["/absolute/path/to/packages/jiddu-mcp/dist/index.js"],
       "env": {
         "JIDDU_API_KEY": "your-key-here"
       }
@@ -55,13 +57,6 @@ Test interactively with the [MCP Inspector](https://github.com/modelcontextproto
 
 ```bash
 npx @modelcontextprotocol/inspector node dist/index.js
-```
-
-## Publish
-
-```bash
-npm run build
-npm publish            # requires npm login; package name: jiddu-mcp
 ```
 
 ## License
