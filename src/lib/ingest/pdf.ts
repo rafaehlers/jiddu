@@ -22,7 +22,9 @@ export async function ingestPdf(buffer: ArrayBuffer, filename: string): Promise<
     pageTexts.push(pieces.join("").replace(/[ \t]+/g, " "));
   }
 
-  const text = pageTexts.join("\n\n").replace(/\n{3,}/g, "\n\n").trim();
+  const text = dehyphenate(pageTexts.join("\n\n"))
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
   if (text.length < 40) {
     throw new Error("PDF appears to be empty or scanned without OCR");
   }
@@ -35,4 +37,13 @@ export async function ingestPdf(buffer: ArrayBuffer, filename: string): Promise<
     null;
 
   return { title, text, source: "pdf", sourceRef: filename };
+}
+
+// Rejoin words split by a hyphen at a line break — common in justified PDF
+// text, where "self-\nreferent" is really the single word "selfreferent".
+// We only merge when the continuation is lowercase (the unambiguous
+// wrapped-word case); a capitalized continuation like "Anglo-\nSaxon" is left
+// alone so we don't fuse a hyphenated proper compound or a sentence boundary.
+function dehyphenate(text: string): string {
+  return text.replace(/([A-Za-zÀ-ÿ])-[ \t]*\n[ \t]*([a-zà-ÿ])/g, "$1$2");
 }

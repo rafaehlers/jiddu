@@ -62,12 +62,14 @@ A peça mais pesada que sobrou do roadmap original. Híbrido: classifier por cla
 
 ## P3 — Niche / opcional (faz se aparecer demanda)
 
+### Precisão de highlights (quote → texto)
+- [ ] **Citations API da Anthropic** para offsets de trecho exatos. A [Citations API](https://platform.claude.com/docs/en/build-with-claude/citations) (Anthropic **Messages API**, GA — sem beta) faz o modelo citar trechos com `char_location` (`start_char_index` / `end_char_index`) garantidamente idênticos ao texto fonte. Resolveria de vez o alinhamento de highlights de fallacy / neutrality / explain — hoje o modelo devolve um `quote` que pode não bater 100% com o texto (hifenização, espaços) e o Jiddu tem que "adivinhar" onde destacar. **Bloqueado por custo + arquitetura:** só existe na Anthropic Messages API **direta** (blocos `document` + `citations:{enabled:true}`), *não* passa pelo OpenRouter que usamos hoje (chamamos `chat/completions` OpenAI-compat), e só funciona com modelos **Claude** (mais caro que gpt-5.4-mini / MiniMax; o Claude mais barato é Haiku 4.5 a $1/$5 por 1M). Disponível em 1P / Bedrock / Vertex; beta no Foundry. Incompatível com structured outputs. Alternativas grátis já parcialmente cobertas: normalização de hífen no ingest de PDF (✅ feito) + fuzzy matching do `quote` no lado do Jiddu.
+
 ### Novos formatos de input (parser unificado)
 - [ ] **Migrar pra [LiteParse](https://github.com/run-llama/liteparse) (Apache-2.0, npm `@llamaindex/liteparse`)** quando quisermos suportar mais que PDF/HTML/paste. Ganhos: `.docx` / `.pptx` / `.xlsx` (briefings, relatórios de ONG, peças de marketing chegam nesses formatos), PDF escaneado via OCR, layout-aware (preserva colunas e tabelas em papers acadêmicos). Custo: binário Rust nativo (verificar prebuilt pro alvo do Docker), e pra Office docs precisa LibreOffice + ImageMagick no container (~500MB+), pra OCR precisa Tesseract bundled. Não substituir `pdfjs-dist` só por substituir — só quando um dos formatos novos virar pedido real.
 
 - [ ] **CSV export** de claims+verdicts pra planilha.
 - [ ] **Wikipedia adapter** — sub-caso da Fase 4, mais barato. Útil pra claims sobre pessoas/lugares.
-- [ ] **API key access** pra uso programático. Permite jornalistas scripted-em-cima.
 - [ ] **Embed widget** — `<iframe>` de um único claim+veredict pra incorporar em blog post.
 - [ ] **Domínio jurídico** — modo específico pra decisões / processos. STF/STJ adapter já cobre boa parte.
 
@@ -85,6 +87,10 @@ A peça mais pesada que sobrou do roadmap original. Híbrido: classifier por cla
 
 Pra referência rápida de o que já entrou. Vá movendo pra cima quando entrar item novo.
 
+- ✅ **API pública para agentes** (era P3 "API key access"): REST API v1 (`/api/v1/detect-fallacies|fact-check|assess-neutrality|explain`) com API keys admin-issued (`/admin/api-keys`, header `X-Jiddu-Key`) + rate-limit por key; MCP server (remoto in-process em `/api/mcp` via mcp-remote, + pacote local `packages/jiddu-mcp`); evals (`evals/report.md`); `AGENT.md`; página `/api-access` (3 línguas).
+- ✅ De-hifenização de PDF no ingest — junta palavras quebradas por hífen no fim de linha ("self-\nreferent" → "selfreferent"); afeta os 4 pipelines.
+- ✅ Fix de upload de PDF em produção (Node 22): `@napi-rs/canvas` polyfilla DOMMatrix + worker do pdfjs no trace do standalone.
+- ✅ Deploy via `bash scripts/deploy.sh` (push + SSH), substituindo o GitHub Actions bloqueado; favicon Buda; sidebar de pipelines; footer centralizado com licença AGPL.
 - ✅ AGPL-3.0-or-later como licença + footer com link pro source + paper links no /legal.
 - ✅ Source-quality tiers + state-controlled flag (paper Goldfarb).
 - ✅ Neutrality dimension MVP — 8 padrões, sem direção partidária.
