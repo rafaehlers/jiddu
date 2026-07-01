@@ -40,10 +40,23 @@ export async function ingestPdf(buffer: ArrayBuffer, filename: string): Promise<
 }
 
 // Rejoin words split by a hyphen at a line break — common in justified PDF
-// text, where "self-\nreferent" is really the single word "selfreferent".
-// We only merge when the continuation is lowercase (the unambiguous
-// wrapped-word case); a capitalized continuation like "Anglo-\nSaxon" is left
-// alone so we don't fuse a hyphenated proper compound or a sentence boundary.
+// text. The tricky part is telling a wrapped single word ("suf-\nficiently"
+// → "sufficiently") from a genuine hyphenated compound that happens to wrap
+// at its hyphen ("self-\nreferent", which must stay "self-referent").
+//
+// Heuristic: intra-document consistency. First collect every compound that
+// appears hyphenated *inline* elsewhere in the text; if a line-break split
+// reconstructs one of those, it's a real compound — keep the hyphen.
+// Otherwise drop it. Capitalized continuations are left untouched (proper
+// compounds like "Anglo-\nSaxon", or a sentence boundary).
 function dehyphenate(text: string): string {
-  return text.replace(/([A-Za-zÀ-ÿ])-[ \t]*\n[ \t]*([a-zà-ÿ])/g, "$1$2");
+  const inlineCompounds = new Set<string>();
+  for (const m of text.matchAll(/([A-Za-zÀ-ÿ]+)-([A-Za-zÀ-ÿ]+)/g)) {
+    inlineCompounds.add(`${m[1]}-${m[2]}`.toLowerCase());
+  }
+  return text.replace(
+    /([A-Za-zÀ-ÿ]+)-[ \t]*\n[ \t]*([a-zà-ÿ]+)/g,
+    (_full, a: string, b: string) =>
+      inlineCompounds.has(`${a}-${b}`.toLowerCase()) ? `${a}-${b}` : `${a}${b}`,
+  );
 }
