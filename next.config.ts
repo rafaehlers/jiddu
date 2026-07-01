@@ -16,12 +16,15 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     // The /benchmark route reads docs/benchmark-politifact*.md (one per locale).
     "/benchmark": ["./docs/benchmark-politifact*.md"],
-    // pdfjs-dist require()s @napi-rs/canvas dynamically (a bare string the
-    // tracer can't follow), so force its package + platform binary into the
+    // pdfjs-dist loads two things via paths the tracer can't follow: a
+    // dynamic require of @napi-rs/canvas (a bare string), and its worker
+    // (pdf.worker.mjs) as a fake worker in Node. Force both — the canvas
+    // package + platform binary and the whole legacy build dir — into the
     // trace for every PDF-ingesting API route.
     "/api/**": [
       "./node_modules/@napi-rs/canvas/**/*",
       "./node_modules/@napi-rs/canvas-*/**/*",
+      "./node_modules/pdfjs-dist/legacy/build/**/*",
     ],
   },
 };
