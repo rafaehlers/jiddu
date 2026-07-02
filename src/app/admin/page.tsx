@@ -69,7 +69,7 @@ function LoginForm({ error }: { error?: string }) {
 }
 
 type AdminRow = {
-  kind: "fallacy" | "factcheck" | "neutrality";
+  kind: "fallacy" | "factcheck" | "neutrality" | "explain";
   id: string;
   title: string | null;
   source: string;
@@ -83,9 +83,9 @@ type AdminRow = {
 };
 
 async function AdminList() {
-  // Pull all three row types in parallel, normalize to a common shape, then
+  // Pull all four row types in parallel, normalize to a common shape, then
   // merge by createdAt desc so the admin sees one unified table.
-  const [analyses, factchecks, neutralities] = await Promise.all([
+  const [analyses, factchecks, neutralities, explanations] = await Promise.all([
     prisma.analysis.findMany({
       orderBy: { createdAt: "desc" },
       select: {
@@ -127,6 +127,22 @@ async function AdminList() {
         model: true,
         findings: true,
         verdict: true,
+        status: true,
+        createdAt: true,
+        reviewedAt: true,
+      },
+    }),
+    prisma.explanation.findMany({
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        title: true,
+        source: true,
+        sourceRef: true,
+        language: true,
+        model: true,
+        findings: true,
+        level: true,
         status: true,
         createdAt: true,
         reviewedAt: true,
@@ -199,6 +215,29 @@ async function AdminList() {
         reviewedAt: n.reviewedAt,
       };
     }),
+    ...explanations.map<AdminRow>((e) => {
+      let findingsCount = 0;
+      try {
+        const parsed = JSON.parse(e.findings);
+        if (Array.isArray(parsed)) findingsCount = parsed.length;
+      } catch {
+        // ignore
+      }
+      return {
+        kind: "explain" as const,
+        id: e.id,
+        title: e.title,
+        source: e.source,
+        sourceRef: e.sourceRef,
+        language: e.language,
+        model: e.model,
+        status: e.status,
+        // Paragraph count + the reading level chosen for the explanation.
+        signal: `${findingsCount} · ${e.level}`,
+        createdAt: e.createdAt,
+        reviewedAt: e.reviewedAt,
+      };
+    }),
   ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
   return (
@@ -254,7 +293,7 @@ async function AdminList() {
       </div>
 
       {/* Compact dashboard row — credits + counts per analysis kind. */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
         <CreditsStat credits={credits} />
         <Stat label="Total" value={rows.length} />
         <Stat label="Fallacies" value={analyses.length} accent="amber" />
@@ -264,6 +303,7 @@ async function AdminList() {
           value={neutralities.length}
           accent="purple"
         />
+        <Stat label="Explain" value={explanations.length} accent="teal" />
       </div>
 
       <div className="overflow-x-auto border border-rule rounded-lg">
@@ -299,7 +339,9 @@ async function AdminList() {
                   ? `/a/${r.id}`
                   : r.kind === "factcheck"
                     ? `/f/${r.id}`
-                    : `/n/${r.id}`;
+                    : r.kind === "neutrality"
+                      ? `/n/${r.id}`
+                      : `/e/${r.id}`;
               return (
                 <tr key={`${r.kind}:${r.id}`} className="border-t border-rule hover:bg-paper/50">
                   <td className="px-3 py-2 whitespace-nowrap text-muted">
@@ -366,7 +408,7 @@ function Stat({
 }: {
   label: string;
   value: string | number;
-  accent?: "amber" | "blue" | "red" | "purple";
+  accent?: "amber" | "blue" | "red" | "purple" | "teal";
   hint?: string;
 }) {
   const accentCls =
@@ -378,7 +420,9 @@ function Stat({
           ? "text-[var(--severity-high)]"
           : accent === "purple"
             ? "text-purple-500"
-            : "";
+            : accent === "teal"
+              ? "text-teal-500"
+              : "";
   return (
     <div className="bg-paper border border-rule rounded-lg p-3 flex flex-col gap-0.5">
       <p className="text-xs text-muted uppercase tracking-wide">{label}</p>
@@ -440,19 +484,19 @@ function CreditsStat({
   );
 }
 
-function TypeBadge({ kind }: { kind: "fallacy" | "factcheck" | "neutrality" }) {
-  const cls =
-    kind === "fallacy"
-      ? "bg-amber-500/15 text-amber-500"
-      : kind === "factcheck"
-        ? "bg-blue-500/15 text-blue-500"
-        : "bg-purple-500/15 text-purple-500";
-  const label =
-    kind === "fallacy"
-      ? "Fallacy"
-      : kind === "factcheck"
-        ? "Fact-check"
-        : "Neutrality";
+function TypeBadge({ kind }: { kind: AdminRow["kind"] }) {
+  const cls = {
+    fallacy: "bg-amber-500/15 text-amber-500",
+    factcheck: "bg-blue-500/15 text-blue-500",
+    neutrality: "bg-purple-500/15 text-purple-500",
+    explain: "bg-teal-500/15 text-teal-500",
+  }[kind];
+  const label = {
+    fallacy: "Fallacy",
+    factcheck: "Fact-check",
+    neutrality: "Neutrality",
+    explain: "Explain",
+  }[kind];
   return (
     <span className={`inline-block text-xs px-2 py-0.5 rounded-full ${cls}`}>
       {label}
