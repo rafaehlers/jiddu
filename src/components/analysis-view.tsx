@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { FALLACY_BY_ID } from "@/lib/fallacies";
 import type { Finding, Sentence } from "@/lib/schema";
 import { cn } from "@/lib/utils";
+import { onActivate } from "@/lib/a11y";
 import { useI18n } from "@/lib/i18n/provider";
 import { FallacyModal } from "@/components/fallacy-modal";
 import { FindingModal } from "@/components/finding-modal";
@@ -212,14 +213,21 @@ export function AnalysisView({
             }
             const isActive = fs.some((f) => f.key === active);
             const color = FALLACY_BY_ID[fs[0].fallacy]?.color ?? "currentColor";
+            const names = fs
+              .map((f) => FALLACY_BY_ID[f.fallacy]?.name[lang] ?? f.fallacy)
+              .join(", ");
             return (
               <mark
                 key={s.id}
                 data-sid={s.id}
                 data-active={isActive ? "true" : undefined}
                 className="fallacy"
+                role="button"
+                tabIndex={0}
+                aria-label={`${t.a11y_show_fallacy}: ${names}`}
                 onClick={() => focusSentence(s.id)}
-                title={fs.map((f) => FALLACY_BY_ID[f.fallacy]?.name[lang] ?? f.fallacy).join(", ")}
+                onKeyDown={onActivate(() => focusSentence(s.id))}
+                title={names}
                 style={
                   {
                     "--fallacy-color": color,

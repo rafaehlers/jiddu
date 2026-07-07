@@ -23,6 +23,7 @@ import type {
   TextType,
 } from "@/lib/neutrality-schema";
 import { cn } from "@/lib/utils";
+import { onActivate } from "@/lib/a11y";
 import { ShareLinkBar } from "@/components/share-link-bar";
 import { ExportPdfButton } from "@/components/export-pdf-button";
 import { useI18n } from "@/lib/i18n/provider";
@@ -285,12 +286,16 @@ export function NeutralityView({
                     id={`s-${s.id}`}
                     className="highlight"
                     data-active={isActive ? "true" : undefined}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={t.a11y_show_signal}
                     style={
                       {
                         "--highlight-color": color,
                       } as React.CSSProperties
                     }
                     onClick={() => scrollToFinding(firstIdx)}
+                    onKeyDown={onActivate(() => scrollToFinding(firstIdx))}
                   >
                     {s.text}
                     {sIdx < para.length - 1 && " "}

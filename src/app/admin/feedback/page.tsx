@@ -140,7 +140,7 @@ export default async function AdminFeedbackPage({
                       <input type="hidden" name="status" value="resolved" />
                       <button
                         type="submit"
-                        className="text-xs px-3 py-1.5 rounded-md bg-foreground text-background hover:opacity-90 transition-opacity"
+                        className="text-xs px-3 py-1.5 rounded-md bg-accent text-white hover:opacity-90 transition-opacity"
                       >
                         Mark resolved
                       </button>

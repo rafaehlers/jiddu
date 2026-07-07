@@ -180,7 +180,7 @@ export function UploadForm({
         </ModeButton>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div role="group" aria-label={t.tab_url} className="flex flex-wrap items-center gap-2">
         <TabButton active={tab === "url"} onClick={() => setTab("url")}>{t.tab_url}</TabButton>
         <TabButton active={tab === "text"} onClick={() => setTab("text")}>{t.tab_paste}</TabButton>
         <TabButton active={tab === "file"} onClick={() => setTab("file")}>{t.tab_file}</TabButton>
@@ -204,6 +204,7 @@ export function UploadForm({
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           placeholder={t.url_placeholder}
+          aria-label={t.tab_url}
           className="w-full bg-background border border-rule rounded-md px-3 py-2 outline-none focus:border-accent"
         />
       )}
@@ -215,6 +216,7 @@ export function UploadForm({
           onChange={(e) => setText(e.target.value)}
           rows={10}
           placeholder={t.paste_placeholder}
+          aria-label={t.tab_paste}
           className="w-full bg-background border border-rule rounded-md px-3 py-2 outline-none focus:border-accent font-serif text-base leading-relaxed"
         />
       )}
@@ -245,12 +247,13 @@ export function UploadForm({
           <span className="text-xs uppercase tracking-wide text-muted">
             {t.explain_level}
           </span>
-          <div className="flex items-center gap-2 flex-wrap">
+          <div role="group" aria-label={t.explain_level} className="flex items-center gap-2 flex-wrap">
             {EXPLAIN_LEVELS.map((lvl) => (
               <button
                 key={lvl}
                 type="button"
                 onClick={() => setLevel(lvl)}
+                aria-pressed={level === lvl}
                 className={cn(
                   "px-3 py-1.5 rounded-md text-sm border transition-colors",
                   level === lvl
@@ -273,12 +276,13 @@ export function UploadForm({
         <span className="text-xs uppercase tracking-wide text-muted">
           {t.model}
         </span>
-        <div className="flex items-center gap-2 flex-wrap">
+        <div role="group" aria-label={t.model} className="flex items-center gap-2 flex-wrap">
           {MODEL_CATALOG.map((m) => (
             <button
               key={m.id}
               type="button"
               onClick={() => setModel(m.id)}
+              aria-pressed={model === m.id}
               className={cn(
                 "px-3 py-1.5 rounded-md text-sm border transition-colors inline-flex items-center gap-2",
                 model === m.id
@@ -298,7 +302,7 @@ export function UploadForm({
         <button
           type="submit"
           className={cn(
-            "px-5 py-2 rounded-md bg-foreground text-background font-medium",
+            "px-5 py-2 rounded-md bg-accent text-white font-medium",
             "hover:opacity-90 transition-opacity",
           )}
         >
@@ -344,7 +348,7 @@ function ErrorBox({
           <button
             type="button"
             onClick={onSwitchToPaste}
-            className="inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-md bg-foreground text-background hover:opacity-90 transition-opacity"
+            className="inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-md bg-accent text-white hover:opacity-90 transition-opacity"
           >
             {t.switch_to_paste}
             <ArrowRight className="h-4 w-4" />
@@ -396,6 +400,7 @@ function ModeButton({
   return (
     <Link
       href={href}
+      aria-current={active ? "page" : undefined}
       className={cn(
         "px-3 py-1.5 rounded text-sm font-medium transition-colors",
         active
@@ -421,6 +426,7 @@ function TabButton({
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={active}
       className={cn(
         "px-3 py-1.5 rounded-md text-sm border transition-colors",
         active

@@ -23,6 +23,7 @@ export type Messages = {
 
   // Footer
   footer_quote: string;
+  footer_balance: (amount: string) => string;
 
   // Form
   tab_url: string;
@@ -197,6 +198,12 @@ export type Messages = {
   ingest_too_short_title: string;
   switch_to_paste: string;
 
+  // Accessibility — labels for the keyboard-operable in-text highlights
+  a11y_show_fallacy: string;
+  a11y_show_claim: string;
+  a11y_show_signal: string;
+  a11y_show_explanation: string;
+
   // Viewer chrome
   new_analysis: string;
   share: string;
@@ -357,6 +364,7 @@ const en: Messages = {
   quality_card_link: "Full methodology and confusion matrix",
 
   footer_quote: "“The moment you follow someone, you cease to follow truth.”",
+  footer_balance: (amount) => `${amount} left in API credits`,
 
   tab_url: "URL",
   tab_paste: "Paste text",
@@ -842,6 +850,11 @@ const en: Messages = {
   ingest_too_short_title: "Text is too short",
   switch_to_paste: "Paste text instead",
 
+  a11y_show_fallacy: "Show fallacy comment",
+  a11y_show_claim: "Show claim verification",
+  a11y_show_signal: "Show bias signal detail",
+  a11y_show_explanation: "Show paragraph explanation",
+
   new_analysis: "New analysis",
   share: "Share",
   copied: "Copied",
@@ -948,6 +961,7 @@ const pt: Messages = {
 
   footer_quote:
     "“No momento em que você segue alguém, deixa de seguir a verdade.”",
+  footer_balance: (amount) => `${amount} restantes em créditos de API`,
 
   tab_url: "URL",
   tab_paste: "Colar texto",
@@ -1434,6 +1448,11 @@ const pt: Messages = {
   ingest_too_short_title: "Texto curto demais",
   switch_to_paste: "Colar texto",
 
+  a11y_show_fallacy: "Ver comentário da falácia",
+  a11y_show_claim: "Ver verificação da alegação",
+  a11y_show_signal: "Ver detalhe do sinal de viés",
+  a11y_show_explanation: "Ver explicação do parágrafo",
+
   new_analysis: "Nova análise",
   share: "Compartilhar",
   copied: "Copiado",
@@ -1540,6 +1559,7 @@ const es: Messages = {
 
   footer_quote:
     "“En el momento en que sigues a alguien, dejas de seguir la verdad.”",
+  footer_balance: (amount) => `${amount} restantes en créditos de API`,
 
   tab_url: "URL",
   tab_paste: "Pegar texto",
@@ -2025,6 +2045,11 @@ const es: Messages = {
   ingest_invalid_url_title: "URL inválida",
   ingest_too_short_title: "Texto demasiado corto",
   switch_to_paste: "Pegar texto",
+
+  a11y_show_fallacy: "Ver comentario de la falacia",
+  a11y_show_claim: "Ver verificación de la afirmación",
+  a11y_show_signal: "Ver detalle de la señal de sesgo",
+  a11y_show_explanation: "Ver explicación del párrafo",
 
   new_analysis: "Nuevo análisis",
   share: "Compartir",

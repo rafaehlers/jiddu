@@ -164,7 +164,7 @@ export function FactCheckComposer() {
                 <p className="text-sm text-foreground/80 leading-relaxed">
                   {t.quality_card_body}
                 </p>
-                <span className="text-sm underline decoration-rule group-hover:decoration-foreground transition-colors self-start mt-0.5">
+                <span className="text-sm text-link transition-colors self-start mt-0.5">
                   {t.quality_card_link} <span aria-hidden>→</span>
                 </span>
               </div>
@@ -189,7 +189,7 @@ export function FactCheckComposer() {
           <button
             type="button"
             onClick={() => setLive(null)}
-            className="px-4 py-2 rounded-md bg-foreground text-background"
+            className="px-4 py-2 rounded-md bg-accent text-white"
           >
             {t.try_again}
           </button>

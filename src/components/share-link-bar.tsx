@@ -90,7 +90,7 @@ export function ShareLinkBar({
         className={cn(
           "pointer-events-none absolute left-1/2 -translate-x-1/2 -top-3",
           "flex items-center gap-2 px-3 py-1.5 rounded-full",
-          "bg-foreground text-background text-xs font-medium shadow-lg",
+          "bg-accent text-white text-xs font-medium shadow-lg",
           "transition-all duration-300",
           copied
             ? "opacity-100 -translate-y-full"

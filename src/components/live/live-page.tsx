@@ -84,7 +84,7 @@ export function LivePage() {
           <button
             type="button"
             onClick={handleStart}
-            className="inline-flex items-center gap-2 rounded-md bg-foreground text-background px-4 py-2 text-sm font-medium hover:opacity-90"
+            className="inline-flex items-center gap-2 rounded-md bg-accent text-white px-4 py-2 text-sm font-medium hover:opacity-90"
           >
             {hasConcludedSession ? (
               <>

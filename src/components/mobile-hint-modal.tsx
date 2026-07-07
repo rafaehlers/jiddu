@@ -47,7 +47,7 @@ export function MobileHintModal({ open, onClose }: Props) {
         <button
           type="button"
           onClick={onClose}
-          className="mt-2 px-5 py-2 rounded-md bg-foreground text-background font-medium hover:opacity-90 transition-opacity"
+          className="mt-2 px-5 py-2 rounded-md bg-accent text-white font-medium hover:opacity-90 transition-opacity"
         >
           {t.mobile_hint_dismiss}
         </button>

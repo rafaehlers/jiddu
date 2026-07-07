@@ -52,6 +52,7 @@ function LoginForm({ error }: { error?: string }) {
           autoFocus
           autoComplete="current-password"
           placeholder="Password"
+          aria-label="Password"
           className="w-full bg-background border border-rule rounded-md px-3 py-2 outline-none focus:border-accent"
         />
         {message && (
@@ -59,7 +60,7 @@ function LoginForm({ error }: { error?: string }) {
         )}
         <button
           type="submit"
-          className="px-4 py-2 rounded-md bg-foreground text-background font-medium hover:opacity-90 transition-opacity"
+          className="px-4 py-2 rounded-md bg-accent text-white font-medium hover:opacity-90 transition-opacity"
         >
           Unlock
         </button>

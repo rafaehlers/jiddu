@@ -33,7 +33,7 @@ export function SiteHeader({ variant = "home", rightSlot }: Props) {
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <Link
             href="/fallacies"
-            className="text-sm text-muted hover:text-foreground transition-colors hidden md:inline"
+            className="text-sm text-link hover:opacity-80 transition-opacity hidden md:inline"
           >
             {t.nav_fallacies}
           </Link>
@@ -42,7 +42,7 @@ export function SiteHeader({ variant = "home", rightSlot }: Props) {
           </span>
           <Link
             href="/how-it-works"
-            className="text-sm text-muted hover:text-foreground transition-colors hidden md:inline"
+            className="text-sm text-link hover:opacity-80 transition-opacity hidden md:inline"
           >
             {t.nav_how_it_works}
           </Link>
@@ -51,7 +51,7 @@ export function SiteHeader({ variant = "home", rightSlot }: Props) {
           </span>
           <Link
             href="/api-access"
-            className="text-sm text-muted hover:text-foreground transition-colors hidden md:inline"
+            className="text-sm text-link hover:opacity-80 transition-opacity hidden md:inline"
           >
             {t.nav_api}
           </Link>

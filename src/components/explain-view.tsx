@@ -14,6 +14,7 @@ import {
 import type { Block } from "@/lib/paragraphs";
 import type { ExplainFinding, ExplainLevel, SectionRole } from "@/lib/explain-schema";
 import { cn } from "@/lib/utils";
+import { onActivate } from "@/lib/a11y";
 import { ShareLinkBar } from "@/components/share-link-bar";
 import { ExportPdfButton } from "@/components/export-pdf-button";
 import { useI18n } from "@/lib/i18n/provider";
@@ -299,8 +300,12 @@ export function ExplainView({
                   <mark
                     className="highlight"
                     data-active={isActive ? "true" : undefined}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={t.a11y_show_explanation}
                     style={{ "--highlight-color": color } as React.CSSProperties}
                     onClick={() => focusCard(hit.cardIdx)}
+                    onKeyDown={onActivate(() => focusCard(hit.cardIdx))}
                   >
                     {b.text}
                   </mark>

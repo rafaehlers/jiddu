@@ -86,7 +86,7 @@ const MD_COMPONENTS: ComponentProps<typeof ReactMarkdown>["components"] = {
         {...props}
         target={isExternal ? "_blank" : undefined}
         rel={isExternal ? "noopener noreferrer" : undefined}
-        className="underline decoration-rule hover:decoration-foreground transition-colors"
+        className="text-link transition-colors"
       />
     );
   },

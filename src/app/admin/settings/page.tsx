@@ -151,7 +151,7 @@ export default async function AdminSettingsPage({
           <div className="flex items-center gap-3">
             <button
               type="submit"
-              className="px-4 py-2 rounded-md bg-foreground text-background font-medium hover:opacity-90 transition-opacity"
+              className="px-4 py-2 rounded-md bg-accent text-white font-medium hover:opacity-90 transition-opacity"
             >
               Save changes
             </button>

@@ -10,7 +10,14 @@
      content stops feeling washed out on the warm-black background. */
   --muted: rgb(178, 170, 153);
   --rule: rgb(44, 42, 37);
-  --accent: rgb(215, 106, 68);
+  /* Deep indigo is the site's action color — button fills, focus rings.
+     Text (white) sits on top of it, so it stays the same rich tone in both
+     themes. */
+  --accent: rgb(67, 56, 202);
+  /* Link text needs contrast *against* the background, so it's a lighter
+     indigo on the warm-black dark bg (and a deep one on the cream light bg,
+     set in .light below). */
+  --link: rgb(140, 150, 252);
   --severity-low: rgb(228, 178, 102);
   --severity-high: rgb(232, 102, 78);
 }
@@ -23,6 +30,7 @@
   --color-muted: var(--muted);
   --color-rule: var(--rule);
   --color-accent: var(--accent);
+  --color-link: var(--link);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-serif: var(--font-serif), Georgia, "Times New Roman", serif;
@@ -35,7 +43,9 @@
   --ink: rgb(42, 39, 34);
   --muted: rgb(107, 102, 93);
   --rule: rgb(229, 223, 209);
-  --accent: rgb(180, 71, 31);
+  --accent: rgb(67, 56, 202);
+  /* On the cream light bg a deep indigo reads best for link text. */
+  --link: rgb(67, 56, 202);
   --severity-low: rgb(214, 167, 96);
   --severity-high: rgb(220, 80, 56);
 }
@@ -82,6 +92,24 @@ body {
 
 .text-balance {
   text-wrap: balance;
+}
+
+/* Visible keyboard focus. Only for :focus-visible so a mouse click on a
+   button doesn't leave a ring, but Tab navigation always shows one. Uses
+   the indigo accent with an offset so it reads on both the warm-black and
+   cream backgrounds. Applies to every natively-focusable control plus the
+   role="button" in-text highlights (mark.fallacy / mark.highlight). */
+:where(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+/* Inline <mark> highlights wrap across lines; a tight offset keeps the ring
+   hugging the text rather than ballooning around the line box. */
+mark.fallacy:focus-visible,
+mark.highlight:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
 mark.fallacy {

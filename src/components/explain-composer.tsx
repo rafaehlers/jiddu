@@ -156,7 +156,7 @@ export function ExplainComposer() {
           <button
             type="button"
             onClick={() => setLive(null)}
-            className="px-4 py-2 rounded-md bg-foreground text-background"
+            className="px-4 py-2 rounded-md bg-accent text-white"
           >
             {t.try_again}
           </button>

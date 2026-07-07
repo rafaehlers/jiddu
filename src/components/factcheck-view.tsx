@@ -22,6 +22,7 @@ import type { Claim, ClaimType } from "@/lib/claims-schema";
 import type { Verdict, VerdictValue, SourceTier } from "@/lib/verdict-schema";
 import { readSse } from "@/lib/sse";
 import { cn } from "@/lib/utils";
+import { onActivate } from "@/lib/a11y";
 import { ShareLinkBar } from "@/components/share-link-bar";
 import { ExportPdfButton } from "@/components/export-pdf-button";
 import { useI18n } from "@/lib/i18n/provider";
@@ -368,7 +369,7 @@ export function FactCheckView({
             <button
               type="button"
               onClick={startVerify}
-              className="px-4 py-2 rounded-md bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+              className="px-4 py-2 rounded-md bg-accent text-white text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
             >
               {verifyStatus === "complete" || verifyStatus === "failed"
                 ? t.fc_reverify_button
@@ -416,12 +417,16 @@ export function FactCheckView({
                     id={`s-${s.id}`}
                     className="highlight"
                     data-active={isActive ? "true" : undefined}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={t.a11y_show_claim}
                     style={
                       {
                         "--highlight-color": color,
                       } as React.CSSProperties
                     }
                     onClick={() => scrollToClaim(firstClaim.id)}
+                    onKeyDown={onActivate(() => scrollToClaim(firstClaim.id))}
                   >
                     {s.text}
                     {sIdx < para.length - 1 && " "}
