@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -57,8 +57,63 @@ export function UploadForm({
   // Explanation audience level. Only sent (and only shown) in explain mode;
   // "undergrad" is the sensible default for an academic paper.
   const [level, setLevel] = useState<ExplainLevel>("undergrad");
+  // True while a file is being dragged over the form, for the drop highlight.
+  const [dragging, setDragging] = useState(false);
 
   const visibleError = error ?? localError;
+
+  // Stop the browser from navigating to (opening) a file dropped anywhere on
+  // the page. Without this, dragging a PDF onto the window replaces the tab
+  // with the raw PDF instead of doing nothing. The form's own onDrop still
+  // runs for drops that land on it.
+  useEffect(() => {
+    const prevent = (e: DragEvent) => {
+      if (e.dataTransfer?.types?.includes("Files")) e.preventDefault();
+    };
+    window.addEventListener("dragover", prevent);
+    window.addEventListener("drop", prevent);
+    return () => {
+      window.removeEventListener("dragover", prevent);
+      window.removeEventListener("drop", prevent);
+    };
+  }, []);
+
+  function acceptFile(f: File | undefined) {
+    if (!f) return;
+    const lower = f.name.toLowerCase();
+    const ok =
+      lower.endsWith(".pdf") ||
+      lower.endsWith(".txt") ||
+      f.type === "application/pdf" ||
+      f.type.startsWith("text/");
+    if (!ok) {
+      setLocalError({ message: "Unsupported file type. Use PDF or TXT." });
+      return;
+    }
+    setFile(f);
+    setTab("file");
+    setLocalError(null);
+    onClearError?.();
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setDragging(false);
+    acceptFile(e.dataTransfer.files?.[0]);
+  }
+
+  function handleDragOver(e: React.DragEvent) {
+    if (e.dataTransfer?.types?.includes("Files")) {
+      e.preventDefault();
+      if (!dragging) setDragging(true);
+    }
+  }
+
+  function handleDragLeave(e: React.DragEvent) {
+    // Only clear when the cursor leaves the form itself, not when it moves
+    // between the form's children (which also bubble a dragleave).
+    if (e.currentTarget === e.target) setDragging(false);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -99,7 +154,13 @@ export function UploadForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-4 sm:gap-5 bg-paper border border-rule rounded-lg p-4 sm:p-5 shadow-sm"
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      className={cn(
+        "flex flex-col gap-4 sm:gap-5 bg-paper border border-rule rounded-lg p-4 sm:p-5 shadow-sm transition-shadow",
+        dragging && "ring-2 ring-accent",
+      )}
     >
       {/* Top row: mode toggle (Detector / Fact-check) sits before the
           input-type tabs. Each pill is a Link, so the active state survives
