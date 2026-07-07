@@ -21,25 +21,38 @@ export function PipelineSidebar({ activeMode }: { activeMode: Mode }) {
         <h2 className="font-serif text-base">{t.pipelines_heading}</h2>
         <p className="text-xs text-muted">{t.pipelines_subheading}</p>
       </div>
-      {pipelines.map((p) => (
-        <div
-          key={p.key}
-          className={`flex flex-col gap-2 p-3 sm:p-4 border rounded-lg ${
-            p.key === activeMode
-              ? "bg-foreground/5 border-foreground/20"
-              : "bg-paper border-rule"
-          }`}
-        >
-          <h3 className="font-serif text-base font-medium">{p.name}</h3>
-          <p className="text-sm text-foreground/80 leading-relaxed flex-1">{p.desc}</p>
-          <Link
-            href={p.demo}
-            className="text-sm self-start underline decoration-rule hover:decoration-foreground transition-colors"
+      {pipelines.map((p) => {
+        const active = p.key === activeMode;
+        return (
+          <div
+            key={p.key}
+            className={`flex flex-col gap-2 p-3 sm:p-4 border rounded-lg ${
+              active ? "bg-indigo-700 border-indigo-700" : "bg-paper border-rule"
+            }`}
           >
-            {t.see_demo} <span aria-hidden>→</span>
-          </Link>
-        </div>
-      ))}
+            <h3 className={`font-serif text-base font-medium ${active ? "text-white" : ""}`}>
+              {p.name}
+            </h3>
+            <p
+              className={`text-sm leading-relaxed flex-1 ${
+                active ? "text-indigo-100" : "text-foreground/80"
+              }`}
+            >
+              {p.desc}
+            </p>
+            <Link
+              href={p.demo}
+              className={`text-sm self-start underline transition-colors ${
+                active
+                  ? "text-white decoration-indigo-300 hover:decoration-white"
+                  : "decoration-rule hover:decoration-foreground"
+              }`}
+            >
+              {t.see_demo} <span aria-hidden>→</span>
+            </Link>
+          </div>
+        );
+      })}
     </aside>
   );
 }

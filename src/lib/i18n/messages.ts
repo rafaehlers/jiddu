@@ -521,7 +521,7 @@ const en: Messages = {
   tt_social_media: "Social media",
 
   // Explain dimension (paper explainer)
-  mode_explain: "Explain",
+  mode_explain: "Paper Explainer",
   explain_hero_title: "Understand any paper, paragraph by paragraph.",
   explain_hero_subtitle:
     "Upload a paper or paste its text, pick a level, and Jiddu explains every paragraph in the margin — decoding the jargon and showing how each part fits the argument.",
@@ -1112,7 +1112,7 @@ const pt: Messages = {
   tt_social_media: "Redes sociais",
 
   // Explain dimension (paper explainer)
-  mode_explain: "Explicar",
+  mode_explain: "Explicador de Papers",
   explain_hero_title: "Entenda qualquer paper, parágrafo por parágrafo.",
   explain_hero_subtitle:
     "Suba um paper ou cole o texto, escolha um nível, e o Jiddu explica cada parágrafo na margem — traduzindo o jargão e mostrando como cada parte se encaixa no argumento.",
@@ -1704,7 +1704,7 @@ const es: Messages = {
   tt_social_media: "Redes sociales",
 
   // Explain dimension (paper explainer)
-  mode_explain: "Explicar",
+  mode_explain: "Explicador de Papers",
   explain_hero_title: "Entiende cualquier paper, párrafo por párrafo.",
   explain_hero_subtitle:
     "Sube un paper o pega el texto, elige un nivel, y Jiddu explica cada párrafo en el margen — descifrando la jerga y mostrando cómo cada parte encaja en el argumento.",
