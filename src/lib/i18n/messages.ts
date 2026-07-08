@@ -898,7 +898,7 @@ const en: Messages = {
   guide_credit_suffix: "— all descriptions and examples are Jiddu's own.",
 
   nav_fallacies: "Fallacy guide",
-  nav_source: "Source",
+  nav_source: "Source code",
 
   theme_to_dark: "Switch to dark mode",
   theme_to_light: "Switch to light mode",
@@ -1506,7 +1506,7 @@ const pt: Messages = {
   guide_credit_suffix: "— todas as descrições e exemplos são do próprio Jiddu.",
 
   nav_fallacies: "Guia de Falácias",
-  nav_source: "Código",
+  nav_source: "Código-fonte",
 
   theme_to_dark: "Mudar para tema escuro",
   theme_to_light: "Mudar para tema claro",
@@ -2114,7 +2114,7 @@ const es: Messages = {
   guide_credit_suffix: "— todas las descripciones y ejemplos son propios de Jiddu.",
 
   nav_fallacies: "Guía de falacias",
-  nav_source: "Código",
+  nav_source: "Código fuente",
 
   theme_to_dark: "Cambiar a modo oscuro",
   theme_to_light: "Cambiar a modo claro",

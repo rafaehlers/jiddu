@@ -50,28 +50,38 @@ export function HowItWorksBody() {
   );
 }
 
-// Same minimal markdown-link renderer as LegalBody. Keep duplicated for
-// now — extracting to a shared util is overkill for two call sites.
+// Same minimal markdown renderer as LegalBody, plus **bold** — this content
+// uses bold to call out inline terms (e.g. "**URL.**", "**disambiguation**")
+// which LegalBody's copy never does. Keep duplicated for now — extracting to
+// a shared util is overkill for two call sites.
 function renderInline(text: string): React.ReactNode {
   const parts: React.ReactNode[] = [];
-  const regex = /\[([^\]]+)\]\((https?:\/\/[^)]+|\/[^)]+)\)/g;
+  const regex = /\[([^\]]+)\]\((https?:\/\/[^)]+|\/[^)]+)\)|\*\*([^*]+)\*\*/g;
   let cursor = 0;
   let m: RegExpExecArray | null;
   let keyCounter = 0;
   while ((m = regex.exec(text)) !== null) {
     if (m.index > cursor) parts.push(text.slice(cursor, m.index));
-    const isExternal = m[2].startsWith("http");
-    parts.push(
-      <a
-        key={`l-${keyCounter++}`}
-        href={m[2]}
-        target={isExternal ? "_blank" : undefined}
-        rel={isExternal ? "noopener noreferrer" : undefined}
-        className="underline decoration-rule hover:decoration-foreground transition-colors"
-      >
-        {m[1]}
-      </a>,
-    );
+    if (m[3] !== undefined) {
+      parts.push(
+        <strong key={`b-${keyCounter++}`} className="font-medium text-foreground">
+          {m[3]}
+        </strong>,
+      );
+    } else {
+      const isExternal = m[2].startsWith("http");
+      parts.push(
+        <a
+          key={`l-${keyCounter++}`}
+          href={m[2]}
+          target={isExternal ? "_blank" : undefined}
+          rel={isExternal ? "noopener noreferrer" : undefined}
+          className="underline decoration-rule hover:decoration-foreground transition-colors"
+        >
+          {m[1]}
+        </a>,
+      );
+    }
     cursor = m.index + m[0].length;
   }
   if (cursor < text.length) parts.push(text.slice(cursor));
