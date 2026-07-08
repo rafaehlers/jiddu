@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { ExplainComposer } from "@/components/explain-composer";
+import { HomeComposer } from "@/components/home-composer";
 
 export const metadata: Metadata = {
   title: "Jiddu — explain a paper",
@@ -14,7 +14,7 @@ export default function ExplainPage() {
     <>
       <SiteHeader variant="home" />
       <main className="flex-1 flex flex-col">
-        <ExplainComposer />
+        <HomeComposer initialMode="explain" />
       </main>
       <SiteFooter />
     </>

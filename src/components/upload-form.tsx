@@ -38,6 +38,11 @@ type Props = {
    * fallacy detector mode).
    */
   mode?: Mode;
+  /**
+   * Hide the top-row mode tabs. Used by the unified home, where the mode
+   * is picked via the lens cards above the form instead.
+   */
+  showModeTabs?: boolean;
 };
 
 export function UploadForm({
@@ -46,9 +51,12 @@ export function UploadForm({
   onClearError,
   submitLabel,
   mode = "detector",
+  showModeTabs = true,
 }: Props) {
   const { t, lang } = useI18n();
-  const [tab, setTab] = useState<Tab>("url");
+  // File is the default input — it front-loads the drag-and-drop affordance,
+  // which is the richest way in (PDF/TXT), with URL and paste one click away.
+  const [tab, setTab] = useState<Tab>("file");
   const [url, setUrl] = useState("");
   const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -165,26 +173,29 @@ export function UploadForm({
       {/* Top row: mode tabs (Detector / Fact-check / …) sit before the
           input-type tabs. Underline-tab style — each is a Link, so the active
           state survives page navigation. The container's bottom rule is the
-          baseline the active tab's underline sits on (via -mb-px). */}
-      <div className="flex items-center gap-x-5 sm:gap-x-6 border-b border-rule flex-wrap">
-        <ModeButton href="/" active={mode === "detector"}>
-          {t.mode_detector}
-        </ModeButton>
-        <ModeButton href="/factcheck" active={mode === "factcheck"}>
-          {t.mode_factcheck}
-        </ModeButton>
-        <ModeButton href="/neutrality" active={mode === "neutrality"}>
-          {t.mode_neutrality}
-        </ModeButton>
-        <ModeButton href="/explain" active={mode === "explain"}>
-          {t.mode_explain}
-        </ModeButton>
-      </div>
+          baseline the active tab's underline sits on (via -mb-px). Hidden on
+          the unified home, where the lens cards play this role. */}
+      {showModeTabs && (
+        <div className="flex items-center gap-x-5 sm:gap-x-6 border-b border-rule flex-wrap">
+          <ModeButton href="/" active={mode === "detector"}>
+            {t.mode_detector}
+          </ModeButton>
+          <ModeButton href="/factcheck" active={mode === "factcheck"}>
+            {t.mode_factcheck}
+          </ModeButton>
+          <ModeButton href="/neutrality" active={mode === "neutrality"}>
+            {t.mode_neutrality}
+          </ModeButton>
+          <ModeButton href="/explain" active={mode === "explain"}>
+            {t.mode_explain}
+          </ModeButton>
+        </div>
+      )}
 
-      <div role="group" aria-label={t.tab_url} className="flex flex-wrap items-center gap-x-5 sm:gap-x-6 border-b border-rule">
+      <div role="group" aria-label={t.tab_file} className="flex flex-wrap items-center gap-x-5 sm:gap-x-6 border-b border-rule">
+        <TabButton active={tab === "file"} onClick={() => setTab("file")}>{t.tab_file}</TabButton>
         <TabButton active={tab === "url"} onClick={() => setTab("url")}>{t.tab_url}</TabButton>
         <TabButton active={tab === "text"} onClick={() => setTab("text")}>{t.tab_paste}</TabButton>
-        <TabButton active={tab === "file"} onClick={() => setTab("file")}>{t.tab_file}</TabButton>
         {mode === "detector" && (
           <Link
             href="/live"

@@ -9,7 +9,7 @@ export type FallacyDef = {
   example: Record<Lang, string>;
 };
 
-// 28 colors distributed via the golden angle (137.5°) on the hue wheel.
+// 46 colors distributed via the golden angle (137.5°) on the hue wheel.
 // This guarantees that any small subset of fallacies in a single document gets
 // maximally distinct colors — adjacent indices land on opposite sides of the
 // wheel rather than clustering in one hue family.
@@ -31,7 +31,7 @@ function hslToRgb(h: number, s: number, l: number): string {
   return `rgb(${to8(r)}, ${to8(g)}, ${to8(b)})`;
 }
 
-const COLORS = Array.from({ length: 28 }, (_, n) =>
+const COLORS = Array.from({ length: 46 }, (_, n) =>
   hslToRgb((n * 137.5) % 360, 0.65, 0.58),
 );
 
@@ -486,6 +486,316 @@ const FALLACIES_RAW: Omit<FallacyDef, "color">[] = [
       en: "“She runs marathons, so she'd make a great manager.”",
       pt: "“Ela corre maratonas, então será uma ótima gerente.”",
       es: "“Ella corre maratones, así que sería una gran gerente.”",
+    },
+  },
+  {
+    id: "whataboutism",
+    category: "relevance",
+    name: { en: "Whataboutism", pt: "Whataboutismo", es: "Whataboutismo" },
+    description: {
+      en: "Deflects an accusation by pointing at someone else's wrongdoing instead of addressing it.",
+      pt: "Desvia de uma acusação apontando os erros de outra pessoa em vez de respondê-la.",
+      es: "Desvía una acusación señalando las faltas de otro en lugar de responderla.",
+    },
+    example: {
+      en: "“Our party misused funds? What about the opposition's scandals?”",
+      pt: "“Nosso partido desviou verba? E os escândalos da oposição?”",
+      es: "“¿Nuestro partido malversó fondos? ¿Y los escándalos de la oposición?”",
+    },
+  },
+  {
+    id: "poisoning_the_well",
+    category: "relevance",
+    name: { en: "Poisoning the well", pt: "Envenenar o poço", es: "Envenenar el pozo" },
+    description: {
+      en: "Discredits a source in advance so that anything it says gets dismissed.",
+      pt: "Desacredita uma fonte de antemão para que tudo o que ela disser seja descartado.",
+      es: "Desacredita una fuente de antemano para que todo lo que diga sea descartado.",
+    },
+    example: {
+      en: "“Before my opponent speaks, remember he's a paid lobbyist.”",
+      pt: "“Antes de o meu oponente falar, lembrem que ele é um lobista pago.”",
+      es: "“Antes de que hable mi oponente, recuerden que es un lobista pagado.”",
+    },
+  },
+  {
+    id: "guilt_by_association",
+    category: "relevance",
+    name: {
+      en: "Guilt by association",
+      pt: "Culpa por associação",
+      es: "Culpa por asociación",
+    },
+    description: {
+      en: "Rejects a claim because of who else holds it or is linked to it.",
+      pt: "Rejeita uma afirmação por causa de quem mais a defende ou está ligado a ela.",
+      es: "Rechaza una afirmación por quién más la defiende o está vinculado a ella.",
+    },
+    example: {
+      en: "“That policy was also favored by dictators, so it must be wrong.”",
+      pt: "“Essa política também era defendida por ditadores, então deve estar errada.”",
+      es: "“Esa política también la defendían dictadores, así que debe estar mal.”",
+    },
+  },
+  {
+    id: "thought_terminating_cliche",
+    category: "relevance",
+    name: {
+      en: "Thought-terminating cliché",
+      pt: "Clichê que encerra o debate",
+      es: "Cliché que cierra el debate",
+    },
+    description: {
+      en: "Uses a stock phrase to shut down discussion instead of engaging with the argument.",
+      pt: "Usa uma frase pronta para encerrar a discussão em vez de enfrentar o argumento.",
+      es: "Usa una frase hecha para cerrar la discusión en lugar de abordar el argumento.",
+    },
+    example: {
+      en: "“It is what it is — no point discussing it.”",
+      pt: "“É o que é — não adianta discutir.”",
+      es: "“Es lo que hay — no tiene caso discutirlo.”",
+    },
+  },
+  {
+    id: "appeal_to_consequences",
+    category: "emotional",
+    name: {
+      en: "Appeal to consequences",
+      pt: "Apelo às consequências",
+      es: "Apelación a las consecuencias",
+    },
+    description: {
+      en: "Argues a claim is true or false based on whether its consequences are desirable.",
+      pt: "Argumenta que uma afirmação é verdadeira ou falsa conforme suas consequências sejam desejáveis.",
+      es: "Argumenta que una afirmación es verdadera o falsa según si sus consecuencias son deseables.",
+    },
+    example: {
+      en: "“Climate change can't be real — fixing it would wreck the economy.”",
+      pt: "“A mudança climática não pode ser real — resolvê-la arruinaria a economia.”",
+      es: "“El cambio climático no puede ser real — solucionarlo arruinaría la economía.”",
+    },
+  },
+  {
+    id: "appeal_to_pity",
+    category: "emotional",
+    name: { en: "Appeal to pity", pt: "Apelo à piedade", es: "Apelación a la lástima" },
+    description: {
+      en: "Substitutes compassion for evidence that the claim is true.",
+      pt: "Substitui a evidência por compaixão para sustentar a afirmação.",
+      es: "Sustituye la evidencia por compasión para sostener la afirmación.",
+    },
+    example: {
+      en: "“I deserve the promotion — I've been through so much this year.”",
+      pt: "“Mereço a promoção — passei por tanta coisa este ano.”",
+      es: "“Merezco el ascenso — he pasado por mucho este año.”",
+    },
+  },
+  {
+    id: "appeal_to_ridicule",
+    category: "emotional",
+    name: { en: "Appeal to ridicule", pt: "Apelo ao ridículo", es: "Apelación al ridículo" },
+    description: {
+      en: "Mocks a position instead of refuting it.",
+      pt: "Ridiculariza uma posição em vez de refutá-la.",
+      es: "Ridiculiza una posición en lugar de refutarla.",
+    },
+    example: {
+      en: "“Evolution? So your grandfather was a monkey — sure.”",
+      pt: "“Evolução? Então seu avô era um macaco — sei.”",
+      es: "“¿Evolución? Así que tu abuelo era un mono — claro.”",
+    },
+  },
+  {
+    id: "appeal_to_novelty",
+    category: "evidence",
+    name: { en: "Appeal to novelty", pt: "Apelo à novidade", es: "Apelación a la novedad" },
+    description: {
+      en: "Claims something is better simply because it is newer.",
+      pt: "Afirma que algo é melhor apenas por ser mais novo.",
+      es: "Afirma que algo es mejor solo por ser más nuevo.",
+    },
+    example: {
+      en: "“This framework just launched — it's obviously superior to the old stack.”",
+      pt: "“Esse framework acabou de sair — é obviamente superior ao antigo.”",
+      es: "“Este framework acaba de salir — es obviamente superior al anterior.”",
+    },
+  },
+  {
+    id: "sunk_cost",
+    category: "presumption",
+    name: { en: "Sunk cost fallacy", pt: "Custo afundado", es: "Costo hundido" },
+    description: {
+      en: "Argues to continue a course of action because of what was already invested in it.",
+      pt: "Defende continuar uma ação por causa do que já foi investido nela.",
+      es: "Defiende continuar una acción por lo que ya se invirtió en ella.",
+    },
+    example: {
+      en: "“We've spent two years on this project; we can't stop now.”",
+      pt: "“Já gastamos dois anos nesse projeto; não podemos parar agora.”",
+      es: "“Llevamos dos años en este proyecto; no podemos parar ahora.”",
+    },
+  },
+  {
+    id: "survivorship_bias",
+    category: "evidence",
+    name: {
+      en: "Survivorship bias",
+      pt: "Viés de sobrevivência",
+      es: "Sesgo de supervivencia",
+    },
+    description: {
+      en: "Draws conclusions only from the cases that made it through a selection, ignoring the failures.",
+      pt: "Tira conclusões apenas dos casos que passaram por uma seleção, ignorando os que falharam.",
+      es: "Saca conclusiones solo de los casos que superaron una selección, ignorando los fracasos.",
+    },
+    example: {
+      en: "“College dropouts like Jobs and Gates got rich — dropping out works.”",
+      pt: "“Jobs e Gates largaram a faculdade e ficaram ricos — largar funciona.”",
+      es: "“Jobs y Gates dejaron la universidad y se hicieron ricos — dejarla funciona.”",
+    },
+  },
+  {
+    id: "gamblers_fallacy",
+    category: "causal",
+    name: {
+      en: "Gambler's fallacy",
+      pt: "Falácia do apostador",
+      es: "Falacia del apostador",
+    },
+    description: {
+      en: "Expects independent random events to “balance out” past outcomes.",
+      pt: "Espera que eventos aleatórios independentes “compensem” resultados passados.",
+      es: "Espera que eventos aleatorios independientes “compensen” resultados pasados.",
+    },
+    example: {
+      en: "“Red has come up five times in a row — black is due next.”",
+      pt: "“Deu vermelho cinco vezes seguidas — agora tem que dar preto.”",
+      es: "“Salió rojo cinco veces seguidas — ya toca negro.”",
+    },
+  },
+  {
+    id: "base_rate",
+    category: "evidence",
+    name: {
+      en: "Base rate neglect",
+      pt: "Negligência da taxa-base",
+      es: "Falacia de la tasa base",
+    },
+    description: {
+      en: "Judges probability from a vivid detail while ignoring how rare the event is overall.",
+      pt: "Julga a probabilidade por um detalhe marcante e ignora a raridade geral do evento.",
+      es: "Juzga la probabilidad por un detalle llamativo e ignora la rareza general del evento.",
+    },
+    example: {
+      en: "“The test is 99% accurate and came back positive, so you almost certainly have it.” (for a one-in-a-million disease).",
+      pt: "“O teste é 99% preciso e deu positivo, então você quase certamente tem a doença.” (para uma doença de um em um milhão).",
+      es: "“La prueba es 99% precisa y dio positivo, así que casi seguro la tienes.” (para una enfermedad de uno en un millón).",
+    },
+  },
+  {
+    id: "composition",
+    category: "ambiguity",
+    name: {
+      en: "Fallacy of composition",
+      pt: "Falácia da composição",
+      es: "Falacia de composición",
+    },
+    description: {
+      en: "Assumes what is true of the parts must be true of the whole.",
+      pt: "Assume que o que vale para as partes vale para o todo.",
+      es: "Asume que lo que vale para las partes vale para el todo.",
+    },
+    example: {
+      en: "“Every player on the team is great, so the team must be great.”",
+      pt: "“Cada jogador do time é ótimo, então o time deve ser ótimo.”",
+      es: "“Cada jugador del equipo es excelente, así que el equipo debe serlo.”",
+    },
+  },
+  {
+    id: "division",
+    category: "ambiguity",
+    name: {
+      en: "Fallacy of division",
+      pt: "Falácia da divisão",
+      es: "Falacia de división",
+    },
+    description: {
+      en: "Assumes what is true of the whole must be true of each part.",
+      pt: "Assume que o que vale para o todo vale para cada parte.",
+      es: "Asume que lo que vale para el todo vale para cada parte.",
+    },
+    example: {
+      en: "“That company is innovative, so every employee there is innovative.”",
+      pt: "“A empresa é inovadora, então cada funcionário dela é inovador.”",
+      es: "“La empresa es innovadora, así que cada empleado lo es.”",
+    },
+  },
+  {
+    id: "moralistic_fallacy",
+    category: "presumption",
+    name: { en: "Moralistic fallacy", pt: "Falácia moralista", es: "Falacia moralista" },
+    description: {
+      en: "Concludes something cannot be true because it would be morally wrong.",
+      pt: "Conclui que algo não pode ser verdade porque seria moralmente errado.",
+      es: "Concluye que algo no puede ser cierto porque sería moralmente incorrecto.",
+    },
+    example: {
+      en: "“People can't be born with violent tendencies — that would be unjust.”",
+      pt: "“Ninguém pode nascer com tendências violentas — isso seria injusto.”",
+      es: "“Nadie puede nacer con tendencias violentas — sería injusto.”",
+    },
+  },
+  {
+    id: "scapegoating",
+    category: "causal",
+    name: { en: "Scapegoating", pt: "Bode expiatório", es: "Chivo expiatorio" },
+    description: {
+      en: "Blames a complex problem on a single person or group.",
+      pt: "Culpa uma única pessoa ou grupo por um problema complexo.",
+      es: "Culpa a una sola persona o grupo de un problema complejo.",
+    },
+    example: {
+      en: "“Housing is unaffordable because of immigrants.”",
+      pt: "“A moradia está cara por causa dos imigrantes.”",
+      es: "“La vivienda está cara por culpa de los inmigrantes.”",
+    },
+  },
+  {
+    id: "affirming_the_consequent",
+    category: "presumption",
+    name: {
+      en: "Affirming the consequent",
+      pt: "Afirmação do consequente",
+      es: "Afirmación del consecuente",
+    },
+    description: {
+      en: "From “if A then B” and “B”, wrongly concludes “A”.",
+      pt: "De “se A, então B” e “B”, conclui erradamente “A”.",
+      es: "De “si A, entonces B” y “B”, concluye erróneamente “A”.",
+    },
+    example: {
+      en: "“Great products sell well; this sold well, so it must be great.”",
+      pt: "“Produtos ótimos vendem bem; este vendeu bem, então deve ser ótimo.”",
+      es: "“Los buenos productos se venden bien; este se vendió bien, así que debe ser bueno.”",
+    },
+  },
+  {
+    id: "denying_the_antecedent",
+    category: "presumption",
+    name: {
+      en: "Denying the antecedent",
+      pt: "Negação do antecedente",
+      es: "Negación del antecedente",
+    },
+    description: {
+      en: "From “if A then B” and “not A”, wrongly concludes “not B”.",
+      pt: "De “se A, então B” e “não A”, conclui erradamente “não B”.",
+      es: "De “si A, entonces B” y “no A”, concluye erróneamente “no B”.",
+    },
+    example: {
+      en: "“If you study, you'll pass. You didn't study, so you'll fail.”",
+      pt: "“Se você estudar, vai passar. Você não estudou, então vai reprovar.”",
+      es: "“Si estudias, aprobarás. No estudiaste, así que reprobarás.”",
     },
   },
 ];

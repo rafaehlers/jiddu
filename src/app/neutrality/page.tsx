@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { NeutralityComposer } from "@/components/neutrality-composer";
+import { HomeComposer } from "@/components/home-composer";
 
 export const metadata: Metadata = {
   title: "Jiddu — neutrality assessment",
@@ -14,7 +14,7 @@ export default function NeutralityPage() {
     <>
       <SiteHeader variant="home" />
       <main className="flex-1 flex flex-col">
-        <NeutralityComposer />
+        <HomeComposer initialMode="neutrality" />
       </main>
       <SiteFooter />
     </>
