@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { SkeletonReveal } from "@/components/skeleton-reveal";
+import { AnalysisSkeleton } from "@/components/analysis-skeleton";
 import { ScrollIndicator } from "@/components/scroll-indicator";
 import { NeutralityView } from "@/components/neutrality-view";
 import type { Sentence } from "@/lib/schema";
@@ -50,21 +52,23 @@ export default async function NeutralityViewerPage({ params }: Props) {
     <main className="flex-1 flex flex-col">
       <SiteHeader variant="viewer" />
 
-      <NeutralityView
-        id={n.id}
-        title={n.title}
-        sourceRef={n.sourceRef}
-        source={n.source}
-        text={n.text}
-        sentences={sentences}
-        findings={findings}
-        verdict={n.verdict as NeutralityVerdictValue}
-        confidence={n.confidence}
-        rationale={n.rationale ?? ""}
-        textType={(n.textType ?? "informational") as TextType}
-        status={n.status}
-        model={n.model}
-      />
+      <SkeletonReveal skeleton={<AnalysisSkeleton />}>
+        <NeutralityView
+          id={n.id}
+          title={n.title}
+          sourceRef={n.sourceRef}
+          source={n.source}
+          text={n.text}
+          sentences={sentences}
+          findings={findings}
+          verdict={n.verdict as NeutralityVerdictValue}
+          confidence={n.confidence}
+          rationale={n.rationale ?? ""}
+          textType={(n.textType ?? "informational") as TextType}
+          status={n.status}
+          model={n.model}
+        />
+      </SkeletonReveal>
 
       <SiteFooter />
       <ScrollIndicator />

@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { SkeletonReveal } from "@/components/skeleton-reveal";
+import { AnalysisSkeleton } from "@/components/analysis-skeleton";
 import { ScrollIndicator } from "@/components/scroll-indicator";
 import { ExplainView } from "@/components/explain-view";
 import type { Block } from "@/lib/paragraphs";
@@ -48,18 +50,20 @@ export default async function ExplainViewerPage({ params }: Props) {
     <main className="flex-1 flex flex-col">
       <SiteHeader variant="viewer" />
 
-      <ExplainView
-        id={e.id}
-        title={e.title}
-        sourceRef={e.sourceRef}
-        source={e.source}
-        blocks={blocks}
-        findings={findings}
-        overview={e.overview ?? ""}
-        level={(e.level ?? "undergrad") as ExplainLevel}
-        status={e.status}
-        model={e.model}
-      />
+      <SkeletonReveal skeleton={<AnalysisSkeleton />}>
+        <ExplainView
+          id={e.id}
+          title={e.title}
+          sourceRef={e.sourceRef}
+          source={e.source}
+          blocks={blocks}
+          findings={findings}
+          overview={e.overview ?? ""}
+          level={(e.level ?? "undergrad") as ExplainLevel}
+          status={e.status}
+          model={e.model}
+        />
+      </SkeletonReveal>
 
       <SiteFooter />
       <ScrollIndicator />
