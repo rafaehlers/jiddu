@@ -86,6 +86,22 @@ export function FallaciesGuide() {
           </section>
         ))}
       </div>
+
+      {/* Courtesy credit: the fallacy selection was cross-checked against
+          The Fallacy Guide's index; all descriptions and examples above are
+          Jiddu's own (their content is unlicensed and can't be reproduced). */}
+      <p className="text-sm text-muted border-t border-rule pt-4">
+        {t.guide_credit_prefix}{" "}
+        <a
+          href="https://fallacyguide.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hover:text-accent-hi transition-colors"
+        >
+          The Fallacy Guide
+        </a>{" "}
+        {t.guide_credit_suffix}
+      </p>
     </article>
   );
 }

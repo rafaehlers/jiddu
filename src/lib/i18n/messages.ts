@@ -233,6 +233,10 @@ export type Messages = {
   guide_subtitle: string;
   guide_example: string;
   guide_back: string;
+  // Courtesy credit at the foot of the guide — the fallacy *selection* was
+  // informed by The Fallacy Guide; all text here is Jiddu's own.
+  guide_credit_prefix: string;
+  guide_credit_suffix: string;
 
   // Header nav
   nav_fallacies: string;
@@ -733,7 +737,7 @@ const en: Messages = {
     {
       title: "4. Fallacy detector",
       paragraphs: [
-        "Catalog of 28 fallacies covering relevance, ambiguity, presumption, emotional appeals, causal reasoning and evidence. Each fallacy has a stable id and a distinct color (golden-angle hue distribution) used to highlight passages. The full list is at [/fallacies](/fallacies).",
+        "Catalog of 46 fallacies covering relevance, ambiguity, presumption, emotional appeals, causal reasoning and evidence. Each fallacy has a stable id and a distinct color (golden-angle hue distribution) used to highlight passages. The full list is at [/fallacies](/fallacies).",
         "The system prompt instructs the model to be rigorous and conservative — flag only when there is a clear, defensible fallacy. Two specific rules tighten this: a **disambiguation** clause (don't flag a sentence with multiple plausible readings unless context resolves it) and a **standalone-explanation** clause (each explanation must name the implied premise and conclusion so a reader doesn't need to re-read the source). Both clauses are distilled from the Claimify paper (Microsoft Research 2025).",
         "Each finding has a binary severity (`low` / `high`). The overall fallacy score (0-100) is a weighted average across chunks, weighted by character count. The score range labels (`clean reasoning` / `minor issues` / `several fallacies` / `highly fallacious` / `propagandistic`) are spelled out in the prompt itself so the model has the same calibration the UI uses.",
       ],
@@ -884,6 +888,8 @@ const en: Messages = {
     "A short reference for the logical and rhetorical fallacies Jiddu can detect.",
   guide_example: "Example",
   guide_back: "Back to home",
+  guide_credit_prefix: "Fallacy selection informed by",
+  guide_credit_suffix: "— all descriptions and examples are Jiddu's own.",
 
   nav_fallacies: "Fallacy guide",
   nav_source: "Source",
@@ -1333,7 +1339,7 @@ const pt: Messages = {
     {
       title: "4. Detector de falácias",
       paragraphs: [
-        "Catálogo de 28 falácias cobrindo relevância, ambiguidade, presunção, apelos emocionais, raciocínio causal e evidência. Cada falácia tem id estável e uma cor distinta (distribuição por golden angle) usada pra destacar passagens. Lista completa em [/fallacies](/fallacies).",
+        "Catálogo de 46 falácias cobrindo relevância, ambiguidade, presunção, apelos emocionais, raciocínio causal e evidência. Cada falácia tem id estável e uma cor distinta (distribuição por golden angle) usada pra destacar passagens. Lista completa em [/fallacies](/fallacies).",
         "O system prompt instrui o modelo a ser rigoroso e conservador — só marcar quando há uma falácia clara e defensável. Duas cláusulas específicas apertam isso: **disambiguation** (não marcar sentença com múltiplas leituras plausíveis a menos que o contexto resolva) e **standalone-explanation** (cada explicação deve nomear a premissa implícita e a conclusão, pra leitor entender sem voltar à fonte). Ambas inspiradas no paper Claimify (Microsoft Research 2025).",
         "Cada achado tem severidade binária (`baixa` / `alta`). A nota geral (0-100) é uma média ponderada por chunks, ponderada por contagem de caracteres. As faixas (`raciocínio limpo` / `questões menores` / `várias falácias` / `altamente falacioso` / `propagandístico`) estão escritas no próprio prompt pra o modelo ter a mesma calibração que a UI mostra.",
       ],
@@ -1484,6 +1490,8 @@ const pt: Messages = {
     "Uma referência curta para as falácias lógicas e retóricas que o Jiddu detecta.",
   guide_example: "Exemplo",
   guide_back: "Voltar para o início",
+  guide_credit_prefix: "Seleção de falácias informada por",
+  guide_credit_suffix: "— todas as descrições e exemplos são do próprio Jiddu.",
 
   nav_fallacies: "Guia de Falácias",
   nav_source: "Código",
@@ -1933,7 +1941,7 @@ const es: Messages = {
     {
       title: "4. Detector de falacias",
       paragraphs: [
-        "Catálogo de 28 falacias cubriendo relevancia, ambigüedad, presunción, apelaciones emocionales, razonamiento causal y evidencia. Cada falacia tiene un id estable y un color distinto (distribución por golden angle) usado para resaltar pasajes. La lista completa está en [/fallacies](/fallacies).",
+        "Catálogo de 46 falacias cubriendo relevancia, ambigüedad, presunción, apelaciones emocionales, razonamiento causal y evidencia. Cada falacia tiene un id estable y un color distinto (distribución por golden angle) usado para resaltar pasajes. La lista completa está en [/fallacies](/fallacies).",
         "El system prompt instruye al modelo a ser riguroso y conservador — marcar solo cuando hay una falacia clara y defendible. Dos cláusulas específicas aprietan esto: una cláusula de **disambiguation** (no marcar una oración con múltiples lecturas plausibles a menos que el contexto la resuelva) y una cláusula de **standalone-explanation** (cada explicación debe nombrar la premisa implícita y la conclusión para que el lector no tenga que volver a la fuente). Ambas destiladas del paper Claimify (Microsoft Research 2025).",
         "Cada hallazgo tiene severidad binaria (`baja` / `alta`). La puntuación general de falacia (0-100) es un promedio ponderado entre chunks, ponderado por la cuenta de caracteres. Las etiquetas por rango (`razonamiento limpio` / `problemas menores` / `varias falacias` / `muy falaz` / `propagandístico`) están escritas en el propio prompt para que el modelo tenga la misma calibración que muestra la UI.",
       ],
@@ -2084,6 +2092,8 @@ const es: Messages = {
     "Una referencia breve para las falacias lógicas y retóricas que Jiddu puede detectar.",
   guide_example: "Ejemplo",
   guide_back: "Volver al inicio",
+  guide_credit_prefix: "Selección de falacias basada en",
+  guide_credit_suffix: "— todas las descripciones y ejemplos son propios de Jiddu.",
 
   nav_fallacies: "Guía de falacias",
   nav_source: "Código",
