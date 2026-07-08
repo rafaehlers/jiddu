@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { UploadForm } from "@/components/upload-form";
 import { ModeCards } from "@/components/mode-cards";
+import { AnalysisSkeleton } from "@/components/analysis-skeleton";
 import { readSse } from "@/lib/sse";
 import { useI18n } from "@/lib/i18n/provider";
 import type { Messages } from "@/lib/i18n/messages";
@@ -312,14 +313,21 @@ export function HomeComposer({ initialMode = "detector" }: { initialMode?: Mode 
     );
   }
 
+  // Streaming: instead of a bare loading panel, land the user on what looks
+  // like the result page already assembling — the skeleton of the viewer
+  // layout pulsing underneath, with the progress messages floating above it
+  // as a modal. When "done" fires we navigate; the result page mounts with
+  // the same skeleton and reveals the real content (SkeletonReveal), so the
+  // whole flow reads as one continuous materialization.
   return (
-    <section className="mx-auto max-w-3xl w-full px-6 py-16 flex flex-col gap-10">
-      <LoadingPanel state={live.data} mode={mode} />
-    </section>
+    <div className="relative flex-1 flex flex-col">
+      <AnalysisSkeleton />
+      <LoadingModal state={live.data} mode={mode} />
+    </div>
   );
 }
 
-function LoadingPanel({ state, mode }: { state: StreamingState; mode: Mode }) {
+function LoadingModal({ state, mode }: { state: StreamingState; mode: Mode }) {
   const { t } = useI18n();
   const cfg = MODE_CONFIG[mode];
   const { chunkCount, chunksDone, itemsCount, sourceType } = state;
@@ -346,22 +354,32 @@ function LoadingPanel({ state, mode }: { state: StreamingState; mode: Mode }) {
   const labels = cfg.countLabels?.(t);
 
   return (
+    // Non-dismissable progress dialog floating over the skeleton page. The
+    // scrim is a light tint + blur so the pulsing skeleton stays visible
+    // behind it — the page is the loading indicator; the modal just narrates.
     <div
-      role="status"
-      aria-live="polite"
-      className="flex flex-col items-center gap-5 sm:gap-6 bg-paper border border-rule rounded-lg px-6 py-8 sm:p-10 shadow-sm text-center"
+      role="dialog"
+      aria-modal="true"
+      aria-label={stage}
+      className="fixed inset-0 z-50 flex items-center justify-center px-6 bg-background/50 backdrop-blur-[2px]"
     >
-      <Loader2 className="h-6 w-6 sm:h-7 sm:w-7 animate-spin text-muted" />
+      <div
+        role="status"
+        aria-live="polite"
+        className="flex flex-col items-center gap-5 sm:gap-6 bg-paper border border-rule rounded-lg px-8 py-8 sm:px-12 sm:py-10 shadow-lg text-center max-w-md w-full"
+      >
+        <Loader2 className="h-6 w-6 sm:h-7 sm:w-7 animate-spin text-muted" />
 
-      <div className="flex flex-col gap-1 min-h-[3.5rem]">
-        <p className="font-serif text-xl sm:text-2xl transition-opacity duration-200">
-          {stage}…
-        </p>
-        <p className="text-sm text-muted">
-          {labels && itemsCount > 0
-            ? `${itemsCount} ${itemsCount === 1 ? labels[0] : labels[1]}`
-            : t.loading_hint}
-        </p>
+        <div className="flex flex-col gap-1 min-h-[3.5rem]">
+          <p className="font-serif text-xl sm:text-2xl transition-opacity duration-200">
+            {stage}…
+          </p>
+          <p className="text-sm text-muted">
+            {labels && itemsCount > 0
+              ? `${itemsCount} ${itemsCount === 1 ? labels[0] : labels[1]}`
+              : t.loading_hint}
+          </p>
+        </div>
       </div>
     </div>
   );

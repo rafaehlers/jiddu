@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { SkeletonReveal } from "@/components/skeleton-reveal";
+import { AnalysisSkeleton } from "@/components/analysis-skeleton";
 import { ScrollIndicator } from "@/components/scroll-indicator";
 import { FactCheckView } from "@/components/factcheck-view";
 import type { Sentence } from "@/lib/schema";
@@ -56,23 +58,25 @@ export default async function FactCheckPageView({ params }: Props) {
     <main className="flex-1 flex flex-col">
       <SiteHeader variant="viewer" />
 
-      <FactCheckView
-        id={f.id}
-        title={f.title}
-        sourceRef={f.sourceRef}
-        source={f.source}
-        text={f.text}
-        sentences={sentences}
-        claims={claims}
-        status={f.status}
-        provider={f.provider}
-        model={f.model}
-        initialVerdicts={verdicts}
-        initialVerifyStatus={f.verifyStatus}
-        verifyModel={f.verifyModel}
-        initialRefreshCounts={refreshCounts}
-        maxRefreshPerClaim={maxRefreshPerClaim}
-      />
+      <SkeletonReveal skeleton={<AnalysisSkeleton />}>
+        <FactCheckView
+          id={f.id}
+          title={f.title}
+          sourceRef={f.sourceRef}
+          source={f.source}
+          text={f.text}
+          sentences={sentences}
+          claims={claims}
+          status={f.status}
+          provider={f.provider}
+          model={f.model}
+          initialVerdicts={verdicts}
+          initialVerifyStatus={f.verifyStatus}
+          verifyModel={f.verifyModel}
+          initialRefreshCounts={refreshCounts}
+          maxRefreshPerClaim={maxRefreshPerClaim}
+        />
+      </SkeletonReveal>
 
       <SiteFooter />
       <ScrollIndicator />
