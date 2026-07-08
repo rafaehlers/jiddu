@@ -18,6 +18,11 @@
      tab). Deep indigo-700 is too dim to read on the warm-black bg, so on dark
      we use a brighter indigo-400; .light keeps the deep tone against cream. */
   --accent-hi: rgb(129, 140, 248);
+  /* Indigo used as a BORDER on selected surfaces (the active lens card).
+     A full-strength indigo-400 stroke glows too hard against the warm-black
+     theme, so on dark it's diluted toward the rule color; .light keeps the
+     full deep indigo, which sits quietly on cream. */
+  --accent-edge: color-mix(in oklab, var(--accent-hi) 40%, var(--rule));
   --severity-low: rgb(228, 178, 102);
   --severity-high: rgb(232, 102, 78);
 }
@@ -46,6 +51,7 @@
   --accent: rgb(67, 56, 202);
   /* On cream, deep indigo-700 reads best for the active-tab text/underline. */
   --accent-hi: rgb(67, 56, 202);
+  --accent-edge: var(--accent-hi);
   --severity-low: rgb(214, 167, 96);
   --severity-high: rgb(220, 80, 56);
 }

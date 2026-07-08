@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { FactCheckComposer } from "@/components/factcheck-composer";
+import { HomeComposer } from "@/components/home-composer";
 
 export const metadata: Metadata = {
   title: "Jiddu — fact-check",
@@ -14,7 +14,7 @@ export default function FactCheckPage() {
     <>
       <SiteHeader variant="home" />
       <main className="flex-1 flex flex-col">
-        <FactCheckComposer />
+        <HomeComposer initialMode="factcheck" />
       </main>
       <SiteFooter />
     </>

@@ -6,6 +6,9 @@ export type Messages = {
   // Home
   hero_title: string;
   hero_subtitle: string;
+  // Generic subtitle for the unified home — mode-neutral, since the four
+  // lenses are picked via the cards rather than separate pages.
+  home_hero_subtitle: string;
   privacy: string;
   privacy_body: string;
   see_demo: string;
@@ -341,6 +344,8 @@ const en: Messages = {
   hero_title: "Read any text with a critical mind in the margin.",
   hero_subtitle:
     "Upload a PDF, paste text, or drop a URL. Jiddu highlights the passages that contain logical fallacies and explains each one in a comment — just like a reviewer in Word — and gives the whole piece a fallacy score from 0 to 100.",
+  home_hero_subtitle:
+    "Drop a PDF, paste text, or add a URL — then pick a lens: fallacy detection, claim extraction and fact-checking, neutrality assessment, or a paragraph-by-paragraph explainer.",
   privacy: "Privacy:",
   privacy_body:
     "your text is sent to the selected model (OpenAI or MiniMax, routed via OpenRouter) for analysis and stored locally under a shareable id.",
@@ -937,6 +942,8 @@ const pt: Messages = {
   hero_title: "Leia qualquer texto com um revisor crítico na margem.",
   hero_subtitle:
     "Envie um PDF, cole um texto ou solte uma URL. O Jiddu destaca os trechos com falácias lógicas e explica cada um em um comentário — como um revisor no Word — e dá uma nota de 0 a 100 para o texto inteiro.",
+  home_hero_subtitle:
+    "Solte um PDF, cole um texto ou adicione uma URL — e escolha a lente: detecção de falácias, extração e checagem de afirmações, avaliação de neutralidade ou explicação parágrafo a parágrafo.",
   privacy: "Privacidade:",
   privacy_body:
     "seu texto é enviado ao modelo selecionado (OpenAI ou MiniMax, roteado via OpenRouter) para análise e armazenado localmente sob um id compartilhável.",
@@ -1535,6 +1542,8 @@ const es: Messages = {
   hero_title: "Lee cualquier texto con un crítico en el margen.",
   hero_subtitle:
     "Sube un PDF, pega un texto o suelta una URL. Jiddu resalta los pasajes con falacias lógicas y explica cada uno en un comentario — como un revisor en Word — y le da al texto entero una puntuación de falacia de 0 a 100.",
+  home_hero_subtitle:
+    "Suelta un PDF, pega un texto o añade una URL — y elige la lente: detección de falacias, extracción y verificación de afirmaciones, evaluación de neutralidad o explicación párrafo a párrafo.",
   privacy: "Privacidad:",
   privacy_body:
     "tu texto se envía al modelo seleccionado (OpenAI o MiniMax, enrutado vía OpenRouter) para análisis y se almacena localmente bajo un id compartible.",
