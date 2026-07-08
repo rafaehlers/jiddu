@@ -162,10 +162,11 @@ export function UploadForm({
         dragging && "ring-2 ring-accent",
       )}
     >
-      {/* Top row: mode toggle (Detector / Fact-check) sits before the
-          input-type tabs. Each pill is a Link, so the active state survives
-          page navigation. */}
-      <div className="flex items-center gap-1 bg-background border border-rule rounded-md p-1 self-start flex-wrap">
+      {/* Top row: mode tabs (Detector / Fact-check / …) sit before the
+          input-type tabs. Underline-tab style — each is a Link, so the active
+          state survives page navigation. The container's bottom rule is the
+          baseline the active tab's underline sits on (via -mb-px). */}
+      <div className="flex items-center gap-x-5 sm:gap-x-6 border-b border-rule flex-wrap">
         <ModeButton href="/" active={mode === "detector"}>
           {t.mode_detector}
         </ModeButton>
@@ -180,14 +181,14 @@ export function UploadForm({
         </ModeButton>
       </div>
 
-      <div role="group" aria-label={t.tab_url} className="flex flex-wrap items-center gap-2">
+      <div role="group" aria-label={t.tab_url} className="flex flex-wrap items-center gap-x-5 sm:gap-x-6 border-b border-rule">
         <TabButton active={tab === "url"} onClick={() => setTab("url")}>{t.tab_url}</TabButton>
         <TabButton active={tab === "text"} onClick={() => setTab("text")}>{t.tab_paste}</TabButton>
         <TabButton active={tab === "file"} onClick={() => setTab("file")}>{t.tab_file}</TabButton>
         {mode === "detector" && (
           <Link
             href="/live"
-            className="px-3 py-1.5 rounded-md text-sm border border-rule text-muted hover:text-foreground transition-colors inline-flex items-center gap-1.5"
+            className="-mb-px border-b-2 border-transparent px-1 py-2.5 text-sm font-medium text-muted hover:text-accent-hi transition-colors inline-flex items-center gap-1.5 whitespace-nowrap"
             aria-label={t.tab_live}
             title={t.tab_live}
           >
@@ -268,32 +269,35 @@ export function UploadForm({
         </div>
       )}
 
-      {/* Model picker — shown as flag-prefixed pills. Each model has a
-          country-of-origin flag so the user sees they're picking between a
-          US model and a Chinese model. The same prompt is sent either way
-          (apart from per-model tool_choice / provider-pin quirks). */}
+      {/* Model picker — a radio group. Each model has a country-of-origin
+          flag so the user sees they're picking between a US model and a
+          Chinese model. The same prompt is sent either way (apart from
+          per-model tool_choice / provider-pin quirks). */}
       <div className="flex flex-col gap-2">
         <span className="text-xs uppercase tracking-wide text-muted">
           {t.model}
         </span>
-        <div role="group" aria-label={t.model} className="flex items-center gap-2 flex-wrap">
-          {MODEL_CATALOG.map((m) => (
-            <button
-              key={m.id}
-              type="button"
-              onClick={() => setModel(m.id)}
-              aria-pressed={model === m.id}
-              className={cn(
-                "px-3 py-1.5 rounded-md text-sm border transition-colors inline-flex items-center gap-2",
-                model === m.id
-                  ? "border-foreground bg-foreground text-background"
-                  : "border-rule text-muted hover:text-foreground",
-              )}
-            >
-              {m.flag && <span className="text-base leading-none">{m.flag}</span>}
-              {m.label}
-            </button>
-          ))}
+        <div role="radiogroup" aria-label={t.model} className="flex items-center gap-x-5 gap-y-2 flex-wrap">
+          {MODEL_CATALOG.map((m) => {
+            const checked = model === m.id;
+            return (
+              <button
+                key={m.id}
+                type="button"
+                role="radio"
+                aria-checked={checked}
+                onClick={() => setModel(m.id)}
+                className={cn(
+                  "inline-flex items-center gap-2 text-sm cursor-pointer transition-colors",
+                  checked ? "text-foreground" : "text-muted hover:text-foreground",
+                )}
+              >
+                <RadioDot checked={checked} />
+                {m.flag && <span className="text-base leading-none">{m.flag}</span>}
+                {m.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -402,14 +406,36 @@ function ModeButton({
       href={href}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "px-3 py-1.5 rounded text-sm font-medium transition-colors",
+        "-mb-px border-b-2 px-1 py-2.5 text-sm font-medium whitespace-nowrap transition-colors",
         active
-          ? "bg-foreground text-background"
-          : "text-muted hover:text-foreground",
+          ? "border-accent-hi text-accent-hi"
+          : "border-transparent text-muted hover:text-foreground hover:border-rule",
       )}
     >
       {children}
     </Link>
+  );
+}
+
+// Visual radio indicator — an indigo ring with a filling dot when checked.
+// Uses --accent-hi so the indigo reads on both the warm-black and cream
+// backgrounds (deep indigo-700 is too dim as a thin ring on dark).
+function RadioDot({ checked }: { checked: boolean }) {
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        "grid place-items-center h-4 w-4 rounded-full border-2 transition-colors",
+        checked ? "border-accent-hi" : "border-rule",
+      )}
+    >
+      <span
+        className={cn(
+          "h-1.5 w-1.5 rounded-full bg-accent-hi transition-transform",
+          checked ? "scale-100" : "scale-0",
+        )}
+      />
+    </span>
   );
 }
 
@@ -428,10 +454,10 @@ function TabButton({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        "px-3 py-1.5 rounded-md text-sm border transition-colors",
+        "-mb-px border-b-2 px-1 py-2.5 text-sm font-medium whitespace-nowrap transition-colors cursor-pointer",
         active
-          ? "border-foreground bg-foreground text-background"
-          : "border-rule text-muted hover:text-foreground",
+          ? "border-accent-hi text-accent-hi"
+          : "border-transparent text-muted hover:text-foreground hover:border-rule",
       )}
     >
       {children}

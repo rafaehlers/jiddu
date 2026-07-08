@@ -164,7 +164,7 @@ export function FactCheckComposer() {
                 <p className="text-sm text-foreground/80 leading-relaxed">
                   {t.quality_card_body}
                 </p>
-                <span className="text-sm text-link transition-colors self-start mt-0.5">
+                <span className="text-sm decoration-rule group-hover:decoration-foreground transition-colors self-start mt-0.5">
                   {t.quality_card_link} <span aria-hidden>→</span>
                 </span>
               </div>

@@ -43,7 +43,9 @@ export function PipelineSidebar({ activeMode }: { activeMode: Mode }) {
             <Link
               href={p.demo}
               className={`text-sm self-start transition-colors ${
-                active ? "text-white" : "text-link"
+                active
+                  ? "text-white hover:text-indigo-200"
+                  : "text-muted hover:text-accent-hi"
               }`}
             >
               {t.see_demo} <span aria-hidden>→</span>

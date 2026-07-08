@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { UploadForm } from "@/components/upload-form";
@@ -139,6 +140,16 @@ export function JidduComposer() {
               error={submitError}
               onClearError={() => setSubmitError(null)}
             />
+
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm">
+              <span className="text-muted">{t.see_demo_hint}</span>
+              <Link
+                href={`/a/demo-${lang}`}
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md border border-rule hover:border-foreground transition-colors self-start sm:self-auto"
+              >
+                {t.see_demo} <span aria-hidden>→</span>
+              </Link>
+            </div>
 
             <div className="text-sm text-muted">
               <span className="font-medium text-foreground">{t.privacy}</span>{" "}

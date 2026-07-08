@@ -14,10 +14,10 @@
      Text (white) sits on top of it, so it stays the same rich tone in both
      themes. */
   --accent: rgb(67, 56, 202);
-  /* Link text needs contrast *against* the background, so it's a lighter
-     indigo on the warm-black dark bg (and a deep one on the cream light bg,
-     set in .light below). */
-  --link: rgb(140, 150, 252);
+  /* Indigo used AS text/underline on the background (the active underline
+     tab). Deep indigo-700 is too dim to read on the warm-black bg, so on dark
+     we use a brighter indigo-400; .light keeps the deep tone against cream. */
+  --accent-hi: rgb(129, 140, 248);
   --severity-low: rgb(228, 178, 102);
   --severity-high: rgb(232, 102, 78);
 }
@@ -30,7 +30,7 @@
   --color-muted: var(--muted);
   --color-rule: var(--rule);
   --color-accent: var(--accent);
-  --color-link: var(--link);
+  --color-accent-hi: var(--accent-hi);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-serif: var(--font-serif), Georgia, "Times New Roman", serif;
@@ -44,8 +44,8 @@
   --muted: rgb(107, 102, 93);
   --rule: rgb(229, 223, 209);
   --accent: rgb(67, 56, 202);
-  /* On the cream light bg a deep indigo reads best for link text. */
-  --link: rgb(67, 56, 202);
+  /* On cream, deep indigo-700 reads best for the active-tab text/underline. */
+  --accent-hi: rgb(67, 56, 202);
   --severity-low: rgb(214, 167, 96);
   --severity-high: rgb(220, 80, 56);
 }

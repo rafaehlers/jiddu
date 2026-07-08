@@ -43,7 +43,7 @@ export function SiteFooter() {
             href="https://en.wikipedia.org/wiki/Jiddu_Krishnamurti"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-link transition-colors"
+            className="hover:text-accent-hi transition-colors"
           >
             J. Krishnamurti
           </a>
@@ -51,14 +51,14 @@ export function SiteFooter() {
         <span className="flex items-center justify-center gap-3 flex-wrap">
           <Link
             href="/how-it-works"
-            className="text-link transition-colors"
+            className="hover:text-accent-hi transition-colors"
           >
             {t.nav_how_it_works}
           </Link>
           <span aria-hidden>·</span>
           <Link
             href="/legal"
-            className="text-link transition-colors"
+            className="hover:text-accent-hi transition-colors"
           >
             {t.nav_legal}
           </Link>
@@ -70,7 +70,7 @@ export function SiteFooter() {
             href="https://github.com/rafaehlers/jiddu"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-link transition-colors"
+            className="hover:text-accent-hi transition-colors"
             title="Source code (AGPL-3.0-or-later)"
           >
             {t.nav_source}
@@ -82,7 +82,7 @@ export function SiteFooter() {
             href="https://www.gnu.org/licenses/agpl-3.0.txt"
             target="_blank"
             rel="noopener noreferrer license"
-            className="text-link transition-colors"
+            className="hover:text-accent-hi transition-colors"
             title="GNU Affero General Public License v3.0 or later"
           >
             AGPL-3.0
@@ -94,7 +94,7 @@ export function SiteFooter() {
               href="https://rafaelmehlers.com.br"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-link transition-colors"
+              className="hover:text-accent-hi transition-colors"
             >
               Rafael M. Ehlers
             </a>

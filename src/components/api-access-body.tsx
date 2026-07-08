@@ -73,7 +73,7 @@ function renderInline(text: string): React.ReactNode {
           href={m[2]}
           target={isExternal ? "_blank" : undefined}
           rel={isExternal ? "noopener noreferrer" : undefined}
-          className="text-link transition-colors"
+          className="underline decoration-rule hover:decoration-foreground transition-colors"
         >
           {m[1]}
         </a>,
