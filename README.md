@@ -321,8 +321,8 @@ Same input shape as `/api/analyze`, plus a `level` field (`eli5` | `high_school`
 
 A separate page at `/live` listens to live audio (microphone or browser-tab capture) via the OpenAI Realtime API (`gpt-realtime-whisper`) and surfaces fallacies as the speaker talks. Two endpoints back it:
 
-- `POST /api/live/token` — mints a short-lived ephemeral client secret so the browser can open a WebRTC connection directly to OpenAI. Requires `OPENAI_API_KEY`.
-- `POST /api/live/analyze` — SSE stream that ingests the cumulative transcript in sliding windows (~500 char delta or every 30s) and emits `finding` events. Send `{ finalize: true }` on Stop to compute the final score and commit the session.
+- `POST /api/live/token` — mints a short-lived ephemeral client secret so the browser can open a WebRTC connection directly to OpenAI for **transcription** (`gpt-realtime-whisper`). Requires `OPENAI_API_KEY`. This call never touches OpenRouter.
+- `POST /api/live/analyze` — a separate, later call: SSE stream that ingests the cumulative transcript in sliding windows (~500 char delta or every 30s) and emits `finding` events. **This is the analysis step**, running the same fallacy prompt routed via OpenRouter (same GPT-5.4 mini / MiniMax M2.7 picker as the other pipelines) — a different model and provider from the OpenAI transcription above. Send `{ finalize: true }` on Stop to compute the final score and commit the session.
 
 Notes:
 - Tab capture requires Chrome or Edge — Safari/Firefox don't expose tab audio via `getDisplayMedia`. The Microphone source works everywhere.

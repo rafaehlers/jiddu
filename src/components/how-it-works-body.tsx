@@ -50,19 +50,30 @@ export function HowItWorksBody() {
   );
 }
 
-// Same minimal markdown renderer as LegalBody, plus **bold** — this content
-// uses bold to call out inline terms (e.g. "**URL.**", "**disambiguation**")
-// which LegalBody's copy never does. Keep duplicated for now — extracting to
-// a shared util is overkill for two call sites.
+// Same minimal markdown renderer as LegalBody, plus **bold** and `code` — this
+// content uses bold to call out inline terms (e.g. "**URL.**",
+// "**disambiguation**") and backticks constantly for routes/env vars/model
+// ids (e.g. "`/live`", "`OPENAI_API_KEY`"), neither of which LegalBody's copy
+// needs. Keep duplicated for now — extracting to a shared util is overkill
+// for three call sites (this, LegalBody, ApiAccessBody).
 function renderInline(text: string): React.ReactNode {
   const parts: React.ReactNode[] = [];
-  const regex = /\[([^\]]+)\]\((https?:\/\/[^)]+|\/[^)]+)\)|\*\*([^*]+)\*\*/g;
+  const regex = /\[([^\]]+)\]\((https?:\/\/[^)]+|\/[^)]+)\)|\*\*([^*]+)\*\*|`([^`]+)`/g;
   let cursor = 0;
   let m: RegExpExecArray | null;
   let keyCounter = 0;
   while ((m = regex.exec(text)) !== null) {
     if (m.index > cursor) parts.push(text.slice(cursor, m.index));
-    if (m[3] !== undefined) {
+    if (m[4] !== undefined) {
+      parts.push(
+        <code
+          key={`c-${keyCounter++}`}
+          className="text-[0.85em] bg-paper border border-rule rounded px-1 py-0.5"
+        >
+          {m[4]}
+        </code>,
+      );
+    } else if (m[3] !== undefined) {
       parts.push(
         <strong key={`b-${keyCounter++}`} className="font-medium text-foreground">
           {m[3]}
