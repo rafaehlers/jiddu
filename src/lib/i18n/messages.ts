@@ -703,12 +703,6 @@ const en: Messages = {
         "Operator: Rafael de Menezes Ehlers. For takedown requests, corrections, or other concerns, open an issue on [GitHub](https://github.com/rafaehlers/jiddu).",
       ],
     },
-    {
-      title: "8. Credits",
-      paragraphs: [
-        "The portrait of J. Krishnamurti shown on the home page is [from Wikipedia](https://pt.wikipedia.org/wiki/Jiddu_Krishnamurti#/media/Ficheiro:Jiddu_Krishnamurti_01.jpg).",
-      ],
-    },
   ],
 
   how_it_works_title: "How Jiddu works",
@@ -1311,12 +1305,6 @@ const pt: Messages = {
         "Operador: Rafael de Menezes Ehlers. Para solicitações de remoção, correções ou outras dúvidas, abra uma issue no [GitHub](https://github.com/rafaehlers/jiddu).",
       ],
     },
-    {
-      title: "8. Créditos",
-      paragraphs: [
-        "O retrato de J. Krishnamurti exibido na página inicial é [da Wikipédia](https://pt.wikipedia.org/wiki/Jiddu_Krishnamurti#/media/Ficheiro:Jiddu_Krishnamurti_01.jpg).",
-      ],
-    },
   ],
 
   how_it_works_title: "Como o Jiddu funciona",
@@ -1917,12 +1905,6 @@ const es: Messages = {
       title: "7. Contacto",
       paragraphs: [
         "Operador: Rafael de Menezes Ehlers. Para solicitudes de remoción, correcciones u otras consultas, abre un issue en [GitHub](https://github.com/rafaehlers/jiddu).",
-      ],
-    },
-    {
-      title: "8. Créditos",
-      paragraphs: [
-        "El retrato de J. Krishnamurti que aparece en la página de inicio es [de Wikipedia](https://pt.wikipedia.org/wiki/Jiddu_Krishnamurti#/media/Ficheiro:Jiddu_Krishnamurti_01.jpg).",
       ],
     },
   ],

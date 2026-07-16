@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
@@ -218,26 +217,14 @@ export function HomeComposer({ initialMode = "detector" }: { initialMode?: Mode 
     return (
       <section className="mx-auto max-w-5xl w-full px-4 sm:px-6 py-8 sm:py-14 flex flex-col gap-8 sm:gap-10">
         {/* Standard hero — the same for all four lenses, so switching a
-            lens never reflows the top of the page. The portrait anchors the
-            title to Krishnamurti (see the footer quote/link) rather than
-            reading as a generic AI-tool banner. */}
-        <div className="flex flex-row items-start gap-5 sm:gap-8">
-          <Image
-            src="/avatar.webp"
-            alt="J. Krishnamurti"
-            width={430}
-            height={585}
-            priority
-            className="w-24 sm:w-32 md:w-40 h-auto rounded-lg border border-rule object-cover shrink-0"
-          />
-          <div className="flex flex-col gap-3 sm:gap-4 min-w-0">
-            <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl leading-tight text-balance">
-              {t.hero_title}
-            </h1>
-            <p className="text-foreground/85 text-base sm:text-lg max-w-3xl leading-relaxed">
-              {t.home_hero_subtitle}
-            </p>
-          </div>
+            lens never reflows the top of the page. */}
+        <div className="flex flex-col gap-3 sm:gap-4">
+          <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl leading-tight text-balance">
+            {t.hero_title}
+          </h1>
+          <p className="text-foreground/85 text-base sm:text-lg max-w-3xl leading-relaxed">
+            {t.home_hero_subtitle}
+          </p>
         </div>
 
         <ModeCards mode={mode} onChange={switchMode} />
