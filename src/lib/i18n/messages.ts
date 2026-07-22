@@ -182,6 +182,12 @@ export type Messages = {
   explain_footer: (model: string) => string;
   pipeline_explain_desc: string;
 
+  // 404 page
+  not_found_label: string;
+  not_found_title: string;
+  not_found_subtitle: string;
+  not_found_cta: string;
+
   // Errors
   analysis_failed: string;
   try_again: string;
@@ -835,6 +841,12 @@ const en: Messages = {
     },
   ],
 
+  not_found_label: "Error 404",
+  not_found_title: "This path leads nowhere.",
+  not_found_subtitle:
+    "Truth is a pathless land — but this is just a broken link. The page you were looking for isn't here.",
+  not_found_cta: "Back to solid ground",
+
   analysis_failed: "Analysis failed",
   try_again: "Try again",
   ingest_blocked_title: "The site refused our request",
@@ -1437,6 +1449,12 @@ const pt: Messages = {
     },
   ],
 
+  not_found_label: "Erro 404",
+  not_found_title: "Este caminho não leva a lugar nenhum.",
+  not_found_subtitle:
+    "A verdade é uma terra sem caminhos — mas isso aqui é só um link quebrado. A página que você procurava não está aqui.",
+  not_found_cta: "Voltar ao chão firme",
+
   analysis_failed: "Falha na análise",
   try_again: "Tentar novamente",
   ingest_blocked_title: "O site bloqueou nossa solicitação",
@@ -2038,6 +2056,12 @@ const es: Messages = {
       ],
     },
   ],
+
+  not_found_label: "Error 404",
+  not_found_title: "Este camino no lleva a ninguna parte.",
+  not_found_subtitle:
+    "La verdad es una tierra sin caminos — pero esto es solo un enlace roto. La página que buscabas no está aquí.",
+  not_found_cta: "Volver a tierra firme",
 
   analysis_failed: "Falló el análisis",
   try_again: "Reintentar",
