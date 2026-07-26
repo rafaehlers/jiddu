@@ -58,6 +58,15 @@ const GROUPS: Group[] = [
     ],
   },
   {
+    title: "Rate limits — Adversarial paper review",
+    description:
+      "POST /api/review. Expensive: complete PDF parsing, four long-context model passes and published-literature web search.",
+    keys: [
+      { key: "rate.review.capacity", label: "Burst capacity", help: "Max reviews started at once" },
+      { key: "rate.review.perHour", label: "Per hour", help: "Sustained review rate" },
+    ],
+  },
+  {
     title: "Fact-check cost caps",
     description:
       "Hard ceilings independent of rate. The refresh cap is per-claim, persisted on the FactCheck row, and counts every verify call (bulk or single) against the same counter.",

@@ -70,7 +70,13 @@ function LoginForm({ error }: { error?: string }) {
 }
 
 type AdminRow = {
-  kind: "fallacy" | "factcheck" | "neutrality" | "explain" | "slop";
+  kind:
+    | "fallacy"
+    | "factcheck"
+    | "neutrality"
+    | "explain"
+    | "slop"
+    | "review";
   id: string;
   title: string | null;
   source: string;
@@ -84,9 +90,9 @@ type AdminRow = {
 };
 
 async function AdminList() {
-  // Pull all five row types in parallel, normalize to a common shape, then
+  // Pull all six row types in parallel, normalize to a common shape, then
   // merge by createdAt desc so the admin sees one unified table.
-  const [analyses, factchecks, neutralities, explanations, slopChecks] = await Promise.all([
+  const [analyses, factchecks, neutralities, explanations, slopChecks, paperReviews] = await Promise.all([
     prisma.analysis.findMany({
       orderBy: { createdAt: "desc" },
       select: {
@@ -160,6 +166,21 @@ async function AdminList() {
         model: true,
         score: true,
         status: true,
+        createdAt: true,
+        reviewedAt: true,
+      },
+    }),
+    prisma.paperReview.findMany({
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        title: true,
+        source: true,
+        sourceRef: true,
+        language: true,
+        model: true,
+        status: true,
+        review: true,
         createdAt: true,
         reviewedAt: true,
       },
@@ -267,6 +288,33 @@ async function AdminList() {
       createdAt: s.createdAt,
       reviewedAt: s.reviewedAt,
     })),
+    ...paperReviews.map<AdminRow>((review) => {
+      let signal = "—";
+      try {
+        const parsed = JSON.parse(review.review ?? "null") as {
+          recommendation?: string;
+          weaknesses?: unknown[];
+        } | null;
+        if (parsed) {
+          signal = `${parsed.weaknesses?.length ?? 0} · ${parsed.recommendation ?? "pending"}`;
+        }
+      } catch {
+        // ignore malformed/incomplete review JSON
+      }
+      return {
+        kind: "review",
+        id: review.id,
+        title: review.title,
+        source: review.source,
+        sourceRef: review.sourceRef,
+        language: review.language,
+        model: review.model,
+        status: review.status,
+        signal,
+        createdAt: review.createdAt,
+        reviewedAt: review.reviewedAt,
+      };
+    }),
   ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
   return (
@@ -322,7 +370,7 @@ async function AdminList() {
       </div>
 
       {/* Compact dashboard row — credits + counts per analysis kind. */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mb-6">
         <CreditsStat credits={credits} />
         <Stat label="Total" value={rows.length} />
         <Stat label="Fallacies" value={analyses.length} accent="amber" />
@@ -334,6 +382,7 @@ async function AdminList() {
         />
         <Stat label="Explain" value={explanations.length} accent="teal" />
         <Stat label="Slop" value={slopChecks.length} accent="rose" />
+        <Stat label="Reviews" value={paperReviews.length} accent="red" />
       </div>
 
       <div className="overflow-x-auto border border-rule rounded-lg">
@@ -373,7 +422,9 @@ async function AdminList() {
                       ? `/n/${r.id}`
                       : r.kind === "slop"
                         ? `/s/${r.id}`
-                        : `/e/${r.id}`;
+                        : r.kind === "review"
+                          ? `/r/${r.id}`
+                          : `/e/${r.id}`;
               return (
                 <tr key={`${r.kind}:${r.id}`} className="border-t border-rule hover:bg-paper/50">
                   <td className="px-3 py-2 whitespace-nowrap text-muted">
@@ -525,6 +576,7 @@ function TypeBadge({ kind }: { kind: AdminRow["kind"] }) {
     neutrality: "bg-purple-500/15 text-purple-500",
     explain: "bg-teal-500/15 text-teal-500",
     slop: "bg-rose-500/15 text-rose-500",
+    review: "bg-red-500/15 text-red-500",
   }[kind];
   const label = {
     fallacy: "Fallacy",
@@ -532,6 +584,7 @@ function TypeBadge({ kind }: { kind: AdminRow["kind"] }) {
     neutrality: "Neutrality",
     explain: "Explain",
     slop: "Slop",
+    review: "Review",
   }[kind];
   return (
     <span className={`inline-block text-xs px-2 py-0.5 rounded-full ${cls}`}>

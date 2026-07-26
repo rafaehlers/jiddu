@@ -25,6 +25,10 @@ export const DEFAULT_SETTINGS = {
   "rate.singleVerify.capacity": 10,
   "rate.singleVerify.perHour": 20,
 
+  // Full paper review: four long-context passes plus academic web search.
+  "rate.review.capacity": 2,
+  "rate.review.perHour": 4,
+
   // Fact-check cost caps
   "factcheck.maxClaims": 50,
   "factcheck.maxRefreshPerClaim": 2,
@@ -103,6 +107,7 @@ export type RateBucketPrefix =
   | "rate.factcheck"
   | "rate.verify"
   | "rate.singleVerify"
+  | "rate.review"
   | "rate.api"
   | "rate.apiFactcheck";
 

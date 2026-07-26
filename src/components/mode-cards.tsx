@@ -3,10 +3,16 @@
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n/provider";
 
-type Mode = "detector" | "factcheck" | "neutrality" | "explain" | "slop";
+type Mode =
+  | "detector"
+  | "factcheck"
+  | "neutrality"
+  | "explain"
+  | "slop"
+  | "review";
 
 /**
- * The five lens cards, doubling as the mode selector for the unified home.
+ * The six lens cards, doubling as the mode selector for the unified home.
  * Replaces both the PipelineSidebar (informational cards) and the mode tab
  * row inside UploadForm (navigation links) — one click switches the mode
  * in place, no page load.
@@ -26,13 +32,14 @@ export function ModeCards({
     { key: "neutrality", name: t.mode_neutrality, desc: t.pipeline_neutrality_desc },
     { key: "explain", name: t.mode_explain, desc: t.pipeline_explain_desc },
     { key: "slop", name: t.mode_slop, desc: t.pipeline_slop_desc },
+    { key: "review", name: t.mode_review, desc: t.pipeline_review_desc },
   ];
 
   return (
     <div
       role="radiogroup"
       aria-label={t.pipelines_heading}
-      className="grid grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-3"
+      className="grid grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3"
     >
       {cards.map((c) => {
         const active = c.key === mode;

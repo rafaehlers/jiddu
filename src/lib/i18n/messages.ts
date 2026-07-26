@@ -182,7 +182,7 @@ export type Messages = {
   explain_footer: (model: string) => string;
   pipeline_explain_desc: string;
 
-  // Slop detector (5th lens)
+  // Slop detector
   mode_slop: string;
   pipeline_slop_desc: string;
   check_slop: string;
@@ -201,6 +201,35 @@ export type Messages = {
   finding_about_this_pattern: string;
   slop_guide_title: string;
   slop_guide_subtitle: string;
+
+  // Adversarial paper review (6th lens)
+  mode_review: string;
+  pipeline_review_desc: string;
+  review_cta: string;
+  review_failed: string;
+  loader_review: string[];
+  review_venue: string;
+  review_venue_placeholder: string;
+  review_venue_help: string;
+  review_venue_searching: string;
+  review_venue_verified: string;
+  review_venue_catalog_only: string;
+  review_venue_year: string;
+  review_track: string;
+  review_track_placeholder: string;
+  review_paper_type: string;
+  review_type_research: string;
+  review_type_position: string;
+  review_type_survey: string;
+  review_type_dataset: string;
+  review_type_theory: string;
+  review_type_use_inspired: string;
+  review_type_concept: string;
+  review_type_negative_results: string;
+  review_date: string;
+  review_pdf_hint: string;
+  review_file_size_hint: string;
+  review_form_hint: string;
 
   // 404 page
   not_found_label: string;
@@ -379,16 +408,16 @@ const en: Messages = {
   hero_subtitle:
     "Upload a PDF, paste text, or drop a URL. Jiddu highlights the passages that contain logical fallacies and explains each one in a comment — just like a reviewer in Word — and gives the whole piece a fallacy score from 0 to 100.",
   home_hero_subtitle:
-    "Drop a PDF, paste text, or add a URL — then pick a lens: fallacy detection, claim extraction and fact-checking, neutrality assessment, a paragraph-by-paragraph explainer, or an AI-slop check.",
+    "Drop a PDF, paste text, or add a URL — then pick a lens: fallacies, fact-checking, neutrality, explanation, AI-slop detection, or a full adversarial paper review.",
   privacy: "Privacy:",
   privacy_body:
-    "your text is sent to the selected model (OpenAI or MiniMax, routed via OpenRouter) for analysis and stored locally under a shareable id.",
+    "your content — including selected PDF page images when visual inspection is needed — is sent to the chosen model via OpenRouter and stored locally under a shareable id.",
   see_demo: "See a demo",
   see_demo_hint: "Want a quick look without running an analysis?",
   bench_badge_label:
     "Pipeline validated · 67.5% match with PolitiFact in a 200-claim benchmark",
   bench_badge_link: "view report",
-  pipelines_heading: "Five lenses on the same text",
+  pipelines_heading: "Six lenses for critical reading",
   pipelines_subheading:
     "Pick a mode in the form above, or open a sample analysis to see what each one looks like.",
   pipeline_fallacy_desc:
@@ -630,12 +659,49 @@ const en: Messages = {
   slop_guide_subtitle:
     "A short reference for the AI-slop writing patterns Jiddu can flag. Patterns, not authorship — humans write slop too.",
 
+  mode_review: "Adversarial review",
+  pipeline_review_desc:
+    "Treats one paper as an autonomous submission, audits its claims and experiments, checks published prior work, and returns a gatekeeping review with localized weaknesses.",
+  review_cta: "Review paper",
+  review_failed: "Adversarial review failed",
+  loader_review: [
+    "Parsing the complete paper",
+    "Building the private claim ledger",
+    "Checking published prior work",
+    "Auditing story, evidence and correctness",
+    "Running the adversarial self-critique",
+    "Finalizing the review",
+  ],
+  review_venue: "Target venue (optional)",
+  review_venue_placeholder: "Search NeurIPS, ICML, ICLR, AAAI…",
+  review_venue_help: "Verified profiles apply official, edition-specific criteria. Other DBLP venues use a general scholarly standard.",
+  review_venue_searching: "Searching DBLP…",
+  review_venue_verified: "Verified rubric",
+  review_venue_catalog_only: "Catalog match · general rubric",
+  review_venue_year: "Edition",
+  review_track: "Track",
+  review_track_placeholder: "Main track",
+  review_paper_type: "Paper type",
+  review_type_research: "Research paper",
+  review_type_position: "Position paper",
+  review_type_survey: "Survey",
+  review_type_dataset: "Dataset / benchmark",
+  review_type_theory: "Theory",
+  review_type_use_inspired: "Use-inspired",
+  review_type_concept: "Concept & feasibility",
+  review_type_negative_results: "Negative results",
+  review_date: "Review date (optional)",
+  review_pdf_hint: "Drop exactly one final PDF, or click to choose",
+  review_file_size_hint: "PDF only · read in full · up to ~300k characters",
+  review_form_hint:
+    "A complete review can take several minutes. Keep this page open.",
+
   nav_legal: "Terms",
   nav_how_it_works: "How it works",
   nav_api: "API",
   api_access_title: "Jiddu API & MCP",
   api_access_subtitle:
-    "Use Jiddu's five reading tools from your own code or agent — a documented REST API and an MCP server.",
+    "Five public text-analysis tools for code and agents. Adversarial PDF review remains a web workflow for now.",
   api_access_sections: [
     {
       title: "Endpoints",
@@ -643,6 +709,13 @@ const en: Messages = {
         "Jiddu exposes its five analysis pipelines as a public REST API. Every endpoint takes a JSON body with a `text` field (40–2000 characters) plus an optional `lang` (`en` / `pt` / `es`), and returns structured JSON.",
         "```\nPOST /api/v1/detect-fallacies\nPOST /api/v1/fact-check\nPOST /api/v1/assess-neutrality\nPOST /api/v1/explain\nPOST /api/v1/detect-slop\n```",
         "`detect-fallacies`, `assess-neutrality`, `explain` and `detect-slop` are fast. `fact-check` extracts each claim and verifies it against live web search, so it is slower and metered.",
+      ],
+    },
+    {
+      title: "Adversarial paper review",
+      paragraphs: [
+        "The adversarial review at [/review](/review) is not currently exposed through the API-key `/api/v1` surface or MCP. It requires one complete PDF, layout-aware parsing, selected visual pages, multiple long-running model stages, external literature research and persisted audit artifacts — a different contract from the synchronous 2,000-character tools above.",
+        "The browser uses multipart `POST /api/review` for the five-stage SSE workflow and public, account-free `GET /api/review/venues?q=…` for venue autocomplete. These are application routes, not a stable public automation contract. A future public review API should use asynchronous jobs with status and result endpoints.",
       ],
     },
     {
@@ -711,12 +784,12 @@ const en: Messages = {
   legal_title: "Terms and disclaimers",
   legal_subtitle:
     "Read this before using Jiddu, especially before sharing an analysis publicly.",
-  legal_last_updated: "Last updated: 2026-06-28",
+  legal_last_updated: "Last updated: 2026-07-26",
   legal_sections: [
     {
       title: "1. What Jiddu does",
       paragraphs: [
-        "Jiddu is an automated tool. It uses large language models (currently routed through OpenRouter to OpenAI, Anthropic, MiniMax and Perplexity Sonar) to (a) flag passages that may contain logical fallacies, (b) extract verifiable factual claims and offer a verdict based on a web search, (c) assess how neutral or biased a text is, (d) explain a document paragraph by paragraph at a chosen reading level, and (e) flag AI-slop writing patterns (templates and stock phrasing — never a claim about authorship). The same tools are available through a public API and an MCP server.",
+        "Jiddu is an automated tool. It uses large language models (currently routed through OpenRouter to OpenAI, Anthropic, MiniMax and Perplexity Sonar) to (a) flag passages that may contain logical fallacies, (b) extract verifiable factual claims and offer a verdict based on a web search, (c) assess how neutral or biased a text is, (d) explain a document paragraph by paragraph at a chosen reading level, (e) flag AI-slop writing patterns (templates and stock phrasing — never a claim about authorship), and (f) produce an adversarial, venue-calibrated pre-submission review of one complete paper. The first five text tools are available through the public API and MCP; paper review is currently a web-only workflow.",
         "Jiddu does not employ human editors. Every output you see is produced by software. The tool is meant to assist critical reading — not to replace it.",
       ],
     },
@@ -726,13 +799,15 @@ const en: Messages = {
         "The verdicts (\"supported\", \"contradicted\", \"mixed\", \"unverified\") and the fallacy labels are best-effort automated judgements. They can be wrong — sometimes confidently wrong.",
         "Jiddu does not assert that any statement, person, or document is true, false, lying, or deceitful. The labels are signals to prompt your own verification. Always read the cited sources and form your own conclusion.",
         "Neutrality scores and the paragraph-by-paragraph explanations are likewise automated interpretations, not statements of fact — the explanations describe what a text says and how it is structured, never whether its claims are correct. Audience level changes only the prose; section-role tags are best-effort guesses.",
+        "Paper-review findings, novelty comparisons, severity labels, venue fit and the final recommendation are also automated judgements. They are not an official peer review, an acceptance prediction, or a substitute for a qualified human reviewer.",
       ],
     },
     {
       title: "3. Use at your own risk",
       paragraphs: [
         "You are responsible for how you use the analysis and what you share or publish. If you republish a Jiddu result, you adopt that content as your own — Jiddu's authors are not responsible for downstream uses.",
-        "Do not submit confidential, proprietary, or personal data. Submitted text is forwarded to the model providers above for processing and stored under a shareable id.",
+        "Do not submit confidential, proprietary, embargoed or personal data. Submitted content — including selected rendered PDF page images when visual inspection is needed — is forwarded through OpenRouter to the selected upstream model provider and stored under a shareable id.",
+        "Use paper review only on manuscripts you own or are authorized to process. Do not upload a manuscript entrusted to you under confidential peer review unless the authors and the venue explicitly permit third-party model processing.",
       ],
     },
     {
@@ -745,7 +820,8 @@ const en: Messages = {
     {
       title: "5. Privacy",
       paragraphs: [
-        "Each analysis is assigned a short id and stored on a server in Brazil. Anyone with the URL can view it. There are no user accounts.",
+        "Each analysis or paper review is assigned a short id and stored on a server in Brazil. Anyone with the share URL can view the final result. There are no user accounts; private intermediate review stages are not exposed in the public viewer.",
+        "Venue autocomplete sends only the venue query — not the manuscript — to the public [DBLP](https://dblp.org) venue search. The literature-research stage searches public scholarly sources using technical claims from the manuscript; prompts prohibit searching by paper title, author name or other manuscripts by the same authors.",
         "We log the request IP for rate-limiting and abuse detection. We do not sell or share that information.",
         "Page traffic is measured via Google Analytics (gtag.js).",
       ],
@@ -754,7 +830,8 @@ const en: Messages = {
       title: "6. Methodology",
       paragraphs: [
         "Our claim extraction and verification pipeline is inspired by [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson, MSR 2025) for the extraction stage, and by the evaluation framework described in [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) (Goldfarb, Hall, Fisher, Salam, Wilde — Forum AI / Stanford, 2025) for the verdict assessment, source-quality tiers and neutrality dimension. Our choice of 4 verdict classes (supported / contradicted / mixed / unverified) rather than the 5- or 6-class schemes used by some fact-checking outlets is informed by [Sahitaj et al. 2025](https://arxiv.org/abs/2502.08909), who found that 3-class labeling outperforms 5-class for LLM-based fact-checking — the additional categories in the middle introduce ambiguity without improving accuracy.",
-        "Jiddu is not affiliated with any of those research groups; we cite them because the methodology behind the tool is grounded in their work, and users should know that the design choices have an academic basis.",
+        "Adversarial paper review builds a page-tagged claim/evidence ledger, researches published literature, synthesizes a structured review, challenges that review in a separate self-critique, and then finalizes it deterministically. Verified venue profiles are edition-specific snapshots of official criteria; the exact criteria and source URLs used are stored with each review. Unmatched venues use a clearly labeled general scholarly rubric, and venue policies can change after a profile is published.",
+        "Jiddu is not affiliated with those research groups, DBLP, or any venue whose criteria it summarizes. References and official venue pages are cited so users can audit the methodology and the standard applied.",
         "The fact-check pipeline has been benchmarked against the [PolitiFact](https://www.politifact.com) human-labeled corpus (via the [LIAR2 dataset](https://github.com/chengxuphd/liar2), Apache-2.0). On 200 claims from PolitiFact's polar buckets, Jiddu's verdict matched the human verdict in 67.5% of cases overall and 81.3% on the unambiguous true / false / pants-on-fire buckets, with strict polar disagreement in only 4.5%. Full methodology, confusion matrix and disagreement analysis at [docs/benchmark-politifact.md](/benchmark).",
       ],
     },
@@ -773,8 +850,8 @@ const en: Messages = {
     {
       title: "1. The big picture",
       paragraphs: [
-        "Jiddu runs five independent analyses on the same input text: a fallacy detector, a fact-check pipeline (extraction + Sonar-based verdict), a neutrality assessment, a paragraph-by-paragraph paper explainer, and an AI-slop detector (flags templated writing patterns — same architecture as the fallacy detector with a different catalog and prompt). They are separate routes in the app (`/`, `/factcheck`, `/neutrality`, `/explain`, `/slop`) and separate database tables. None of them is required by the others.",
-        "Each analysis is a streaming request to an LLM via [OpenRouter](https://openrouter.ai). The model is told to call a function (OpenAI-style tool use) whose JSON Schema we control. We parse the tool-call arguments incrementally with [partial-json](https://github.com/promplate/partial-json) so findings show up in the UI while the model is still writing.",
+        "Jiddu runs six independent analyses: a fallacy detector, a fact-check pipeline (extraction + Sonar-based verdict), a neutrality assessment, a paragraph-by-paragraph paper explainer, an AI-slop detector, and an adversarial review of one autonomous paper with a published-literature check. They are separate routes in the app (`/`, `/factcheck`, `/neutrality`, `/explain`, `/slop`, `/review`) and separate database tables. None of them is required by the others.",
+        "The five text pipelines stream structured tool-call output from an LLM via [OpenRouter](https://openrouter.ai); their JSON Schemas are controlled by Jiddu and [partial-json](https://github.com/promplate/partial-json) lets findings appear while the model is still writing. Paper review also uses SSE, but to report five coarse stages; each stage completes and validates a full structured artifact before the next begins.",
         "All output is in the user's UI language. The same prompt is used regardless of which model the user picks — the language difference comes from a single `OUTPUT LANGUAGE:` line in the system prompt.",
       ],
     },
@@ -782,7 +859,7 @@ const en: Messages = {
       title: "2. Input: ingestion and segmentation",
       paragraphs: [
         "**URL.** The fetch sends real-browser headers (current Chrome User-Agent, Accept-Language pt-BR, sec-ch-ua, sec-fetch-*) so naive bot-blockers don't reject it. Every redirect hop is DNS-resolved and rejected if the IP falls inside RFC1918, loopback, link-local, CGNAT, multicast or reserved IPv4/IPv6 ranges — that closes the SSRF door, including the AWS metadata IP (169.254.169.254) and the local NPM admin (port 81 on the VPS). Response body is capped at 5 MB. The HTML then passes through [@mozilla/readability](https://github.com/mozilla/readability) for article extraction.",
-        "**PDF.** Parsed in-process with [pdfjs-dist](https://mozilla.github.io/pdf.js/) — never sent to a remote service. The model only ever sees plain text.",
+        "**PDF.** Parsed locally with [LiteParse](https://github.com/run-llama/liteparse) as the primary parser and [pdfjs-dist](https://mozilla.github.io/pdf.js/) as fallback. The five text pipelines use LiteParse's fast mode; adversarial review uses academic mode to preserve page-scoped Markdown, spatial reading order, selective OCR, complexity signals and screenshots. The raw PDF is not uploaded as a file, but review sends selected rendered page images through OpenRouter when visual inspection is relevant.",
         "**Paste.** Used as-is, only whitespace-normalized.",
         "The extracted text is then split into sentences with an abbreviation-aware splitter (`src/lib/sentences.ts`) — it recognizes Portuguese abbreviations (`sr.`, `dr.`, `prof.`), keeps initialisms like `U.S.` intact, and doesn't break in the middle of numbers like `3,4%`. Sentences are grouped into chunks of ~12k characters (`src/lib/chunker.ts`) so long documents fit the model context window without losing sentence boundaries.",
       ],
@@ -848,16 +925,16 @@ const en: Messages = {
     {
       title: "10. Storage, privacy and reviewers",
       paragraphs: [
-        "Persistence is a single SQLite file on a Hostinger VPS, mounted as a Docker volume. There are no user accounts. Each analysis gets a short id and lives under `/a/<id>`, `/f/<id>` or `/n/<id>`. Anyone with the URL can view.",
-        "The submitted text is sent to OpenRouter, which routes it to whichever upstream serves the picked model. We don't relay it anywhere else. We log the request IP for rate-limiting and abuse signalling and we don't sell or share that.",
+        "Persistence is a single SQLite file on a Hostinger VPS, mounted as a Docker volume. There are no user accounts. Results get short ids under `/a`, `/f`, `/n`, `/e`, `/s` or `/r`; anyone with the share URL can view the final result. Paper-review ledgers, research and draft judgements remain private intermediate artifacts.",
+        "Submitted content goes through OpenRouter to the upstream serving the chosen model. Paper review includes selected rendered page images, not only extracted text. Its literature stage searches public scholarly sources using technical claims while prompts prohibit queries by paper title, author name or other manuscripts by the same authors. Venue autocomplete sends only the typed venue query to DBLP. We log the request IP for rate-limiting and abuse signalling and do not sell it.",
         "Each analysis has a `reviewedAt` timestamp. By default it's null, meaning the analysis is automated and has not been spot-checked by an operator. The admin (at `/admin`, password-gated) can mark individual analyses as reviewed.",
       ],
     },
     {
       title: "11. Cost and abuse controls",
       paragraphs: [
-        "Every cost-incurring route has an in-memory token-bucket rate limit per IP. Defaults: 30 fallacy analyses / hour, 30 fact-check extractions / hour, 10 bulk verifications / hour, 20 per-claim refreshes / hour, 20 feedback flags / hour. All values are admin-tunable at runtime via `/admin/settings` — no redeploy needed. When a bucket empties, the API returns 429 with a `Retry-After` header.",
-        "The fact-check extraction caps at 50 claims per document. The per-claim refresh caps at 2 calls per claim. Both are admin-configurable. These are the structural defences against a single user racking up an unexpected bill.",
+        "Every cost-incurring route has an in-memory token-bucket rate limit per IP. Defaults include 30 fallacy analyses / hour, 30 fact-check extractions / hour, 10 bulk verifications / hour, 20 per-claim refreshes / hour and a deliberately conservative 4 paper reviews / hour with burst capacity 2. All values are admin-tunable at runtime via `/admin/settings`; exhausted buckets return 429 with `Retry-After`.",
+        "Fact-check extraction caps at 50 claims per document and per-claim refresh at 2 calls. Paper review accepts exactly one PDF, refuses to silently truncate past 300,000 extracted characters, limits visual inspection to selected pages and splits the costly work into auditable stages. These controls prevent accidental unbounded fan-out and bills.",
       ],
     },
     {
@@ -872,7 +949,7 @@ const en: Messages = {
       title: "13. Live mode (beta)",
       paragraphs: [
         "A separate pipeline at [/live](/live): the page captures audio from the user's microphone or, on Chromium browsers, from a browser tab via `getDisplayMedia`. The audio is streamed *directly from the browser to OpenAI's Realtime API* over WebRTC — it never passes through the Jiddu server. The transcription model is `gpt-realtime-whisper`, and the language is honored from the i18n header selector (EN / PT / ES).",
-        "How the wiring works: when the user presses **Start**, the browser calls `POST /api/live/token` to mint a short-lived ephemeral client secret (the Jiddu server holds the actual `OPENAI_API_KEY`; the browser never sees it). The browser then opens the WebRTC peer-connection to OpenAI using that secret and starts receiving transcript deltas. Every ~500 new characters (or every 30 seconds, whichever comes first), a separate SSE call to `POST /api/live/analyze` ships the cumulative transcript and runs the same fallacy prompt used everywhere else — this analysis step is a different call from the OpenAI transcription above, routed via OpenRouter with the same GPT-5.4 mini / MiniMax M3 model picker as the other three pipelines. Findings stream back into the UI in near-real-time. On **Stop**, a final `finalize: true` call commits the session as a normal `/a/<id>` analysis, indistinguishable downstream from a pasted-text analysis.",
+        "How the wiring works: when the user presses **Start**, the browser calls `POST /api/live/token` to mint a short-lived ephemeral client secret (the Jiddu server holds the actual `OPENAI_API_KEY`; the browser never sees it). The browser then opens the WebRTC peer-connection to OpenAI using that secret and starts receiving transcript deltas. Every ~500 new characters (or every 30 seconds, whichever comes first), a separate SSE call to `POST /api/live/analyze` ships the cumulative transcript and runs the same fallacy prompt used everywhere else — this analysis step is a different call from the OpenAI transcription above, routed via OpenRouter with the same GPT-5.4 mini / MiniMax M3 picker as the text-analysis pipelines. Findings stream back into the UI in near-real-time. On **Stop**, a final `finalize: true` call commits the session as a normal `/a/<id>` analysis, indistinguishable downstream from a pasted-text analysis.",
         "Cost is bounded by a hard 60-minute session cap (≈ \\$1 of Realtime + LLM analysis cost per session). The raw audio is never stored — only the transcript and the detected findings are persisted. The page is intentionally not linked from the nav while in beta — reach it by typing `/live` in the URL bar. Tab-audio capture works in Chrome / Edge only because Safari and Firefox don't expose tab audio through `getDisplayMedia`; the microphone source works everywhere.",
       ],
     },
@@ -882,23 +959,33 @@ const en: Messages = {
         "The Explain pipeline (`/explain`, results at `/e/:id`) takes an academic paper or technical document and produces a paragraph-by-paragraph plain-language explanation. Each paragraph gets a role tag (Background / Objective / Method / Result / Interpretation / Limitation / Conclusion) and an explanation written at the chosen audience level. A whole-document overview is generated first.",
         "Audience levels: **Child** (ELI5, everyday analogies, no jargon), **High school** (clear language, a few technical terms explained), **Undergraduate** (standard academic register, assumes field familiarity), **Expert** (concise, peer-level, full terminology retained). The level controls prose complexity only — it does not filter or validate content.",
         "Role tagging is algorithmic. The model reads each paragraph in context and assigns the role that best describes its function in the argument. Interdisciplinary papers or documents with non-standard structure may receive incorrect tags.",
-        "Unlike the other three pipelines, Explain is optimised for structured academic papers. Results on blog posts, legal filings, or unstructured prose will be lower quality.",
+        "Unlike the general-text pipelines, Explain is optimised for structured academic papers. Results on blog posts, legal filings, or unstructured prose will be lower quality.",
       ],
     },
     {
-      title: "15. Public API & MCP (for agents)",
+      title: "15. Adversarial paper review",
+      paragraphs: [
+        "The review pipeline (`/review`, results at `/r/:id`) accepts exactly one final PDF as an autonomous manuscript, plus target venue, edition, track, paper type and optional review date. It does not combine supplements or multiple files. The public result includes the gatekeeping recommendation, summary, strengths, localized weaknesses, questions, reproducibility checklist, references and the exact venue standard applied; Markdown and print/PDF exports use the same stored final review.",
+        "It runs five private stages: **ledger** (page-tagged claims, evidence, experiments and visual-page inspection), **published-literature research**, **structured synthesis**, **adversarial self-critique**, and **deterministic finalization**. The self-critique must challenge unsupported novelty claims, missed evidence, severity inflation or understatement and inconsistency with the target venue before any draft becomes final.",
+        "Venue autocomplete combines account-free [DBLP](https://dblp.org) discovery with versioned, verified 2026 profiles for NeurIPS, ICML, ICLR, AAAI, IJCAI and CVPR. A verified profile injects its official criteria and requirements into both synthesis and self-critique and is persisted with source URLs. A DBLP-only or unmatched venue uses a clearly labeled general scholarly rubric; edition, track or paper-type mismatches are marked unverified rather than guessed.",
+        "Every substantive weakness must carry a manuscript page or section and a `MAJOR`, `MODERATE` or `MINOR` severity. The review is still automated: it can miss problems, invent comparisons or misapply a criterion, and it is not an official peer review or acceptance prediction.",
+      ],
+    },
+    {
+      title: "16. Public API & MCP (for agents)",
       paragraphs: [
         "Beyond the web app, all five pipelines are exposed as a public REST API for agents and scripts: `POST /api/v1/detect-fallacies`, `/fact-check`, `/assess-neutrality`, `/explain`, `/detect-slop`. Unlike the internal SSE routes above, these are synchronous — one JSON request in (`{ text }`, 40–2000 chars, plus optional `lang` and, for explain, `level`), one JSON response out. They drive the same generators to completion over a single chunk and never persist a row.",
         "Requests authenticate with an `X-Jiddu-Key` header. Keys are admin-issued at `/admin/api-keys` (stored only as a sha256 hash, shown once) and rate-limited per key, separately from the web app's per-IP limits. Fact-check via the API both extracts and verifies each claim, capped by a per-request claim limit so one call can't fan out unboundedly to the paid Sonar verifier.",
         "An MCP server exposes the same five tools to agents. It is hosted in-process at `POST /api/mcp` (via mcp-handler), so any MCP client can connect by URL through the public `mcp-remote` bridge — nothing to install or publish. The tools call the internal pipeline layer directly, with no extra HTTP hop. The same five tools also ship as a standalone `jiddu-mcp` package for local use. Setup snippets and machine-oriented docs are at [/api-access](/api-access).",
         "Quality is tracked by a fixed eval suite (15–16 cases per tool) committed in the repo and scored against expected results; the published report lives at [evals/report.md](https://github.com/rafaehlers/jiddu/blob/main/evals/report.md).",
+        "Adversarial review is not part of `/api/v1` or MCP yet. Its internal multipart/SSE routes serve the browser and are not a stable public contract; a public version should be an asynchronous job API.",
       ],
     },
     {
-      title: "16. Open source and methodology",
+      title: "17. Open source and methodology",
       paragraphs: [
         "Source code is at [github.com/rafaehlers/jiddu](https://github.com/rafaehlers/jiddu) under the [AGPL-3.0-or-later license](https://www.gnu.org/licenses/agpl-3.0.txt). AGPL closes the 'SaaS loophole' that GPL leaves open: anyone running a modified version as a network service must publish the modified source.",
-        "Two papers ground the design: [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson — Microsoft Research, 2025) for the four-stage claim extraction; and [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) (Goldfarb, Hall, Fisher, Salam, Wilde — Forum AI / Stanford, 2025) for the verdict assessment, the 6-tier source taxonomy and the neutrality framework. Jiddu is not affiliated with either group.",
+        "Claimify and Distilling Expert Judgment at Scale ground the fact-check and neutrality design. Paper review additionally uses LiteParse's layout-aware local extraction, DBLP venue discovery and edition-specific criteria transcribed from official venue pages. Jiddu is not affiliated with those groups, DBLP or the venues.",
         "The full disclaimer about what Jiddu does and doesn't claim is at [/legal](/legal).",
       ],
     },
@@ -1026,16 +1113,16 @@ const pt: Messages = {
   hero_subtitle:
     "Envie um PDF, cole um texto ou solte uma URL. O Jiddu destaca os trechos com falácias lógicas e explica cada um em um comentário — como um revisor no Word — e dá uma nota de 0 a 100 para o texto inteiro.",
   home_hero_subtitle:
-    "Solte um PDF, cole um texto ou adicione uma URL — e escolha a lente: detecção de falácias, extração e checagem de afirmações, avaliação de neutralidade, explicação parágrafo a parágrafo ou detecção de slop de IA.",
+    "Solte um PDF, cole um texto ou adicione uma URL — e escolha a lente: falácias, checagem de fatos, imparcialidade, explicação, detecção de slop ou revisão adversarial completa de um paper.",
   privacy: "Privacidade:",
   privacy_body:
-    "seu texto é enviado ao modelo selecionado (OpenAI ou MiniMax, roteado via OpenRouter) para análise e armazenado localmente sob um id compartilhável.",
+    "seu conteúdo — incluindo imagens de páginas selecionadas do PDF quando a inspeção visual é necessária — é enviado ao modelo escolhido via OpenRouter e armazenado localmente sob um id compartilhável.",
   see_demo: "Ver demonstração",
   see_demo_hint: "Quer uma amostra rápida sem rodar uma análise?",
   bench_badge_label:
     "Pipeline validado · 67,5% de concordância com PolitiFact em benchmark de 200 claims",
   bench_badge_link: "ver relatório",
-  pipelines_heading: "Cinco lentes sobre o mesmo texto",
+  pipelines_heading: "Seis lentes para leitura crítica",
   pipelines_subheading:
     "Escolha um modo no formulário acima, ou abra uma análise de exemplo para ver como cada um fica.",
   pipeline_fallacy_desc:
@@ -1278,12 +1365,49 @@ const pt: Messages = {
   slop_guide_subtitle:
     "Uma referência curta para os padrões de escrita de slop de IA que o Jiddu sinaliza. Padrões, não autoria — humanos também escrevem slop.",
 
+  mode_review: "Revisão adversarial",
+  pipeline_review_desc:
+    "Trata um paper como submissão autônoma, audita claims e experimentos, verifica literatura publicada e entrega uma review de gatekeeping com críticas localizadas.",
+  review_cta: "Revisar paper",
+  review_failed: "Falha na revisão adversarial",
+  loader_review: [
+    "Interpretando o paper completo",
+    "Construindo o ledger privado de claims",
+    "Verificando a literatura publicada",
+    "Auditando narrativa, evidência e correção",
+    "Executando a autocrítica adversarial",
+    "Finalizando a review",
+  ],
+  review_venue: "Venue-alvo (opcional)",
+  review_venue_placeholder: "Busque NeurIPS, ICML, ICLR, AAAI…",
+  review_venue_help: "Perfis verificados aplicam critérios oficiais da edição. Outros venues do DBLP usam um padrão acadêmico geral.",
+  review_venue_searching: "Buscando no DBLP…",
+  review_venue_verified: "Rubrica verificada",
+  review_venue_catalog_only: "Resultado do catálogo · rubrica geral",
+  review_venue_year: "Edição",
+  review_track: "Track",
+  review_track_placeholder: "Main track",
+  review_paper_type: "Tipo de paper",
+  review_type_research: "Paper de pesquisa",
+  review_type_position: "Position paper",
+  review_type_survey: "Survey",
+  review_type_dataset: "Dataset / benchmark",
+  review_type_theory: "Teoria",
+  review_type_use_inspired: "Orientado à aplicação",
+  review_type_concept: "Conceito e viabilidade",
+  review_type_negative_results: "Resultados negativos",
+  review_date: "Data da revisão (opcional)",
+  review_pdf_hint: "Solte exatamente um PDF final, ou clique para escolher",
+  review_file_size_hint: "Somente PDF · leitura integral · até ~300 mil caracteres",
+  review_form_hint:
+    "Uma revisão completa pode levar alguns minutos. Mantenha esta página aberta.",
+
   nav_legal: "Termos",
   nav_how_it_works: "Como funciona",
   nav_api: "API",
   api_access_title: "API & MCP do Jiddu",
   api_access_subtitle:
-    "Use as cinco ferramentas de leitura do Jiddu no seu próprio código ou agente — uma REST API documentada e um servidor MCP.",
+    "Cinco ferramentas públicas de análise de texto para código e agentes. A revisão adversarial de PDF continua sendo um fluxo web por enquanto.",
   api_access_sections: [
     {
       title: "Endpoints",
@@ -1291,6 +1415,13 @@ const pt: Messages = {
         "O Jiddu expõe seus cinco pipelines de análise como uma REST API pública. Todo endpoint recebe um corpo JSON com um campo `text` (40–2000 caracteres) e um `lang` opcional (`en` / `pt` / `es`), e retorna JSON estruturado.",
         "```\nPOST /api/v1/detect-fallacies\nPOST /api/v1/fact-check\nPOST /api/v1/assess-neutrality\nPOST /api/v1/explain\nPOST /api/v1/detect-slop\n```",
         "`detect-fallacies`, `assess-neutrality`, `explain` e `detect-slop` são rápidos. O `fact-check` extrai cada afirmação e a verifica com busca na web ao vivo, então é mais lento e medido.",
+      ],
+    },
+    {
+      title: "Revisão adversarial de paper",
+      paragraphs: [
+        "A revisão adversarial em [/review](/review) ainda não é exposta pela superfície `/api/v1` com chave nem pelo MCP. Ela exige um PDF completo, parsing sensível ao layout, páginas visuais selecionadas, várias etapas longas de modelo, pesquisa de literatura externa e artefatos de auditoria persistidos — um contrato diferente das ferramentas síncronas de 2.000 caracteres acima.",
+        "O navegador usa `POST /api/review` multipart para o fluxo SSE de cinco etapas e `GET /api/review/venues?q=…`, público e sem conta, para o autocomplete de venues. Essas são rotas internas do aplicativo, não um contrato público e estável de automação. Uma futura API pública de revisão deve usar jobs assíncronos com endpoints de status e resultado.",
       ],
     },
     {
@@ -1360,12 +1491,12 @@ const pt: Messages = {
   legal_title: "Termos e isenções",
   legal_subtitle:
     "Leia antes de usar o Jiddu, especialmente antes de compartilhar uma análise publicamente.",
-  legal_last_updated: "Atualizado em: 2026-06-28",
+  legal_last_updated: "Atualizado em: 2026-07-26",
   legal_sections: [
     {
       title: "1. O que o Jiddu faz",
       paragraphs: [
-        "O Jiddu é uma ferramenta automatizada. Ele usa modelos de linguagem (atualmente roteados via OpenRouter para OpenAI, Anthropic, MiniMax e Perplexity Sonar) para (a) sinalizar passagens que podem conter falácias lógicas, (b) extrair afirmações factuais verificáveis e oferecer um veredito baseado em busca na web, (c) avaliar quão neutro ou enviesado um texto é, (d) explicar um documento parágrafo por parágrafo no nível de leitura escolhido, e (e) sinalizar padrões de escrita de slop de IA (moldes e frases prontas — nunca uma afirmação sobre autoria). As mesmas ferramentas estão disponíveis via uma API pública e um servidor MCP.",
+        "O Jiddu é uma ferramenta automatizada. Ele usa modelos de linguagem (atualmente roteados via OpenRouter para OpenAI, Anthropic, MiniMax e Perplexity Sonar) para (a) sinalizar passagens que podem conter falácias lógicas, (b) extrair afirmações factuais verificáveis e oferecer um veredito baseado em busca na web, (c) avaliar quão neutro ou enviesado um texto é, (d) explicar um documento parágrafo por parágrafo no nível de leitura escolhido, (e) sinalizar padrões de escrita de slop de IA (moldes e frases prontas — nunca uma afirmação sobre autoria) e (f) produzir uma revisão adversarial pré-submissão, calibrada para a venue, de um paper completo. As cinco primeiras ferramentas de texto estão na API pública e no MCP; a revisão de paper é, por enquanto, um fluxo exclusivo da web.",
         "O Jiddu não tem editores humanos. Todo resultado que você vê é produzido por software. A ferramenta serve como apoio à leitura crítica — não a substitui.",
       ],
     },
@@ -1375,13 +1506,15 @@ const pt: Messages = {
         'Os vereditos ("sustentado", "contradito", "misto", "não verificado") e os rótulos de falácia são juízos automatizados de melhor esforço. Podem estar errados — às vezes com alta confiança.',
         "O Jiddu não afirma que qualquer declaração, pessoa ou documento seja verdadeiro, falso, mentiroso ou enganoso. Os rótulos são sinais para acionar a sua própria verificação. Sempre leia as fontes citadas e tire sua própria conclusão.",
         "As pontuações de imparcialidade e as explicações parágrafo a parágrafo também são interpretações automatizadas, não afirmações de fato — as explicações descrevem o que um texto diz e como ele está estruturado, nunca se as suas afirmações estão corretas. O nível de audiência muda apenas o texto; as tags de papel das seções são apenas suposições de melhor esforço.",
+        "Os achados da revisão de paper, comparações de novidade, severidades, aderência à venue e recomendação final também são juízos automatizados. Não são uma revisão oficial por pares, previsão de aceitação ou substituto para um revisor humano qualificado.",
       ],
     },
     {
       title: "3. Uso por sua conta e risco",
       paragraphs: [
         "Você é responsável por como usa a análise e pelo que compartilha ou publica. Se você republicar um resultado do Jiddu, você adota aquele conteúdo como seu — os autores do Jiddu não são responsáveis por usos posteriores.",
-        "Não envie dados confidenciais, sigilosos ou pessoais. O texto enviado é repassado aos provedores de modelo listados acima para processamento e armazenado sob um id compartilhável.",
+        "Não envie dados confidenciais, proprietários, sob embargo ou pessoais. O conteúdo enviado — inclusive imagens renderizadas de páginas selecionadas do PDF quando a inspeção visual é necessária — passa pelo OpenRouter para o provedor upstream do modelo escolhido e é armazenado sob um id compartilhável.",
+        "Use a revisão de paper apenas em manuscritos seus ou que você esteja autorizado a processar. Não envie um manuscrito recebido sob revisão por pares confidencial, a menos que os autores e a venue permitam explicitamente o processamento por modelos de terceiros.",
       ],
     },
     {
@@ -1394,7 +1527,8 @@ const pt: Messages = {
     {
       title: "5. Privacidade",
       paragraphs: [
-        "Cada análise recebe um id curto e fica armazenada em um servidor no Brasil. Quem tem a URL pode ver. Não há contas de usuário.",
+        "Cada análise ou revisão de paper recebe um id curto e fica armazenada em um servidor no Brasil. Quem tem a URL compartilhável pode ver o resultado final. Não há contas de usuário; as etapas intermediárias privadas da revisão não aparecem no viewer público.",
+        "O autocomplete de venue envia apenas a consulta da venue — nunca o manuscrito — à busca pública de venues do [DBLP](https://dblp.org). A etapa de pesquisa de literatura consulta fontes acadêmicas públicas usando afirmações técnicas do manuscrito; os prompts proíbem buscas pelo título do paper, nome dos autores ou outros manuscritos dos mesmos autores.",
         "Registramos o IP da requisição para limites de taxa e detecção de abuso. Não vendemos nem compartilhamos essa informação.",
         "O tráfego das páginas é medido via Google Analytics (gtag.js).",
       ],
@@ -1403,7 +1537,8 @@ const pt: Messages = {
       title: "6. Metodologia",
       paragraphs: [
         "O pipeline de extração e verificação de afirmações é inspirado em [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson, MSR 2025) para a etapa de extração, e no framework de avaliação descrito em [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) (Goldfarb, Hall, Fisher, Salam, Wilde — Forum AI / Stanford, 2025) para a avaliação de veredito, os tiers de qualidade de fonte e a dimensão de imparcialidade. Nossa escolha de 4 classes de veredito (sustentado / contradito / misto / não verificado) em vez dos esquemas de 5 ou 6 classes usados por alguns outlets de fact-check é baseada em [Sahitaj et al. 2025](https://arxiv.org/abs/2502.08909), que mostraram empiricamente que rotulagem 3-classes supera 5-classes para fact-check com LLMs — as categorias adicionais no meio criam ambiguidade sem ganho de acurácia.",
-        "O Jiddu não tem afiliação com nenhum desses grupos de pesquisa; citamos as referências porque a metodologia da ferramenta é fundamentada no trabalho deles, e os usuários devem saber que as decisões de design têm base acadêmica.",
+        "A revisão adversarial cria um ledger de afirmações e evidências com marcação de página, pesquisa literatura publicada, sintetiza uma revisão estruturada, contesta essa revisão numa autocrítica separada e então a finaliza de forma determinística. Perfis verificados de venue são snapshots específicos de uma edição dos critérios oficiais; os critérios exatos e URLs-fonte usados ficam armazenados em cada revisão. Venues sem correspondência usam uma rubrica acadêmica geral claramente identificada, e as políticas podem mudar depois da publicação do perfil.",
+        "O Jiddu não tem afiliação com esses grupos de pesquisa, com o DBLP ou com qualquer venue cujos critérios resume. As referências e páginas oficiais são citadas para que o usuário possa auditar a metodologia e o padrão aplicado.",
         "O pipeline de fact-check foi medido contra o corpus humano do [PolitiFact](https://www.politifact.com) (via o [dataset LIAR2](https://github.com/chengxuphd/liar2), Apache-2.0). Em 200 afirmações tiradas dos quatro buckets polares do PolitiFact, o veredito do Jiddu coincidiu com o veredito humano em 67,5% dos casos no total e em 81,3% nas categorias menos ambíguas (true / false / pants-on-fire), com discordância estrita em apenas 4,5%. Metodologia completa, matriz de confusão e análise das discordâncias em [docs/benchmark-politifact.md](/benchmark).",
       ],
     },
@@ -1422,8 +1557,8 @@ const pt: Messages = {
     {
       title: "1. Visão geral",
       paragraphs: [
-        "O Jiddu roda cinco análises independentes sobre o mesmo texto: um detector de falácias, um pipeline de checagem de fatos (extração + veredito via Sonar), uma avaliação de imparcialidade, um explicador de papers parágrafo a parágrafo e um detector de slop de IA (sinaliza padrões de escrita de fôrma — mesma arquitetura do detector de falácias com catálogo e prompt diferentes). São rotas separadas no app (`/`, `/factcheck`, `/neutrality`, `/explain`, `/slop`) e tabelas separadas no banco. Nenhuma depende das outras.",
-        "Cada análise é uma requisição em streaming pra um LLM via [OpenRouter](https://openrouter.ai). O modelo é instruído a chamar uma função (tool use estilo OpenAI) cujo JSON Schema é nosso. A gente parseia os argumentos da chamada incrementalmente com [partial-json](https://github.com/promplate/partial-json), então os achados aparecem na UI enquanto o modelo ainda está escrevendo.",
+        "O Jiddu roda seis análises independentes: um detector de falácias, um pipeline de checagem de fatos (extração + veredito via Sonar), uma avaliação de imparcialidade, um explicador de papers parágrafo a parágrafo, um detector de slop de IA e uma revisão adversarial de um único paper autônomo com verificação de literatura publicada. São rotas separadas no app (`/`, `/factcheck`, `/neutrality`, `/explain`, `/slop`, `/review`) e tabelas separadas no banco. Nenhuma depende das outras.",
+        "Os cinco pipelines de texto transmitem output estruturado de tool call de um LLM via [OpenRouter](https://openrouter.ai); os JSON Schemas são controlados pelo Jiddu e o [partial-json](https://github.com/promplate/partial-json) permite que os achados apareçam enquanto o modelo ainda escreve. A revisão de paper também usa SSE, mas para informar cinco etapas amplas; cada etapa completa e valida um artefato estruturado antes da próxima.",
         "Todo o output é no idioma da UI escolhido pelo usuário. O mesmo prompt vai independente do modelo selecionado — a diferença de idioma vem de uma única linha `OUTPUT LANGUAGE:` no system prompt.",
       ],
     },
@@ -1431,7 +1566,7 @@ const pt: Messages = {
       title: "2. Entrada: ingestão e segmentação",
       paragraphs: [
         "**URL.** O fetch manda headers de browser real (User-Agent do Chrome atual, Accept-Language pt-BR, sec-ch-ua, sec-fetch-*) pra que bloqueadores simples de bot não rejeitem. Cada hop de redirect tem o DNS resolvido e é rejeitado se o IP cair em RFC1918, loopback, link-local, CGNAT, multicast ou faixas reservadas IPv4/IPv6 — isso fecha a porta de SSRF, incluindo o IP de metadados da AWS (169.254.169.254) e o admin do NPM local (porta 81 do VPS). Corpo da resposta limitado a 5 MB. O HTML passa por [@mozilla/readability](https://github.com/mozilla/readability) pra extração do artigo.",
-        "**PDF.** Parseado in-process com [pdfjs-dist](https://mozilla.github.io/pdf.js/) — nunca enviado a serviço externo. O modelo só vê texto puro.",
+        "**PDF.** Parseado localmente com [LiteParse](https://github.com/run-llama/liteparse) como parser principal e [pdfjs-dist](https://mozilla.github.io/pdf.js/) como fallback. Os cinco pipelines de texto usam o modo rápido do LiteParse; a revisão adversarial usa o modo acadêmico para preservar Markdown por página, ordem espacial de leitura, OCR seletivo, sinais de complexidade e screenshots. O PDF bruto não é enviado como arquivo, mas a revisão repassa pelo OpenRouter imagens renderizadas de páginas selecionadas quando a inspeção visual é relevante.",
         "**Paste.** Usado como está, apenas com whitespace normalizado.",
         "O texto extraído é segmentado por um divisor de sentenças que conhece abreviações (`src/lib/sentences.ts`) — reconhece abreviações em português (`sr.`, `dr.`, `prof.`), mantém siglas como `U.S.` inteiras, e não quebra no meio de números como `3,4%`. As sentenças são agrupadas em chunks de ~12k caracteres (`src/lib/chunker.ts`) pra documentos longos caberem no contexto do modelo sem perder fronteiras de sentença.",
       ],
@@ -1497,16 +1632,16 @@ const pt: Messages = {
     {
       title: "10. Armazenamento, privacidade e revisão",
       paragraphs: [
-        "A persistência é um único arquivo SQLite num VPS Hostinger, montado como volume Docker. Não há contas de usuário. Cada análise ganha um id curto e vive em `/a/<id>`, `/f/<id>` ou `/n/<id>`. Quem tem a URL vê.",
-        "O texto submetido é enviado ao OpenRouter, que roteia pro upstream que serve o modelo escolhido. A gente não repassa pra mais ninguém. Registramos o IP da requisição pra rate-limit e detecção de abuso, e não vendemos nem compartilhamos isso.",
+        "A persistência é um único arquivo SQLite num VPS Hostinger, montado como volume Docker. Não há contas de usuário. Os resultados recebem ids curtos em `/a`, `/f`, `/n`, `/e`, `/s` ou `/r`; quem tem a URL compartilhável vê o resultado final. Ledgers, pesquisa e juízos preliminares da revisão permanecem artefatos intermediários privados.",
+        "O conteúdo submetido passa pelo OpenRouter para o upstream do modelo escolhido. Na revisão de paper, isso inclui imagens renderizadas de páginas selecionadas, não só o texto extraído. A etapa de literatura pesquisa fontes acadêmicas públicas por afirmações técnicas, enquanto os prompts proíbem consultas pelo título, nome dos autores ou outros manuscritos dos mesmos autores. O autocomplete envia apenas a consulta da venue ao DBLP. Registramos o IP para rate-limit e sinais de abuso e não o vendemos.",
         "Cada análise tem um timestamp `reviewedAt`. Por padrão é nulo, significando que a análise é automatizada e não foi conferida por um operador. O admin (em `/admin`, protegido por senha) pode marcar análises individuais como revisadas.",
       ],
     },
     {
       title: "11. Controle de custo e abuso",
       paragraphs: [
-        "Toda rota que gera custo tem um rate limit de token bucket in-memory por IP. Defaults: 30 análises de falácia / hora, 30 extrações de fact-check / hora, 10 verificações em massa / hora, 20 refreshes individuais / hora, 20 sinalizações de feedback / hora. Todos os valores são ajustáveis em runtime no `/admin/settings` — sem precisar redeployar. Quando o bucket esgota, a API retorna 429 com header `Retry-After`.",
-        "A extração de fact-check tem cap de 50 afirmações por documento. O refresh por afirmação tem cap de 2 chamadas. Ambos ajustáveis no admin. São as defesas estruturais contra um único usuário gerar uma conta inesperada.",
+        "Toda rota que gera custo tem rate limit token bucket in-memory por IP. Os padrões incluem 30 análises de falácia / hora, 30 extrações de fact-check / hora, 10 verificações em massa / hora, 20 refreshes individuais / hora e, deliberadamente conservador, 4 revisões de paper / hora com burst 2. Tudo é ajustável em runtime no `/admin/settings`; buckets esgotados retornam 429 com `Retry-After`.",
+        "A extração de fact-check tem cap de 50 afirmações por documento e o refresh, 2 chamadas por afirmação. A revisão aceita exatamente um PDF, recusa truncamento silencioso acima de 300.000 caracteres extraídos, limita a inspeção visual a páginas selecionadas e divide o trabalho caro em etapas auditáveis. Esses controles evitam fan-out e custos acidentalmente ilimitados.",
       ],
     },
     {
@@ -1521,7 +1656,7 @@ const pt: Messages = {
       title: "13. Modo Live (beta)",
       paragraphs: [
         "Pipeline separado em [/live](/live): a página captura áudio do microfone do usuário ou, em browsers Chromium, de uma aba do navegador via `getDisplayMedia`. O áudio é transmitido *direto do browser pra Realtime API da OpenAI* via WebRTC — nunca passa pelo servidor do Jiddu. O modelo de transcrição é `gpt-realtime-whisper`, e o idioma respeita o seletor do header (EN / PT / ES).",
-        "Como o cabeamento funciona: quando o usuário clica em **Iniciar**, o browser chama `POST /api/live/token` pra cunhar um client secret efêmero de curta duração (o servidor do Jiddu guarda a `OPENAI_API_KEY` real; o browser nunca vê). O browser então abre a peer-connection WebRTC pra OpenAI usando esse secret e começa a receber deltas de transcrição. A cada ~500 caracteres novos (ou a cada 30 segundos, o que vier primeiro), uma chamada SSE separada pra `POST /api/live/analyze` envia o transcript cumulativo e roda o mesmo prompt de falácia usado em qualquer lugar — essa etapa de análise é uma chamada diferente da transcrição via OpenAI acima, roteada via OpenRouter com o mesmo seletor de modelo (GPT-5.4 mini / MiniMax M3) das outras três pipelines. Os achados aparecem na UI quase em tempo real. No **Parar**, uma última chamada com `finalize: true` commita a sessão como uma análise `/a/<id>` normal, indistinguível downstream de uma análise feita via paste.",
+        "Como o cabeamento funciona: quando o usuário clica em **Iniciar**, o browser chama `POST /api/live/token` pra cunhar um client secret efêmero de curta duração (o servidor do Jiddu guarda a `OPENAI_API_KEY` real; o browser nunca vê). O browser então abre a peer-connection WebRTC pra OpenAI usando esse secret e começa a receber deltas de transcrição. A cada ~500 caracteres novos (ou a cada 30 segundos, o que vier primeiro), uma chamada SSE separada pra `POST /api/live/analyze` envia o transcript cumulativo e roda o mesmo prompt de falácia usado em qualquer lugar — essa etapa de análise é uma chamada diferente da transcrição via OpenAI acima, roteada via OpenRouter com o mesmo seletor GPT-5.4 mini / MiniMax M3 dos pipelines de texto. Os achados aparecem na UI quase em tempo real. No **Parar**, uma última chamada com `finalize: true` commita a sessão como uma análise `/a/<id>` normal, indistinguível downstream de uma análise feita via paste.",
         "Custo é limitado por um cap duro de 60 minutos por sessão (≈ \\$1 de Realtime + custo de análise LLM). O áudio bruto nunca é armazenado — só a transcrição e os achados detectados persistem. A página é deliberadamente fora do nav enquanto está em beta — chega-se digitando `/live` na barra. Captura de áudio de aba funciona só em Chrome / Edge porque Safari e Firefox não expõem áudio de aba via `getDisplayMedia`; o microfone funciona em qualquer lugar.",
       ],
     },
@@ -1531,23 +1666,33 @@ const pt: Messages = {
         "O pipeline Explain (`/explain`, resultados em `/e/:id`) recebe um artigo acadêmico ou documento técnico e produz uma explicação parágrafo a parágrafo em linguagem simples. Cada parágrafo recebe uma tag de papel (Background / Objetivo / Método / Resultado / Interpretação / Limitação / Conclusão) e uma explicação escrita no nível de audiência escolhido. Uma visão geral do documento é gerada primeiro.",
         "Níveis de audiência: **Criança** (ELI5, analogias do cotidiano, sem jargão), **Ensino médio** (linguagem clara, poucos termos técnicos explicados), **Graduação** (registro acadêmico padrão, pressupõe familiaridade com a área), **Expert** (conciso, nível de pares, terminologia completa mantida). O nível controla apenas a complexidade do texto — não filtra nem valida o conteúdo.",
         "A tag de papel é algorítmica. O modelo lê cada parágrafo em contexto e atribui o papel que melhor descreve sua função no argumento. Artigos interdisciplinares ou documentos com estrutura não padrão podem receber tags incorretas.",
-        "Ao contrário dos outros três pipelines, o Explain é otimizado para artigos acadêmicos estruturados. Resultados em posts de blog, petições jurídicas ou textos não estruturados serão de menor qualidade.",
+        "Ao contrário dos pipelines de texto geral, o Explain é otimizado para artigos acadêmicos estruturados. Resultados em posts de blog, petições jurídicas ou textos não estruturados serão de menor qualidade.",
       ],
     },
     {
-      title: "15. API pública & MCP (para agentes)",
+      title: "15. Revisão adversarial de paper",
+      paragraphs: [
+        "O pipeline de revisão (`/review`, resultados em `/r/:id`) aceita exatamente um PDF final como manuscrito autônomo, mais venue-alvo, edição, track, tipo de paper e data opcional. Ele não combina suplementos nem múltiplos arquivos. O resultado público inclui recomendação de gatekeeping, resumo, pontos fortes, fraquezas localizadas, perguntas, checklist de reprodutibilidade, referências e o padrão exato da venue; os exports Markdown e print/PDF usam a mesma revisão final armazenada.",
+        "São cinco etapas privadas: **ledger** (afirmações, evidências, experimentos e inspeção visual com páginas), **pesquisa de literatura publicada**, **síntese estruturada**, **autocrítica adversarial** e **finalização determinística**. A autocrítica precisa contestar novidade sem suporte, evidências ignoradas, severidade inflada ou atenuada e inconsistência com a venue-alvo antes que qualquer rascunho vire final.",
+        "O autocomplete combina descoberta gratuita e sem conta pelo [DBLP](https://dblp.org) com perfis 2026 verificados e versionados de NeurIPS, ICML, ICLR, AAAI, IJCAI e CVPR. Um perfil verificado injeta critérios e exigências oficiais na síntese e na autocrítica e fica persistido com URLs-fonte. Uma venue só do DBLP ou sem correspondência usa rubrica acadêmica geral claramente identificada; incompatibilidades de edição, track ou tipo são marcadas como não verificadas, nunca adivinhadas.",
+        "Toda fraqueza substantiva precisa trazer página ou seção do manuscrito e severidade `MAJOR`, `MODERATE` ou `MINOR`. A revisão continua automatizada: pode perder problemas, inventar comparações ou aplicar mal um critério, e não é revisão oficial por pares nem previsão de aceitação.",
+      ],
+    },
+    {
+      title: "16. API pública & MCP (para agentes)",
       paragraphs: [
         "Além do app web, os cinco pipelines são expostos como uma API REST pública para agentes e scripts: `POST /api/v1/detect-fallacies`, `/fact-check`, `/assess-neutrality`, `/explain`, `/detect-slop`. Diferente das rotas SSE internas acima, estas são síncronas — uma requisição JSON entra (`{ text }`, 40–2000 caracteres, mais `lang` opcional e, no explain, `level`), uma resposta JSON sai. Elas dirigem os mesmos geradores até o fim sobre um único chunk e nunca persistem uma linha no banco.",
         "As requisições se autenticam com o cabeçalho `X-Jiddu-Key`. As chaves são emitidas pelo admin em `/admin/api-keys` (guardadas só como hash sha256, mostradas uma vez) e têm limite de taxa por chave, separado dos limites por IP do app web. O fact-check via API extrai e verifica cada afirmação, com um teto de afirmações por requisição pra que uma chamada não dispare verificações ilimitadas no Sonar pago.",
         "Um servidor MCP expõe as mesmas cinco ferramentas a agentes. Ele é hospedado no próprio processo em `POST /api/mcp` (via mcp-handler), então qualquer cliente MCP conecta por URL através do bridge público `mcp-remote` — nada para instalar ou publicar. As ferramentas chamam a camada de pipeline interna direto, sem hop HTTP extra. As mesmas cinco ferramentas também vêm como o pacote standalone `jiddu-mcp` para uso local. Snippets de configuração e docs orientadas a máquina em [/api-access](/api-access).",
         "A qualidade é acompanhada por um conjunto fixo de evals (15–16 casos por ferramenta) versionado no repositório e comparado com resultados esperados; o relatório publicado está em [evals/report.md](https://github.com/rafaehlers/jiddu/blob/main/evals/report.md).",
+        "A revisão adversarial ainda não faz parte de `/api/v1` nem do MCP. Suas rotas internas multipart/SSE atendem ao navegador e não são um contrato público estável; uma versão pública deve ser uma API de jobs assíncronos.",
       ],
     },
     {
-      title: "16. Open source e metodologia",
+      title: "17. Open source e metodologia",
       paragraphs: [
         "Código fonte em [github.com/rafaehlers/jiddu](https://github.com/rafaehlers/jiddu) sob licença [AGPL-3.0-or-later](https://www.gnu.org/licenses/agpl-3.0.txt). A AGPL fecha o 'SaaS loophole' que a GPL deixa aberto: quem rodar uma versão modificada como serviço de rede tem que publicar o código modificado.",
-        "Dois papers fundamentam o design: [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson — Microsoft Research, 2025) pra extração em quatro estágios; e [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) (Goldfarb, Hall, Fisher, Salam, Wilde — Forum AI / Stanford, 2025) pra a avaliação de veredito, a taxonomia de 6 tiers de fonte e o framework de imparcialidade. O Jiddu não tem afiliação com nenhum dos grupos.",
+        "Claimify e Distilling Expert Judgment at Scale fundamentam o fact-check e a imparcialidade. A revisão de paper também usa extração local sensível ao layout do LiteParse, descoberta de venues pelo DBLP e critérios específicos por edição transcritos de páginas oficiais. O Jiddu não tem afiliação com esses grupos, com o DBLP nem com as venues.",
         "O disclaimer completo do que o Jiddu afirma e não afirma está em [/legal](/legal).",
       ],
     },
@@ -1675,16 +1820,16 @@ const es: Messages = {
   hero_subtitle:
     "Sube un PDF, pega un texto o suelta una URL. Jiddu resalta los pasajes con falacias lógicas y explica cada uno en un comentario — como un revisor en Word — y le da al texto entero una puntuación de falacia de 0 a 100.",
   home_hero_subtitle:
-    "Suelta un PDF, pega un texto o añade una URL — y elige la lente: detección de falacias, extracción y verificación de afirmaciones, evaluación de neutralidad, explicación párrafo a párrafo o detección de slop de IA.",
+    "Suelta un PDF, pega un texto o añade una URL — y elige la lente: falacias, verificación de hechos, neutralidad, explicación, detección de slop o revisión adversarial completa de un paper.",
   privacy: "Privacidad:",
   privacy_body:
-    "tu texto se envía al modelo seleccionado (OpenAI o MiniMax, enrutado vía OpenRouter) para análisis y se almacena localmente bajo un id compartible.",
+    "tu contenido — incluidas imágenes de páginas seleccionadas del PDF cuando se necesita inspección visual — se envía al modelo elegido vía OpenRouter y se almacena localmente bajo un id compartible.",
   see_demo: "Ver demostración",
   see_demo_hint: "¿Quieres un vistazo rápido sin ejecutar un análisis?",
   bench_badge_label:
     "Pipeline validado · 67,5% de concordancia con PolitiFact en benchmark de 200 claims",
   bench_badge_link: "ver informe",
-  pipelines_heading: "Cinco lentes sobre el mismo texto",
+  pipelines_heading: "Seis lentes para lectura crítica",
   pipelines_subheading:
     "Elige un modo en el formulario de arriba, o abre un análisis de muestra para ver cómo se ve cada uno.",
   pipeline_fallacy_desc:
@@ -1927,12 +2072,49 @@ const es: Messages = {
   slop_guide_subtitle:
     "Una referencia breve para los patrones de escritura de slop de IA que Jiddu puede señalar. Patrones, no autoría — los humanos también escriben slop.",
 
+  mode_review: "Revisión adversarial",
+  pipeline_review_desc:
+    "Trata un paper como envío autónomo, audita claims y experimentos, verifica literatura publicada y entrega una revisión de gatekeeping con críticas localizadas.",
+  review_cta: "Revisar paper",
+  review_failed: "Falló la revisión adversarial",
+  loader_review: [
+    "Interpretando el paper completo",
+    "Construyendo el ledger privado de claims",
+    "Verificando la literatura publicada",
+    "Auditando narrativa, evidencia y corrección",
+    "Ejecutando la autocrítica adversarial",
+    "Finalizando la revisión",
+  ],
+  review_venue: "Venue objetivo (opcional)",
+  review_venue_placeholder: "Busca NeurIPS, ICML, ICLR, AAAI…",
+  review_venue_help: "Los perfiles verificados aplican criterios oficiales de la edición. Otros venues de DBLP usan un estándar académico general.",
+  review_venue_searching: "Buscando en DBLP…",
+  review_venue_verified: "Rúbrica verificada",
+  review_venue_catalog_only: "Resultado del catálogo · rúbrica general",
+  review_venue_year: "Edición",
+  review_track: "Track",
+  review_track_placeholder: "Main track",
+  review_paper_type: "Tipo de paper",
+  review_type_research: "Paper de investigación",
+  review_type_position: "Position paper",
+  review_type_survey: "Survey",
+  review_type_dataset: "Dataset / benchmark",
+  review_type_theory: "Teoría",
+  review_type_use_inspired: "Orientado a la aplicación",
+  review_type_concept: "Concepto y viabilidad",
+  review_type_negative_results: "Resultados negativos",
+  review_date: "Fecha de revisión (opcional)",
+  review_pdf_hint: "Suelta exactamente un PDF final, o haz clic para elegir",
+  review_file_size_hint: "Solo PDF · lectura completa · hasta ~300 mil caracteres",
+  review_form_hint:
+    "Una revisión completa puede tardar varios minutos. Mantén esta página abierta.",
+
   nav_legal: "Términos",
   nav_how_it_works: "Cómo funciona",
   nav_api: "API",
   api_access_title: "API y MCP de Jiddu",
   api_access_subtitle:
-    "Usa las cinco herramientas de lectura de Jiddu desde tu propio código o agente — una REST API documentada y un servidor MCP.",
+    "Cinco herramientas públicas de análisis de texto para código y agentes. La revisión adversarial de PDF sigue siendo un flujo web por ahora.",
   api_access_sections: [
     {
       title: "Endpoints",
@@ -1940,6 +2122,13 @@ const es: Messages = {
         "Jiddu expone sus cinco pipelines de análisis como una REST API pública. Cada endpoint recibe un cuerpo JSON con un campo `text` (40–2000 caracteres) y un `lang` opcional (`en` / `pt` / `es`), y devuelve JSON estructurado.",
         "```\nPOST /api/v1/detect-fallacies\nPOST /api/v1/fact-check\nPOST /api/v1/assess-neutrality\nPOST /api/v1/explain\nPOST /api/v1/detect-slop\n```",
         "`detect-fallacies`, `assess-neutrality`, `explain` y `detect-slop` son rápidos. `fact-check` extrae cada afirmación y la verifica con búsqueda web en vivo, por lo que es más lento y medido.",
+      ],
+    },
+    {
+      title: "Revisión adversarial de papers",
+      paragraphs: [
+        "La revisión adversarial en [/review](/review) todavía no se expone mediante la superficie `/api/v1` con clave ni por MCP. Requiere un PDF completo, parsing sensible al layout, páginas visuales seleccionadas, varias etapas largas de modelo, investigación de literatura externa y artefactos de auditoría persistidos — un contrato distinto de las herramientas síncronas de 2.000 caracteres anteriores.",
+        "El navegador usa `POST /api/review` multipart para el flujo SSE de cinco etapas y `GET /api/review/venues?q=…`, público y sin cuenta, para el autocompletado de venues. Son rutas internas de la aplicación, no un contrato público y estable de automatización. Una futura API pública de revisión debería usar jobs asíncronos con endpoints de estado y resultado.",
       ],
     },
     {
@@ -2009,12 +2198,12 @@ const es: Messages = {
   legal_title: "Términos y descargos",
   legal_subtitle:
     "Lee esto antes de usar Jiddu, especialmente antes de compartir un análisis públicamente.",
-  legal_last_updated: "Actualizado: 2026-06-28",
+  legal_last_updated: "Actualizado: 2026-07-26",
   legal_sections: [
     {
       title: "1. Qué hace Jiddu",
       paragraphs: [
-        "Jiddu es una herramienta automatizada. Usa modelos de lenguaje (actualmente enrutados vía OpenRouter a OpenAI, Anthropic, MiniMax y Perplexity Sonar) para (a) señalar pasajes que pueden contener falacias lógicas, (b) extraer afirmaciones factuales verificables y ofrecer un veredicto basado en búsqueda web, (c) evaluar qué tan neutral o sesgado es un texto, (d) explicar un documento párrafo por párrafo en el nivel de lectura elegido, y (e) señalar patrones de escritura de slop de IA (plantillas y frases hechas — nunca una afirmación sobre autoría). Las mismas herramientas están disponibles vía una API pública y un servidor MCP.",
+        "Jiddu es una herramienta automatizada. Usa modelos de lenguaje (actualmente enrutados vía OpenRouter a OpenAI, Anthropic, MiniMax y Perplexity Sonar) para (a) señalar pasajes que pueden contener falacias lógicas, (b) extraer afirmaciones factuales verificables y ofrecer un veredicto basado en búsqueda web, (c) evaluar qué tan neutral o sesgado es un texto, (d) explicar un documento párrafo por párrafo en el nivel de lectura elegido, (e) señalar patrones de escritura de slop de IA (plantillas y frases hechas — nunca una afirmación sobre autoría) y (f) producir una revisión adversarial previa al envío, calibrada para el venue, de un paper completo. Las primeras cinco herramientas de texto están disponibles mediante la API pública y MCP; la revisión de papers es por ahora un flujo exclusivo de la web.",
         "Jiddu no tiene editores humanos. Todo resultado que ves es producido por software. La herramienta es un apoyo a la lectura crítica — no la reemplaza.",
       ],
     },
@@ -2024,13 +2213,15 @@ const es: Messages = {
         'Los veredictos ("respaldado", "contradicho", "mixto", "no verificado") y las etiquetas de falacia son juicios automatizados de mejor esfuerzo. Pueden estar equivocados — a veces con alta confianza.',
         "Jiddu no afirma que ninguna declaración, persona o documento sea verdadero, falso, mentiroso o engañoso. Las etiquetas son señales para activar tu propia verificación. Siempre lee las fuentes citadas y forma tu propia conclusión.",
         "Las puntuaciones de imparcialidad y las explicaciones párrafo por párrafo también son interpretaciones automatizadas, no afirmaciones de hecho — las explicaciones describen qué dice un texto y cómo está estructurado, nunca si sus afirmaciones son correctas. El nivel de audiencia cambia solo la prosa; las etiquetas de rol de las secciones son solo conjeturas de mejor esfuerzo.",
+        "Los hallazgos de la revisión de papers, las comparaciones de novedad, las severidades, el encaje con el venue y la recomendación final también son juicios automatizados. No son una revisión oficial por pares, una predicción de aceptación ni un sustituto de un revisor humano cualificado.",
       ],
     },
     {
       title: "3. Uso bajo tu propio riesgo",
       paragraphs: [
         "Eres responsable de cómo usas el análisis y de lo que compartes o publicas. Si republicas un resultado de Jiddu, adoptas ese contenido como tuyo — los autores de Jiddu no son responsables de los usos posteriores.",
-        "No envíes datos confidenciales, propietarios o personales. El texto enviado se reenvía a los proveedores de modelos mencionados arriba para procesamiento y se almacena bajo un id compartible.",
+        "No envíes datos confidenciales, propietarios, bajo embargo o personales. El contenido enviado — incluidas imágenes renderizadas de páginas seleccionadas del PDF cuando se necesita inspección visual — pasa por OpenRouter al proveedor upstream del modelo elegido y se almacena bajo un id compartible.",
+        "Usa la revisión de papers solo con manuscritos propios o que estés autorizado a procesar. No subas un manuscrito recibido bajo revisión por pares confidencial salvo que los autores y el venue permitan explícitamente el procesamiento por modelos de terceros.",
       ],
     },
     {
@@ -2043,7 +2234,8 @@ const es: Messages = {
     {
       title: "5. Privacidad",
       paragraphs: [
-        "Cada análisis recibe un id corto y se almacena en un servidor en Brasil. Quien tenga la URL puede verlo. No hay cuentas de usuario.",
+        "Cada análisis o revisión de paper recibe un id corto y se almacena en un servidor en Brasil. Quien tenga la URL compartible puede ver el resultado final. No hay cuentas de usuario; las etapas intermedias privadas de la revisión no aparecen en el visor público.",
+        "El autocompletado de venue envía solo la consulta del venue — nunca el manuscrito — a la búsqueda pública de venues de [DBLP](https://dblp.org). La etapa de investigación de literatura consulta fuentes académicas públicas usando afirmaciones técnicas del manuscrito; los prompts prohíben buscar por el título del paper, el nombre de los autores u otros manuscritos de los mismos autores.",
         "Registramos el IP de la solicitud para límites de tasa y detección de abuso. No vendemos ni compartimos esa información.",
         "El tráfico de las páginas se mide vía Google Analytics (gtag.js).",
       ],
@@ -2052,7 +2244,8 @@ const es: Messages = {
       title: "6. Metodología",
       paragraphs: [
         "Nuestro pipeline de extracción y verificación de afirmaciones se inspira en [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson, MSR 2025) para la etapa de extracción, y en el framework de evaluación descrito en [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) (Goldfarb, Hall, Fisher, Salam, Wilde — Forum AI / Stanford, 2025) para la evaluación de veredicto, los niveles de calidad de fuente y la dimensión de imparcialidad. Nuestra elección de 4 clases de veredicto (respaldado / contradicho / mixto / no verificado) en lugar de los esquemas de 5 o 6 clases usados por algunos outlets de fact-check se basa en [Sahitaj et al. 2025](https://arxiv.org/abs/2502.08909), que mostraron empíricamente que el etiquetado de 3 clases supera al de 5 clases para fact-check con LLMs — las categorías adicionales en el medio introducen ambigüedad sin mejorar la precisión.",
-        "Jiddu no está afiliado a ninguno de estos grupos de investigación; los citamos porque la metodología detrás de la herramienta se basa en su trabajo, y los usuarios deben saber que las decisiones de diseño tienen base académica.",
+        "La revisión adversarial crea un ledger de afirmaciones y evidencias etiquetado por página, investiga literatura publicada, sintetiza una revisión estructurada, cuestiona esa revisión en una autocrítica separada y luego la finaliza de forma determinista. Los perfiles verificados de venue son snapshots específicos de una edición de los criterios oficiales; los criterios exactos y las URL fuente utilizadas se guardan con cada revisión. Los venues sin coincidencia usan una rúbrica académica general claramente identificada, y las políticas pueden cambiar después de publicar el perfil.",
+        "Jiddu no está afiliado a esos grupos de investigación, a DBLP ni a ningún venue cuyos criterios resume. Se citan las referencias y páginas oficiales para que el usuario pueda auditar la metodología y el estándar aplicado.",
         "El pipeline de fact-check se midió contra el corpus humano de [PolitiFact](https://www.politifact.com) (vía el [dataset LIAR2](https://github.com/chengxuphd/liar2), Apache-2.0). En 200 afirmaciones tomadas de los cuatro buckets polares de PolitiFact, el veredicto de Jiddu coincidió con el veredicto humano en 67,5% de los casos en total y en 81,3% en las categorías menos ambiguas (true / false / pants-on-fire), con desacuerdo estricto en apenas 4,5%. Metodología completa, matriz de confusión y análisis de desacuerdos en [docs/benchmark-politifact.md](/benchmark).",
       ],
     },
@@ -2071,8 +2264,8 @@ const es: Messages = {
     {
       title: "1. Visión general",
       paragraphs: [
-        "Jiddu corre cinco análisis independientes sobre el mismo texto: un detector de falacias, un pipeline de verificación de hechos (extracción + veredicto vía Sonar), una evaluación de imparcialidad, un explicador de papers párrafo a párrafo y un detector de slop de IA (señala patrones de escritura de plantilla — misma arquitectura que el detector de falacias con catálogo y prompt distintos). Son rutas separadas en la app (`/`, `/factcheck`, `/neutrality`, `/explain`, `/slop`) y tablas separadas en la base. Ninguno depende de los otros.",
-        "Cada análisis es una petición en streaming a un LLM vía [OpenRouter](https://openrouter.ai). Se instruye al modelo a llamar una función (tool use estilo OpenAI) cuyo JSON Schema controlamos nosotros. Parseamos los argumentos de la tool-call incrementalmente con [partial-json](https://github.com/promplate/partial-json), así los hallazgos aparecen en la UI mientras el modelo todavía está escribiendo.",
+        "Jiddu corre seis análisis independientes: un detector de falacias, un pipeline de verificación de hechos (extracción + veredicto vía Sonar), una evaluación de imparcialidad, un explicador de papers párrafo a párrafo, un detector de slop de IA y una revisión adversarial de un único paper autónomo con verificación de literatura publicada. Son rutas separadas en la app (`/`, `/factcheck`, `/neutrality`, `/explain`, `/slop`, `/review`) y tablas separadas en la base. Ninguno depende de los otros.",
+        "Los cinco pipelines de texto transmiten output estructurado de tool call de un LLM vía [OpenRouter](https://openrouter.ai); Jiddu controla los JSON Schemas y [partial-json](https://github.com/promplate/partial-json) permite que los hallazgos aparezcan mientras el modelo todavía escribe. La revisión de papers también usa SSE, pero para informar cinco etapas amplias; cada etapa completa y valida un artefacto estructurado antes de la siguiente.",
         "Todo el output va en el idioma de la UI elegido por el usuario. El mismo prompt se usa sin importar qué modelo elija el usuario — la diferencia de idioma viene de una única línea `OUTPUT LANGUAGE:` en el system prompt.",
       ],
     },
@@ -2080,7 +2273,7 @@ const es: Messages = {
       title: "2. Entrada: ingestión y segmentación",
       paragraphs: [
         "**URL.** El fetch envía headers de navegador real (User-Agent de Chrome actual, Accept-Language pt-BR, sec-ch-ua, sec-fetch-*) para que bloqueadores ingenuos de bots no rechacen. Cada salto de redirect tiene el DNS resuelto y se rechaza si el IP cae en RFC1918, loopback, link-local, CGNAT, multicast o rangos reservados IPv4/IPv6 — eso cierra la puerta de SSRF, incluyendo el IP de metadatos de AWS (169.254.169.254) y el admin local del NPM (puerto 81 del VPS). El cuerpo de la respuesta está limitado a 5 MB. El HTML pasa por [@mozilla/readability](https://github.com/mozilla/readability) para extraer el artículo.",
-        "**PDF.** Parseado en proceso con [pdfjs-dist](https://mozilla.github.io/pdf.js/) — nunca se manda a un servicio remoto. El modelo solo ve texto plano.",
+        "**PDF.** Parseado localmente con [LiteParse](https://github.com/run-llama/liteparse) como parser principal y [pdfjs-dist](https://mozilla.github.io/pdf.js/) como fallback. Los cinco pipelines de texto usan el modo rápido de LiteParse; la revisión adversarial usa el modo académico para preservar Markdown por página, orden espacial de lectura, OCR selectivo, señales de complejidad y screenshots. El PDF bruto no se sube como archivo, pero la revisión envía por OpenRouter imágenes renderizadas de páginas seleccionadas cuando la inspección visual es relevante.",
         "**Paste.** Usado tal cual, solo con espacios en blanco normalizados.",
         "El texto extraído se segmenta en oraciones con un divisor consciente de abreviaturas (`src/lib/sentences.ts`) — reconoce abreviaturas en portugués (`sr.`, `dr.`, `prof.`), mantiene siglas como `U.S.` intactas y no rompe en medio de números como `3,4%`. Las oraciones se agrupan en chunks de ~12k caracteres (`src/lib/chunker.ts`) para que documentos largos quepan en la ventana de contexto del modelo sin perder fronteras de oración.",
       ],
@@ -2146,16 +2339,16 @@ const es: Messages = {
     {
       title: "10. Almacenamiento, privacidad y revisión",
       paragraphs: [
-        "La persistencia es un único archivo SQLite en un VPS de Hostinger, montado como volumen Docker. No hay cuentas de usuario. Cada análisis recibe un id corto y vive bajo `/a/<id>`, `/f/<id>` o `/n/<id>`. Cualquiera con la URL puede verlo.",
-        "El texto enviado va a OpenRouter, que lo enruta al upstream que sirve el modelo elegido. No lo retransmitimos a ningún otro lugar. Registramos el IP de la petición para rate-limit y señales de abuso, y no lo vendemos ni compartimos.",
+        "La persistencia es un único archivo SQLite en un VPS de Hostinger, montado como volumen Docker. No hay cuentas de usuario. Los resultados reciben ids cortos en `/a`, `/f`, `/n`, `/e`, `/s` o `/r`; cualquiera con la URL compartible puede ver el resultado final. Ledgers, investigación y juicios preliminares de revisión permanecen como artefactos intermedios privados.",
+        "El contenido enviado pasa por OpenRouter al upstream del modelo elegido. En revisión de papers incluye imágenes renderizadas de páginas seleccionadas, no solo texto extraído. La etapa de literatura busca fuentes académicas públicas por afirmaciones técnicas, mientras los prompts prohíben consultas por título, autor u otros manuscritos de los mismos autores. El autocompletado envía solo la consulta del venue a DBLP. Registramos el IP para rate-limit y señales de abuso y no lo vendemos.",
         "Cada análisis tiene un timestamp `reviewedAt`. Por defecto es null, lo que significa que el análisis es automatizado y no fue revisado por un operador. El admin (en `/admin`, protegido por contraseña) puede marcar análisis individuales como revisados.",
       ],
     },
     {
       title: "11. Costo y controles de abuso",
       paragraphs: [
-        "Cada ruta que incurre en costo tiene un rate limit de token bucket in-memory por IP. Defaults: 30 análisis de falacias / hora, 30 extracciones de fact-check / hora, 10 verificaciones masivas / hora, 20 refreshes individuales / hora, 20 flags de feedback / hora. Todos los valores son ajustables en runtime vía `/admin/settings` — sin redeploy. Cuando el bucket se vacía, la API devuelve 429 con header `Retry-After`.",
-        "La extracción de fact-check tiene tope de 50 afirmaciones por documento. El refresh por afirmación tiene tope de 2 llamadas por afirmación. Ambos configurables desde el admin. Son las defensas estructurales contra un único usuario acumulando una cuenta inesperada.",
+        "Cada ruta con costo tiene rate limit token bucket in-memory por IP. Los valores por defecto incluyen 30 análisis de falacias / hora, 30 extracciones de fact-check / hora, 10 verificaciones masivas / hora, 20 refreshes individuales / hora y, deliberadamente conservador, 4 revisiones de paper / hora con burst 2. Todo se ajusta en runtime vía `/admin/settings`; los buckets agotados devuelven 429 con `Retry-After`.",
+        "La extracción de fact-check tiene tope de 50 afirmaciones por documento y el refresh, 2 llamadas por afirmación. La revisión acepta exactamente un PDF, rechaza truncar silenciosamente por encima de 300.000 caracteres extraídos, limita la inspección visual a páginas seleccionadas y divide el trabajo costoso en etapas auditables. Estos controles evitan fan-out y costos accidentalmente ilimitados.",
       ],
     },
     {
@@ -2170,7 +2363,7 @@ const es: Messages = {
       title: "13. Modo Live (beta)",
       paragraphs: [
         "Pipeline separado en [/live](/live): la página captura audio del micrófono del usuario o, en navegadores Chromium, de una pestaña del navegador vía `getDisplayMedia`. El audio se transmite *directamente del navegador a la Realtime API de OpenAI* por WebRTC — nunca pasa por el servidor de Jiddu. El modelo de transcripción es `gpt-realtime-whisper`, y el idioma respeta el selector del header (EN / PT / ES).",
-        "Cómo funciona el cableado: cuando el usuario hace clic en **Iniciar**, el navegador llama a `POST /api/live/token` para acuñar un client secret efímero de corta vida (el servidor de Jiddu guarda la `OPENAI_API_KEY` real; el navegador nunca la ve). El navegador abre entonces la peer-connection WebRTC con OpenAI usando ese secret y empieza a recibir deltas de transcripción. Cada ~500 caracteres nuevos (o cada 30 segundos, lo que ocurra primero), una llamada SSE separada a `POST /api/live/analyze` envía el transcript acumulado y corre el mismo prompt de falacia usado en cualquier lugar — este paso de análisis es una llamada distinta a la transcripción vía OpenAI de arriba, enrutada vía OpenRouter con el mismo selector de modelo (GPT-5.4 mini / MiniMax M3) que las otras tres pipelines. Los hallazgos aparecen en la UI casi en tiempo real. Al **Detener**, una última llamada con `finalize: true` commitea la sesión como un análisis `/a/<id>` normal, indistinguible aguas abajo de uno hecho vía paste.",
+        "Cómo funciona el cableado: cuando el usuario hace clic en **Iniciar**, el navegador llama a `POST /api/live/token` para acuñar un client secret efímero de corta vida (el servidor de Jiddu guarda la `OPENAI_API_KEY` real; el navegador nunca la ve). El navegador abre entonces la peer-connection WebRTC con OpenAI usando ese secret y empieza a recibir deltas de transcripción. Cada ~500 caracteres nuevos (o cada 30 segundos, lo que ocurra primero), una llamada SSE separada a `POST /api/live/analyze` envía el transcript acumulado y corre el mismo prompt de falacia usado en cualquier lugar — este paso de análisis es una llamada distinta a la transcripción vía OpenAI de arriba, enrutada vía OpenRouter con el mismo selector GPT-5.4 mini / MiniMax M3 de los pipelines de texto. Los hallazgos aparecen en la UI casi en tiempo real. Al **Detener**, una última llamada con `finalize: true` commitea la sesión como un análisis `/a/<id>` normal, indistinguible aguas abajo de uno hecho vía paste.",
         "El costo está acotado por un cap duro de 60 minutos por sesión (≈ \\$1 de Realtime + costo del análisis LLM). El audio bruto nunca se almacena — solo la transcripción y los hallazgos detectados persisten. La página deliberadamente no está enlazada desde el nav mientras está en beta — se llega tecleando `/live` en la barra. La captura de audio de pestaña funciona solo en Chrome / Edge porque Safari y Firefox no exponen audio de pestaña vía `getDisplayMedia`; el micrófono funciona en todos lados.",
       ],
     },
@@ -2180,23 +2373,33 @@ const es: Messages = {
         "El pipeline Explain (`/explain`, resultados en `/e/:id`) recibe un artículo académico o documento técnico y produce una explicación párrafo a párrafo en lenguaje sencillo. Cada párrafo recibe una etiqueta de rol (Background / Objetivo / Método / Resultado / Interpretación / Limitación / Conclusión) y una explicación escrita en el nivel de audiencia elegido. Primero se genera un resumen general del documento.",
         "Niveles de audiencia: **Niño** (ELI5, analogías cotidianas, sin jerga), **Secundaria** (lenguaje claro, pocos términos técnicos explicados), **Universitario** (registro académico estándar, asume familiaridad con el campo), **Experto** (conciso, nivel de pares, terminología completa conservada). El nivel controla solo la complejidad del texto — no filtra ni valida el contenido.",
         "La etiqueta de rol es algorítmica. El modelo lee cada párrafo en contexto y asigna el rol que mejor describe su función en el argumento. Los artículos interdisciplinarios o los documentos con estructura no estándar pueden recibir etiquetas incorrectas.",
-        "A diferencia de los otros tres pipelines, Explain está optimizado para artículos académicos estructurados. Los resultados en posts de blog, escritos legales o textos no estructurados serán de menor calidad.",
+        "A diferencia de los pipelines de texto general, Explain está optimizado para artículos académicos estructurados. Los resultados en posts de blog, escritos legales o textos no estructurados serán de menor calidad.",
       ],
     },
     {
-      title: "15. API pública & MCP (para agentes)",
+      title: "15. Revisión adversarial de papers",
+      paragraphs: [
+        "El pipeline de revisión (`/review`, resultados en `/r/:id`) acepta exactamente un PDF final como manuscrito autónomo, más venue objetivo, edición, track, tipo de paper y fecha opcional. No combina suplementos ni varios archivos. El resultado público incluye recomendación de gatekeeping, resumen, fortalezas, debilidades localizadas, preguntas, checklist de reproducibilidad, referencias y el estándar exacto del venue; los exports Markdown y print/PDF usan la misma revisión final almacenada.",
+        "Ejecuta cinco etapas privadas: **ledger** (afirmaciones, evidencias, experimentos e inspección visual etiquetados por página), **investigación de literatura publicada**, **síntesis estructurada**, **autocrítica adversarial** y **finalización determinista**. La autocrítica debe cuestionar novedad sin sustento, evidencia omitida, severidad inflada o atenuada e inconsistencia con el venue objetivo antes de que cualquier borrador sea final.",
+        "El autocompletado combina descubrimiento gratuito y sin cuenta mediante [DBLP](https://dblp.org) con perfiles 2026 verificados y versionados de NeurIPS, ICML, ICLR, AAAI, IJCAI y CVPR. Un perfil verificado inyecta criterios y requisitos oficiales en la síntesis y la autocrítica y se persiste con URLs fuente. Un venue solo de DBLP o sin coincidencia usa una rúbrica académica general claramente identificada; incompatibilidades de edición, track o tipo se marcan como no verificadas, nunca se adivinan.",
+        "Cada debilidad sustantiva debe incluir página o sección del manuscrito y severidad `MAJOR`, `MODERATE` o `MINOR`. La revisión sigue siendo automatizada: puede omitir problemas, inventar comparaciones o aplicar mal un criterio, y no es revisión oficial por pares ni predicción de aceptación.",
+      ],
+    },
+    {
+      title: "16. API pública & MCP (para agentes)",
       paragraphs: [
         "Además del app web, los cinco pipelines se exponen como una API REST pública para agentes y scripts: `POST /api/v1/detect-fallacies`, `/fact-check`, `/assess-neutrality`, `/explain`, `/detect-slop`. A diferencia de las rutas SSE internas de arriba, estas son síncronas — entra una solicitud JSON (`{ text }`, 40–2000 caracteres, más `lang` opcional y, en explain, `level`), sale una respuesta JSON. Conducen los mismos generadores hasta el final sobre un único chunk y nunca persisten una fila.",
         "Las solicitudes se autentican con el encabezado `X-Jiddu-Key`. Las claves las emite el admin en `/admin/api-keys` (guardadas solo como hash sha256, mostradas una vez) y tienen límite de tasa por clave, separado de los límites por IP del app web. El fact-check vía API extrae y verifica cada afirmación, con un tope de afirmaciones por solicitud para que una llamada no dispare verificaciones ilimitadas en el Sonar pago.",
         "Un servidor MCP expone las mismas cinco herramientas a los agentes. Está alojado en el mismo proceso en `POST /api/mcp` (vía mcp-handler), así que cualquier cliente MCP se conecta por URL mediante el puente público `mcp-remote` — nada que instalar ni publicar. Las herramientas llaman directamente a la capa de pipeline interna, sin salto HTTP extra. Las mismas cinco herramientas también vienen como el paquete standalone `jiddu-mcp` para uso local. Snippets de configuración y docs orientadas a máquinas en [/api-access](/api-access).",
         "La calidad se monitorea con un conjunto fijo de evals (15–16 casos por herramienta) versionado en el repositorio y comparado con resultados esperados; el informe publicado está en [evals/report.md](https://github.com/rafaehlers/jiddu/blob/main/evals/report.md).",
+        "La revisión adversarial todavía no forma parte de `/api/v1` ni de MCP. Sus rutas internas multipart/SSE sirven al navegador y no son un contrato público estable; una versión pública debería ser una API de jobs asíncronos.",
       ],
     },
     {
-      title: "16. Open source y metodología",
+      title: "17. Open source y metodología",
       paragraphs: [
         "El código fuente está en [github.com/rafaehlers/jiddu](https://github.com/rafaehlers/jiddu) bajo licencia [AGPL-3.0-or-later](https://www.gnu.org/licenses/agpl-3.0.txt). AGPL cierra el 'SaaS loophole' que GPL deja abierto: cualquiera que corra una versión modificada como servicio de red debe publicar el código fuente modificado.",
-        "Dos papers fundamentan el diseño: [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson — Microsoft Research, 2025) para la extracción de afirmaciones en cuatro etapas; y [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) (Goldfarb, Hall, Fisher, Salam, Wilde — Forum AI / Stanford, 2025) para la evaluación de veredicto, la taxonomía de 6 tiers de fuentes y el framework de imparcialidad. Jiddu no está afiliado con ninguno de los dos grupos.",
+        "Claimify y Distilling Expert Judgment at Scale fundamentan el fact-check y la imparcialidad. La revisión de papers también usa extracción local sensible al layout de LiteParse, descubrimiento de venues por DBLP y criterios específicos por edición transcritos de páginas oficiales. Jiddu no está afiliado a esos grupos, DBLP ni los venues.",
         "El disclaimer completo de lo que Jiddu afirma y no afirma está en [/legal](/legal).",
       ],
     },

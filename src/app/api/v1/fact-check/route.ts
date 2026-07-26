@@ -8,7 +8,7 @@ import { mapFactCheck } from "@/lib/api/map";
 
 export const runtime = "nodejs";
 // Fact-check extracts claims AND verifies each via Perplexity Sonar (web
-// search), so it needs more headroom than the other three pipelines.
+// search), so it needs more headroom than the four fast text pipelines.
 export const maxDuration = 300;
 
 export async function POST(req: NextRequest) {

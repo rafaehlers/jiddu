@@ -8,6 +8,7 @@ import { useI18n } from "@/lib/i18n/provider";
 import type { Messages } from "@/lib/i18n/messages";
 import { MODEL_CATALOG } from "@/lib/llm";
 import { EXPLAIN_LEVELS, type ExplainLevel } from "@/lib/explain-schema";
+import type { PaperType, VenueSearchResult } from "@/lib/venues";
 
 type Tab = "url" | "text" | "file";
 
@@ -16,7 +17,13 @@ type ErrorState = {
   code?: string;
 };
 
-type Mode = "detector" | "factcheck" | "neutrality" | "explain" | "slop";
+type Mode =
+  | "detector"
+  | "factcheck"
+  | "neutrality"
+  | "explain"
+  | "slop"
+  | "review";
 
 type Props = {
   onSubmit: (
@@ -65,6 +72,19 @@ export function UploadForm({
   // Explanation audience level. Only sent (and only shown) in explain mode;
   // "undergrad" is the sensible default for an academic paper.
   const [level, setLevel] = useState<ExplainLevel>("undergrad");
+  const [venue, setVenue] = useState("");
+  const [venueProfileId, setVenueProfileId] = useState("");
+  const [venueSelectionSource, setVenueSelectionSource] = useState<
+    VenueSearchResult["source"] | null
+  >(null);
+  const [venueSuggestions, setVenueSuggestions] = useState<VenueSearchResult[]>(
+    [],
+  );
+  const [venueSearching, setVenueSearching] = useState(false);
+  const [venueYear, setVenueYear] = useState("2026");
+  const [venueTrack, setVenueTrack] = useState("Main track");
+  const [paperType, setPaperType] = useState<PaperType>("research");
+  const [reviewDate, setReviewDate] = useState("");
   // True while a file is being dragged over the form, for the drop highlight.
   const [dragging, setDragging] = useState(false);
 
@@ -86,16 +106,49 @@ export function UploadForm({
     };
   }, []);
 
+  useEffect(() => {
+    const query = venue.trim();
+    if (mode !== "review" || venueProfileId || query.length < 2) return;
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => {
+      setVenueSearching(true);
+      fetch(`/api/review/venues?q=${encodeURIComponent(query)}`, {
+        signal: controller.signal,
+      })
+        .then((response) => {
+          if (!response.ok) throw new Error("Venue search failed");
+          return response.json() as Promise<{ venues?: VenueSearchResult[] }>;
+        })
+        .then((payload) => setVenueSuggestions(payload.venues ?? []))
+        .catch((err) => {
+          if (err instanceof DOMException && err.name === "AbortError") return;
+          setVenueSuggestions([]);
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) setVenueSearching(false);
+        });
+    }, 250);
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [mode, venue, venueProfileId]);
+
   function acceptFile(f: File | undefined) {
     if (!f) return;
     const lower = f.name.toLowerCase();
+    const isPdf = lower.endsWith(".pdf") || f.type === "application/pdf";
     const ok =
-      lower.endsWith(".pdf") ||
-      lower.endsWith(".txt") ||
-      f.type === "application/pdf" ||
-      f.type.startsWith("text/");
+      isPdf ||
+      (mode !== "review" &&
+        (lower.endsWith(".txt") || f.type.startsWith("text/")));
     if (!ok) {
-      setLocalError({ message: "Unsupported file type. Use PDF or TXT." });
+      setLocalError({
+        message:
+          mode === "review"
+            ? "Adversarial review accepts exactly one PDF."
+            : "Unsupported file type. Use PDF or TXT.",
+      });
       return;
     }
     setFile(f);
@@ -129,12 +182,24 @@ export function UploadForm({
     onClearError?.();
     try {
       if (tab === "file") {
-        if (!file) throw new Error("Choose a PDF or TXT file");
+        if (!file) {
+          throw new Error(
+            mode === "review" ? "Choose one PDF file" : "Choose a PDF or TXT file",
+          );
+        }
         const fd = new FormData();
         fd.set("file", file);
         fd.set("lang", lang);
         fd.set("model", model);
         if (mode === "explain") fd.set("level", level);
+        if (mode === "review") {
+          if (venue.trim()) fd.set("venue", venue.trim());
+          if (venueProfileId) fd.set("venueProfileId", venueProfileId);
+          fd.set("venueYear", venueYear);
+          fd.set("venueTrack", venueTrack.trim());
+          fd.set("paperType", paperType);
+          if (reviewDate) fd.set("reviewDate", reviewDate);
+        }
         await onSubmit("file", fd, null);
       } else {
         const base =
@@ -192,13 +257,20 @@ export function UploadForm({
           <ModeButton href="/slop" active={mode === "slop"}>
             {t.mode_slop}
           </ModeButton>
+          <ModeButton href="/review" active={mode === "review"}>
+            {t.mode_review}
+          </ModeButton>
         </div>
       )}
 
       <div role="group" aria-label={t.tab_file} className="flex flex-wrap items-center gap-x-5 sm:gap-x-6 border-b border-rule">
         <TabButton active={tab === "file"} onClick={() => setTab("file")}>{t.tab_file}</TabButton>
-        <TabButton active={tab === "url"} onClick={() => setTab("url")}>{t.tab_url}</TabButton>
-        <TabButton active={tab === "text"} onClick={() => setTab("text")}>{t.tab_paste}</TabButton>
+        {mode !== "review" && (
+          <>
+            <TabButton active={tab === "url"} onClick={() => setTab("url")}>{t.tab_url}</TabButton>
+            <TabButton active={tab === "text"} onClick={() => setTab("text")}>{t.tab_paste}</TabButton>
+          </>
+        )}
         {mode === "detector" && (
           <Link
             href="/live"
@@ -240,14 +312,28 @@ export function UploadForm({
         <label className="flex flex-col items-center justify-center border border-dashed border-rule rounded-md py-8 sm:py-10 cursor-pointer hover:bg-background/40 transition-colors">
           <input
             type="file"
-            accept=".pdf,application/pdf,.txt,text/plain"
+            accept={
+              mode === "review"
+                ? ".pdf,application/pdf"
+                : ".pdf,application/pdf,.txt,text/plain"
+            }
             className="sr-only"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            onChange={(e) => acceptFile(e.target.files?.[0])}
           />
           <span className="font-serif text-lg">
-            {file ? file.name : t.file_drop_hint}
+            {file
+              ? file.name
+              : mode === "review"
+                ? t.review_pdf_hint
+                : t.file_drop_hint}
           </span>
-          {!file && <span className="text-sm text-muted mt-1">{t.file_size_hint}</span>}
+          {!file && (
+            <span className="text-sm text-muted mt-1">
+              {mode === "review"
+                ? t.review_file_size_hint
+                : t.file_size_hint}
+            </span>
+          )}
         </label>
       )}
 
@@ -286,6 +372,178 @@ export function UploadForm({
         </div>
       )}
 
+      {mode === "review" && (
+        <div className="flex flex-col gap-4">
+          <label className="relative flex flex-col gap-2">
+            <span className="text-xs uppercase tracking-wide text-muted">
+              {t.review_venue}
+            </span>
+            <input
+              type="text"
+              value={venue}
+              onChange={(event) => {
+                setVenue(event.target.value);
+                setVenueProfileId("");
+                setVenueSelectionSource(null);
+                setVenueSuggestions([]);
+              }}
+              onBlur={() =>
+                window.setTimeout(() => setVenueSuggestions([]), 150)
+              }
+              placeholder={t.review_venue_placeholder}
+              role="combobox"
+              aria-autocomplete="list"
+              aria-expanded={venueSuggestions.length > 0}
+              aria-controls="review-venue-suggestions"
+              className="w-full bg-background border border-rule rounded-md px-3 py-2 outline-none focus:border-accent"
+            />
+            {venueSuggestions.length > 0 && (
+              <div
+                id="review-venue-suggestions"
+                role="listbox"
+                className="absolute z-20 left-0 right-0 top-full mt-1 rounded-md border border-rule bg-paper shadow-lg overflow-hidden"
+              >
+                {venueSuggestions.map((suggestion) => (
+                  <button
+                    key={suggestion.id}
+                    type="button"
+                    role="option"
+                    aria-selected={false}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => {
+                      setVenue(
+                        suggestion.acronym
+                          ? `${suggestion.acronym} — ${suggestion.name}`
+                          : suggestion.name,
+                      );
+                      setVenueProfileId(suggestion.profileId ?? "");
+                      setVenueSelectionSource(suggestion.source);
+                      if (suggestion.edition) {
+                        setVenueYear(String(suggestion.edition));
+                      }
+                      if (suggestion.defaultTrack) {
+                        setVenueTrack(suggestion.defaultTrack);
+                      }
+                      setVenueSuggestions([]);
+                    }}
+                    className="w-full px-3 py-2.5 text-left hover:bg-background border-b border-rule last:border-b-0 flex items-start justify-between gap-3"
+                  >
+                    <span className="flex flex-col gap-0.5">
+                      <span className="text-sm font-medium">
+                        {suggestion.acronym ?? suggestion.name}
+                      </span>
+                      {suggestion.acronym && (
+                        <span className="text-xs text-muted">
+                          {suggestion.name}
+                        </span>
+                      )}
+                    </span>
+                    <span
+                      className={cn(
+                        "text-[10px] uppercase tracking-wide shrink-0 mt-0.5",
+                        suggestion.verifiedProfile
+                          ? "text-[var(--severity-low)]"
+                          : "text-muted",
+                      )}
+                    >
+                      {suggestion.verifiedProfile
+                        ? t.review_venue_verified
+                        : "DBLP"}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+            <span className="text-xs text-muted flex flex-wrap items-center gap-x-3 gap-y-1">
+              <span>
+                {venueSearching ? (
+                  t.review_venue_searching
+                ) : (
+                  <VenueHelp text={t.review_venue_help} />
+                )}
+              </span>
+              {venueSelectionSource && (
+                <span
+                  className={
+                    venueSelectionSource === "curated"
+                      ? "text-[var(--severity-low)]"
+                      : "text-[var(--severity-medium)]"
+                  }
+                >
+                  {venueSelectionSource === "curated"
+                    ? t.review_venue_verified
+                    : t.review_venue_catalog_only}
+                </span>
+              )}
+            </span>
+          </label>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <label className="flex flex-col gap-2">
+              <span className="text-xs uppercase tracking-wide text-muted">
+                {t.review_venue_year}
+              </span>
+              <input
+                type="number"
+                min="2000"
+                max="2100"
+                value={venueYear}
+                onChange={(event) => setVenueYear(event.target.value)}
+                className="w-full bg-background border border-rule rounded-md px-3 py-2 outline-none focus:border-accent"
+              />
+            </label>
+            <label className="flex flex-col gap-2">
+              <span className="text-xs uppercase tracking-wide text-muted">
+                {t.review_track}
+              </span>
+              <input
+                type="text"
+                value={venueTrack}
+                onChange={(event) => setVenueTrack(event.target.value)}
+                placeholder={t.review_track_placeholder}
+                className="w-full bg-background border border-rule rounded-md px-3 py-2 outline-none focus:border-accent"
+              />
+            </label>
+            <label className="flex flex-col gap-2">
+              <span className="text-xs uppercase tracking-wide text-muted">
+                {t.review_paper_type}
+              </span>
+              <select
+                value={paperType}
+                onChange={(event) =>
+                  setPaperType(event.target.value as PaperType)
+                }
+                className="w-full bg-background border border-rule rounded-md px-3 py-2 outline-none focus:border-accent"
+              >
+                <option value="research">{t.review_type_research}</option>
+                <option value="position">{t.review_type_position}</option>
+                <option value="survey">{t.review_type_survey}</option>
+                <option value="dataset">{t.review_type_dataset}</option>
+                <option value="theory">{t.review_type_theory}</option>
+                <option value="use-inspired">
+                  {t.review_type_use_inspired}
+                </option>
+                <option value="concept">{t.review_type_concept}</option>
+                <option value="negative-results">
+                  {t.review_type_negative_results}
+                </option>
+              </select>
+            </label>
+            <label className="flex flex-col gap-2">
+              <span className="text-xs uppercase tracking-wide text-muted">
+                {t.review_date}
+              </span>
+              <input
+                type="date"
+                value={reviewDate}
+                onChange={(event) => setReviewDate(event.target.value)}
+                className="w-full bg-background border border-rule rounded-md px-3 py-2 outline-none focus:border-accent"
+              />
+            </label>
+          </div>
+        </div>
+      )}
+
       {/* Model picker — a radio group. Each model has a country-of-origin
           flag so the user sees they're picking between a US model and a
           Chinese model. The same prompt is sent either way (apart from
@@ -319,7 +577,9 @@ export function UploadForm({
       </div>
 
       <div className="flex items-center justify-between">
-        <span className="text-xs text-muted">{t.form_hint}</span>
+        <span className="text-xs text-muted">
+          {mode === "review" ? t.review_form_hint : t.form_hint}
+        </span>
         <button
           type="submit"
           className={cn(
@@ -331,6 +591,25 @@ export function UploadForm({
         </button>
       </div>
     </form>
+  );
+}
+
+function VenueHelp({ text }: { text: string }) {
+  const [before, after = ""] = text.split("DBLP");
+  return (
+    <>
+      {before}
+      <a
+        href="https://dblp.org/"
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={(event) => event.stopPropagation()}
+        className="underline decoration-dotted underline-offset-2 hover:decoration-foreground transition-colors"
+      >
+        DBLP
+      </a>
+      {after}
+    </>
   );
 }
 

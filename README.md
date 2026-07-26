@@ -4,13 +4,14 @@
 
 > ✓ **Pipeline validated against the [PolitiFact](https://www.politifact.com) human-labeled corpus.** On 200 claims drawn from PolitiFact's polar buckets, Jiddu's fact-check verdict matches the human verdict in **67.5%** of cases overall and **81.3%** on the unambiguous true / false / pants-on-fire buckets, with strict polar disagreement in only 4.5%. Full methodology, confusion matrix, and disagreement analysis: [docs/benchmark-politifact.md](./docs/benchmark-politifact.md).
 
-Jiddu is five tools in one for reading any text critically:
+Jiddu is six tools in one for reading text and papers critically:
 
 1. **Fallacy detector** — drop a URL, paste text, or upload a PDF/TXT and Jiddu highlights every passage that contains a logical fallacy, explains each in a Word-style margin comment, and assigns the whole piece a fallacy score from 0 to 100.
 2. **Fact-check** — pull every verifiable claim (numbers, dates, quotes, causal and categorical assertions) out of the same text, then optionally run each through a web-search model (Perplexity Sonar) to get a verdict (`supported` / `contradicted` / `mixed` / `unverified`) with cited sources, including a per-source quality tier (primary / scholarly / think tank / journalistic / commercial / informal) and a state-controlled flag.
 3. **Neutrality assessment** — flag the framing, attribution and source-selection patterns that make a text partisan even when it doesn't commit any explicit fallacy and doesn't lie about facts. Covers loaded language, asymmetric attribution, false equivalence, selective omission, source asymmetry, both-sidesing, steering and genetic framing. Deliberately does NOT classify partisan direction.
 4. **Explain** — upload a paper (or paste text / drop a URL), pick an explanation level — child, high school, undergraduate or expert — and Jiddu explains it paragraph by paragraph in a Word-style margin, tagging each paragraph with the role it plays in the paper (background, objective, method, results, interpretation, limitation, conclusion) and writing a plain-language overview of the whole document at the chosen level.
 5. **Slop detector** — flag the AI-slop writing patterns that make prose read machine-assembled: a catalog of 18 patterns (buzzword salad, binary contrast, weasel attribution, fake-profound kicker, colon reveal…) across five categories, each finding quoting the exact span with an explanation and a 0-100 slop score. Detects patterns, never guesses authorship — humans write slop too.
+6. **Adversarial paper review** — upload exactly one final PDF and Jiddu treats it as an autonomous submission: builds a private claim/evidence ledger, audits story, presentation, evaluations and correctness, checks novelty against external published literature, then runs a second adversarial self-critique before returning a localized gatekeeping review.
 
 Plus a **Live mode (beta)** at `/live` — speak into the microphone or capture a browser-tab's audio and the fallacy detector flags issues in near-real-time as the speaker talks. Built on OpenAI's Realtime API (`gpt-realtime-whisper`) for speech-to-text via a direct browser↔OpenAI WebRTC channel (the Jiddu server only mints short-lived tokens and persists the transcript + findings). When you stop the session it commits a normal `/a/<id>` analysis you can share.
 
@@ -63,19 +64,28 @@ The methodology behind the fact-check and neutrality pipelines is grounded in tw
 - **Parallel chunking** — long papers are split at block boundaries and explained in parallel with bounded concurrency, like the other pipelines.
 - **Demo explanations** in 3 languages (`/e/demo-en`, `/e/demo-pt`, `/e/demo-es`).
 
+### Adversarial paper review
+- **Complete-paper workflow** at `/review`, results at `/r/[id]` — accepts exactly one PDF plus target venue, edition, track, paper type and optional review date.
+- **Layout-aware local parsing** via LiteParse — page-scoped Markdown, spatial reading order, selective OCR and screenshots for visually relevant pages; `pdfjs-dist` remains the fallback.
+- **Auditable venue calibration** — verified, versioned 2026 profiles for NeurIPS, ICML, ICLR, AAAI, IJCAI and CVPR inject their official criteria into both synthesis and adversarial self-critique. DBLP powers account-free venue autocomplete; unmatched venues are clearly marked as using a general scholarly rubric.
+- **Persisted venue standard** — every review stores the exact criteria, requirements, verification status and official-source URLs applied at review time, and exposes them in the viewer and Markdown/PDF export.
+- **Five private stages** — ledger → published-literature research → synthesis → adversarial self-critique → deterministic finalization. Intermediate judgments are never shown as the final review.
+- **Localized evidence** — every substantive weakness carries manuscript page/section references and a `MAJOR` / `MODERATE` / `MINOR` severity.
+- **Markdown + PDF export** — deterministic Markdown follows the required `AI Paper Review` format and the print route supports browser “Save as PDF”.
+
 ### Cross-cutting
-- **Five-way mode toggle** on the home composer — `Detector de Falácias` / `Checar Fatos` / `Imparcialidade` / `Explicar` / `Detector de Slop` — switches between the five pipelines while sharing the same URL / paste / file input forms.
+- **Six-way mode toggle** on the home composer — fallacies / fact-check / neutrality / explain / slop / adversarial review. The first five share URL, paste and file inputs; adversarial review intentionally accepts one PDF only.
 - **Multi-model via OpenRouter** — `🇺🇸 GPT-5.4 mini` (default) with `🇨🇳 MiniMax M3` as a one-click alternative and an automatic client-side fallback (re-tries only if no SSE events were emitted yet). Sonar Reasoning Pro is used only for fact-check verification, never exposed in the model picker.
 - **User feedback loop** — a "🚩 Report wrong verdict" button on every claim card. Feedback lands in an `/admin/feedback` queue with open/resolved/ignored filters; a badge on the admin home shows the open count.
 - **"Not reviewed" banner** — any analysis that hasn't been manually reviewed by an admin shows a yellow disclaimer banner above the viewer body. The admin home has a one-click toggle to mark an analysis as reviewed.
 - **Public legal page** at `/legal` — automated-tool disclaimer, no-truth-claim language, privacy, methodology citations. Available in EN / PT-BR / ES.
 - **Trilingual UI** (EN, PT-BR, ES) — selector in the header, browser-language detection on first visit, persisted in localStorage. The LLM is also instructed to write in the chosen language.
-- **PDF export** — every viewer (`/a/[id]`, `/f/[id]`, `/n/[id]`, `/e/[id]`) has a print-optimized companion route (`/<route>/print`) that auto-triggers the browser print dialog so the user can "Save as PDF".
+- **PDF export** — every viewer (`/a/[id]`, `/f/[id]`, `/n/[id]`, `/e/[id]`, `/s/[id]`, `/r/[id]`) has a print-optimized companion route (`/<route>/print`) that auto-triggers the browser print dialog so the user can "Save as PDF". Paper reviews also export deterministic Markdown.
 - **SSRF-protected URL ingestion** — every fetch hop is DNS-resolved and rejected if it lands on RFC1918, loopback, link-local, CGNAT, multicast, or reserved IPv4/IPv6 ranges (covers the cloud metadata `169.254.169.254`). Body size capped at 5 MB. Requests use a real-browser User-Agent and Sec-Fetch-* headers so naive bot blockers don't reject the fetch.
 - **Rate limiting** — in-memory token bucket per IP for every cost-incurring route. All limits are admin-configurable at `/admin/settings` (capacity + per-hour rate per route) without redeploying.
 - **Dark mode default**, with a toggle that persists in localStorage.
 - **Dynamic OG image** for shareable analysis links (`/a/[id]/opengraph-image`) + static OG for the site root.
-- **Admin** at `/admin` (password-gated cookie) — unified list of fallacy / fact-check / neutrality analyses with type pill, source-quality dashboard row (OpenRouter balance + totals), reviewed toggle, plus sub-pages: `/admin/feedback`, `/admin/metrics` (verdict distribution, per-pipeline volume, cache state), `/admin/cache`, `/admin/settings`.
+- **Admin** at `/admin` (password-gated cookie) — unified list of fallacy, fact-check, neutrality, explain, slop and paper-review results with type pills, OpenRouter balance + totals, reviewed toggle, plus sub-pages: `/admin/feedback`, `/admin/metrics` (verdict distribution, per-pipeline volume, cache state), `/admin/cache`, `/admin/settings`.
 - **Google Analytics** (GA4 gtag.js) wired in the root layout.
 
 ## Stack
@@ -83,7 +93,7 @@ The methodology behind the fact-check and neutrality pipelines is grounded in tw
 - **Next.js 16** (App Router, Turbopack) + **React 19** + **TypeScript** + **Tailwind 4**
 - **Prisma 7** with `@prisma/adapter-better-sqlite3` — SQLite file persisted in a Docker volume
 - **Streaming**: server-side `ReadableStream` emitting SSE; `partial-json` for incremental finding extraction
-- **PDF parsing**: `pdfjs-dist`
+- **PDF parsing**: `@llamaindex/liteparse` (layout/OCR/screenshots) with `pdfjs-dist` fallback
 - **Article extraction**: `@mozilla/readability` + `jsdom`
 
 ## Local development
@@ -121,6 +131,8 @@ src/
 │   ├── factcheck/page.tsx             Fact-check composer
 │   ├── neutrality/page.tsx            Neutrality composer
 │   ├── explain/page.tsx               Explain composer (paper explainer)
+│   ├── slop/page.tsx                  AI-slop composer
+│   ├── review/page.tsx                Adversarial paper-review composer
 │   ├── legal/page.tsx                 Terms + disclaimer + methodology citations
 │   ├── a/[id]/
 │   │   ├── page.tsx                   Analysis viewer (SSR)
@@ -135,6 +147,12 @@ src/
 │   ├── e/[id]/
 │   │   ├── page.tsx                   Explain viewer (SSR)
 │   │   └── print/page.tsx             Print-optimized view
+│   ├── s/[id]/
+│   │   ├── page.tsx                   Slop-pattern viewer (SSR)
+│   │   └── print/page.tsx             Print-optimized view
+│   ├── r/[id]/
+│   │   ├── page.tsx                   Adversarial review viewer (SSR)
+│   │   └── print/page.tsx             Review PDF/print view
 │   ├── admin/
 │   │   ├── page.tsx                   Login + unified analyses table + dashboard row
 │   │   ├── cache/page.tsx             Verdict cache viewer + invalidator
@@ -149,20 +167,27 @@ src/
 │       ├── factcheck/[id]/claim/[claimId]/verify/route.ts    POST: per-claim refresh (JSON)
 │       ├── factcheck/[id]/claim/[claimId]/feedback/route.ts  POST: "wrong verdict" flag
 │       ├── neutrality/route.ts                         POST: neutrality SSE stream
-│       └── explain/route.ts                            POST: explain SSE stream (paragraph + level)
+│       ├── explain/route.ts                            POST: explain SSE stream (paragraph + level)
+│       ├── slop/route.ts                               POST: slop-pattern SSE stream
+│       └── review/
+│           ├── route.ts                                POST: five-stage paper-review SSE stream
+│           ├── venues/route.ts                         GET: curated + DBLP venue autocomplete
+│           └── [id]/markdown/route.ts                  GET: deterministic Markdown export
 ├── components/
 │   ├── jiddu-composer.tsx             Home body: form ↔ loading panel ↔ navigate
 │   ├── factcheck-composer.tsx         Fact-check sibling of jiddu-composer
 │   ├── neutrality-composer.tsx        Neutrality sibling of jiddu-composer
 │   ├── explain-composer.tsx           Explain sibling of jiddu-composer
+│   ├── paper-review-view.tsx          Structured adversarial review viewer
+│   ├── venue-standard-card.tsx        Persisted venue rubric + official sources
 │   ├── analysis-view.tsx              Dual-pane fallacy viewer with anchored comments
 │   ├── factcheck-view.tsx             Two-column fact-check viewer with verdicts + sources
 │   ├── neutrality-view.tsx            Two-column neutrality viewer with issue findings
 │   ├── explain-view.tsx               Two-column explain viewer (role-colored paragraphs + cards)
-│   ├── *-print-view.tsx               Four print-optimized companions (one per dimension)
+│   ├── *-print-view.tsx               Six print-optimized companions
 │   ├── unreviewed-banner.tsx          Yellow "not yet human-reviewed" banner
 │   ├── legal-body.tsx                 /legal page renderer with markdown-link support
-│   ├── upload-form.tsx                URL / paste / file tabs + 4-way mode toggle + model picker + explain level pills
+│   ├── upload-form.tsx                Shared inputs + 6-way mode toggle + review venue fields
 │   ├── share-link-bar.tsx             Copy-to-clipboard URL + inline rightSlot (export PDF)
 │   ├── export-pdf-button.tsx          Small pill that opens the /print companion
 │   ├── fallacy-modal.tsx              In-page guide modal for one fallacy
@@ -173,7 +198,7 @@ src/
 │   └── site-header.tsx + site-footer.tsx
 └── lib/
     ├── db.ts                          Prisma client (better-sqlite3 adapter)
-    ├── fallacies.ts                   28-fallacy catalog + golden-angle color palette
+    ├── fallacies.ts                   46-fallacy catalog + golden-angle color palette
     ├── schema.ts                      Zod schemas for sentences, findings, result
     ├── prompt.ts                      Localized fallacy prompts
     ├── claims-schema.ts               Zod schemas for Claim and ClaimType
@@ -184,6 +209,10 @@ src/
     ├── neutrality-prompt.ts           Neutrality prompt with the 8 patterns
     ├── explain-schema.ts              Zod schemas for 4 levels + 7 section roles + explanation
     ├── explain-prompt.ts              Explain prompt, calibrated per audience level
+    ├── paper-review-schema.ts         Ledger/research/review schemas
+    ├── paper-review-prompt.ts         Venue-calibrated adversarial review prompts
+    ├── paper-review-markdown.ts       Deterministic review export
+    ├── venues.ts                      Versioned venue profiles + DBLP result types
     ├── sentences.ts                   PT-aware sentence segmenter (numbers, initialisms)
     ├── paragraphs.ts                  Section/paragraph segmenter (heading-aware, sentence fallback)
     ├── chunker.ts                     Sentence-aware chunking (~12k chars per chunk)
@@ -209,7 +238,7 @@ src/
 
 ## Public API & MCP (for agents)
 
-The five pipelines are also exposed as a documented, **synchronous** REST API (request → JSON, no SSE) for agents and scripts, plus an MCP server. Docs page: [`/api-access`](https://jiddu.app/api-access).
+Five text pipelines are exposed as a documented, **synchronous** REST API (request → JSON, no SSE) for agents and scripts, plus an MCP server. Docs page: [`/api-access`](https://jiddu.app/api-access).
 
 ```
 POST /api/v1/detect-fallacies
@@ -221,9 +250,11 @@ POST /api/v1/detect-slop
 
 Body is `{ "text": "…" }` (40–2000 chars) plus optional `lang` (`en`/`pt`/`es`) and, for explain, `level`. Authenticate with an `X-Jiddu-Key` header. Keys are **admin-issued** at `/admin/api-keys` (hashed, shown once) with per-key rate overrides; public limits are tuned via `rate.api*` in admin settings. `fact-check` extracts and verifies each claim via Sonar, capped by `api.maxClaims`.
 
-- **MCP server (remote, recommended):** a hosted MCP endpoint at `POST /api/mcp` (in-process, reuses the run/map layer) exposes the same four tools. Connect any MCP client by URL via the public [`mcp-remote`](https://www.npmjs.com/package/mcp-remote) bridge — nothing to install or publish. Config snippet on [`/api-access`](https://jiddu.app/api-access).
+- **MCP server (remote, recommended):** a hosted MCP endpoint at `POST /api/mcp` (in-process, reuses the run/map layer) exposes the same five tools. Connect any MCP client by URL via the public [`mcp-remote`](https://www.npmjs.com/package/mcp-remote) bridge — nothing to install or publish. Config snippet on [`/api-access`](https://jiddu.app/api-access).
 - **MCP server (local):** the same tools also ship as a standalone package, [`packages/jiddu-mcp`](./packages/jiddu-mcp), for offline/dev use — run from source (`node dist/index.js`), not published to npm. Machine-oriented docs: [`packages/jiddu-mcp/AGENT.md`](./packages/jiddu-mcp/AGENT.md).
 - **Evals:** fixed test sets in [`evals/`](./evals) (15–16 inputs per tool). Run `JIDDU_API_KEY=<key> npx tsx evals/run-evals.ts`; published accuracy in [`evals/report.md`](./evals/report.md).
+
+Adversarial paper review is deliberately **not** part of `/api/v1` or MCP yet. It is a PDF-only, long-running, persisted workflow with external literature research and visual-page evidence; forcing it into the synchronous 2,000-character API contract would be misleading. The web app currently uses internal `POST /api/review` (multipart + SSE) and `GET /api/review/venues?q=…` routes. Treat those as application internals, not a stable public automation contract. A future public review API should use asynchronous jobs.
 
 ## API (internal SSE endpoints)
 
@@ -325,6 +356,26 @@ Same input shape as `/api/analyze`, plus a `level` field (`eli5` | `high_school`
 | `error`      | `{ error }`                                                                    |
 
 `role` is one of `background`, `objective`, `method`, `result`, `interpretation`, `limitation`, `conclusion`. Unlike the other pipelines the unit is the **paragraph** — a `block` with the same `{id,start,end,text}` shape as a sentence — and the model returns one explanation per substantive paragraph plus a whole-document `overview` written at the chosen `level`.
+
+### `POST /api/slop`
+
+Same URL/text/file inputs and SSE event pattern as `/api/analyze`. Each `finding` is `{ sentenceIds, pattern, severity, quote, explanation }`; `done` is `{ id, score, summary }`. The result persists at `/s/[id]`. The endpoint detects observable writing patterns only and must not be interpreted as an authorship classifier.
+
+### `POST /api/review` (web-app internal)
+
+Accepts `multipart/form-data` with exactly one `file` PDF. Optional fields: `lang`, `model`, `venueProfileId`, `venue`, `venueYear`, `venueTrack`, `paperType`, `reviewDate`. The PDF is parsed in LiteParse academic mode, rejected rather than truncated above 300,000 extracted characters, and up to six visually relevant pages are rendered for inspection.
+
+This long-running route streams:
+
+| Event       | Payload                                                                                                                |
+|-------------|------------------------------------------------------------------------------------------------------------------------|
+| `meta`      | `{ id, title, sourceRef, parser, pageCount, visualPageCount, model, venueTarget, venueProfileVerified, chunkCount: 5 }` |
+| `stage`     | `{ index, total: 5, name }`, where name is `ledger`, `research`, `synthesis`, `self_critique`, or `finalize`             |
+| `chunkDone` | `{ index }`                                                                                                            |
+| `done`      | `{ id, recommendation, weaknessCount }`                                                                                |
+| `error`     | `{ error }`                                                                                                            |
+
+The persisted final result is shown at `/r/[id]`; `GET /api/review/[id]/markdown` exports the same stored review as deterministic Markdown. `GET /api/review/venues?q=…` merges curated profiles with account-free DBLP venue discovery. These routes support the browser and are **not** a stable public `/api/v1` contract.
 
 ### Live mode (beta) — `/live`
 

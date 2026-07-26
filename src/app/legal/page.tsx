@@ -6,7 +6,7 @@ import { LegalBody } from "@/components/legal-body";
 export const metadata: Metadata = {
   title: "Jiddu — terms and disclaimers",
   description:
-    "Terms of use, automated-analysis disclaimer and privacy notes for Jiddu.",
+    "Terms, privacy notes and automated-analysis disclaimers for Jiddu, including confidential-paper and adversarial-review guidance.",
 };
 
 export default function LegalPage() {

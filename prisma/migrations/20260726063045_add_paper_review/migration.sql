@@ -1,0 +1,28 @@
+-- CreateTable
+CREATE TABLE "PaperReview" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "status" TEXT NOT NULL DEFAULT 'pending',
+    "stage" TEXT NOT NULL DEFAULT 'ingest',
+    "source" TEXT NOT NULL DEFAULT 'pdf',
+    "sourceRef" TEXT,
+    "title" TEXT,
+    "author" TEXT,
+    "venueTarget" TEXT NOT NULL,
+    "reviewDate" TEXT NOT NULL,
+    "language" TEXT,
+    "provider" TEXT NOT NULL,
+    "model" TEXT NOT NULL,
+    "parser" TEXT,
+    "text" TEXT NOT NULL,
+    "pages" TEXT NOT NULL DEFAULT '[]',
+    "complexity" TEXT NOT NULL DEFAULT '[]',
+    "ledger" TEXT,
+    "research" TEXT,
+    "initialReview" TEXT,
+    "review" TEXT,
+    "markdown" TEXT,
+    "errorMessage" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "finishedAt" DATETIME,
+    "reviewedAt" DATETIME
+);

@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
 import { Check, Link as LinkIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n/provider";
+
+const subscribeToLocation = () => () => {};
 
 export function ShareLinkBar({
   rightSlot,
@@ -15,12 +17,12 @@ export function ShareLinkBar({
   rightSlot?: React.ReactNode;
 } = {}) {
   const { t } = useI18n();
-  // pathname changes whenever the route does; computing the URL from it (plus
-  // origin) keeps the displayed value in sync after router.replace without an
-  // effect-driven setState.
   const pathname = usePathname();
-  const displayUrl =
-    typeof window === "undefined" ? "" : window.location.origin + pathname;
+  const displayUrl = useSyncExternalStore(
+    subscribeToLocation,
+    () => window.location.origin + pathname,
+    () => "",
+  );
   const [copied, setCopied] = useState(false);
 
   async function copy() {

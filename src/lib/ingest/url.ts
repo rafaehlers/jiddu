@@ -9,6 +9,26 @@ export type IngestedDocument = {
   text: string;
   source: string;
   sourceRef: string;
+  pages?: IngestedPage[];
+  parser?: "liteparse" | "pdfjs";
+  complexity?: PdfPageComplexity[];
+};
+
+export type IngestedPage = {
+  pageNumber: number;
+  text: string;
+  markdown: string;
+  width?: number;
+  height?: number;
+};
+
+export type PdfPageComplexity = {
+  pageNumber: number;
+  needsOcr: boolean;
+  reasons: string[];
+  hasSubstantialImages: boolean;
+  imageCoverage: number;
+  isGarbled: boolean;
 };
 
 const FETCH_TIMEOUT_MS = 15_000;

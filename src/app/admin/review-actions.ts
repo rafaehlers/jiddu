@@ -13,7 +13,7 @@ async function assertAdmin(): Promise<void> {
 }
 
 // Toggle reviewedAt on any analysis kind. The form passes the kind
-// ("fallacy" | "factcheck" | "neutrality" | "explain" | "slop") + row id;
+// ("fallacy" | "factcheck" | "neutrality" | "explain" | "slop" | "review") + row id;
 // we flip null<->now and revalidate the admin list.
 export async function toggleReviewedAction(formData: FormData): Promise<void> {
   await assertAdmin();
@@ -67,6 +67,16 @@ export async function toggleReviewedAction(formData: FormData): Promise<void> {
     });
     if (!row) return;
     await prisma.slopCheck.update({
+      where: { id },
+      data: { reviewedAt: row.reviewedAt ? null : new Date() },
+    });
+  } else if (kind === "review") {
+    const row = await prisma.paperReview.findUnique({
+      where: { id },
+      select: { reviewedAt: true },
+    });
+    if (!row) return;
+    await prisma.paperReview.update({
       where: { id },
       data: { reviewedAt: row.reviewedAt ? null : new Date() },
     });

@@ -6,6 +6,8 @@ const nextConfig: NextConfig = {
     "pdfjs-dist",
     "@mozilla/readability",
     "jsdom",
+    // Native Rust/PDFium binding used by the layout-aware academic PDF path.
+    "@llamaindex/liteparse",
     // pdfjs-dist requires this at runtime to polyfill DOMMatrix / ImageData /
     // Path2D on Node versions without them natively (the Docker image runs
     // Node 22). Keep it external so its native binary isn't bundled.
@@ -25,6 +27,8 @@ const nextConfig: NextConfig = {
       "./node_modules/@napi-rs/canvas/**/*",
       "./node_modules/@napi-rs/canvas-*/**/*",
       "./node_modules/pdfjs-dist/legacy/build/**/*",
+      "./node_modules/@llamaindex/liteparse/**/*",
+      "./node_modules/@llamaindex/liteparse-*/**/*",
     ],
   },
 };

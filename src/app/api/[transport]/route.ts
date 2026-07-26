@@ -1,6 +1,6 @@
 // Remote MCP server, hosted in-process on jiddu.app.
 //
-// Exposes the same four tools as the standalone `jiddu-mcp` package, but as an
+// Exposes the same five tools as the standalone `jiddu-mcp` package, but as an
 // HTTP endpoint so clients can connect by URL (via `mcp-remote`) without
 // installing or cloning anything. The mcp-handler [transport] segment serves
 // /api/mcp (Streamable HTTP) and /api/sse. Tools call the internal run/map

@@ -6,7 +6,7 @@ import { ApiAccessBody } from "@/components/api-access-body";
 export const metadata: Metadata = {
   title: "Jiddu — API & MCP",
   description:
-    "Use Jiddu's fallacy detector, fact-check, neutrality assessment and paper explainer from your own code or agent — a documented REST API and an MCP server.",
+    "Use Jiddu's five public text-analysis tools from code or an agent, and understand why adversarial PDF review remains a web-only workflow for now.",
 };
 
 export default function ApiAccessPage() {

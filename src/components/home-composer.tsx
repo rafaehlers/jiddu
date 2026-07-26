@@ -11,7 +11,13 @@ import { readSse } from "@/lib/sse";
 import { useI18n } from "@/lib/i18n/provider";
 import type { Messages } from "@/lib/i18n/messages";
 
-type Mode = "detector" | "factcheck" | "neutrality" | "explain" | "slop";
+type Mode =
+  | "detector"
+  | "factcheck"
+  | "neutrality"
+  | "explain"
+  | "slop"
+  | "review";
 type SourceType = "url" | "text" | "file";
 
 type StreamingState = {
@@ -20,6 +26,7 @@ type StreamingState = {
   chunksDone: number;
   itemsCount: number;
   sourceType: SourceType;
+  stageName: string | null;
 };
 
 type LiveState =
@@ -29,7 +36,7 @@ type LiveState =
 type SubmitErrorState = { message: string; code?: string };
 
 /**
- * Per-mode wiring for the unified composer. The four pipelines share the
+ * Per-mode wiring for the unified composer. The pipelines share the
  * same SSE contract (meta → per-item events → chunkDone → done/error); they
  * differ only in endpoint, result-page prefix, the name of the per-item
  * event, and copy. Everything t-dependent is resolved lazily so the panel
@@ -109,6 +116,19 @@ const MODE_CONFIG: Record<
     countLabels: (t) => [t.slop_found_one, t.slop_found_many],
     pools: (t) => ({ preMeta: [t.loader_slop[0]], analysis: t.loader_slop }),
   },
+  review: {
+    path: "/review",
+    endpoint: "/api/review",
+    resultPrefix: "/r",
+    countEvent: "__none__",
+    submitLabel: (t) => t.review_cta,
+    failedTitle: (t) => t.review_failed,
+    countLabels: null,
+    pools: (t) => ({
+      preMeta: [t.loader_review[0]],
+      analysis: t.loader_review,
+    }),
+  },
 };
 
 /**
@@ -135,7 +155,7 @@ export function HomeComposer({ initialMode = "detector" }: { initialMode?: Mode 
     if (next === mode) return;
     setMode(next);
     setSubmitError(null);
-    // Sync the address bar without a navigation so the four lenses stay
+    // Sync the address bar without a navigation so the lenses stay
     // deep-linkable. replaceState (not push) — flipping through lenses is
     // not a journey the back button should retrace.
     window.history.replaceState(null, "", MODE_CONFIG[next].path);
@@ -151,7 +171,14 @@ export function HomeComposer({ initialMode = "detector" }: { initialMode?: Mode 
     setSubmitError(null);
     setLive({
       status: "streaming",
-      data: { id: null, chunkCount: 0, chunksDone: 0, itemsCount: 0, sourceType },
+      data: {
+        id: null,
+        chunkCount: 0,
+        chunksDone: 0,
+        itemsCount: 0,
+        sourceType,
+        stageName: null,
+      },
     });
 
     let res: Response;
@@ -202,6 +229,16 @@ export function HomeComposer({ initialMode = "detector" }: { initialMode?: Mode 
               }
             : prev,
         );
+      } else if (ev.event === "stage") {
+        const data = JSON.parse(ev.data) as { name?: string };
+        setLive((prev) =>
+          prev?.status === "streaming"
+            ? {
+                status: "streaming",
+                data: { ...prev.data, stageName: data.name ?? null },
+              }
+            : prev,
+        );
       } else if (ev.event === "chunkDone") {
         setLive((prev) =>
           prev?.status === "streaming"
@@ -226,7 +263,7 @@ export function HomeComposer({ initialMode = "detector" }: { initialMode?: Mode 
   if (!live) {
     return (
       <section className="mx-auto max-w-5xl w-full px-4 sm:px-6 py-8 sm:py-14 flex flex-col gap-8 sm:gap-10">
-        {/* Standard hero — the same for all four lenses, so switching a
+        {/* Standard hero — the same for all lenses, so switching a
             lens never reflows the top of the page. */}
         <div className="flex flex-col gap-3 sm:gap-4">
           <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl leading-tight text-balance">
@@ -248,15 +285,17 @@ export function HomeComposer({ initialMode = "detector" }: { initialMode?: Mode 
           showModeTabs={false}
         />
 
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm">
-          <span className="text-muted">{t.see_demo_hint}</span>
-          <Link
-            href={`${cfg.resultPrefix}/demo-${lang}`}
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md border border-rule hover:border-foreground transition-colors self-start sm:self-auto"
-          >
-            {t.see_demo} <span aria-hidden>→</span>
-          </Link>
-        </div>
+        {mode !== "review" && (
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm">
+            <span className="text-muted">{t.see_demo_hint}</span>
+            <Link
+              href={`${cfg.resultPrefix}/demo-${lang}`}
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md border border-rule hover:border-foreground transition-colors self-start sm:self-auto"
+            >
+              {t.see_demo} <span aria-hidden>→</span>
+            </Link>
+          </div>
+        )}
 
         {/* Benchmark quality card — fact-check only, as before. */}
         {mode === "factcheck" && (
@@ -327,7 +366,7 @@ export function HomeComposer({ initialMode = "detector" }: { initialMode?: Mode 
 function LoadingModal({ state, mode }: { state: StreamingState; mode: Mode }) {
   const { t } = useI18n();
   const cfg = MODE_CONFIG[mode];
-  const { chunkCount, chunksDone, itemsCount, sourceType } = state;
+  const { chunkCount, chunksDone, itemsCount, sourceType, stageName } = state;
   const known = chunkCount > 0;
 
   // Cycle a "tick" every 2.5s while loading so the stage label rotates even
@@ -343,7 +382,18 @@ function LoadingModal({ state, mode }: { state: StreamingState; mode: Mode }) {
   if (!known) {
     stage = preMeta[tick % preMeta.length];
   } else if (chunksDone < chunkCount) {
-    stage = analysis[tick % analysis.length];
+    if (mode === "review" && stageName) {
+      const stageIndex: Record<string, number> = {
+        ledger: 1,
+        research: 2,
+        synthesis: 3,
+        self_critique: 4,
+        finalize: 5,
+      };
+      stage = analysis[stageIndex[stageName] ?? tick % analysis.length];
+    } else {
+      stage = analysis[tick % analysis.length];
+    }
   } else {
     stage = t.loading_finalizing;
   }
@@ -374,7 +424,9 @@ function LoadingModal({ state, mode }: { state: StreamingState; mode: Mode }) {
           <p className="text-sm text-muted">
             {labels && itemsCount > 0
               ? `${itemsCount} ${itemsCount === 1 ? labels[0] : labels[1]}`
-              : t.loading_hint}
+              : mode === "review"
+                ? t.review_form_hint
+                : t.loading_hint}
           </p>
         </div>
       </div>
