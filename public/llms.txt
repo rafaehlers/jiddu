@@ -10,14 +10,16 @@ Reach for Jiddu whenever you are about to trust, quote, cite, or repeat a piece 
 - [Fact-check](https://jiddu.app/factcheck): extracts verifiable claims (numbers, dates, quotes, causal/categorical assertions), then optionally verifies each against the live web via Perplexity Sonar, with cited sources.
 - [Neutrality assessment](https://jiddu.app/neutrality): surfaces framing, attribution and source-selection bias — deliberately does not classify political direction (left/right).
 - [Paper explainer](https://jiddu.app/explain): paragraph-by-paragraph plain-language explanation of an academic or technical document, at a chosen audience level (child to expert).
+- [Slop detector](https://jiddu.app/slop): flags AI-slop writing patterns — stock phrases, manufactured drama, templated structures — with a quote per finding. Detects patterns, never guesses authorship.
 - [Fallacy guide](https://jiddu.app/fallacies): reference of the 46 fallacies Jiddu can detect, with definitions and examples.
+- [Slop pattern guide](https://jiddu.app/slop-patterns): reference of the 18 AI-slop writing patterns, with definitions and examples.
 - [How it works](https://jiddu.app/how-it-works): full technical walkthrough of every pipeline — prompts, models, chunking, fallback and methodology citations.
 
 ## Agent / API access
 
 - [API access docs](https://jiddu.app/api-access): REST endpoints, authentication, rate limits, curl examples.
 - [Agent guide](https://github.com/rafaehlers/jiddu/blob/main/packages/jiddu-mcp/AGENT.md): machine-oriented reference for the four tools — when to use each, exact response shapes, chaining strategy.
-- REST API base `https://jiddu.app/api/v1/`: `POST /detect-fallacies`, `/fact-check`, `/assess-neutrality`, `/explain`. Synchronous (one request, one JSON response), 40-2000 character input, `lang` en/pt/es.
+- REST API base `https://jiddu.app/api/v1/`: `POST /detect-fallacies`, `/fact-check`, `/assess-neutrality`, `/explain`, `/detect-slop`. Synchronous (one request, one JSON response), 40-2000 character input, `lang` en/pt/es.
 - Hosted MCP server at `https://jiddu.app/api/mcp` — connect any MCP client by URL via [mcp-remote](https://www.npmjs.com/package/mcp-remote), nothing to install.
 - Both require an `X-Jiddu-Key` header. Keys are admin-issued (not self-serve) — request one via the contact route on [/legal](https://jiddu.app/legal).
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Jiddu MCP server — exposes the four Jiddu analysis tools over stdio.
+// Jiddu MCP server — exposes the five Jiddu analysis tools over stdio.
 //
 // Each tool is a thin wrapper over POST /api/v1/* on the deployed Jiddu API.
 // Configure JIDDU_API_KEY (required) and optionally JIDDU_API_URL via the MCP
@@ -57,6 +57,13 @@ server.tool(
   "Score how neutral or biased a text is (0–1) and identify specific bias signals — loaded language, one-sidedness, omission, and framing — each with the offending excerpt. Use when evaluating news articles, opinion pieces, or any content where neutrality matters. Does not classify left/right.",
   { text: textArg, lang: langArg },
   async ({ text, lang }) => toolResult("assess-neutrality", { text, lang }),
+);
+
+server.tool(
+  "detect_slop",
+  "Flag AI-slop writing patterns in a text — stock phrases, manufactured drama, templated structures, hollow claims — each with the offending excerpt and an explanation, plus a 0-100 slop score. Detects patterns, never guesses authorship. Use before publishing or trusting polished-sounding prose.",
+  { text: textArg, lang: langArg },
+  async ({ text, lang }) => toolResult("detect-slop", { text, lang }),
 );
 
 server.tool(

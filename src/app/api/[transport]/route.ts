@@ -21,6 +21,7 @@ import {
   runFactCheck,
   runNeutrality,
   runExplain,
+  runSlop,
   NoUnitsError,
 } from "@/lib/api/run";
 import {
@@ -28,6 +29,7 @@ import {
   mapFactCheck,
   mapNeutrality,
   mapExplain,
+  mapSlop,
 } from "@/lib/api/map";
 import { normalizeLevel } from "@/lib/explain-schema";
 
@@ -115,6 +117,23 @@ const mcpHandler = createMcpHandler(
       async ({ text, lang }) => {
         try {
           return ok(mapNeutrality(await runNeutrality(text, { lang })));
+        } catch (err) {
+          return fail(err);
+        }
+      },
+    );
+
+    server.registerTool(
+      "detect_slop",
+      {
+        title: "Detect AI slop",
+        description:
+          "Flag AI-slop writing patterns in a text — stock phrases, manufactured drama, templated structures, hollow claims — each with the offending excerpt and an explanation, plus a 0-100 slop score. Detects patterns, never guesses authorship. Use before publishing or trusting polished-sounding prose.",
+        inputSchema: { text: textArg, lang: langArg },
+      },
+      async ({ text, lang }) => {
+        try {
+          return ok(mapSlop(await runSlop(text, { lang })));
         } catch (err) {
           return fail(err);
         }

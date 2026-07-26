@@ -16,7 +16,7 @@ type ErrorState = {
   code?: string;
 };
 
-type Mode = "detector" | "factcheck" | "neutrality" | "explain";
+type Mode = "detector" | "factcheck" | "neutrality" | "explain" | "slop";
 
 type Props = {
   onSubmit: (
@@ -188,6 +188,9 @@ export function UploadForm({
           </ModeButton>
           <ModeButton href="/explain" active={mode === "explain"}>
             {t.mode_explain}
+          </ModeButton>
+          <ModeButton href="/slop" active={mode === "slop"}>
+            {t.mode_slop}
           </ModeButton>
         </div>
       )}

@@ -70,7 +70,7 @@ function LoginForm({ error }: { error?: string }) {
 }
 
 type AdminRow = {
-  kind: "fallacy" | "factcheck" | "neutrality" | "explain";
+  kind: "fallacy" | "factcheck" | "neutrality" | "explain" | "slop";
   id: string;
   title: string | null;
   source: string;
@@ -84,9 +84,9 @@ type AdminRow = {
 };
 
 async function AdminList() {
-  // Pull all four row types in parallel, normalize to a common shape, then
+  // Pull all five row types in parallel, normalize to a common shape, then
   // merge by createdAt desc so the admin sees one unified table.
-  const [analyses, factchecks, neutralities, explanations] = await Promise.all([
+  const [analyses, factchecks, neutralities, explanations, slopChecks] = await Promise.all([
     prisma.analysis.findMany({
       orderBy: { createdAt: "desc" },
       select: {
@@ -144,6 +144,21 @@ async function AdminList() {
         model: true,
         findings: true,
         level: true,
+        status: true,
+        createdAt: true,
+        reviewedAt: true,
+      },
+    }),
+    prisma.slopCheck.findMany({
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        title: true,
+        source: true,
+        sourceRef: true,
+        language: true,
+        model: true,
+        score: true,
         status: true,
         createdAt: true,
         reviewedAt: true,
@@ -239,6 +254,19 @@ async function AdminList() {
         reviewedAt: e.reviewedAt,
       };
     }),
+    ...slopChecks.map<AdminRow>((s) => ({
+      kind: "slop",
+      id: s.id,
+      title: s.title,
+      source: s.source,
+      sourceRef: s.sourceRef,
+      language: s.language,
+      model: s.model,
+      status: s.status,
+      signal: String(s.score ?? 0),
+      createdAt: s.createdAt,
+      reviewedAt: s.reviewedAt,
+    })),
   ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
   return (
@@ -294,7 +322,7 @@ async function AdminList() {
       </div>
 
       {/* Compact dashboard row — credits + counts per analysis kind. */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 mb-6">
         <CreditsStat credits={credits} />
         <Stat label="Total" value={rows.length} />
         <Stat label="Fallacies" value={analyses.length} accent="amber" />
@@ -305,6 +333,7 @@ async function AdminList() {
           accent="purple"
         />
         <Stat label="Explain" value={explanations.length} accent="teal" />
+        <Stat label="Slop" value={slopChecks.length} accent="rose" />
       </div>
 
       <div className="overflow-x-auto border border-rule rounded-lg">
@@ -342,7 +371,9 @@ async function AdminList() {
                     ? `/f/${r.id}`
                     : r.kind === "neutrality"
                       ? `/n/${r.id}`
-                      : `/e/${r.id}`;
+                      : r.kind === "slop"
+                        ? `/s/${r.id}`
+                        : `/e/${r.id}`;
               return (
                 <tr key={`${r.kind}:${r.id}`} className="border-t border-rule hover:bg-paper/50">
                   <td className="px-3 py-2 whitespace-nowrap text-muted">
@@ -409,7 +440,7 @@ function Stat({
 }: {
   label: string;
   value: string | number;
-  accent?: "amber" | "blue" | "red" | "purple" | "teal";
+  accent?: "amber" | "blue" | "red" | "purple" | "teal" | "rose";
   hint?: string;
 }) {
   const accentCls =
@@ -423,7 +454,9 @@ function Stat({
             ? "text-purple-500"
             : accent === "teal"
               ? "text-teal-500"
-              : "";
+              : accent === "rose"
+                ? "text-rose-500"
+                : "";
   return (
     <div className="bg-paper border border-rule rounded-lg p-3 flex flex-col gap-0.5">
       <p className="text-xs text-muted uppercase tracking-wide">{label}</p>
@@ -491,12 +524,14 @@ function TypeBadge({ kind }: { kind: AdminRow["kind"] }) {
     factcheck: "bg-blue-500/15 text-blue-500",
     neutrality: "bg-purple-500/15 text-purple-500",
     explain: "bg-teal-500/15 text-teal-500",
+    slop: "bg-rose-500/15 text-rose-500",
   }[kind];
   const label = {
     fallacy: "Fallacy",
     factcheck: "Fact-check",
     neutrality: "Neutrality",
     explain: "Explain",
+    slop: "Slop",
   }[kind];
   return (
     <span className={`inline-block text-xs px-2 py-0.5 rounded-full ${cls}`}>

@@ -152,7 +152,8 @@ function fmt(d: Date, lang: Lang): string {
   });
 }
 
-const PRINT_CSS = `
+// Shared with the slop print view (same layout, different catalog/labels).
+export const PRINT_CSS = `
   .print-root {
     font-family: Georgia, "Times New Roman", serif;
     color: #111;

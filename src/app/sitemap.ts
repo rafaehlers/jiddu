@@ -7,7 +7,7 @@ const BASE_URL = "https://jiddu.app";
 // are NOT listed here: those are user-submitted analyses shared "unlisted by
 // URL" (see /legal §5 Privacy — "anyone with the URL can view it"), and
 // enumerating them in a public sitemap would defeat that expectation.
-const DEMO_PREFIXES = ["a", "f", "n", "e"] as const;
+const DEMO_PREFIXES = ["a", "f", "n", "e", "s"] as const;
 const LANGS = ["en", "pt", "es"] as const;
 
 // No `lastModified` on any entry: we don't track real per-page revision
@@ -20,7 +20,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${BASE_URL}/factcheck`, changeFrequency: "weekly", priority: 0.9 },
     { url: `${BASE_URL}/neutrality`, changeFrequency: "weekly", priority: 0.9 },
     { url: `${BASE_URL}/explain`, changeFrequency: "weekly", priority: 0.9 },
+    { url: `${BASE_URL}/slop`, changeFrequency: "weekly", priority: 0.9 },
     { url: `${BASE_URL}/fallacies`, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${BASE_URL}/slop-patterns`, changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE_URL}/how-it-works`, changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE_URL}/api-access`, changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE_URL}/benchmark`, changeFrequency: "monthly", priority: 0.6 },

@@ -2,6 +2,7 @@
 // Pure functions; no I/O.
 
 import { FALLACY_BY_ID } from "@/lib/fallacies";
+import { SLOP_BY_ID } from "@/lib/slop";
 import type { NeutralityIssue } from "@/lib/neutrality-schema";
 import type { VerdictValue } from "@/lib/verdict-schema";
 import type { ExplainLevel } from "@/lib/explain-schema";
@@ -10,6 +11,7 @@ import type {
   NeutralityAggregate,
   ExplainAggregate,
   FactCheckAggregate,
+  SlopAggregate,
 } from "./run";
 
 // ---------- Fallacies ----------
@@ -32,6 +34,48 @@ export function mapFallacies(a: FallacyAggregate): FallacyResponse {
     fallacies,
     fallacy_count: fallacies.length,
     verdict: fallacies.length > 0 ? "fallacies_found" : "clean",
+  };
+}
+
+// ---------- Slop ----------
+
+export type SlopLabel =
+  | "reads_human"
+  | "light_seasoning"
+  | "patterned"
+  | "heavily_templated"
+  | "assembly_line";
+
+export type SlopResponse = {
+  patterns: { name: string; excerpt: string; explanation: string }[];
+  pattern_count: number;
+  score: number; // 0..100, higher = more slop
+  label: SlopLabel;
+  summary: string;
+};
+
+function slopLabel(score: number): SlopLabel {
+  if (score >= 81) return "assembly_line";
+  if (score >= 61) return "heavily_templated";
+  if (score >= 36) return "patterned";
+  if (score >= 16) return "light_seasoning";
+  return "reads_human";
+}
+
+export function mapSlop(a: SlopAggregate): SlopResponse {
+  const patterns = a.findings.map((f) => ({
+    // English label for a stable, machine-readable name; the explanation
+    // itself is already in the requested language.
+    name: SLOP_BY_ID[f.pattern]?.name.en ?? f.pattern,
+    excerpt: f.quote,
+    explanation: f.explanation,
+  }));
+  return {
+    patterns,
+    pattern_count: patterns.length,
+    score: a.score,
+    label: slopLabel(a.score),
+    summary: a.summary,
   };
 }
 

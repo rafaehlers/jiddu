@@ -11,7 +11,7 @@ import { readSse } from "@/lib/sse";
 import { useI18n } from "@/lib/i18n/provider";
 import type { Messages } from "@/lib/i18n/messages";
 
-type Mode = "detector" | "factcheck" | "neutrality" | "explain";
+type Mode = "detector" | "factcheck" | "neutrality" | "explain" | "slop";
 type SourceType = "url" | "text" | "file";
 
 type StreamingState = {
@@ -98,6 +98,16 @@ const MODE_CONFIG: Record<
     failedTitle: (t) => t.explain_failed,
     countLabels: (t) => [t.explanations_count_one, t.explanations_count_many],
     pools: (t) => ({ preMeta: [t.loader_explain[0]], analysis: t.loader_explain }),
+  },
+  slop: {
+    path: "/slop",
+    endpoint: "/api/slop",
+    resultPrefix: "/s",
+    countEvent: "finding",
+    submitLabel: (t) => t.check_slop,
+    failedTitle: (t) => t.slop_failed,
+    countLabels: (t) => [t.slop_found_one, t.slop_found_many],
+    pools: (t) => ({ preMeta: [t.loader_slop[0]], analysis: t.loader_slop }),
   },
 };
 

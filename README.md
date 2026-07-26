@@ -4,12 +4,13 @@
 
 > ✓ **Pipeline validated against the [PolitiFact](https://www.politifact.com) human-labeled corpus.** On 200 claims drawn from PolitiFact's polar buckets, Jiddu's fact-check verdict matches the human verdict in **67.5%** of cases overall and **81.3%** on the unambiguous true / false / pants-on-fire buckets, with strict polar disagreement in only 4.5%. Full methodology, confusion matrix, and disagreement analysis: [docs/benchmark-politifact.md](./docs/benchmark-politifact.md).
 
-Jiddu is four tools in one for reading any text critically:
+Jiddu is five tools in one for reading any text critically:
 
 1. **Fallacy detector** — drop a URL, paste text, or upload a PDF/TXT and Jiddu highlights every passage that contains a logical fallacy, explains each in a Word-style margin comment, and assigns the whole piece a fallacy score from 0 to 100.
 2. **Fact-check** — pull every verifiable claim (numbers, dates, quotes, causal and categorical assertions) out of the same text, then optionally run each through a web-search model (Perplexity Sonar) to get a verdict (`supported` / `contradicted` / `mixed` / `unverified`) with cited sources, including a per-source quality tier (primary / scholarly / think tank / journalistic / commercial / informal) and a state-controlled flag.
 3. **Neutrality assessment** — flag the framing, attribution and source-selection patterns that make a text partisan even when it doesn't commit any explicit fallacy and doesn't lie about facts. Covers loaded language, asymmetric attribution, false equivalence, selective omission, source asymmetry, both-sidesing, steering and genetic framing. Deliberately does NOT classify partisan direction.
 4. **Explain** — upload a paper (or paste text / drop a URL), pick an explanation level — child, high school, undergraduate or expert — and Jiddu explains it paragraph by paragraph in a Word-style margin, tagging each paragraph with the role it plays in the paper (background, objective, method, results, interpretation, limitation, conclusion) and writing a plain-language overview of the whole document at the chosen level.
+5. **Slop detector** — flag the AI-slop writing patterns that make prose read machine-assembled: a catalog of 18 patterns (buzzword salad, binary contrast, weasel attribution, fake-profound kicker, colon reveal…) across five categories, each finding quoting the exact span with an explanation and a 0-100 slop score. Detects patterns, never guesses authorship — humans write slop too.
 
 Plus a **Live mode (beta)** at `/live` — speak into the microphone or capture a browser-tab's audio and the fallacy detector flags issues in near-real-time as the speaker talks. Built on OpenAI's Realtime API (`gpt-realtime-whisper`) for speech-to-text via a direct browser↔OpenAI WebRTC channel (the Jiddu server only mints short-lived tokens and persists the transcript + findings). When you stop the session it commits a normal `/a/<id>` analysis you can share.
 
@@ -27,7 +28,7 @@ The methodology behind the fact-check and neutrality pipelines is grounded in tw
 - **Dual-pane viewer** — text on the left with each fallacious passage highlighted in its own color; explanations stack as anchored comments on the right.
 - **Streaming analysis** — comments appear progressively while the LLM is still writing.
 - **Multi-chunk parallel analysis** — texts up to ~200k chars are split at sentence boundaries and analyzed in parallel with bounded concurrency.
-- **28 fallacies catalog** — covering relevance, ambiguity, presumption, emotional appeals, causal reasoning and evidence. Each has its own distinct color (golden-angle palette).
+- **46 fallacies catalog** — covering relevance, ambiguity, presumption, emotional appeals, causal reasoning and evidence. Each has its own distinct color (golden-angle palette).
 - **Fallacy guide page** at `/fallacies` and a per-fallacy modal opened from any comment.
 - **Live mode** at `/live` — real-time fallacy detection on streamed audio (speech-to-text + analysis).
 - **Demo analyses** in 3 languages (`/a/demo-en`, `/a/demo-pt`, `/a/demo-es`) loaded from the database — no LLM call needed to see the UX.
@@ -46,6 +47,12 @@ The methodology behind the fact-check and neutrality pipelines is grounded in tw
 - **No partisan direction**: the system intentionally does NOT classify left/right or pro-X/anti-Y. Surfaces specific patterns the reader can audit instead.
 - **Demo analyses** in 3 languages (`/n/demo-en`, `/n/demo-pt`, `/n/demo-es`).
 
+### Slop detector
+- **AI-slop pattern detection** at `/slop`, results at `/s/[id]` — same dual-pane reading idiom as the fallacy detector (colored sentence highlights + anchored margin cards + 0-100 score), driven by a separate catalog and prompt.
+- **18-pattern catalog** across five categories (wording, manufactured drama, templated structure, hollow substance, format tics): buzzword salad, filler phrases, throat-clearing, faux-insight setups, colon reveals, rhetorical setups, fake-profound kickers, binary contrast, negative listing, dramatic fragmentation, robotic rhythm, importance puffery, weasel attribution, superficial analysis, vague abstraction, synonym cycling, summary-recap endings, em-dash overuse.
+- **Patterns, not authorship** — the prompt forbids claims about whether AI wrote the text; every finding quotes the exact span so the reader can check the evidence. Findings say what a cleaner version would do, but never rewrite.
+- **Demo analyses** in 3 languages (`/s/demo-en`, `/s/demo-pt`, `/s/demo-es`).
+
 ### Explain
 - **Paragraph-by-paragraph viewer** at `/e/[id]` — the paper on the left with every paragraph tinted by the role it plays; one explanation card per paragraph on the right, **anchored beside the paragraph it explains** (absolute-positioned with collision avoidance, same as the fallacy detector's margin comments) so clicking a paragraph never scrolls you across a long document.
 - **Audience level** — a pill selector on the composer picks who the explanations are written for: `Child` (ELI5, everyday analogies, no jargon), `High school`, `Undergraduate` (default), or `Expert` (concise, critical, no basic definitions). The level only changes the prose, not the pipeline.
@@ -56,7 +63,7 @@ The methodology behind the fact-check and neutrality pipelines is grounded in tw
 - **Demo explanations** in 3 languages (`/e/demo-en`, `/e/demo-pt`, `/e/demo-es`).
 
 ### Cross-cutting
-- **Four-way mode toggle** on the home composer — `Detector de Falácias` / `Checar Fatos` / `Imparcialidade` / `Explicar` — switches between the four pipelines while sharing the same URL / paste / file input forms.
+- **Five-way mode toggle** on the home composer — `Detector de Falácias` / `Checar Fatos` / `Imparcialidade` / `Explicar` / `Detector de Slop` — switches between the five pipelines while sharing the same URL / paste / file input forms.
 - **Multi-model via OpenRouter** — `🇺🇸 GPT-5.4 mini` (default) with `🇨🇳 MiniMax M2.7` as a one-click alternative and an automatic client-side fallback (re-tries only if no SSE events were emitted yet). Sonar Reasoning Pro is used only for fact-check verification, never exposed in the model picker.
 - **User feedback loop** — a "🚩 Report wrong verdict" button on every claim card. Feedback lands in an `/admin/feedback` queue with open/resolved/ignored filters; a badge on the admin home shows the open count.
 - **"Not reviewed" banner** — any analysis that hasn't been manually reviewed by an admin shows a yellow disclaimer banner above the viewer body. The admin home has a one-click toggle to mark an analysis as reviewed.
@@ -201,13 +208,14 @@ src/
 
 ## Public API & MCP (for agents)
 
-The four pipelines are also exposed as a documented, **synchronous** REST API (request → JSON, no SSE) for agents and scripts, plus an MCP server. Docs page: [`/api-access`](https://jiddu.app/api-access).
+The five pipelines are also exposed as a documented, **synchronous** REST API (request → JSON, no SSE) for agents and scripts, plus an MCP server. Docs page: [`/api-access`](https://jiddu.app/api-access).
 
 ```
 POST /api/v1/detect-fallacies
 POST /api/v1/fact-check
 POST /api/v1/assess-neutrality
 POST /api/v1/explain
+POST /api/v1/detect-slop
 ```
 
 Body is `{ "text": "…" }` (40–2000 chars) plus optional `lang` (`en`/`pt`/`es`) and, for explain, `level`. Authenticate with an `X-Jiddu-Key` header. Keys are **admin-issued** at `/admin/api-keys` (hashed, shown once) with per-key rate overrides; public limits are tuned via `rate.api*` in admin settings. `fact-check` extracts and verifies each claim via Sonar, capped by `api.maxClaims`.

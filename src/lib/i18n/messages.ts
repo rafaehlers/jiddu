@@ -182,6 +182,26 @@ export type Messages = {
   explain_footer: (model: string) => string;
   pipeline_explain_desc: string;
 
+  // Slop detector (5th lens)
+  mode_slop: string;
+  pipeline_slop_desc: string;
+  check_slop: string;
+  slop_failed: string;
+  loader_slop: string[];
+  slop_found_one: string;
+  slop_found_many: string;
+  no_slop: string;
+  slop_finding_count: (count: number, total: number) => string;
+  slop_score_clean: string;
+  slop_score_light: string;
+  slop_score_several: string;
+  slop_score_heavy: string;
+  slop_score_assembly: string;
+  a11y_show_slop: string;
+  finding_about_this_pattern: string;
+  slop_guide_title: string;
+  slop_guide_subtitle: string;
+
   // 404 page
   not_found_label: string;
   not_found_title: string;
@@ -319,6 +339,8 @@ export type Messages = {
   print_section_explanations: string;
   print_no_explanations: string;
   print_footer_explain: string;
+  print_type_slop: string;
+  print_footer_slop: string;
   print_generated_at: (when: string) => string;
 
   // Live mode (beta)
@@ -355,7 +377,7 @@ const en: Messages = {
   hero_subtitle:
     "Upload a PDF, paste text, or drop a URL. Jiddu highlights the passages that contain logical fallacies and explains each one in a comment — just like a reviewer in Word — and gives the whole piece a fallacy score from 0 to 100.",
   home_hero_subtitle:
-    "Drop a PDF, paste text, or add a URL — then pick a lens: fallacy detection, claim extraction and fact-checking, neutrality assessment, or a paragraph-by-paragraph explainer.",
+    "Drop a PDF, paste text, or add a URL — then pick a lens: fallacy detection, claim extraction and fact-checking, neutrality assessment, a paragraph-by-paragraph explainer, or an AI-slop check.",
   privacy: "Privacy:",
   privacy_body:
     "your text is sent to the selected model (OpenAI or MiniMax, routed via OpenRouter) for analysis and stored locally under a shareable id.",
@@ -364,7 +386,7 @@ const en: Messages = {
   bench_badge_label:
     "Pipeline validated · 67.5% match with PolitiFact in a 200-claim benchmark",
   bench_badge_link: "view report",
-  pipelines_heading: "Four lenses on the same text",
+  pipelines_heading: "Five lenses on the same text",
   pipelines_subheading:
     "Pick a mode in the form above, or open a sample analysis to see what each one looks like.",
   pipeline_fallacy_desc:
@@ -578,19 +600,47 @@ const en: Messages = {
   pipeline_explain_desc:
     "Upload a paper and get a plain-language explanation of every paragraph, at the level you choose — from child to expert.",
 
+  mode_slop: "Slop detector",
+  pipeline_slop_desc:
+    "Flags the stock phrases, manufactured drama and templated structures that make prose read machine-assembled. Names each pattern with a quote to check — never guesses authorship.",
+  check_slop: "Check for slop",
+  slop_failed: "Slop check failed",
+  loader_slop: [
+    "Sniffing for stock phrases",
+    "Checking the drama for manufacture",
+    "Measuring template density",
+    "Weighing what survives deletion",
+    "Drafting the comments",
+  ],
+  slop_found_one: "pattern flagged so far",
+  slop_found_many: "patterns flagged so far",
+  no_slop: "No slop patterns detected — this text reads human.",
+  slop_finding_count: (count, total) =>
+    `${count} ${count === 1 ? "pattern" : "patterns"} across ${total} sentences`,
+  slop_score_clean: "reads human",
+  slop_score_light: "light seasoning",
+  slop_score_several: "patterned",
+  slop_score_heavy: "heavily templated",
+  slop_score_assembly: "assembly-line prose",
+  a11y_show_slop: "Show slop comment",
+  finding_about_this_pattern: "About this pattern",
+  slop_guide_title: "Slop pattern guide",
+  slop_guide_subtitle:
+    "A short reference for the AI-slop writing patterns Jiddu can flag. Patterns, not authorship — humans write slop too.",
+
   nav_legal: "Terms",
   nav_how_it_works: "How it works",
   nav_api: "API",
   api_access_title: "Jiddu API & MCP",
   api_access_subtitle:
-    "Use Jiddu's four reading tools from your own code or agent — a documented REST API and an MCP server.",
+    "Use Jiddu's five reading tools from your own code or agent — a documented REST API and an MCP server.",
   api_access_sections: [
     {
       title: "Endpoints",
       paragraphs: [
-        "Jiddu exposes its four analysis pipelines as a public REST API. Every endpoint takes a JSON body with a `text` field (40–2000 characters) plus an optional `lang` (`en` / `pt` / `es`), and returns structured JSON.",
-        "```\nPOST /api/v1/detect-fallacies\nPOST /api/v1/fact-check\nPOST /api/v1/assess-neutrality\nPOST /api/v1/explain\n```",
-        "`detect-fallacies`, `assess-neutrality` and `explain` are fast. `fact-check` extracts each claim and verifies it against live web search, so it is slower and metered.",
+        "Jiddu exposes its five analysis pipelines as a public REST API. Every endpoint takes a JSON body with a `text` field (40–2000 characters) plus an optional `lang` (`en` / `pt` / `es`), and returns structured JSON.",
+        "```\nPOST /api/v1/detect-fallacies\nPOST /api/v1/fact-check\nPOST /api/v1/assess-neutrality\nPOST /api/v1/explain\nPOST /api/v1/detect-slop\n```",
+        "`detect-fallacies`, `assess-neutrality`, `explain` and `detect-slop` are fast. `fact-check` extracts each claim and verifies it against live web search, so it is slower and metered.",
       ],
     },
     {
@@ -603,7 +653,7 @@ const en: Messages = {
     {
       title: "MCP server",
       paragraphs: [
-        "For agents, connect to the hosted Jiddu MCP server by URL — nothing to install or clone. It exposes the same four tools and bridges to your MCP client (e.g. Claude Desktop) via the public `mcp-remote` helper:",
+        "For agents, connect to the hosted Jiddu MCP server by URL — nothing to install or clone. It exposes the same five tools and bridges to your MCP client (e.g. Claude Desktop) via the public `mcp-remote` helper:",
         "```\n{\n  \"mcpServers\": {\n    \"jiddu\": {\n      \"command\": \"npx\",\n      \"args\": [\"-y\", \"mcp-remote\", \"https://jiddu.app/api/mcp\", \"--header\", \"X-Jiddu-Key:your-key-here\"]\n    }\n  }\n}\n```",
         "Machine-oriented docs — when to use each tool, response shapes, and how to chain them — live in [AGENT.md](https://github.com/rafaehlers/jiddu/blob/main/packages/jiddu-mcp/AGENT.md).",
       ],
@@ -652,6 +702,9 @@ const en: Messages = {
   print_no_explanations: "No explanations were produced.",
   print_footer_explain:
     "This is an automated explanation. It can misread or oversimplify the paper — always read the source text and the cited work yourself. See https://jiddu.app/legal for the full terms.",
+  print_type_slop: "Slop check",
+  print_footer_slop:
+    "This is an automated report. It flags writing patterns, never authorship — humans write slop too, and the labels may be wrong. Read the quoted passages and judge for yourself. See https://jiddu.app/legal for the full terms.",
   print_generated_at: (when) => `Generated ${when} · jiddu.app`,
   legal_title: "Terms and disclaimers",
   legal_subtitle:
@@ -661,7 +714,7 @@ const en: Messages = {
     {
       title: "1. What Jiddu does",
       paragraphs: [
-        "Jiddu is an automated tool. It uses large language models (currently routed through OpenRouter to OpenAI, Anthropic, MiniMax and Perplexity Sonar) to (a) flag passages that may contain logical fallacies, (b) extract verifiable factual claims and offer a verdict based on a web search, (c) assess how neutral or biased a text is, and (d) explain a document paragraph by paragraph at a chosen reading level. The same tools are available through a public API and an MCP server.",
+        "Jiddu is an automated tool. It uses large language models (currently routed through OpenRouter to OpenAI, Anthropic, MiniMax and Perplexity Sonar) to (a) flag passages that may contain logical fallacies, (b) extract verifiable factual claims and offer a verdict based on a web search, (c) assess how neutral or biased a text is, (d) explain a document paragraph by paragraph at a chosen reading level, and (e) flag AI-slop writing patterns (templates and stock phrasing — never a claim about authorship). The same tools are available through a public API and an MCP server.",
         "Jiddu does not employ human editors. Every output you see is produced by software. The tool is meant to assist critical reading — not to replace it.",
       ],
     },
@@ -718,7 +771,7 @@ const en: Messages = {
     {
       title: "1. The big picture",
       paragraphs: [
-        "Jiddu runs four independent analyses on the same input text: a fallacy detector, a fact-check pipeline (extraction + Sonar-based verdict), a neutrality assessment, and a paragraph-by-paragraph paper explainer. They are separate routes in the app (`/`, `/factcheck`, `/neutrality`, `/explain`) and separate database tables. None of them is required by the others.",
+        "Jiddu runs five independent analyses on the same input text: a fallacy detector, a fact-check pipeline (extraction + Sonar-based verdict), a neutrality assessment, a paragraph-by-paragraph paper explainer, and an AI-slop detector (flags templated writing patterns — same architecture as the fallacy detector with a different catalog and prompt). They are separate routes in the app (`/`, `/factcheck`, `/neutrality`, `/explain`, `/slop`) and separate database tables. None of them is required by the others.",
         "Each analysis is a streaming request to an LLM via [OpenRouter](https://openrouter.ai). The model is told to call a function (OpenAI-style tool use) whose JSON Schema we control. We parse the tool-call arguments incrementally with [partial-json](https://github.com/promplate/partial-json) so findings show up in the UI while the model is still writing.",
         "All output is in the user's UI language. The same prompt is used regardless of which model the user picks — the language difference comes from a single `OUTPUT LANGUAGE:` line in the system prompt.",
       ],
@@ -749,7 +802,15 @@ const en: Messages = {
       ],
     },
     {
-      title: "5. Fact-check — claim extraction",
+      title: "5. Slop detector",
+      paragraphs: [
+        "Same architecture as the fallacy detector — same ingestion, chunking, streaming, model fallback and char-weighted 0-100 score — with a different catalog and prompt, persisted to its own table (results at `/s/:id`, same margin-comment viewer, print view and demos at `/s/demo-en|pt|es`).",
+        "The catalog covers 18 AI-slop writing patterns in five families: stock wording, manufactured drama, templated structure, hollow substance, and format tics. The full list with definitions and examples is at [/slop-patterns](/slop-patterns).",
+        "The prompt detects **patterns, not authorship** — it is forbidden from claiming a text was or wasn't written by AI (humans write slop too). Every finding quotes the exact span, names the pattern, and says in a few words what a cleaner version would do (state the point, name the source, give the number) without rewriting anything. Score bands: 0-15 reads human, 16-35 light seasoning, 36-60 patterned, 61-80 heavily templated, 81-100 assembly-line prose.",
+      ],
+    },
+    {
+      title: "6. Fact-check — claim extraction",
       paragraphs: [
         "Modelled on [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson, MSR 2025). The prompt asks the model to walk every sentence through four stages: **selection** (keep only sentences with a verifiable claim — opinions, value judgements, rhetorical questions get dropped), **disambiguation** (drop sentences with multiple plausible readings when context doesn't resolve them), **decomposition** (split multi-fact sentences into separate claims without chasing infinite atomicity), and **decontextualization** (every emitted claim must stand alone — resolve pronouns, add the year for a number that depends on it, attribute a quote to its source).",
         "Each emitted claim is typed: `numeric`, `date`, `quote`, `causal`, or `categorical`. The type informs how the verifier later searches for evidence.",
@@ -757,7 +818,7 @@ const en: Messages = {
       ],
     },
     {
-      title: "6. Fact-check — per-claim verdict",
+      title: "7. Fact-check — per-claim verdict",
       paragraphs: [
         "Verdict is opt-in. Extraction alone is cheap (one LLM call). Verification is on demand: the user clicks **Verify claims** in the viewer and each claim is sent to [Perplexity Sonar Reasoning Pro](https://openrouter.ai/perplexity/sonar-reasoning-pro), one call per claim, with bounded concurrency (6 parallel by default).",
         "Sonar returns a JSON payload with the verdict (`supported` / `contradicted` / `mixed` / `unverified`), a confidence between 0 and 1, a rationale, and a list of cited sources collected from Sonar's `annotations` channel. If confidence is below 0.5, the verdict is forced to `unverified` — better to surface 'not enough evidence' than to ship a confident wrong call.",
@@ -767,7 +828,7 @@ const en: Messages = {
       ],
     },
     {
-      title: "7. Fact-check — verdict cache",
+      title: "8. Fact-check — verdict cache",
       paragraphs: [
         "Each verified claim is hashed and stored. The hash is `sha256(lang + ':' + normalize(statement))` where `normalize` lowercases, strips combining-mark accents, collapses whitespace and removes trailing punctuation. That means rewordings of the same claim collide, but cross-language doesn't.",
         "TTLs are per claim type. `numeric` 30 days (IBGE and friends revise series), `date` and `categorical` 365 days (historical facts and definitions are stable), `quote` and `causal` 90 days (re-examinable but unlikely to flip). A best-effort sweep deletes expired rows on the cache-miss path, rate-limited to once every 30 minutes so the hot path stays cheap.",
@@ -775,7 +836,7 @@ const en: Messages = {
       ],
     },
     {
-      title: "8. Neutrality",
+      title: "9. Neutrality",
       paragraphs: [
         "Distinct from fallacy detection: a text can be fallacy-free and factually accurate while still using loaded framing, asymmetric attribution or one-sided sourcing. Neutrality surfaces those patterns.",
         "Eight issue types are flagged at the sentence level: `loaded_language`, `asymmetric_attribution`, `false_equivalence`, `selective_omission`, `source_asymmetry`, `both_sidesing`, `steering`, `genetic_framing`. The model also classifies the document into one of seven text types (informational / opinion / political speech / advocacy / analysis / marketing / social_media) which informs how strict the audit is.",
@@ -783,7 +844,7 @@ const en: Messages = {
       ],
     },
     {
-      title: "9. Storage, privacy and reviewers",
+      title: "10. Storage, privacy and reviewers",
       paragraphs: [
         "Persistence is a single SQLite file on a Hostinger VPS, mounted as a Docker volume. There are no user accounts. Each analysis gets a short id and lives under `/a/<id>`, `/f/<id>` or `/n/<id>`. Anyone with the URL can view.",
         "The submitted text is sent to OpenRouter, which routes it to whichever upstream serves the picked model. We don't relay it anywhere else. We log the request IP for rate-limiting and abuse signalling and we don't sell or share that.",
@@ -791,14 +852,14 @@ const en: Messages = {
       ],
     },
     {
-      title: "10. Cost and abuse controls",
+      title: "11. Cost and abuse controls",
       paragraphs: [
         "Every cost-incurring route has an in-memory token-bucket rate limit per IP. Defaults: 30 fallacy analyses / hour, 30 fact-check extractions / hour, 10 bulk verifications / hour, 20 per-claim refreshes / hour, 20 feedback flags / hour. All values are admin-tunable at runtime via `/admin/settings` — no redeploy needed. When a bucket empties, the API returns 429 with a `Retry-After` header.",
         "The fact-check extraction caps at 50 claims per document. The per-claim refresh caps at 2 calls per claim. Both are admin-configurable. These are the structural defences against a single user racking up an unexpected bill.",
       ],
     },
     {
-      title: "11. Feedback loop",
+      title: "12. Feedback loop",
       paragraphs: [
         "Every fact-check claim card has a **🚩 Report wrong verdict** button. Clicking it captures an optional free-text reason and POSTs to a feedback endpoint, which snapshots the current statement + verdict (so the admin sees what the user was looking at, even if the verdict later gets re-verified).",
         "Submitted flags land in an admin queue at `/admin/feedback` with status `open`. The operator can mark each as `resolved` (concur with the user, plan to fix) or `ignored` (the verdict was correct, or the flag was spam), or delete it. The admin home shows a red badge with the open count.",
@@ -806,7 +867,7 @@ const en: Messages = {
       ],
     },
     {
-      title: "12. Live mode (beta)",
+      title: "13. Live mode (beta)",
       paragraphs: [
         "A separate pipeline at [/live](/live): the page captures audio from the user's microphone or, on Chromium browsers, from a browser tab via `getDisplayMedia`. The audio is streamed *directly from the browser to OpenAI's Realtime API* over WebRTC — it never passes through the Jiddu server. The transcription model is `gpt-realtime-whisper`, and the language is honored from the i18n header selector (EN / PT / ES).",
         "How the wiring works: when the user presses **Start**, the browser calls `POST /api/live/token` to mint a short-lived ephemeral client secret (the Jiddu server holds the actual `OPENAI_API_KEY`; the browser never sees it). The browser then opens the WebRTC peer-connection to OpenAI using that secret and starts receiving transcript deltas. Every ~500 new characters (or every 30 seconds, whichever comes first), a separate SSE call to `POST /api/live/analyze` ships the cumulative transcript and runs the same fallacy prompt used everywhere else — this analysis step is a different call from the OpenAI transcription above, routed via OpenRouter with the same GPT-5.4 mini / MiniMax M2.7 model picker as the other three pipelines. Findings stream back into the UI in near-real-time. On **Stop**, a final `finalize: true` call commits the session as a normal `/a/<id>` analysis, indistinguishable downstream from a pasted-text analysis.",
@@ -814,7 +875,7 @@ const en: Messages = {
       ],
     },
     {
-      title: "13. Explain — paper explainer",
+      title: "14. Explain — paper explainer",
       paragraphs: [
         "The Explain pipeline (`/explain`, results at `/e/:id`) takes an academic paper or technical document and produces a paragraph-by-paragraph plain-language explanation. Each paragraph gets a role tag (Background / Objective / Method / Result / Interpretation / Limitation / Conclusion) and an explanation written at the chosen audience level. A whole-document overview is generated first.",
         "Audience levels: **Child** (ELI5, everyday analogies, no jargon), **High school** (clear language, a few technical terms explained), **Undergraduate** (standard academic register, assumes field familiarity), **Expert** (concise, peer-level, full terminology retained). The level controls prose complexity only — it does not filter or validate content.",
@@ -823,16 +884,16 @@ const en: Messages = {
       ],
     },
     {
-      title: "14. Public API & MCP (for agents)",
+      title: "15. Public API & MCP (for agents)",
       paragraphs: [
-        "Beyond the web app, all four pipelines are exposed as a public REST API for agents and scripts: `POST /api/v1/detect-fallacies`, `/fact-check`, `/assess-neutrality`, `/explain`. Unlike the internal SSE routes above, these are synchronous — one JSON request in (`{ text }`, 40–2000 chars, plus optional `lang` and, for explain, `level`), one JSON response out. They drive the same generators to completion over a single chunk and never persist a row.",
+        "Beyond the web app, all five pipelines are exposed as a public REST API for agents and scripts: `POST /api/v1/detect-fallacies`, `/fact-check`, `/assess-neutrality`, `/explain`, `/detect-slop`. Unlike the internal SSE routes above, these are synchronous — one JSON request in (`{ text }`, 40–2000 chars, plus optional `lang` and, for explain, `level`), one JSON response out. They drive the same generators to completion over a single chunk and never persist a row.",
         "Requests authenticate with an `X-Jiddu-Key` header. Keys are admin-issued at `/admin/api-keys` (stored only as a sha256 hash, shown once) and rate-limited per key, separately from the web app's per-IP limits. Fact-check via the API both extracts and verifies each claim, capped by a per-request claim limit so one call can't fan out unboundedly to the paid Sonar verifier.",
-        "An MCP server exposes the same four tools to agents. It is hosted in-process at `POST /api/mcp` (via mcp-handler), so any MCP client can connect by URL through the public `mcp-remote` bridge — nothing to install or publish. The tools call the internal pipeline layer directly, with no extra HTTP hop. The same four tools also ship as a standalone `jiddu-mcp` package for local use. Setup snippets and machine-oriented docs are at [/api-access](/api-access).",
+        "An MCP server exposes the same five tools to agents. It is hosted in-process at `POST /api/mcp` (via mcp-handler), so any MCP client can connect by URL through the public `mcp-remote` bridge — nothing to install or publish. The tools call the internal pipeline layer directly, with no extra HTTP hop. The same five tools also ship as a standalone `jiddu-mcp` package for local use. Setup snippets and machine-oriented docs are at [/api-access](/api-access).",
         "Quality is tracked by a fixed eval suite (15–16 cases per tool) committed in the repo and scored against expected results; the published report lives at [evals/report.md](https://github.com/rafaehlers/jiddu/blob/main/evals/report.md).",
       ],
     },
     {
-      title: "15. Open source and methodology",
+      title: "16. Open source and methodology",
       paragraphs: [
         "Source code is at [github.com/rafaehlers/jiddu](https://github.com/rafaehlers/jiddu) under the [AGPL-3.0-or-later license](https://www.gnu.org/licenses/agpl-3.0.txt). AGPL closes the 'SaaS loophole' that GPL leaves open: anyone running a modified version as a network service must publish the modified source.",
         "Two papers ground the design: [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson — Microsoft Research, 2025) for the four-stage claim extraction; and [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) (Goldfarb, Hall, Fisher, Salam, Wilde — Forum AI / Stanford, 2025) for the verdict assessment, the 6-tier source taxonomy and the neutrality framework. Jiddu is not affiliated with either group.",
@@ -961,7 +1022,7 @@ const pt: Messages = {
   hero_subtitle:
     "Envie um PDF, cole um texto ou solte uma URL. O Jiddu destaca os trechos com falácias lógicas e explica cada um em um comentário — como um revisor no Word — e dá uma nota de 0 a 100 para o texto inteiro.",
   home_hero_subtitle:
-    "Solte um PDF, cole um texto ou adicione uma URL — e escolha a lente: detecção de falácias, extração e checagem de afirmações, avaliação de neutralidade ou explicação parágrafo a parágrafo.",
+    "Solte um PDF, cole um texto ou adicione uma URL — e escolha a lente: detecção de falácias, extração e checagem de afirmações, avaliação de neutralidade, explicação parágrafo a parágrafo ou detecção de slop de IA.",
   privacy: "Privacidade:",
   privacy_body:
     "seu texto é enviado ao modelo selecionado (OpenAI ou MiniMax, roteado via OpenRouter) para análise e armazenado localmente sob um id compartilhável.",
@@ -970,7 +1031,7 @@ const pt: Messages = {
   bench_badge_label:
     "Pipeline validado · 67,5% de concordância com PolitiFact em benchmark de 200 claims",
   bench_badge_link: "ver relatório",
-  pipelines_heading: "Quatro lentes sobre o mesmo texto",
+  pipelines_heading: "Cinco lentes sobre o mesmo texto",
   pipelines_subheading:
     "Escolha um modo no formulário acima, ou abra uma análise de exemplo para ver como cada um fica.",
   pipeline_fallacy_desc:
@@ -1185,19 +1246,47 @@ const pt: Messages = {
   pipeline_explain_desc:
     "Suba um paper e receba uma explicação em linguagem simples de cada parágrafo, no nível que você escolher — de criança a especialista.",
 
+  mode_slop: "Detector de Slop",
+  pipeline_slop_desc:
+    "Sinaliza as frases prontas, o drama fabricado e as estruturas de fôrma que fazem um texto parecer montado por máquina. Nomeia cada padrão com citação verificável — nunca chuta autoria.",
+  check_slop: "Detectar slop",
+  slop_failed: "Falha na detecção de slop",
+  loader_slop: [
+    "Farejando frases prontas",
+    "Conferindo se o drama é fabricado",
+    "Medindo a densidade de fôrma",
+    "Pesando o que sobrevive à exclusão",
+    "Redigindo os comentários",
+  ],
+  slop_found_one: "padrão sinalizado até agora",
+  slop_found_many: "padrões sinalizados até agora",
+  no_slop: "Nenhum padrão de slop detectado — este texto soa humano.",
+  slop_finding_count: (count, total) =>
+    `${count} ${count === 1 ? "padrão" : "padrões"} em ${total} sentenças`,
+  slop_score_clean: "soa humano",
+  slop_score_light: "tempero leve",
+  slop_score_several: "padronizado",
+  slop_score_heavy: "muito padronizado",
+  slop_score_assembly: "prosa de linha de montagem",
+  a11y_show_slop: "Mostrar comentário de slop",
+  finding_about_this_pattern: "Sobre este padrão",
+  slop_guide_title: "Guia de padrões de slop",
+  slop_guide_subtitle:
+    "Uma referência curta para os padrões de escrita de slop de IA que o Jiddu sinaliza. Padrões, não autoria — humanos também escrevem slop.",
+
   nav_legal: "Termos",
   nav_how_it_works: "Como funciona",
   nav_api: "API",
   api_access_title: "API & MCP do Jiddu",
   api_access_subtitle:
-    "Use as quatro ferramentas de leitura do Jiddu no seu próprio código ou agente — uma REST API documentada e um servidor MCP.",
+    "Use as cinco ferramentas de leitura do Jiddu no seu próprio código ou agente — uma REST API documentada e um servidor MCP.",
   api_access_sections: [
     {
       title: "Endpoints",
       paragraphs: [
-        "O Jiddu expõe seus quatro pipelines de análise como uma REST API pública. Todo endpoint recebe um corpo JSON com um campo `text` (40–2000 caracteres) e um `lang` opcional (`en` / `pt` / `es`), e retorna JSON estruturado.",
-        "```\nPOST /api/v1/detect-fallacies\nPOST /api/v1/fact-check\nPOST /api/v1/assess-neutrality\nPOST /api/v1/explain\n```",
-        "`detect-fallacies`, `assess-neutrality` e `explain` são rápidos. O `fact-check` extrai cada afirmação e a verifica com busca na web ao vivo, então é mais lento e medido.",
+        "O Jiddu expõe seus cinco pipelines de análise como uma REST API pública. Todo endpoint recebe um corpo JSON com um campo `text` (40–2000 caracteres) e um `lang` opcional (`en` / `pt` / `es`), e retorna JSON estruturado.",
+        "```\nPOST /api/v1/detect-fallacies\nPOST /api/v1/fact-check\nPOST /api/v1/assess-neutrality\nPOST /api/v1/explain\nPOST /api/v1/detect-slop\n```",
+        "`detect-fallacies`, `assess-neutrality`, `explain` e `detect-slop` são rápidos. O `fact-check` extrai cada afirmação e a verifica com busca na web ao vivo, então é mais lento e medido.",
       ],
     },
     {
@@ -1210,7 +1299,7 @@ const pt: Messages = {
     {
       title: "Servidor MCP",
       paragraphs: [
-        "Para agentes, conecte-se ao servidor MCP hospedado do Jiddu por URL — nada para instalar ou clonar. Ele expõe as mesmas quatro ferramentas e faz a ponte com seu cliente MCP (ex.: Claude Desktop) via o utilitário público `mcp-remote`:",
+        "Para agentes, conecte-se ao servidor MCP hospedado do Jiddu por URL — nada para instalar ou clonar. Ele expõe as mesmas cinco ferramentas e faz a ponte com seu cliente MCP (ex.: Claude Desktop) via o utilitário público `mcp-remote`:",
         "```\n{\n  \"mcpServers\": {\n    \"jiddu\": {\n      \"command\": \"npx\",\n      \"args\": [\"-y\", \"mcp-remote\", \"https://jiddu.app/api/mcp\", \"--header\", \"X-Jiddu-Key:sua-chave-aqui\"]\n    }\n  }\n}\n```",
         "A documentação orientada a máquina — quando usar cada ferramenta, formatos de resposta e como encadeá-las — está em [AGENT.md](https://github.com/rafaehlers/jiddu/blob/main/packages/jiddu-mcp/AGENT.md).",
       ],
@@ -1259,6 +1348,9 @@ const pt: Messages = {
   print_no_explanations: "Nenhuma explicação foi gerada.",
   print_footer_explain:
     "Esta é uma explicação automatizada. Ela pode interpretar mal ou simplificar demais o paper — sempre leia o texto original e os trabalhos citados. Termos completos em https://jiddu.app/legal.",
+  print_type_slop: "Detecção de slop",
+  print_footer_slop:
+    "Este é um relatório automatizado. Ele sinaliza padrões de escrita, nunca autoria — humanos também escrevem slop, e os rótulos podem estar errados. Leia os trechos citados e julgue por conta própria. Termos completos em https://jiddu.app/legal.",
   print_generated_at: (when) => `Gerado em ${when} · jiddu.app`,
 
   legal_title: "Termos e isenções",
@@ -1269,7 +1361,7 @@ const pt: Messages = {
     {
       title: "1. O que o Jiddu faz",
       paragraphs: [
-        "O Jiddu é uma ferramenta automatizada. Ele usa modelos de linguagem (atualmente roteados via OpenRouter para OpenAI, Anthropic, MiniMax e Perplexity Sonar) para (a) sinalizar passagens que podem conter falácias lógicas, (b) extrair afirmações factuais verificáveis e oferecer um veredito baseado em busca na web, (c) avaliar quão neutro ou enviesado um texto é, e (d) explicar um documento parágrafo por parágrafo no nível de leitura escolhido. As mesmas ferramentas estão disponíveis via uma API pública e um servidor MCP.",
+        "O Jiddu é uma ferramenta automatizada. Ele usa modelos de linguagem (atualmente roteados via OpenRouter para OpenAI, Anthropic, MiniMax e Perplexity Sonar) para (a) sinalizar passagens que podem conter falácias lógicas, (b) extrair afirmações factuais verificáveis e oferecer um veredito baseado em busca na web, (c) avaliar quão neutro ou enviesado um texto é, (d) explicar um documento parágrafo por parágrafo no nível de leitura escolhido, e (e) sinalizar padrões de escrita de slop de IA (moldes e frases prontas — nunca uma afirmação sobre autoria). As mesmas ferramentas estão disponíveis via uma API pública e um servidor MCP.",
         "O Jiddu não tem editores humanos. Todo resultado que você vê é produzido por software. A ferramenta serve como apoio à leitura crítica — não a substitui.",
       ],
     },
@@ -1326,7 +1418,7 @@ const pt: Messages = {
     {
       title: "1. Visão geral",
       paragraphs: [
-        "O Jiddu roda quatro análises independentes sobre o mesmo texto: um detector de falácias, um pipeline de checagem de fatos (extração + veredito via Sonar), uma avaliação de imparcialidade e um explicador de papers parágrafo a parágrafo. São rotas separadas no app (`/`, `/factcheck`, `/neutrality`, `/explain`) e tabelas separadas no banco. Nenhuma depende das outras.",
+        "O Jiddu roda cinco análises independentes sobre o mesmo texto: um detector de falácias, um pipeline de checagem de fatos (extração + veredito via Sonar), uma avaliação de imparcialidade, um explicador de papers parágrafo a parágrafo e um detector de slop de IA (sinaliza padrões de escrita de fôrma — mesma arquitetura do detector de falácias com catálogo e prompt diferentes). São rotas separadas no app (`/`, `/factcheck`, `/neutrality`, `/explain`, `/slop`) e tabelas separadas no banco. Nenhuma depende das outras.",
         "Cada análise é uma requisição em streaming pra um LLM via [OpenRouter](https://openrouter.ai). O modelo é instruído a chamar uma função (tool use estilo OpenAI) cujo JSON Schema é nosso. A gente parseia os argumentos da chamada incrementalmente com [partial-json](https://github.com/promplate/partial-json), então os achados aparecem na UI enquanto o modelo ainda está escrevendo.",
         "Todo o output é no idioma da UI escolhido pelo usuário. O mesmo prompt vai independente do modelo selecionado — a diferença de idioma vem de uma única linha `OUTPUT LANGUAGE:` no system prompt.",
       ],
@@ -1357,7 +1449,15 @@ const pt: Messages = {
       ],
     },
     {
-      title: "5. Checagem de fatos — extração de afirmações",
+      title: "5. Detector de slop",
+      paragraphs: [
+        "Mesma arquitetura do detector de falácias — mesma ingestão, chunking, streaming, fallback de modelo e nota 0-100 ponderada por caracteres — com catálogo e prompt diferentes, persistido em tabela própria (resultados em `/s/:id`, mesmo viewer de comentários na margem, versão de impressão e demos em `/s/demo-en|pt|es`).",
+        "O catálogo cobre 18 padrões de escrita de slop de IA em cinco famílias: vocabulário de estoque, drama fabricado, estrutura de fôrma, substância oca e cacoetes de formato. A lista completa com definições e exemplos está em [/slop-patterns](/slop-patterns).",
+        "O prompt detecta **padrões, não autoria** — ele é proibido de afirmar que um texto foi ou não escrito por IA (humanos também escrevem slop). Cada achado cita o trecho exato, nomeia o padrão e diz em poucas palavras o que uma versão mais limpa faria (afirmar o ponto, nomear a fonte, dar o número) sem reescrever nada. Faixas de nota: 0-15 soa humano, 16-35 tempero leve, 36-60 padronizado, 61-80 muito padronizado, 81-100 prosa de linha de montagem.",
+      ],
+    },
+    {
+      title: "6. Checagem de fatos — extração de afirmações",
       paragraphs: [
         "Modelado a partir do [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson, MSR 2025). O prompt pede ao modelo pra passar cada sentença por quatro estágios: **selection** (manter só sentenças com afirmação verificável — opinião, juízo de valor e pergunta retórica saem), **disambiguation** (descartar sentenças com múltiplas leituras plausíveis quando o contexto não resolve), **decomposition** (quebrar sentenças com múltiplos fatos em afirmações separadas, sem perseguir atomicidade infinita) e **decontextualization** (cada afirmação emitida deve ficar de pé sozinha — resolver pronomes, adicionar o ano de um número que depende dele, atribuir uma citação à fonte).",
         "Cada afirmação tem um tipo: `numeric`, `date`, `quote`, `causal`, ou `categorical`. O tipo informa como o verificador procura evidência depois.",
@@ -1365,7 +1465,7 @@ const pt: Messages = {
       ],
     },
     {
-      title: "6. Checagem de fatos — veredito por afirmação",
+      title: "7. Checagem de fatos — veredito por afirmação",
       paragraphs: [
         "Veredito é opt-in. A extração sozinha é barata (uma chamada LLM). A verificação é sob demanda: o usuário clica em **Verificar afirmações** no viewer e cada afirmação é enviada pro [Perplexity Sonar Reasoning Pro](https://openrouter.ai/perplexity/sonar-reasoning-pro), uma chamada por afirmação, com concorrência limitada (6 paralelas por padrão).",
         "O Sonar retorna um JSON com o veredito (`sustentado` / `contradito` / `misto` / `não verificado`), uma confiança entre 0 e 1, uma justificativa, e uma lista de fontes citadas tiradas do canal `annotations` do Sonar. Se a confiança ficar abaixo de 0.5, o veredito é forçado pra `não verificado` — melhor sinalizar 'evidência insuficiente' do que entregar uma resposta confiantemente errada.",
@@ -1375,7 +1475,7 @@ const pt: Messages = {
       ],
     },
     {
-      title: "7. Checagem de fatos — cache de vereditos",
+      title: "8. Checagem de fatos — cache de vereditos",
       paragraphs: [
         "Cada afirmação verificada é hashada e armazenada. O hash é `sha256(lang + ':' + normalize(statement))` onde `normalize` faz lowercase, tira acentos combinantes, colapsa espaços e remove pontuação final. Isso significa que reformulações da mesma afirmação colidem, mas idiomas diferentes não.",
         "TTLs por tipo de afirmação. `numeric` 30 dias (IBGE e companhia revisam séries), `date` e `categorical` 365 dias (fatos históricos e definições são estáveis), `quote` e `causal` 90 dias (re-examináveis mas pouco prováveis de mudar). Uma varredura best-effort apaga linhas expiradas no caminho de cache-miss, limitada a uma vez a cada 30 minutos pra o hot path ficar barato.",
@@ -1383,7 +1483,7 @@ const pt: Messages = {
       ],
     },
     {
-      title: "8. Imparcialidade",
+      title: "9. Imparcialidade",
       paragraphs: [
         "Diferente da detecção de falácia: um texto pode ser livre de falácia e factualmente correto e ainda assim usar enquadramento carregado, atribuição assimétrica ou seleção unilateral de fontes. A análise de imparcialidade sinaliza esses padrões.",
         "Oito tipos de issue são sinalizados no nível da sentença: `loaded_language`, `asymmetric_attribution`, `false_equivalence`, `selective_omission`, `source_asymmetry`, `both_sidesing`, `steering`, `genetic_framing`. O modelo também classifica o documento num de sete tipos de texto (informativo / opinião / discurso político / advocacy / análise / marketing / redes sociais) — isso informa quão estrito o audit é.",
@@ -1391,7 +1491,7 @@ const pt: Messages = {
       ],
     },
     {
-      title: "9. Armazenamento, privacidade e revisão",
+      title: "10. Armazenamento, privacidade e revisão",
       paragraphs: [
         "A persistência é um único arquivo SQLite num VPS Hostinger, montado como volume Docker. Não há contas de usuário. Cada análise ganha um id curto e vive em `/a/<id>`, `/f/<id>` ou `/n/<id>`. Quem tem a URL vê.",
         "O texto submetido é enviado ao OpenRouter, que roteia pro upstream que serve o modelo escolhido. A gente não repassa pra mais ninguém. Registramos o IP da requisição pra rate-limit e detecção de abuso, e não vendemos nem compartilhamos isso.",
@@ -1399,14 +1499,14 @@ const pt: Messages = {
       ],
     },
     {
-      title: "10. Controle de custo e abuso",
+      title: "11. Controle de custo e abuso",
       paragraphs: [
         "Toda rota que gera custo tem um rate limit de token bucket in-memory por IP. Defaults: 30 análises de falácia / hora, 30 extrações de fact-check / hora, 10 verificações em massa / hora, 20 refreshes individuais / hora, 20 sinalizações de feedback / hora. Todos os valores são ajustáveis em runtime no `/admin/settings` — sem precisar redeployar. Quando o bucket esgota, a API retorna 429 com header `Retry-After`.",
         "A extração de fact-check tem cap de 50 afirmações por documento. O refresh por afirmação tem cap de 2 chamadas. Ambos ajustáveis no admin. São as defesas estruturais contra um único usuário gerar uma conta inesperada.",
       ],
     },
     {
-      title: "11. Loop de feedback",
+      title: "12. Loop de feedback",
       paragraphs: [
         "Todo card de afirmação tem um botão **🚩 Reportar veredito errado**. O clique captura um motivo opcional em texto livre e faz POST pra um endpoint de feedback, que tira snapshot do statement + veredito atuais (assim o admin vê o que o usuário tava vendo, mesmo se o veredito for re-verificado depois).",
         "Flags enviadas caem numa fila em `/admin/feedback` com status `open`. O operador marca cada uma como `resolved` (concorda com o usuário, planeja consertar) ou `ignored` (o veredito tava certo, ou a flag era spam), ou deleta. A home do admin mostra um badge vermelho com a contagem aberta.",
@@ -1414,7 +1514,7 @@ const pt: Messages = {
       ],
     },
     {
-      title: "12. Modo Live (beta)",
+      title: "13. Modo Live (beta)",
       paragraphs: [
         "Pipeline separado em [/live](/live): a página captura áudio do microfone do usuário ou, em browsers Chromium, de uma aba do navegador via `getDisplayMedia`. O áudio é transmitido *direto do browser pra Realtime API da OpenAI* via WebRTC — nunca passa pelo servidor do Jiddu. O modelo de transcrição é `gpt-realtime-whisper`, e o idioma respeita o seletor do header (EN / PT / ES).",
         "Como o cabeamento funciona: quando o usuário clica em **Iniciar**, o browser chama `POST /api/live/token` pra cunhar um client secret efêmero de curta duração (o servidor do Jiddu guarda a `OPENAI_API_KEY` real; o browser nunca vê). O browser então abre a peer-connection WebRTC pra OpenAI usando esse secret e começa a receber deltas de transcrição. A cada ~500 caracteres novos (ou a cada 30 segundos, o que vier primeiro), uma chamada SSE separada pra `POST /api/live/analyze` envia o transcript cumulativo e roda o mesmo prompt de falácia usado em qualquer lugar — essa etapa de análise é uma chamada diferente da transcrição via OpenAI acima, roteada via OpenRouter com o mesmo seletor de modelo (GPT-5.4 mini / MiniMax M2.7) das outras três pipelines. Os achados aparecem na UI quase em tempo real. No **Parar**, uma última chamada com `finalize: true` commita a sessão como uma análise `/a/<id>` normal, indistinguível downstream de uma análise feita via paste.",
@@ -1422,7 +1522,7 @@ const pt: Messages = {
       ],
     },
     {
-      title: "13. Explain — explicador de artigos",
+      title: "14. Explain — explicador de artigos",
       paragraphs: [
         "O pipeline Explain (`/explain`, resultados em `/e/:id`) recebe um artigo acadêmico ou documento técnico e produz uma explicação parágrafo a parágrafo em linguagem simples. Cada parágrafo recebe uma tag de papel (Background / Objetivo / Método / Resultado / Interpretação / Limitação / Conclusão) e uma explicação escrita no nível de audiência escolhido. Uma visão geral do documento é gerada primeiro.",
         "Níveis de audiência: **Criança** (ELI5, analogias do cotidiano, sem jargão), **Ensino médio** (linguagem clara, poucos termos técnicos explicados), **Graduação** (registro acadêmico padrão, pressupõe familiaridade com a área), **Expert** (conciso, nível de pares, terminologia completa mantida). O nível controla apenas a complexidade do texto — não filtra nem valida o conteúdo.",
@@ -1431,16 +1531,16 @@ const pt: Messages = {
       ],
     },
     {
-      title: "14. API pública & MCP (para agentes)",
+      title: "15. API pública & MCP (para agentes)",
       paragraphs: [
-        "Além do app web, os quatro pipelines são expostos como uma API REST pública para agentes e scripts: `POST /api/v1/detect-fallacies`, `/fact-check`, `/assess-neutrality`, `/explain`. Diferente das rotas SSE internas acima, estas são síncronas — uma requisição JSON entra (`{ text }`, 40–2000 caracteres, mais `lang` opcional e, no explain, `level`), uma resposta JSON sai. Elas dirigem os mesmos geradores até o fim sobre um único chunk e nunca persistem uma linha no banco.",
+        "Além do app web, os cinco pipelines são expostos como uma API REST pública para agentes e scripts: `POST /api/v1/detect-fallacies`, `/fact-check`, `/assess-neutrality`, `/explain`, `/detect-slop`. Diferente das rotas SSE internas acima, estas são síncronas — uma requisição JSON entra (`{ text }`, 40–2000 caracteres, mais `lang` opcional e, no explain, `level`), uma resposta JSON sai. Elas dirigem os mesmos geradores até o fim sobre um único chunk e nunca persistem uma linha no banco.",
         "As requisições se autenticam com o cabeçalho `X-Jiddu-Key`. As chaves são emitidas pelo admin em `/admin/api-keys` (guardadas só como hash sha256, mostradas uma vez) e têm limite de taxa por chave, separado dos limites por IP do app web. O fact-check via API extrai e verifica cada afirmação, com um teto de afirmações por requisição pra que uma chamada não dispare verificações ilimitadas no Sonar pago.",
-        "Um servidor MCP expõe as mesmas quatro ferramentas a agentes. Ele é hospedado no próprio processo em `POST /api/mcp` (via mcp-handler), então qualquer cliente MCP conecta por URL através do bridge público `mcp-remote` — nada para instalar ou publicar. As ferramentas chamam a camada de pipeline interna direto, sem hop HTTP extra. As mesmas quatro ferramentas também vêm como o pacote standalone `jiddu-mcp` para uso local. Snippets de configuração e docs orientadas a máquina em [/api-access](/api-access).",
+        "Um servidor MCP expõe as mesmas cinco ferramentas a agentes. Ele é hospedado no próprio processo em `POST /api/mcp` (via mcp-handler), então qualquer cliente MCP conecta por URL através do bridge público `mcp-remote` — nada para instalar ou publicar. As ferramentas chamam a camada de pipeline interna direto, sem hop HTTP extra. As mesmas cinco ferramentas também vêm como o pacote standalone `jiddu-mcp` para uso local. Snippets de configuração e docs orientadas a máquina em [/api-access](/api-access).",
         "A qualidade é acompanhada por um conjunto fixo de evals (15–16 casos por ferramenta) versionado no repositório e comparado com resultados esperados; o relatório publicado está em [evals/report.md](https://github.com/rafaehlers/jiddu/blob/main/evals/report.md).",
       ],
     },
     {
-      title: "15. Open source e metodologia",
+      title: "16. Open source e metodologia",
       paragraphs: [
         "Código fonte em [github.com/rafaehlers/jiddu](https://github.com/rafaehlers/jiddu) sob licença [AGPL-3.0-or-later](https://www.gnu.org/licenses/agpl-3.0.txt). A AGPL fecha o 'SaaS loophole' que a GPL deixa aberto: quem rodar uma versão modificada como serviço de rede tem que publicar o código modificado.",
         "Dois papers fundamentam o design: [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson — Microsoft Research, 2025) pra extração em quatro estágios; e [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) (Goldfarb, Hall, Fisher, Salam, Wilde — Forum AI / Stanford, 2025) pra a avaliação de veredito, a taxonomia de 6 tiers de fonte e o framework de imparcialidade. O Jiddu não tem afiliação com nenhum dos grupos.",
@@ -1569,7 +1669,7 @@ const es: Messages = {
   hero_subtitle:
     "Sube un PDF, pega un texto o suelta una URL. Jiddu resalta los pasajes con falacias lógicas y explica cada uno en un comentario — como un revisor en Word — y le da al texto entero una puntuación de falacia de 0 a 100.",
   home_hero_subtitle:
-    "Suelta un PDF, pega un texto o añade una URL — y elige la lente: detección de falacias, extracción y verificación de afirmaciones, evaluación de neutralidad o explicación párrafo a párrafo.",
+    "Suelta un PDF, pega un texto o añade una URL — y elige la lente: detección de falacias, extracción y verificación de afirmaciones, evaluación de neutralidad, explicación párrafo a párrafo o detección de slop de IA.",
   privacy: "Privacidad:",
   privacy_body:
     "tu texto se envía al modelo seleccionado (OpenAI o MiniMax, enrutado vía OpenRouter) para análisis y se almacena localmente bajo un id compartible.",
@@ -1578,7 +1678,7 @@ const es: Messages = {
   bench_badge_label:
     "Pipeline validado · 67,5% de concordancia con PolitiFact en benchmark de 200 claims",
   bench_badge_link: "ver informe",
-  pipelines_heading: "Cuatro lentes sobre el mismo texto",
+  pipelines_heading: "Cinco lentes sobre el mismo texto",
   pipelines_subheading:
     "Elige un modo en el formulario de arriba, o abre un análisis de muestra para ver cómo se ve cada uno.",
   pipeline_fallacy_desc:
@@ -1793,19 +1893,47 @@ const es: Messages = {
   pipeline_explain_desc:
     "Sube un paper y obtén una explicación en lenguaje claro de cada párrafo, al nivel que elijas — de niño a experto.",
 
+  mode_slop: "Detector de slop",
+  pipeline_slop_desc:
+    "Señala las frases hechas, el drama fabricado y las estructuras de plantilla que hacen que un texto parezca ensamblado por máquina. Nombra cada patrón con una cita verificable — nunca adivina autoría.",
+  check_slop: "Detectar slop",
+  slop_failed: "Falló la detección de slop",
+  loader_slop: [
+    "Olfateando frases hechas",
+    "Comprobando si el drama es fabricado",
+    "Midiendo la densidad de plantilla",
+    "Pesando lo que sobrevive al borrado",
+    "Redactando los comentarios",
+  ],
+  slop_found_one: "patrón señalado hasta ahora",
+  slop_found_many: "patrones señalados hasta ahora",
+  no_slop: "No se detectaron patrones de slop — este texto suena humano.",
+  slop_finding_count: (count, total) =>
+    `${count} ${count === 1 ? "patrón" : "patrones"} en ${total} oraciones`,
+  slop_score_clean: "suena humano",
+  slop_score_light: "condimento ligero",
+  slop_score_several: "con plantillas",
+  slop_score_heavy: "dominado por plantillas",
+  slop_score_assembly: "prosa de línea de montaje",
+  a11y_show_slop: "Mostrar comentario de slop",
+  finding_about_this_pattern: "Sobre este patrón",
+  slop_guide_title: "Guía de patrones de slop",
+  slop_guide_subtitle:
+    "Una referencia breve para los patrones de escritura de slop de IA que Jiddu puede señalar. Patrones, no autoría — los humanos también escriben slop.",
+
   nav_legal: "Términos",
   nav_how_it_works: "Cómo funciona",
   nav_api: "API",
   api_access_title: "API y MCP de Jiddu",
   api_access_subtitle:
-    "Usa las cuatro herramientas de lectura de Jiddu desde tu propio código o agente — una REST API documentada y un servidor MCP.",
+    "Usa las cinco herramientas de lectura de Jiddu desde tu propio código o agente — una REST API documentada y un servidor MCP.",
   api_access_sections: [
     {
       title: "Endpoints",
       paragraphs: [
-        "Jiddu expone sus cuatro pipelines de análisis como una REST API pública. Cada endpoint recibe un cuerpo JSON con un campo `text` (40–2000 caracteres) y un `lang` opcional (`en` / `pt` / `es`), y devuelve JSON estructurado.",
-        "```\nPOST /api/v1/detect-fallacies\nPOST /api/v1/fact-check\nPOST /api/v1/assess-neutrality\nPOST /api/v1/explain\n```",
-        "`detect-fallacies`, `assess-neutrality` y `explain` son rápidos. `fact-check` extrae cada afirmación y la verifica con búsqueda web en vivo, por lo que es más lento y medido.",
+        "Jiddu expone sus cinco pipelines de análisis como una REST API pública. Cada endpoint recibe un cuerpo JSON con un campo `text` (40–2000 caracteres) y un `lang` opcional (`en` / `pt` / `es`), y devuelve JSON estructurado.",
+        "```\nPOST /api/v1/detect-fallacies\nPOST /api/v1/fact-check\nPOST /api/v1/assess-neutrality\nPOST /api/v1/explain\nPOST /api/v1/detect-slop\n```",
+        "`detect-fallacies`, `assess-neutrality`, `explain` y `detect-slop` son rápidos. `fact-check` extrae cada afirmación y la verifica con búsqueda web en vivo, por lo que es más lento y medido.",
       ],
     },
     {
@@ -1818,7 +1946,7 @@ const es: Messages = {
     {
       title: "Servidor MCP",
       paragraphs: [
-        "Para agentes, conéctate al servidor MCP alojado de Jiddu por URL — nada que instalar ni clonar. Expone las mismas cuatro herramientas y hace de puente con tu cliente MCP (p. ej. Claude Desktop) mediante el utilitario público `mcp-remote`:",
+        "Para agentes, conéctate al servidor MCP alojado de Jiddu por URL — nada que instalar ni clonar. Expone las mismas cinco herramientas y hace de puente con tu cliente MCP (p. ej. Claude Desktop) mediante el utilitario público `mcp-remote`:",
         "```\n{\n  \"mcpServers\": {\n    \"jiddu\": {\n      \"command\": \"npx\",\n      \"args\": [\"-y\", \"mcp-remote\", \"https://jiddu.app/api/mcp\", \"--header\", \"X-Jiddu-Key:tu-clave-aquí\"]\n    }\n  }\n}\n```",
         "La documentación orientada a máquinas — cuándo usar cada herramienta, formatos de respuesta y cómo encadenarlas — está en [AGENT.md](https://github.com/rafaehlers/jiddu/blob/main/packages/jiddu-mcp/AGENT.md).",
       ],
@@ -1867,6 +1995,9 @@ const es: Messages = {
   print_no_explanations: "No se generaron explicaciones.",
   print_footer_explain:
     "Esta es una explicación automatizada. Puede malinterpretar o simplificar en exceso el paper — lee siempre el texto original y los trabajos citados. Términos completos en https://jiddu.app/legal.",
+  print_type_slop: "Detección de slop",
+  print_footer_slop:
+    "Este es un informe automatizado. Señala patrones de escritura, nunca autoría — los humanos también escriben slop, y las etiquetas pueden estar equivocadas. Lee los pasajes citados y juzga por tu cuenta. Términos completos en https://jiddu.app/legal.",
   print_generated_at: (when) => `Generado ${when} · jiddu.app`,
 
   legal_title: "Términos y descargos",
@@ -1877,7 +2008,7 @@ const es: Messages = {
     {
       title: "1. Qué hace Jiddu",
       paragraphs: [
-        "Jiddu es una herramienta automatizada. Usa modelos de lenguaje (actualmente enrutados vía OpenRouter a OpenAI, Anthropic, MiniMax y Perplexity Sonar) para (a) señalar pasajes que pueden contener falacias lógicas, (b) extraer afirmaciones factuales verificables y ofrecer un veredicto basado en búsqueda web, (c) evaluar qué tan neutral o sesgado es un texto, y (d) explicar un documento párrafo por párrafo en el nivel de lectura elegido. Las mismas herramientas están disponibles vía una API pública y un servidor MCP.",
+        "Jiddu es una herramienta automatizada. Usa modelos de lenguaje (actualmente enrutados vía OpenRouter a OpenAI, Anthropic, MiniMax y Perplexity Sonar) para (a) señalar pasajes que pueden contener falacias lógicas, (b) extraer afirmaciones factuales verificables y ofrecer un veredicto basado en búsqueda web, (c) evaluar qué tan neutral o sesgado es un texto, (d) explicar un documento párrafo por párrafo en el nivel de lectura elegido, y (e) señalar patrones de escritura de slop de IA (plantillas y frases hechas — nunca una afirmación sobre autoría). Las mismas herramientas están disponibles vía una API pública y un servidor MCP.",
         "Jiddu no tiene editores humanos. Todo resultado que ves es producido por software. La herramienta es un apoyo a la lectura crítica — no la reemplaza.",
       ],
     },
@@ -1934,7 +2065,7 @@ const es: Messages = {
     {
       title: "1. Visión general",
       paragraphs: [
-        "Jiddu corre cuatro análisis independientes sobre el mismo texto: un detector de falacias, un pipeline de verificación de hechos (extracción + veredicto vía Sonar), una evaluación de imparcialidad y un explicador de papers párrafo a párrafo. Son rutas separadas en la app (`/`, `/factcheck`, `/neutrality`, `/explain`) y tablas separadas en la base. Ninguno depende de los otros.",
+        "Jiddu corre cinco análisis independientes sobre el mismo texto: un detector de falacias, un pipeline de verificación de hechos (extracción + veredicto vía Sonar), una evaluación de imparcialidad, un explicador de papers párrafo a párrafo y un detector de slop de IA (señala patrones de escritura de plantilla — misma arquitectura que el detector de falacias con catálogo y prompt distintos). Son rutas separadas en la app (`/`, `/factcheck`, `/neutrality`, `/explain`, `/slop`) y tablas separadas en la base. Ninguno depende de los otros.",
         "Cada análisis es una petición en streaming a un LLM vía [OpenRouter](https://openrouter.ai). Se instruye al modelo a llamar una función (tool use estilo OpenAI) cuyo JSON Schema controlamos nosotros. Parseamos los argumentos de la tool-call incrementalmente con [partial-json](https://github.com/promplate/partial-json), así los hallazgos aparecen en la UI mientras el modelo todavía está escribiendo.",
         "Todo el output va en el idioma de la UI elegido por el usuario. El mismo prompt se usa sin importar qué modelo elija el usuario — la diferencia de idioma viene de una única línea `OUTPUT LANGUAGE:` en el system prompt.",
       ],
@@ -1965,7 +2096,15 @@ const es: Messages = {
       ],
     },
     {
-      title: "5. Fact-check — extracción de afirmaciones",
+      title: "5. Detector de slop",
+      paragraphs: [
+        "Misma arquitectura que el detector de falacias — misma ingestión, chunking, streaming, fallback de modelo y puntuación 0-100 ponderada por caracteres — con catálogo y prompt distintos, persistido en su propia tabla (resultados en `/s/:id`, mismo visor de comentarios al margen, vista de impresión y demos en `/s/demo-en|pt|es`).",
+        "El catálogo cubre 18 patrones de escritura de slop de IA en cinco familias: vocabulario de catálogo, drama fabricado, estructura de plantilla, sustancia hueca y tics de formato. La lista completa con definiciones y ejemplos está en [/slop-patterns](/slop-patterns).",
+        "El prompt detecta **patrones, no autoría** — tiene prohibido afirmar que un texto fue o no escrito por IA (los humanos también escriben slop). Cada hallazgo cita el fragmento exacto, nombra el patrón y dice en pocas palabras qué haría una versión más limpia (afirmar el punto, nombrar la fuente, dar el número) sin reescribir nada. Bandas de puntuación: 0-15 suena humano, 16-35 condimento ligero, 36-60 con plantillas, 61-80 dominado por plantillas, 81-100 prosa de línea de montaje.",
+      ],
+    },
+    {
+      title: "6. Fact-check — extracción de afirmaciones",
       paragraphs: [
         "Modelado en [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson, MSR 2025). El prompt pide al modelo pasar cada oración por cuatro etapas: **selection** (mantener solo oraciones con una afirmación verificable — opiniones, juicios de valor, preguntas retóricas se descartan), **disambiguation** (descartar oraciones con múltiples lecturas plausibles cuando el contexto no resuelve), **decomposition** (partir oraciones con múltiples hechos en afirmaciones separadas sin perseguir atomicidad infinita) y **decontextualization** (cada afirmación emitida debe sostenerse sola — resolver pronombres, agregar el año a un número que dependa de él, atribuir una cita a su fuente).",
         "Cada afirmación emitida tiene un tipo: `numeric`, `date`, `quote`, `causal` o `categorical`. El tipo informa cómo el verificador busca evidencia después.",
@@ -1973,7 +2112,7 @@ const es: Messages = {
       ],
     },
     {
-      title: "6. Fact-check — veredicto por afirmación",
+      title: "7. Fact-check — veredicto por afirmación",
       paragraphs: [
         "El veredicto es opt-in. La extracción sola es barata (una llamada al LLM). La verificación es bajo demanda: el usuario hace clic en **Verificar afirmaciones** en el viewer y cada afirmación se manda a [Perplexity Sonar Reasoning Pro](https://openrouter.ai/perplexity/sonar-reasoning-pro), una llamada por afirmación, con concurrencia limitada (6 en paralelo por defecto).",
         "Sonar devuelve un JSON con el veredicto (`respaldado` / `contradicho` / `mixto` / `no verificado`), una confianza entre 0 y 1, una justificación y una lista de fuentes citadas tomadas del canal `annotations` de Sonar. Si la confianza queda por debajo de 0.5, el veredicto se fuerza a `no verificado` — mejor exhibir 'evidencia insuficiente' que entregar una respuesta confiadamente equivocada.",
@@ -1983,7 +2122,7 @@ const es: Messages = {
       ],
     },
     {
-      title: "7. Fact-check — caché de veredictos",
+      title: "8. Fact-check — caché de veredictos",
       paragraphs: [
         "Cada afirmación verificada se hashea y se almacena. El hash es `sha256(lang + ':' + normalize(statement))` donde `normalize` pasa a minúsculas, quita marcas combinantes de acento, colapsa espacios y elimina puntuación final. Eso significa que reformulaciones de la misma afirmación colisionan, pero idiomas distintos no.",
         "Los TTL son por tipo de afirmación. `numeric` 30 días (IBGE y compañía revisan series), `date` y `categorical` 365 días (hechos históricos y definiciones son estables), `quote` y `causal` 90 días (re-examinables pero poco probables de cambiar). Un barrido best-effort borra filas expiradas en el camino de cache-miss, limitado a una vez cada 30 minutos para que el hot path siga barato.",
@@ -1991,7 +2130,7 @@ const es: Messages = {
       ],
     },
     {
-      title: "8. Imparcialidad",
+      title: "9. Imparcialidad",
       paragraphs: [
         "Distinto de la detección de falacias: un texto puede estar libre de falacias y ser fácticamente correcto y aun así usar encuadre cargado, atribución asimétrica o selección unilateral de fuentes. La evaluación de imparcialidad expone esos patrones.",
         "Ocho tipos de issue se marcan a nivel de oración: `loaded_language`, `asymmetric_attribution`, `false_equivalence`, `selective_omission`, `source_asymmetry`, `both_sidesing`, `steering`, `genetic_framing`. El modelo también clasifica el documento en uno de siete tipos de texto (informativo / opinión / discurso político / advocacy / análisis / marketing / redes sociales) — eso informa qué tan estricta es la auditoría.",
@@ -1999,7 +2138,7 @@ const es: Messages = {
       ],
     },
     {
-      title: "9. Almacenamiento, privacidad y revisión",
+      title: "10. Almacenamiento, privacidad y revisión",
       paragraphs: [
         "La persistencia es un único archivo SQLite en un VPS de Hostinger, montado como volumen Docker. No hay cuentas de usuario. Cada análisis recibe un id corto y vive bajo `/a/<id>`, `/f/<id>` o `/n/<id>`. Cualquiera con la URL puede verlo.",
         "El texto enviado va a OpenRouter, que lo enruta al upstream que sirve el modelo elegido. No lo retransmitimos a ningún otro lugar. Registramos el IP de la petición para rate-limit y señales de abuso, y no lo vendemos ni compartimos.",
@@ -2007,14 +2146,14 @@ const es: Messages = {
       ],
     },
     {
-      title: "10. Costo y controles de abuso",
+      title: "11. Costo y controles de abuso",
       paragraphs: [
         "Cada ruta que incurre en costo tiene un rate limit de token bucket in-memory por IP. Defaults: 30 análisis de falacias / hora, 30 extracciones de fact-check / hora, 10 verificaciones masivas / hora, 20 refreshes individuales / hora, 20 flags de feedback / hora. Todos los valores son ajustables en runtime vía `/admin/settings` — sin redeploy. Cuando el bucket se vacía, la API devuelve 429 con header `Retry-After`.",
         "La extracción de fact-check tiene tope de 50 afirmaciones por documento. El refresh por afirmación tiene tope de 2 llamadas por afirmación. Ambos configurables desde el admin. Son las defensas estructurales contra un único usuario acumulando una cuenta inesperada.",
       ],
     },
     {
-      title: "11. Loop de feedback",
+      title: "12. Loop de feedback",
       paragraphs: [
         "Cada card de afirmación de fact-check tiene un botón **🚩 Reportar veredicto incorrecto**. Clicarlo captura una razón opcional en texto libre y hace POST a un endpoint de feedback, que toma snapshot del statement + veredicto actuales (así el admin ve lo que el usuario estaba viendo, aunque el veredicto se re-verifique después).",
         "Las flags enviadas caen en una cola de admin en `/admin/feedback` con estado `open`. El operador puede marcar cada una como `resolved` (concuerda con el usuario, planea arreglar) o `ignored` (el veredicto estaba bien, o el flag era spam), o eliminarla. La home del admin muestra un badge rojo con el conteo abierto.",
@@ -2022,7 +2161,7 @@ const es: Messages = {
       ],
     },
     {
-      title: "12. Modo Live (beta)",
+      title: "13. Modo Live (beta)",
       paragraphs: [
         "Pipeline separado en [/live](/live): la página captura audio del micrófono del usuario o, en navegadores Chromium, de una pestaña del navegador vía `getDisplayMedia`. El audio se transmite *directamente del navegador a la Realtime API de OpenAI* por WebRTC — nunca pasa por el servidor de Jiddu. El modelo de transcripción es `gpt-realtime-whisper`, y el idioma respeta el selector del header (EN / PT / ES).",
         "Cómo funciona el cableado: cuando el usuario hace clic en **Iniciar**, el navegador llama a `POST /api/live/token` para acuñar un client secret efímero de corta vida (el servidor de Jiddu guarda la `OPENAI_API_KEY` real; el navegador nunca la ve). El navegador abre entonces la peer-connection WebRTC con OpenAI usando ese secret y empieza a recibir deltas de transcripción. Cada ~500 caracteres nuevos (o cada 30 segundos, lo que ocurra primero), una llamada SSE separada a `POST /api/live/analyze` envía el transcript acumulado y corre el mismo prompt de falacia usado en cualquier lugar — este paso de análisis es una llamada distinta a la transcripción vía OpenAI de arriba, enrutada vía OpenRouter con el mismo selector de modelo (GPT-5.4 mini / MiniMax M2.7) que las otras tres pipelines. Los hallazgos aparecen en la UI casi en tiempo real. Al **Detener**, una última llamada con `finalize: true` commitea la sesión como un análisis `/a/<id>` normal, indistinguible aguas abajo de uno hecho vía paste.",
@@ -2030,7 +2169,7 @@ const es: Messages = {
       ],
     },
     {
-      title: "13. Explain — explicador de artículos",
+      title: "14. Explain — explicador de artículos",
       paragraphs: [
         "El pipeline Explain (`/explain`, resultados en `/e/:id`) recibe un artículo académico o documento técnico y produce una explicación párrafo a párrafo en lenguaje sencillo. Cada párrafo recibe una etiqueta de rol (Background / Objetivo / Método / Resultado / Interpretación / Limitación / Conclusión) y una explicación escrita en el nivel de audiencia elegido. Primero se genera un resumen general del documento.",
         "Niveles de audiencia: **Niño** (ELI5, analogías cotidianas, sin jerga), **Secundaria** (lenguaje claro, pocos términos técnicos explicados), **Universitario** (registro académico estándar, asume familiaridad con el campo), **Experto** (conciso, nivel de pares, terminología completa conservada). El nivel controla solo la complejidad del texto — no filtra ni valida el contenido.",
@@ -2039,16 +2178,16 @@ const es: Messages = {
       ],
     },
     {
-      title: "14. API pública & MCP (para agentes)",
+      title: "15. API pública & MCP (para agentes)",
       paragraphs: [
-        "Además del app web, los cuatro pipelines se exponen como una API REST pública para agentes y scripts: `POST /api/v1/detect-fallacies`, `/fact-check`, `/assess-neutrality`, `/explain`. A diferencia de las rutas SSE internas de arriba, estas son síncronas — entra una solicitud JSON (`{ text }`, 40–2000 caracteres, más `lang` opcional y, en explain, `level`), sale una respuesta JSON. Conducen los mismos generadores hasta el final sobre un único chunk y nunca persisten una fila.",
+        "Además del app web, los cinco pipelines se exponen como una API REST pública para agentes y scripts: `POST /api/v1/detect-fallacies`, `/fact-check`, `/assess-neutrality`, `/explain`, `/detect-slop`. A diferencia de las rutas SSE internas de arriba, estas son síncronas — entra una solicitud JSON (`{ text }`, 40–2000 caracteres, más `lang` opcional y, en explain, `level`), sale una respuesta JSON. Conducen los mismos generadores hasta el final sobre un único chunk y nunca persisten una fila.",
         "Las solicitudes se autentican con el encabezado `X-Jiddu-Key`. Las claves las emite el admin en `/admin/api-keys` (guardadas solo como hash sha256, mostradas una vez) y tienen límite de tasa por clave, separado de los límites por IP del app web. El fact-check vía API extrae y verifica cada afirmación, con un tope de afirmaciones por solicitud para que una llamada no dispare verificaciones ilimitadas en el Sonar pago.",
-        "Un servidor MCP expone las mismas cuatro herramientas a los agentes. Está alojado en el mismo proceso en `POST /api/mcp` (vía mcp-handler), así que cualquier cliente MCP se conecta por URL mediante el puente público `mcp-remote` — nada que instalar ni publicar. Las herramientas llaman directamente a la capa de pipeline interna, sin salto HTTP extra. Las mismas cuatro herramientas también vienen como el paquete standalone `jiddu-mcp` para uso local. Snippets de configuración y docs orientadas a máquinas en [/api-access](/api-access).",
+        "Un servidor MCP expone las mismas cinco herramientas a los agentes. Está alojado en el mismo proceso en `POST /api/mcp` (vía mcp-handler), así que cualquier cliente MCP se conecta por URL mediante el puente público `mcp-remote` — nada que instalar ni publicar. Las herramientas llaman directamente a la capa de pipeline interna, sin salto HTTP extra. Las mismas cinco herramientas también vienen como el paquete standalone `jiddu-mcp` para uso local. Snippets de configuración y docs orientadas a máquinas en [/api-access](/api-access).",
         "La calidad se monitorea con un conjunto fijo de evals (15–16 casos por herramienta) versionado en el repositorio y comparado con resultados esperados; el informe publicado está en [evals/report.md](https://github.com/rafaehlers/jiddu/blob/main/evals/report.md).",
       ],
     },
     {
-      title: "15. Open source y metodología",
+      title: "16. Open source y metodología",
       paragraphs: [
         "El código fuente está en [github.com/rafaehlers/jiddu](https://github.com/rafaehlers/jiddu) bajo licencia [AGPL-3.0-or-later](https://www.gnu.org/licenses/agpl-3.0.txt). AGPL cierra el 'SaaS loophole' que GPL deja abierto: cualquiera que corra una versión modificada como servicio de red debe publicar el código fuente modificado.",
         "Dos papers fundamentan el diseño: [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson — Microsoft Research, 2025) para la extracción de afirmaciones en cuatro etapas; y [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) (Goldfarb, Hall, Fisher, Salam, Wilde — Forum AI / Stanford, 2025) para la evaluación de veredicto, la taxonomía de 6 tiers de fuentes y el framework de imparcialidad. Jiddu no está afiliado con ninguno de los dos grupos.",

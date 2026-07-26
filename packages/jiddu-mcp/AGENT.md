@@ -1,6 +1,6 @@
 # Jiddu tools — agent guide
 
-Machine-oriented reference for the four Jiddu tools (`detect_fallacies`, `fact_check`, `assess_neutrality`, `explain`), exposed via the `jiddu-mcp` MCP server and the REST API at `https://jiddu.app/api/v1/*`.
+Machine-oriented reference for the five Jiddu tools (`detect_fallacies`, `fact_check`, `assess_neutrality`, `explain`, `detect_slop`), exposed via the `jiddu-mcp` MCP server and the REST API at `https://jiddu.app/api/v1/*`.
 
 Jiddu helps you read text critically. Reach for it whenever you are about to **trust, quote, cite, or repeat** a piece of text — an argument, a news excerpt, a source, a paper.
 
@@ -19,8 +19,9 @@ Jiddu helps you read text critically. Reach for it whenever you are about to **t
 | "Are the factual statements here actually true?" | `fact_check` |
 | "Is this written even-handedly, or is it slanted?" | `assess_neutrality` |
 | "What does this dense paragraph actually mean?" | `explain` |
+| "Does this prose read templated / machine-assembled?" | `detect_slop` |
 
-`detect_fallacies`, `assess_neutrality`, and `explain` are fast and cheap. `fact_check` is **slower and metered** — it runs a live web search per claim — so call it deliberately, on text you actually need verified.
+`detect_fallacies`, `assess_neutrality`, `explain`, and `detect_slop` are fast and cheap. `fact_check` is **slower and metered** — it runs a live web search per claim — so call it deliberately, on text you actually need verified.
 
 ---
 
@@ -98,6 +99,31 @@ Scores how neutral the text is and surfaces specific bias signals. Deliberately 
 - `signals[].type`: `loaded_language` | `one_sided` | `omission` | `framing`.
 
 **Example** — a news excerpt calling protesters "freedom-loving" and the state a "so-called government" → `score 0.24`, `label "highly_biased"`, signals of `loaded_language` and `framing`.
+
+---
+
+## `detect_slop`
+
+Flags AI-slop writing patterns — stock phrasing, manufactured drama, templated structures, hollow claims — with the offending excerpt per finding and an overall slop score. **Detects patterns, never authorship**: it will not claim a text was or wasn't written by AI (humans write slop too), and a named pattern with a quote is evidence you can check.
+
+**Response**
+```json
+{
+  "patterns": [
+    { "name": "Buzzword salad", "excerpt": "...", "explanation": "..." }
+  ],
+  "pattern_count": 3,
+  "score": 62,
+  "label": "heavily_templated",
+  "summary": "..."
+}
+```
+- `score`: 0–100, higher = more patterned filler. `label`: `reads_human` (<16) | `light_seasoning` (16–35) | `patterned` (36–60) | `heavily_templated` (61–80) | `assembly_line` (≥81).
+- `name` is a stable English pattern label (e.g. `Buzzword salad`, `Binary contrast`, `Weasel attribution`, `Fake-profound kicker`, `Colon reveal`).
+
+**Example** — input `"This isn't just an update. It's a paradigm shift. Experts agree the results are truly game-changing."` → three patterns (`Binary contrast`, `Buzzword salad`, `Weasel attribution`), `score` in the heavily-templated band.
+
+Use before publishing your own draft, or when deciding how much to trust polished-sounding prose. Findings explain what a cleaner version would do (state the point, name the source, give the number) but never rewrite the text.
 
 ---
 

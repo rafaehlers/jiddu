@@ -50,6 +50,26 @@ model ApiKey {
   @@index([revokedAt])
 }
 
+model SlopCheck {
+  id           String    @id
+  status       String    @default("pending") // "pending" | "running" | "complete" | "failed"
+  source       String // "url" | "pdf" | "txt" | "paste"
+  sourceRef    String?
+  title        String?
+  text         String
+  language     String?
+  provider     String
+  model        String
+  score        Int       @default(0) // 0..100 slop intensity
+  summary      String?
+  sentences    String    @default("[]") // JSON array of {id,start,end,text}
+  findings     String    @default("[]") // JSON array of SlopFinding
+  errorMessage String?
+  createdAt    DateTime  @default(now())
+  finishedAt   DateTime?
+  reviewedAt   DateTime?
+}
+
 model Neutrality {
   id           String    @id
   status       String    @default("pending") // "pending" | "running" | "complete" | "failed"

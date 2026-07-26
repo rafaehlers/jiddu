@@ -22,6 +22,7 @@ import type {
   TextType,
 } from "@/lib/neutrality-schema";
 import type { ExplainFinding, ExplainLevel } from "@/lib/explain-schema";
+import type { SlopFinding } from "@/lib/slop-schema";
 import type { Verdict } from "@/lib/verdict-schema";
 
 export type RunOpts = { lang?: Lang; signal?: AbortSignal };
@@ -69,6 +70,46 @@ export async function runFallacies(
   for await (const ev of withModelFallback(
     chain,
     (model) => llm.analyzeStream({ sentences, lang }, { model, signal: opts?.signal }),
+    opts?.signal,
+  )) {
+    if (ev.type === "finding") findings.push(ev.finding);
+    else if (ev.type === "summary") summary = ev.summary;
+    else if (ev.type === "score") score = ev.score;
+    else if (ev.type === "language") language = ev.language;
+  }
+
+  return { findings, score, summary, language };
+}
+
+// ---------- Slop ----------
+
+export type SlopAggregate = {
+  findings: SlopFinding[];
+  score: number; // 0..100, higher = more slop
+  summary: string;
+  language: string | null;
+};
+
+export async function runSlop(
+  text: string,
+  opts?: RunOpts,
+): Promise<SlopAggregate> {
+  const { text: clean } = prep(text);
+  const lang = opts?.lang ?? "en";
+  const sentences = splitSentences(clean);
+  if (sentences.length === 0) throw new NoUnitsError();
+
+  const chain = modelChain();
+  const llm = getProvider(chain[0]);
+
+  const findings: SlopFinding[] = [];
+  let score = 0;
+  let summary = "";
+  let language: string | null = null;
+
+  for await (const ev of withModelFallback(
+    chain,
+    (model) => llm.analyzeSlopStream({ sentences, lang }, { model, signal: opts?.signal }),
     opts?.signal,
   )) {
     if (ev.type === "finding") findings.push(ev.finding);

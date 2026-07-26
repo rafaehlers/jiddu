@@ -1,0 +1,35 @@
+import { NextRequest } from "next/server";
+import { requireApiKey } from "@/lib/api/auth";
+import { consume, rateLimitResponse } from "@/lib/rate-limit";
+import { loadSettings, bucketFor } from "@/lib/settings";
+import { jsonError, mapRunError, normalizeLang, readText } from "@/lib/api/http";
+import { runSlop } from "@/lib/api/run";
+import { mapSlop } from "@/lib/api/map";
+
+export const runtime = "nodejs";
+export const maxDuration = 120;
+
+export async function POST(req: NextRequest) {
+  const auth = await requireApiKey(req);
+  if (auth instanceof Response) return auth;
+
+  const settings = await loadSettings();
+  const rl = consume(`v1:slop:${auth.id}`, bucketFor(settings, "rate.api", auth));
+  if (!rl.allowed) return rateLimitResponse(rl.retryAfterSec);
+
+  const body = (await req.json().catch(() => null)) as { lang?: unknown } | null;
+  const text = readText(body);
+  if (text instanceof Response) return text;
+  const lang = normalizeLang(body?.lang);
+
+  try {
+    const agg = await runSlop(text, { lang, signal: req.signal });
+    return Response.json(mapSlop(agg));
+  } catch (err) {
+    return mapRunError(err);
+  }
+}
+
+export function GET() {
+  return jsonError("Use POST with { text } and an X-Jiddu-Key header", 405, "method_not_allowed");
+}

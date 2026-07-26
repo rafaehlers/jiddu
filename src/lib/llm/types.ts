@@ -4,6 +4,7 @@ import type {
   ClaimStreamEvent,
   ExplainStreamEvent,
   NeutralityStreamEvent,
+  SlopStreamEvent,
   StreamEvent,
 } from "./stream";
 import type { Lang } from "../fallacies";
@@ -49,4 +50,8 @@ export interface LlmProvider {
     input: AnalyzeInput,
     opts: { model?: string; signal?: AbortSignal; level: ExplainLevel },
   ): AsyncGenerator<ExplainStreamEvent, { model: string }, void>;
+  analyzeSlopStream(
+    input: AnalyzeInput,
+    opts?: { model?: string; signal?: AbortSignal },
+  ): AsyncGenerator<SlopStreamEvent, { model: string }, void>;
 }

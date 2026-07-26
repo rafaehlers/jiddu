@@ -15,6 +15,7 @@ export default function robots(): MetadataRoute.Robots {
         "/f/*/print",
         "/n/*/print",
         "/e/*/print",
+        "/s/*/print",
       ],
     },
     sitemap: "https://jiddu.app/sitemap.xml",

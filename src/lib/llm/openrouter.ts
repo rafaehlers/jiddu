@@ -36,11 +36,19 @@ import {
 } from "../explain-prompt";
 import { buildSystemPrompt, buildUserPrompt } from "../prompt";
 import { ANALYSIS_JSON_SCHEMA } from "./jsonSchema";
+import {
+  SlopFindingSchema,
+  SlopResultSchema,
+  type SlopFinding,
+} from "../slop-schema";
+import { SLOP_JSON_SCHEMA } from "./slopJsonSchema";
+import { buildSlopSystemPrompt, buildSlopUserPrompt } from "../slop-prompt";
 import type { AnalyzeInput, AnalyzeOutput, LlmProvider, ProviderId } from "./types";
 import type {
   ClaimStreamEvent,
   ExplainStreamEvent,
   NeutralityStreamEvent,
+  SlopStreamEvent,
   StreamEvent,
 } from "./stream";
 
@@ -579,6 +587,142 @@ export class OpenRouterProvider implements LlmProvider {
         rationale: final.rationale,
       };
       emittedFields.add("verdict");
+    }
+
+    return { model: this.defaultModel };
+  }
+
+  async *analyzeSlopStream(
+    input: AnalyzeInput,
+    opts?: { model?: string; signal?: AbortSignal },
+  ): AsyncGenerator<SlopStreamEvent, { model: string }, void> {
+    const model = this.slug(opts?.model);
+    const lang = input.lang ?? "en";
+
+    const stream = await this.client.chat.completions.create(
+      {
+        model,
+        messages: [
+          { role: "system", content: buildSlopSystemPrompt(lang) },
+          {
+            role: "user",
+            content: buildSlopUserPrompt(
+              input.sentences,
+              lang,
+              input.contextSentences,
+            ),
+          },
+        ],
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "report_analysis",
+              description: "Report the slop-pattern analysis for the given text.",
+              parameters: SLOP_JSON_SCHEMA,
+            },
+          },
+        ],
+        tool_choice: this.toolChoiceFor(opts?.model),
+        stream: true,
+        ...this.openRouterExtras(opts?.model),
+      } as OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming,
+      opts?.signal ? { signal: opts.signal } : undefined,
+    );
+
+    let buffer = "";
+    const emittedFindings = new Set<number>();
+    const emittedFields = new Set<string>();
+
+    function tryEmit(): SlopStreamEvent[] {
+      const out: SlopStreamEvent[] = [];
+      if (!buffer) return out;
+      let snap: Record<string, unknown> | null = null;
+      try {
+        snap = partialParse(buffer) as Record<string, unknown>;
+      } catch {
+        return out;
+      }
+      if (!snap || typeof snap !== "object") return out;
+      const findings = Array.isArray(snap.findings) ? snap.findings : [];
+      const lastIdx = findings.length - 1;
+      for (let i = 0; i < findings.length; i++) {
+        if (emittedFindings.has(i)) continue;
+        if (i === lastIdx) continue;
+        const parsed = SlopFindingSchema.safeParse(findings[i]);
+        if (parsed.success) {
+          emittedFindings.add(i);
+          out.push({ type: "finding", finding: parsed.data });
+        }
+      }
+      return out;
+    }
+
+    for await (const chunk of stream) {
+      const delta = chunk.choices[0]?.delta;
+      const tc = delta?.tool_calls?.[0];
+      const args = tc?.function?.arguments;
+      if (args) {
+        buffer += args;
+        for (const e of tryEmit()) yield e;
+      }
+    }
+
+    // Strict parse first; fall back to partial salvage on truncated output.
+    let final: ReturnType<typeof SlopResultSchema.parse> | null = null;
+    try {
+      final = SlopResultSchema.parse(JSON.parse(buffer));
+    } catch {
+      try {
+        const snap = partialParse(buffer) as Record<string, unknown> | null;
+        if (snap && typeof snap === "object") {
+          const findings = Array.isArray(snap.findings)
+            ? snap.findings
+                .map((f) => SlopFindingSchema.safeParse(f))
+                .filter(
+                  (r): r is { success: true; data: SlopFinding } => r.success,
+                )
+                .map((r) => r.data)
+            : [];
+          final = {
+            language: typeof snap.language === "string" ? snap.language : null,
+            summary: typeof snap.summary === "string" ? snap.summary : "",
+            score:
+              typeof snap.score === "number" && Number.isFinite(snap.score)
+                ? Math.max(0, Math.min(100, Math.round(snap.score)))
+                : findings.length === 0
+                  ? 0
+                  : Math.min(100, findings.length * 10),
+            findings,
+          };
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    if (!final) {
+      throw new Error(
+        `Failed to parse OpenRouter slop response (buffer length=${buffer.length})`,
+      );
+    }
+
+    for (let i = 0; i < final.findings.length; i++) {
+      if (emittedFindings.has(i)) continue;
+      emittedFindings.add(i);
+      yield { type: "finding", finding: final.findings[i] };
+    }
+    if (!emittedFields.has("language")) {
+      yield { type: "language", language: final.language ?? null };
+      emittedFields.add("language");
+    }
+    if (!emittedFields.has("summary")) {
+      yield { type: "summary", summary: final.summary };
+      emittedFields.add("summary");
+    }
+    if (!emittedFields.has("score")) {
+      yield { type: "score", score: final.score };
+      emittedFields.add("score");
     }
 
     return { model: this.defaultModel };
