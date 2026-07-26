@@ -65,7 +65,7 @@ The methodology behind the fact-check and neutrality pipelines is grounded in tw
 
 ### Cross-cutting
 - **Five-way mode toggle** on the home composer — `Detector de Falácias` / `Checar Fatos` / `Imparcialidade` / `Explicar` / `Detector de Slop` — switches between the five pipelines while sharing the same URL / paste / file input forms.
-- **Multi-model via OpenRouter** — `🇺🇸 GPT-5.4 mini` (default) with `🇨🇳 MiniMax M2.7` as a one-click alternative and an automatic client-side fallback (re-tries only if no SSE events were emitted yet). Sonar Reasoning Pro is used only for fact-check verification, never exposed in the model picker.
+- **Multi-model via OpenRouter** — `🇺🇸 GPT-5.4 mini` (default) with `🇨🇳 MiniMax M3` as a one-click alternative and an automatic client-side fallback (re-tries only if no SSE events were emitted yet). Sonar Reasoning Pro is used only for fact-check verification, never exposed in the model picker.
 - **User feedback loop** — a "🚩 Report wrong verdict" button on every claim card. Feedback lands in an `/admin/feedback` queue with open/resolved/ignored filters; a badge on the admin home shows the open count.
 - **"Not reviewed" banner** — any analysis that hasn't been manually reviewed by an admin shows a yellow disclaimer banner above the viewer body. The admin home has a one-click toggle to mark an analysis as reviewed.
 - **Public legal page** at `/legal` — automated-tool disclaimer, no-truth-claim language, privacy, methodology citations. Available in EN / PT-BR / ES.
@@ -250,7 +250,7 @@ Request bodies:
 { "type": "text", "text": "…",         "lang": "en" }
 ```
 
-…or multipart with `file=<PDF or TXT>` + `lang`. The optional `model` field accepts `gpt-5.4-mini` or `minimax-m2.7` and is prepended to the default fallback chain — usually you can omit it.
+…or multipart with `file=<PDF or TXT>` + `lang`. The optional `model` field accepts `gpt-5.4-mini` or `minimax-m3` and is prepended to the default fallback chain — usually you can omit it.
 
 ### `GET /api/analysis/[id]`
 
@@ -331,7 +331,7 @@ Same input shape as `/api/analyze`, plus a `level` field (`eli5` | `high_school`
 A separate page at `/live` listens to live audio (microphone or browser-tab capture) via the OpenAI Realtime API (`gpt-realtime-whisper`) and surfaces fallacies as the speaker talks. Two endpoints back it:
 
 - `POST /api/live/token` — mints a short-lived ephemeral client secret so the browser can open a WebRTC connection directly to OpenAI for **transcription** (`gpt-realtime-whisper`). Requires `OPENAI_API_KEY`. This call never touches OpenRouter.
-- `POST /api/live/analyze` — a separate, later call: SSE stream that ingests the cumulative transcript in sliding windows (~500 char delta or every 30s) and emits `finding` events. **This is the analysis step**, running the same fallacy prompt routed via OpenRouter (same GPT-5.4 mini / MiniMax M2.7 picker as the other pipelines) — a different model and provider from the OpenAI transcription above. Send `{ finalize: true }` on Stop to compute the final score and commit the session.
+- `POST /api/live/analyze` — a separate, later call: SSE stream that ingests the cumulative transcript in sliding windows (~500 char delta or every 30s) and emits `finding` events. **This is the analysis step**, running the same fallacy prompt routed via OpenRouter (same GPT-5.4 mini / MiniMax M3 picker as the other pipelines) — a different model and provider from the OpenAI transcription above. Send `{ finalize: true }` on Stop to compute the final score and commit the session.
 
 Notes:
 - Tab capture requires Chrome or Edge — Safari/Firefox don't expose tab audio via `getDisplayMedia`. The Microphone source works everywhere.

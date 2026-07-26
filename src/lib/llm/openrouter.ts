@@ -92,14 +92,15 @@ export const MODEL_CATALOG: ModelChoice[] = [
     openrouter: "openai/gpt-5.4-mini",
   },
   {
-    id: "minimax-m2.7",
-    label: "MiniMax M2.7",
+    id: "minimax-m3",
+    label: "MiniMax M3",
     flag: "🇨🇳",
     family: "minimax",
-    openrouter: "minimax/minimax-m2.7",
+    openrouter: "minimax/minimax-m3",
     // The Minimax upstream rejects forced tool_choice ("auto" only), and
     // pinning the provider stops OpenRouter from routing to Morph/Fireworks
     // (those burn the budget on reasoning and never emit the tool call).
+    // Both quirks carried over from M2.7 — same upstream API.
     toolMode: "auto",
     providerOrder: ["Minimax"],
   },
