@@ -266,6 +266,8 @@ export type Messages = {
 
   // Header nav
   nav_fallacies: string;
+  nav_slop_patterns: string;
+  nav_benchmark: string;
   nav_source: string;
 
   // Theme
@@ -805,7 +807,7 @@ const en: Messages = {
       title: "5. Slop detector",
       paragraphs: [
         "Same architecture as the fallacy detector — same ingestion, chunking, streaming, model fallback and char-weighted 0-100 score — with a different catalog and prompt, persisted to its own table (results at `/s/:id`, same margin-comment viewer, print view and demos at `/s/demo-en|pt|es`).",
-        "The catalog covers 18 AI-slop writing patterns in five families: stock wording, manufactured drama, templated structure, hollow substance, and format tics. The full list with definitions and examples is at [/slop-patterns](/slop-patterns).",
+        "The catalog covers 18 AI-slop writing patterns in five families: stock wording, manufactured drama, templated structure, hollow substance, and format tics. The full list with definitions and examples is at [/slop-patterns](/slop-patterns). The pattern selection is based on Peter Yang's MIT-licensed [no-ai-slop](https://github.com/petergyang/no-ai-slop) editing skill; the catalog wording, trilingual content and detection prompt are Jiddu's own.",
         "The prompt detects **patterns, not authorship** — it is forbidden from claiming a text was or wasn't written by AI (humans write slop too). Every finding quotes the exact span, names the pattern, and says in a few words what a cleaner version would do (state the point, name the source, give the number) without rewriting anything. Score bands: 0-15 reads human, 16-35 light seasoning, 36-60 patterned, 61-80 heavily templated, 81-100 assembly-line prose.",
       ],
     },
@@ -965,6 +967,8 @@ const en: Messages = {
   guide_credit_suffix: "— all descriptions and examples are Jiddu's own.",
 
   nav_fallacies: "Fallacy guide",
+  nav_slop_patterns: "Slop patterns",
+  nav_benchmark: "Benchmark",
   nav_source: "Source code",
 
   theme_to_dark: "Switch to dark mode",
@@ -1452,7 +1456,7 @@ const pt: Messages = {
       title: "5. Detector de slop",
       paragraphs: [
         "Mesma arquitetura do detector de falácias — mesma ingestão, chunking, streaming, fallback de modelo e nota 0-100 ponderada por caracteres — com catálogo e prompt diferentes, persistido em tabela própria (resultados em `/s/:id`, mesmo viewer de comentários na margem, versão de impressão e demos em `/s/demo-en|pt|es`).",
-        "O catálogo cobre 18 padrões de escrita de slop de IA em cinco famílias: vocabulário de estoque, drama fabricado, estrutura de fôrma, substância oca e cacoetes de formato. A lista completa com definições e exemplos está em [/slop-patterns](/slop-patterns).",
+        "O catálogo cobre 18 padrões de escrita de slop de IA em cinco famílias: vocabulário de estoque, drama fabricado, estrutura de fôrma, substância oca e cacoetes de formato. A lista completa com definições e exemplos está em [/slop-patterns](/slop-patterns). A seleção de padrões é baseada na skill de edição [no-ai-slop](https://github.com/petergyang/no-ai-slop) de Peter Yang (licença MIT); a redação do catálogo, o conteúdo trilíngue e o prompt de detecção são do próprio Jiddu.",
         "O prompt detecta **padrões, não autoria** — ele é proibido de afirmar que um texto foi ou não escrito por IA (humanos também escrevem slop). Cada achado cita o trecho exato, nomeia o padrão e diz em poucas palavras o que uma versão mais limpa faria (afirmar o ponto, nomear a fonte, dar o número) sem reescrever nada. Faixas de nota: 0-15 soa humano, 16-35 tempero leve, 36-60 padronizado, 61-80 muito padronizado, 81-100 prosa de linha de montagem.",
       ],
     },
@@ -1612,6 +1616,8 @@ const pt: Messages = {
   guide_credit_suffix: "— todas as descrições e exemplos são do próprio Jiddu.",
 
   nav_fallacies: "Guia de Falácias",
+  nav_slop_patterns: "Padrões de slop",
+  nav_benchmark: "Benchmark",
   nav_source: "Código-fonte",
 
   theme_to_dark: "Mudar para tema escuro",
@@ -2099,7 +2105,7 @@ const es: Messages = {
       title: "5. Detector de slop",
       paragraphs: [
         "Misma arquitectura que el detector de falacias — misma ingestión, chunking, streaming, fallback de modelo y puntuación 0-100 ponderada por caracteres — con catálogo y prompt distintos, persistido en su propia tabla (resultados en `/s/:id`, mismo visor de comentarios al margen, vista de impresión y demos en `/s/demo-en|pt|es`).",
-        "El catálogo cubre 18 patrones de escritura de slop de IA en cinco familias: vocabulario de catálogo, drama fabricado, estructura de plantilla, sustancia hueca y tics de formato. La lista completa con definiciones y ejemplos está en [/slop-patterns](/slop-patterns).",
+        "El catálogo cubre 18 patrones de escritura de slop de IA en cinco familias: vocabulario de catálogo, drama fabricado, estructura de plantilla, sustancia hueca y tics de formato. La lista completa con definiciones y ejemplos está en [/slop-patterns](/slop-patterns). La selección de patrones se basa en la skill de edición [no-ai-slop](https://github.com/petergyang/no-ai-slop) de Peter Yang (licencia MIT); la redacción del catálogo, el contenido trilingüe y el prompt de detección son propios de Jiddu.",
         "El prompt detecta **patrones, no autoría** — tiene prohibido afirmar que un texto fue o no escrito por IA (los humanos también escriben slop). Cada hallazgo cita el fragmento exacto, nombra el patrón y dice en pocas palabras qué haría una versión más limpia (afirmar el punto, nombrar la fuente, dar el número) sin reescribir nada. Bandas de puntuación: 0-15 suena humano, 16-35 condimento ligero, 36-60 con plantillas, 61-80 dominado por plantillas, 81-100 prosa de línea de montaje.",
       ],
     },
@@ -2259,6 +2265,8 @@ const es: Messages = {
   guide_credit_suffix: "— todas las descripciones y ejemplos son propios de Jiddu.",
 
   nav_fallacies: "Guía de falacias",
+  nav_slop_patterns: "Patrones de slop",
+  nav_benchmark: "Benchmark",
   nav_source: "Código fuente",
 
   theme_to_dark: "Cambiar a modo oscuro",

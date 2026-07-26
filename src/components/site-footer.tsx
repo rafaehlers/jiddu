@@ -57,6 +57,34 @@ export function SiteFooter() {
           </Link>
           <span aria-hidden>·</span>
           <Link
+            href="/fallacies"
+            className="hover:text-accent-hi transition-colors"
+          >
+            {t.nav_fallacies}
+          </Link>
+          <span aria-hidden>·</span>
+          <Link
+            href="/slop-patterns"
+            className="hover:text-accent-hi transition-colors"
+          >
+            {t.nav_slop_patterns}
+          </Link>
+          <span aria-hidden>·</span>
+          <Link
+            href="/benchmark"
+            className="hover:text-accent-hi transition-colors"
+          >
+            {t.nav_benchmark}
+          </Link>
+          <span aria-hidden>·</span>
+          <Link
+            href="/api-access"
+            className="hover:text-accent-hi transition-colors"
+          >
+            {t.nav_api}
+          </Link>
+          <span aria-hidden>·</span>
+          <Link
             href="/legal"
             className="hover:text-accent-hi transition-colors"
           >

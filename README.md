@@ -52,6 +52,7 @@ The methodology behind the fact-check and neutrality pipelines is grounded in tw
 - **18-pattern catalog** across five categories (wording, manufactured drama, templated structure, hollow substance, format tics): buzzword salad, filler phrases, throat-clearing, faux-insight setups, colon reveals, rhetorical setups, fake-profound kickers, binary contrast, negative listing, dramatic fragmentation, robotic rhythm, importance puffery, weasel attribution, superficial analysis, vague abstraction, synonym cycling, summary-recap endings, em-dash overuse.
 - **Patterns, not authorship** — the prompt forbids claims about whether AI wrote the text; every finding quotes the exact span so the reader can check the evidence. Findings say what a cleaner version would do, but never rewrite.
 - **Demo analyses** in 3 languages (`/s/demo-en`, `/s/demo-pt`, `/s/demo-es`).
+- **Based on [no-ai-slop](https://github.com/petergyang/no-ai-slop)** — the pattern selection follows Peter Yang's MIT-licensed editing skill; the catalog wording, trilingual content and detection prompt are Jiddu's own.
 
 ### Explain
 - **Paragraph-by-paragraph viewer** at `/e/[id]` — the paper on the left with every paragraph tinted by the role it plays; one explanation card per paragraph on the right, **anchored beside the paragraph it explains** (absolute-positioned with collision avoidance, same as the fallacy detector's margin comments) so clicking a paragraph never scrolls you across a long document.

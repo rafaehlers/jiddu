@@ -31,29 +31,13 @@ export function SiteHeader({ variant = "home", rightSlot }: Props) {
           </span>
         </div>
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          <Link
-            href="/fallacies"
-            className="text-sm text-muted hover:text-accent-hi transition-colors hidden md:inline"
-          >
-            {t.nav_fallacies}
-          </Link>
-          <span aria-hidden className="text-muted text-sm hidden md:inline">
-            ·
-          </span>
+          {/* Single nav link — the guides, benchmark and API docs moved to
+              the footer to keep the header quiet. */}
           <Link
             href="/how-it-works"
             className="text-sm text-muted hover:text-accent-hi transition-colors hidden md:inline"
           >
             {t.nav_how_it_works}
-          </Link>
-          <span aria-hidden className="text-muted text-sm hidden md:inline">
-            ·
-          </span>
-          <Link
-            href="/api-access"
-            className="text-sm text-muted hover:text-accent-hi transition-colors hidden md:inline"
-          >
-            {t.nav_api}
           </Link>
           {rightSlot}
           <LangSelector />
