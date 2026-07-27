@@ -67,6 +67,22 @@ body {
   font-feature-settings: "ss01", "cv11";
 }
 
+/* Plain text links use one consistent indigo treatment across the site.
+   Rounded anchors are button/card controls and keep their component colors;
+   the serif home logo likewise remains part of the wordmark. */
+a:not(.font-serif):not([class*="rounded"]):not([class*="bg-accent"]) {
+  color: var(--accent-hi) !important;
+  text-decoration-color: color-mix(
+    in oklab,
+    var(--accent-hi) 55%,
+    transparent
+  );
+}
+a:not(.font-serif):not([class*="rounded"]):not([class*="bg-accent"]):hover {
+  color: color-mix(in oklab, var(--accent-hi) 72%, var(--foreground)) !important;
+  text-decoration-color: currentColor;
+}
+
 .font-serif {
   font-family: var(--font-serif);
   letter-spacing: -0.005em;

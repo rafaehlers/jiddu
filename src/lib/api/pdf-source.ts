@@ -112,7 +112,7 @@ function parsePublicPdfUrl(rawUrl: string): URL {
   return url;
 }
 
-async function assertPublicHost(url: URL): Promise<void> {
+export async function assertPublicHost(url: URL): Promise<void> {
   const hostname = url.hostname.toLowerCase().replace(/\.$/, "");
   if (
     hostname === "localhost" ||

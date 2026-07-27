@@ -16,11 +16,11 @@ export function HowItWorksBody() {
         <h1 className="font-serif text-3xl sm:text-4xl">
           {t.how_it_works_title}
         </h1>
-        <p className="text-sm text-muted">{t.how_it_works_subtitle}</p>
+        <p className="text-base text-muted">{t.how_it_works_subtitle}</p>
       </header>
 
       {/* Tiny TOC — anchor links to each section so a reader can scan. */}
-      <nav className="text-sm text-muted border border-rule rounded-md p-4 flex flex-col gap-1">
+      <nav className="text-base text-muted border border-rule rounded-md p-4 flex flex-col gap-1">
         {sections.map((s, i) => (
           <a
             key={i}
@@ -32,22 +32,68 @@ export function HowItWorksBody() {
         ))}
       </nav>
 
-      {sections.map((s, i) => (
-        <section
-          key={i}
-          id={`section-${i}`}
-          className="flex flex-col gap-2 scroll-mt-16"
-        >
-          <h2 className="font-serif text-xl">{s.title}</h2>
-          {s.paragraphs.map((p, j) => (
-            <p key={j} className="text-sm leading-relaxed text-foreground/85">
-              {renderInline(p)}
-            </p>
-          ))}
-        </section>
-      ))}
+      {sections.map((s, i) => {
+        let subsectionNumber = 0;
+        return (
+          <section
+            key={i}
+            id={`section-${i}`}
+            className="flex flex-col gap-3 scroll-mt-16"
+          >
+            <h2 className="font-serif text-xl">{s.title}</h2>
+            <div className="flex flex-col gap-4">
+              {s.paragraphs.map((p, j) => {
+                const { heading, body } = splitLeadingHeading(p);
+                if (!heading) {
+                  return (
+                    <p
+                      key={j}
+                      className="text-base leading-relaxed text-foreground/85"
+                    >
+                      {renderInline(body)}
+                    </p>
+                  );
+                }
+
+                subsectionNumber += 1;
+                return (
+                  <div key={j} className="min-w-0">
+                    <h3 className="mb-1 font-serif text-lg leading-snug text-foreground">
+                      <span
+                        className="mr-2"
+                        aria-hidden="true"
+                      >
+                        {i + 1}.{subsectionNumber}
+                      </span>
+                      {heading}
+                    </h3>
+                    <p className="text-base leading-relaxed text-foreground/85">
+                      {renderInline(body)}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })}
     </article>
   );
+}
+
+// A paragraph may start with a markdown-style bold label. On this page that
+// label is structural — promote it to a real subheading instead of leaving it
+// buried in the first line of body copy.
+function splitLeadingHeading(text: string): {
+  heading: string | null;
+  body: string;
+} {
+  const match = text.match(/^\*\*([^*]+)\*\*\s*([\s\S]*)$/);
+  if (!match) return { heading: null, body: text };
+  return {
+    heading: match[1].replace(/\.$/, ""),
+    body: match[2],
+  };
 }
 
 // Same minimal markdown renderer as LegalBody, plus **bold** and `code` — this

@@ -113,32 +113,38 @@ model Explanation {
 }
 
 model PaperReview {
-  id            String    @id
-  status        String    @default("pending") // pending | running | complete | failed
-  stage         String    @default("ingest") // ingest | ledger | research | synthesis | self_critique | complete
-  source        String    @default("pdf")
-  sourceRef     String?
-  title         String?
-  author        String?
-  venueTarget   String
-  venueProfile  String? // versioned resolved venue rubric, criteria, and official sources
-  reviewDate    String // YYYY-MM-DD, kept verbatim for deterministic export
-  language      String?
-  provider      String
-  model         String
-  parser        String? // liteparse | pdfjs
-  text          String
-  pages         String    @default("[]") // page-numbered LiteParse/PDF.js output
-  complexity    String    @default("[]") // per-page OCR/layout signals
-  ledger        String? // private structured claim/evidence ledger
-  research      String? // external published-literature memo + citations
-  initialReview String? // private first synthesis, retained for audit/debugging
-  review        String? // final self-critiqued PaperReviewResult JSON
-  markdown      String? // deterministic export generated from final JSON
-  errorMessage  String?
-  createdAt     DateTime  @default(now())
-  finishedAt    DateTime?
-  reviewedAt    DateTime?
+  id               String    @id
+  status           String    @default("pending") // pending | running | complete | failed
+  stage            String    @default("ingest") // ingest | ledger | research | specs | verification | synthesis | self_critique | source_validation | quality_audit | complete
+  source           String    @default("pdf")
+  sourceRef        String?
+  title            String?
+  author           String?
+  venueTarget      String
+  venueProfile     String? // versioned resolved venue rubric, criteria, and official sources
+  reviewDate       String // YYYY-MM-DD, kept verbatim for deterministic export
+  language         String?
+  provider         String
+  model            String
+  reviewDepth      String    @default("standard") // standard | deep
+  parser           String? // liteparse | pdfjs
+  text             String
+  pages            String    @default("[]") // page-numbered LiteParse/PDF.js output
+  complexity       String    @default("[]") // per-page OCR/layout signals
+  ledger           String? // private structured claim/evidence ledger
+  research         String? // external published-literature memo + citations
+  specsReviews     String? // five private independent SPECS specialist artifacts
+  computationAudit String? // deterministic checks proposed by specialists
+  initialReview    String? // private first synthesis, retained for audit/debugging
+  sourceAudit      String? // URL reachability, title consistency, publication type
+  qualityAudit     String? // independent critic flags and finding decisions
+  retentionAudit   String? // deterministic specialist-finding retention gate
+  review           String? // final self-critiqued PaperReviewResult JSON
+  markdown         String? // deterministic export generated from final JSON
+  errorMessage     String?
+  createdAt        DateTime  @default(now())
+  finishedAt       DateTime?
+  reviewedAt       DateTime?
 }
 
 model VerdictFeedback {

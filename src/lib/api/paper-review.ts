@@ -35,6 +35,7 @@ export function mapPaperReviewJob(row: PaperReview, origin: string) {
       language: row.language,
       parser: row.parser,
       model: row.model,
+      depth: row.reviewDepth,
     },
     result:
       parsedReview?.success && row.status === "complete"

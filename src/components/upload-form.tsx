@@ -9,6 +9,7 @@ import type { Messages } from "@/lib/i18n/messages";
 import { MODEL_CATALOG } from "@/lib/llm";
 import { EXPLAIN_LEVELS, type ExplainLevel } from "@/lib/explain-schema";
 import type { PaperType, VenueSearchResult } from "@/lib/venues";
+import type { ReviewDepth } from "@/lib/paper-review-audit-schema";
 
 type Tab = "url" | "text" | "file";
 
@@ -85,6 +86,7 @@ export function UploadForm({
   const [venueTrack, setVenueTrack] = useState("Main track");
   const [paperType, setPaperType] = useState<PaperType>("research");
   const [reviewDate, setReviewDate] = useState("");
+  const [reviewDepth, setReviewDepth] = useState<ReviewDepth>("standard");
   // True while a file is being dragged over the form, for the drop highlight.
   const [dragging, setDragging] = useState(false);
 
@@ -198,6 +200,7 @@ export function UploadForm({
           fd.set("venueYear", venueYear);
           fd.set("venueTrack", venueTrack.trim());
           fd.set("paperType", paperType);
+          fd.set("reviewDepth", reviewDepth);
           if (reviewDate) fd.set("reviewDate", reviewDate);
         }
         await onSubmit("file", fd, null);
@@ -540,6 +543,38 @@ export function UploadForm({
                 className="w-full bg-background border border-rule rounded-md px-3 py-2 outline-none focus:border-accent"
               />
             </label>
+          </div>
+          <div className="flex flex-col gap-2">
+            <span className="text-xs uppercase tracking-wide text-muted">
+              {t.review_depth}
+            </span>
+            <div
+              role="radiogroup"
+              aria-label={t.review_depth}
+              className="flex items-center gap-x-5 gap-y-2 flex-wrap"
+            >
+              {(["standard", "deep"] as const).map((depth) => (
+                <button
+                  key={depth}
+                  type="button"
+                  role="radio"
+                  aria-checked={reviewDepth === depth}
+                  onClick={() => setReviewDepth(depth)}
+                  className={cn(
+                    "inline-flex items-center gap-2 text-sm cursor-pointer transition-colors",
+                    reviewDepth === depth
+                      ? "text-foreground"
+                      : "text-muted hover:text-foreground",
+                  )}
+                >
+                  <RadioDot checked={reviewDepth === depth} />
+                  {depth === "standard"
+                    ? t.review_depth_standard
+                    : t.review_depth_deep}
+                </button>
+              ))}
+            </div>
+            <span className="text-xs text-muted">{t.review_depth_help}</span>
           </div>
         </div>
       )}

@@ -151,7 +151,14 @@ export const PAPER_REVIEW_JSON_SCHEMA = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["id", "severity", "title", "body", "locations"],
+        required: [
+          "id",
+          "severity",
+          "title",
+          "body",
+          "locations",
+          "sourceFindingIds",
+        ],
         properties: {
           id: { type: "string" },
           severity: {
@@ -161,6 +168,10 @@ export const PAPER_REVIEW_JSON_SCHEMA = {
           title: { type: "string" },
           body: { type: "string" },
           locations: { type: "array", items: { type: "string" } },
+          sourceFindingIds: {
+            type: "array",
+            items: { type: "string" },
+          },
         },
       },
     },
@@ -185,6 +196,160 @@ export const PAPER_REVIEW_JSON_SCHEMA = {
         properties: {
           url: { type: "string" },
           title: { type: ["string", "null"] },
+        },
+      },
+    },
+  },
+} as const;
+
+export const SPECS_STAGE_JSON_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["criterion", "summary", "findings", "computationChecks"],
+  properties: {
+    criterion: {
+      type: "string",
+      enum: ["story", "presentation", "evaluations", "correctness", "significance"],
+    },
+    summary: { type: "string" },
+    findings: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: [
+          "id",
+          "criterion",
+          "title",
+          "body",
+          "locations",
+          "severity",
+          "confidence",
+          "retainInFinal",
+          "claimIds",
+        ],
+        properties: {
+          id: { type: "string" },
+          criterion: {
+            type: "string",
+            enum: [
+              "story",
+              "presentation",
+              "evaluations",
+              "correctness",
+              "significance",
+            ],
+          },
+          title: { type: "string" },
+          body: { type: "string" },
+          locations: { type: "array", items: { type: "string" } },
+          severity: {
+            type: "string",
+            enum: ["MAJOR", "MODERATE", "MINOR"],
+          },
+          confidence: { type: "number", minimum: 0, maximum: 1 },
+          retainInFinal: { type: "boolean" },
+          claimIds: { type: "array", items: { type: "string" } },
+        },
+      },
+    },
+    computationChecks: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: [
+          "id",
+          "description",
+          "location",
+          "operation",
+          "values",
+          "weights",
+          "reportedValue",
+          "tolerance",
+          "unit",
+        ],
+        properties: {
+          id: { type: "string" },
+          description: { type: "string" },
+          location: { type: "string" },
+          operation: {
+            type: "string",
+            enum: [
+              "sum",
+              "difference",
+              "product",
+              "quotient",
+              "mean",
+              "weighted_mean",
+              "percentage",
+              "percentage_change",
+              "precision",
+              "recall",
+              "f1",
+            ],
+          },
+          values: { type: "array", items: { type: "number" } },
+          weights: { type: "array", items: { type: "number" } },
+          reportedValue: { type: "number" },
+          tolerance: { type: "number", minimum: 0 },
+          unit: { type: ["string", "null"] },
+        },
+      },
+    },
+  },
+} as const;
+
+export const QUALITY_AUDIT_JSON_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["summary", "flags", "findingDecisions"],
+  properties: {
+    summary: { type: "string" },
+    flags: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: [
+          "category",
+          "severity",
+          "description",
+          "relatedFindingIds",
+        ],
+        properties: {
+          category: {
+            type: "string",
+            enum: [
+              "unsupported_claim",
+              "structural",
+              "severity",
+              "recommendation",
+              "citation",
+              "bias",
+              "anonymity",
+              "editorial",
+            ],
+          },
+          severity: { type: "string", enum: ["warning", "blocking"] },
+          description: { type: "string" },
+          relatedFindingIds: {
+            type: "array",
+            items: { type: "string" },
+          },
+        },
+      },
+    },
+    findingDecisions: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["findingId", "decision", "reason"],
+        properties: {
+          findingId: { type: "string" },
+          decision: { type: "string", enum: ["retain", "dismiss"] },
+          reason: { type: "string" },
         },
       },
     },

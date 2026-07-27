@@ -4,6 +4,12 @@ import type {
   PaperResearch,
   PaperReviewResult,
 } from "./paper-review-schema";
+import type {
+  ComputationAuditItem,
+  QualityAudit,
+  SpecsCriterion,
+  SpecsStageResult,
+} from "./paper-review-audit-schema";
 import {
   venueProfileForPrompt,
   type ResolvedVenueProfile,
@@ -73,6 +79,8 @@ export function buildInitialReviewPrompt(args: {
   paper: string;
   ledger: PaperLedger;
   research: PaperResearch;
+  specs: SpecsStageResult[];
+  computations: ComputationAuditItem[];
   venueProfile: ResolvedVenueProfile;
   reviewDate: string;
 }): string {
@@ -92,6 +100,8 @@ Requirements:
 - Stage findings must each be one dense paragraph.
 - Strengths must cite specific manuscript locations.
 - Weaknesses must be exhaustive, ordered by severity, and numbered W1, W2, ...
+- Every weakness must list the specialist finding IDs it consolidates in sourceFindingIds. Use [] only for a genuinely new synthesis finding.
+- Retain every MAJOR or MODERATE specialist finding marked retainInFinal unless the evidence in the supplied artifacts clearly disproves it.
 - Every weakness must carry localized manuscript evidence.
 - Questions must be concrete and diagnostic of weaknesses.
 - Overall assessment must name the most fundamental problem.
@@ -108,6 +118,12 @@ ${JSON.stringify(args.ledger)}
 EXTERNAL-LITERATURE MEMO:
 ${args.research.synthesis}
 
+INDEPENDENT SPECS REVIEWS:
+${JSON.stringify(args.specs)}
+
+DETERMINISTIC COMPUTATION AUDIT:
+${JSON.stringify(args.computations)}
+
 MANUSCRIPT:
 ${args.paper}`;
 }
@@ -116,6 +132,8 @@ export function buildSelfCritiquePrompt(args: {
   paper: string;
   ledger: PaperLedger;
   research: PaperResearch;
+  specs: SpecsStageResult[];
+  computations: ComputationAuditItem[];
   initialReview: PaperReviewResult;
   venueProfile: ResolvedVenueProfile;
   reviewDate: string;
@@ -135,6 +153,9 @@ Check:
 - Are novelty conclusions grounded only in external published sources?
 - Did the first pass actually apply every supplied venue criterion?
 - Did it invent a venue rule that is absent from the supplied profile?
+- Did it omit a MAJOR or MODERATE specialist finding marked retainInFinal?
+- Does every weakness preserve the relevant sourceFindingIds?
+- Does it accurately report deterministic computation failures without overstating what a calculator can establish?
 
 Do not mention this self-critique or the initial review. Preserve the mandatory recommendation labels and return a complete replacement review.
 
@@ -149,9 +170,134 @@ ${JSON.stringify(args.ledger)}
 EXTERNAL-LITERATURE MEMO:
 ${args.research.synthesis}
 
+INDEPENDENT SPECS REVIEWS:
+${JSON.stringify(args.specs)}
+
+DETERMINISTIC COMPUTATION AUDIT:
+${JSON.stringify(args.computations)}
+
 INITIAL REVIEW:
 ${JSON.stringify(args.initialReview)}
 
+MANUSCRIPT:
+${args.paper}`;
+}
+
+const CRITERION_INSTRUCTIONS: Record<SpecsCriterion, string> = {
+  story:
+    "Audit the problem framing, motivation, chain of argument, construct definitions, scope, stated contribution, hypotheses, and whether the paper tells a coherent and autonomous scientific story.",
+  presentation:
+    "Audit organization, precision, terminology, figures, tables, algorithms, schemas, reproducibility information, accessibility, and whether visual evidence supports the prose.",
+  evaluations:
+    "Audit datasets, factors, arms, controls, baselines, ablations, metrics, uncertainty, statistical tests, power, leakage, robustness, generalization, and whether experiments can falsify the claims.",
+  correctness:
+    "Audit logical validity, mathematical derivations, quantitative claims, internal consistency, implementation claims, units, denominators, and whether conclusions follow from the evidence.",
+  significance:
+    "Audit novelty, importance, practical or scientific impact, venue fit, and differentiation from the closest published prior work. Use the supplied research memo and do not treat an arXiv-only preprint as published prior art.",
+};
+
+const CRITERION_PREFIX: Record<SpecsCriterion, string> = {
+  story: "S",
+  presentation: "P",
+  evaluations: "E",
+  correctness: "C",
+  significance: "G",
+};
+
+export function buildSpecsStagePrompt(args: {
+  criterion: SpecsCriterion;
+  paper: string;
+  ledger: PaperLedger;
+  research?: PaperResearch;
+  venueProfile: ResolvedVenueProfile;
+}): string {
+  const prefix = CRITERION_PREFIX[args.criterion];
+  return `Act as the independent SPECS specialist for ${args.criterion.toUpperCase()}.
+
+${CRITERION_INSTRUCTIONS[args.criterion]}
+
+Return only findings within your assigned criterion. Use IDs ${prefix}1, ${prefix}2, ... in order. Each retained criticism must cite a manuscript page and should name ledger claim IDs when applicable. Set retainInFinal only when the issue is sufficiently evidenced to survive synthesis; do not inflate severity.
+
+For Evaluations and Correctness, propose deterministic checks only when the paper prints all operands and a reported result. Never propose executing manuscript code. Available operations and operand order:
+- sum/product/mean: all values
+- difference/quotient/percentage: [numerator or first value, denominator or second value]
+- percentage_change: [old, new]
+- weighted_mean: values plus equal-length weights
+- precision: [true positives, false positives]
+- recall: [true positives, false negatives]
+- f1: [precision, recall] or [true positives, false positives, false negatives]
+reportedValue must use the same scale as the operation (percentage returns 0–100; precision/recall/F1 return 0–1). Use an explicit absolute tolerance.
+
+TARGET VENUE STANDARD:
+${venueProfileForPrompt(args.venueProfile)}
+
+PRIVATE LEDGER:
+${JSON.stringify(args.ledger)}
+
+${
+  args.research
+    ? `EXTERNAL-LITERATURE MEMO:\n${args.research.synthesis}\n`
+    : ""
+}
+MANUSCRIPT:
+${args.paper}`;
+}
+
+export function buildQualityAuditPrompt(args: {
+  review: PaperReviewResult;
+  specs: SpecsStageResult[];
+  computations: ComputationAuditItem[];
+  sources: PaperReviewResult["sources"];
+}): string {
+  return `Act as an independent area-chair quality auditor. You did not write the review. Audit it for unsupported conclusions, lost specialist findings, severity calibration, recommendation consistency, citation reliability, bias, anonymity violations, and editorial overreach.
+
+For every specialist finding, return exactly one retain/dismiss decision. A dismissal requires a concrete reason grounded in the supplied artifacts. Flag as blocking any missing retained MAJOR/MODERATE finding, unsupported rejection rationale, source mismatch used materially, or recommendation that conflicts with the written assessment. Do not rewrite the review.
+
+SPECS ARTIFACTS:
+${JSON.stringify(args.specs)}
+
+COMPUTATION AUDIT:
+${JSON.stringify(args.computations)}
+
+SOURCE AUDIT:
+${JSON.stringify(args.sources)}
+
+FINAL-DRAFT REVIEW:
+${JSON.stringify(args.review)}`;
+}
+
+export function buildFinalRepairPrompt(args: {
+  paper: string;
+  ledger: PaperLedger;
+  research: PaperResearch;
+  specs: SpecsStageResult[];
+  computations: ComputationAuditItem[];
+  review: PaperReviewResult;
+  quality: QualityAudit;
+  missingFindingIds: string[];
+  venueProfile: ResolvedVenueProfile;
+  reviewDate: string;
+}): string {
+  return `Return a complete corrected final review. Resolve every blocking quality flag and explicitly incorporate every missing required specialist finding: ${args.missingFindingIds.join(", ") || "none"}.
+
+Preserve sourceFindingIds when consolidating specialist findings. Do not mention this repair pass or expose private artifacts. Do not add claims unsupported by the manuscript. Keep the mandatory English recommendation labels.
+
+TARGET VENUE STANDARD:
+${venueProfileForPrompt(args.venueProfile)}
+Review date: ${args.reviewDate}
+
+LEDGER:
+${JSON.stringify(args.ledger)}
+EXTERNAL-LITERATURE MEMO:
+${args.research.synthesis}
+SPECS ARTIFACTS:
+${JSON.stringify(args.specs)}
+COMPUTATION AUDIT:
+${JSON.stringify(args.computations)}
+QUALITY AUDIT:
+${JSON.stringify(args.quality)}
+CURRENT REVIEW:
+${JSON.stringify(args.review)}
 MANUSCRIPT:
 ${args.paper}`;
 }

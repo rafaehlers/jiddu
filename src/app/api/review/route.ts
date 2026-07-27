@@ -9,6 +9,7 @@ import { consume, ipFromRequest, rateLimitResponse } from "@/lib/rate-limit";
 import { bucketFromSettings, loadSettings } from "@/lib/settings";
 import type { Lang } from "@/lib/fallacies";
 import { resolveVenueProfile } from "@/lib/venues";
+import type { ReviewDepth } from "@/lib/paper-review-audit-schema";
 
 export const runtime = "nodejs";
 export const maxDuration = 900;
@@ -66,6 +67,7 @@ export async function POST(req: NextRequest) {
       filename,
       lang,
       modelId: normalizeString(form.get("model")),
+      reviewDepth: normalizeReviewDepth(form.get("reviewDepth")),
       venueProfile,
       reviewDate,
     });
@@ -97,6 +99,7 @@ export async function POST(req: NextRequest) {
         pageCount: prepared.pageCount,
         visualPageCount: prepared.visualPageCount,
         model: prepared.modelId,
+        reviewDepth: prepared.reviewDepth,
         venueTarget,
         venueProfileVerified: venueProfile.profileVerified,
         chunkCount: PAPER_REVIEW_STAGE_COUNT,
@@ -158,6 +161,10 @@ function normalizeLang(value: FormDataEntryValue | null): Lang {
 
 function normalizeDate(value?: string): string | undefined {
   return value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : undefined;
+}
+
+function normalizeReviewDepth(value: FormDataEntryValue | null): ReviewDepth {
+  return value === "deep" ? "deep" : "standard";
 }
 
 function jsonError(message: string, status: number, code?: string) {

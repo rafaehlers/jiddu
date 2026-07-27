@@ -197,7 +197,7 @@ const mcpHandler = createMcpHandler(
       {
         title: "Start adversarial paper review",
         description:
-          "Start a persisted, five-stage adversarial review of one complete PDF available at a public URL. Returns a job id immediately; poll it with get_adversarial_review. The review audits claims and experiments, checks published prior work, applies an optional venue rubric, and produces localized weaknesses plus a recommendation.",
+          "Start a persisted adversarial review of one complete PDF available at a public URL. Independent SPECS specialists, deterministic checks, source validation, and a separate quality critic feed the final review. Returns a job id immediately; poll it with get_adversarial_review.",
         inputSchema: {
           pdf_url: z
             .string()
@@ -249,6 +249,12 @@ const mcpHandler = createMcpHandler(
             .regex(/^\d{4}-\d{2}-\d{2}$/)
             .optional()
             .describe("Review date in YYYY-MM-DD. Defaults to today."),
+          depth: z
+            .enum(["standard", "deep"])
+            .optional()
+            .describe(
+              "Review depth. Deep uses stronger reasoning and critic models and costs more. Defaults to standard.",
+            ),
         },
       },
       async ({
@@ -260,6 +266,7 @@ const mcpHandler = createMcpHandler(
         venue_track,
         paper_type,
         review_date,
+        depth,
       }) => {
         try {
           const auth = mcpAuth.getStore();
@@ -289,6 +296,7 @@ const mcpHandler = createMcpHandler(
             venueProfile,
             reviewDate:
               review_date ?? new Date().toISOString().slice(0, 10),
+            reviewDepth: depth ?? "standard",
           });
           after(async () => {
             await runPreparedPaperReview(prepared).catch((err) => {

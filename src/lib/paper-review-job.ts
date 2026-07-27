@@ -2,26 +2,46 @@ import { nanoid } from "nanoid";
 import { prisma } from "@/lib/db";
 import { ingestPdf, renderPdfPages } from "@/lib/ingest/pdf";
 import {
+  auditPaperReviewQuality,
   buildInitialPaperReview,
   buildPaperLedger,
+  repairPaperReview,
   researchPaperNovelty,
+  runSpecsStage,
   selfCritiquePaperReview,
 } from "@/lib/llm/paper-review";
 import { resolveModel } from "@/lib/llm";
 import { paperReviewToMarkdown } from "@/lib/paper-review-markdown";
 import type { PaperReviewResult } from "@/lib/paper-review-schema";
+import {
+  REVIEW_DEPTHS,
+  SPECS_CRITERIA,
+  type QualityAudit,
+  type ReviewDepth,
+  type SpecsCriterion,
+  type SpecsStageResult,
+} from "@/lib/paper-review-audit-schema";
+import {
+  auditComputations,
+  buildRetentionAudit,
+} from "@/lib/paper-review-computation";
+import { validateReviewSources } from "@/lib/paper-review-source-validation";
 import type { Lang } from "@/lib/fallacies";
 import type { ResolvedVenueProfile } from "@/lib/venues";
 
 export const MAX_PAPER_TEXT_CHARS = 300_000;
 export const MAX_PDF_BYTES = 25 * 1024 * 1024;
-export const PAPER_REVIEW_STAGE_COUNT = 5;
+export const PAPER_REVIEW_STAGE_COUNT = 9;
 
 export const PAPER_REVIEW_STAGES = [
   "ledger",
   "research",
+  "specs",
+  "verification",
   "synthesis",
   "self_critique",
+  "source_validation",
+  "quality_audit",
   "complete",
 ] as const;
 
@@ -38,6 +58,7 @@ export type PreparedPaperReview = {
   pageCount: number;
   visualPageCount: number;
   modelId: string;
+  reviewDepth: ReviewDepth;
   lang: Lang;
   venueTarget: string;
   venueProfile: ResolvedVenueProfile;
@@ -72,6 +93,7 @@ export async function preparePaperReview(input: {
   sourceRef?: string;
   lang: Lang;
   modelId?: string;
+  reviewDepth?: ReviewDepth;
   venueProfile: ResolvedVenueProfile;
   reviewDate: string;
 }): Promise<PreparedPaperReview> {
@@ -136,6 +158,11 @@ export async function preparePaperReview(input: {
   const visualPageNumbers = selectVisualPages(doc.pages, doc.complexity);
   const screenshots = await renderPdfPages(input.buffer, visualPageNumbers);
   const modelChoice = resolveModel(input.modelId);
+  const reviewDepth = REVIEW_DEPTHS.includes(
+    input.reviewDepth ?? "standard",
+  )
+    ? (input.reviewDepth ?? "standard")
+    : "standard";
   const id = nanoid(10);
 
   await prisma.paperReview.create({
@@ -152,6 +179,7 @@ export async function preparePaperReview(input: {
       language: input.lang,
       provider: modelChoice.family === "anthropic" ? "anthropic" : "openai",
       model: modelChoice.id,
+      reviewDepth,
       parser: doc.parser ?? null,
       text: doc.text,
       pages: JSON.stringify(doc.pages),
@@ -167,6 +195,7 @@ export async function preparePaperReview(input: {
     pageCount: doc.pages.length,
     visualPageCount: screenshots.length,
     modelId: modelChoice.id,
+    reviewDepth,
     lang: input.lang,
     venueTarget: input.venueProfile.targetLabel,
     venueProfile: input.venueProfile,
@@ -204,6 +233,17 @@ export async function runPreparedPaperReview(
   const stageDone = async (index: number) => {
     await callbacks?.onStageDone?.({ index });
   };
+  const deepModel =
+    prepared.reviewDepth === "deep"
+      ? process.env.PAPER_REVIEW_DEEP_MODEL || "gpt-5.5"
+      : prepared.modelId;
+  const criticModel =
+    prepared.reviewDepth === "deep"
+      ? process.env.PAPER_REVIEW_CRITIC_MODEL || "claude-opus-4.8"
+      : prepared.modelId === "minimax-m3"
+        ? "gpt-5.4-mini"
+        : "minimax-m3";
+  const stageModels: Record<string, string> = {};
 
   try {
     await stage(0, "ledger", "ledger");
@@ -216,6 +256,7 @@ export async function runPreparedPaperReview(
         signal: options?.signal,
       },
     );
+    stageModels.ledger = ledgerModel;
     await prisma.paperReview.update({
       where: { id },
       data: {
@@ -229,32 +270,78 @@ export async function runPreparedPaperReview(
 
     await stage(1, "research", "research");
     const research = await researchPaperNovelty(ledger, venueProfile, {
-      modelId: prepared.modelId,
+      modelId: deepModel,
       lang: prepared.lang,
       signal: options?.signal,
     });
+    stageModels.research = research.model ?? deepModel;
     await prisma.paperReview.update({
       where: { id },
       data: { research: JSON.stringify(research) },
     });
     await stageDone(1);
 
-    await stage(2, "synthesis", "synthesis");
+    await stage(2, "specs", "specs");
+    const specialistResults = await Promise.all(
+      SPECS_CRITERIA.map(async (criterion) => {
+        const specialistModel = modelForCriterion(
+          criterion,
+          prepared.reviewDepth,
+          prepared.modelId,
+          deepModel,
+        );
+        const result = await runSpecsStage(
+          {
+            criterion,
+            paper: pageTaggedPaper,
+            ledger,
+            research: criterion === "significance" ? research : undefined,
+            venueProfile,
+            visualPages: visualPagesForCriterion(criterion, screenshots),
+          },
+          {
+            modelId: specialistModel,
+            lang: prepared.lang,
+            signal: options?.signal,
+          },
+        );
+        stageModels[`specs_${criterion}`] = result.model;
+        return result.stage;
+      }),
+    );
+    await prisma.paperReview.update({
+      where: { id },
+      data: { specsReviews: JSON.stringify(specialistResults) },
+    });
+    await stageDone(2);
+
+    await stage(3, "verification", "verification");
+    const computations = auditComputations(specialistResults);
+    await prisma.paperReview.update({
+      where: { id },
+      data: { computationAudit: JSON.stringify(computations) },
+    });
+    await stageDone(3);
+
+    await stage(4, "synthesis", "synthesis");
     const { review: initialReview, model: synthesisModel } =
       await buildInitialPaperReview(
         {
           paper: pageTaggedPaper,
           ledger,
           research,
+          specs: specialistResults,
+          computations,
           venueProfile,
           reviewDate,
         },
         {
-          modelId: prepared.modelId,
+          modelId: deepModel,
           lang: prepared.lang,
           signal: options?.signal,
         },
       );
+    stageModels.synthesis = synthesisModel;
     await prisma.paperReview.update({
       where: { id },
       data: {
@@ -262,35 +349,133 @@ export async function runPreparedPaperReview(
         initialReview: JSON.stringify(initialReview),
       },
     });
-    await stageDone(2);
+    await stageDone(4);
 
-    await stage(3, "self_critique", "self_critique");
-    const { review: critiquedReview, model: finalModel } =
+    await stage(5, "self_critique", "self_critique");
+    const { review: critiquedReview, model: critiqueModel } =
       await selfCritiquePaperReview(
         {
           paper: pageTaggedPaper,
           ledger,
           research,
+          specs: specialistResults,
+          computations,
           initialReview,
           venueProfile,
           reviewDate,
         },
         {
-          modelId: prepared.modelId,
+          modelId: deepModel,
           lang: prepared.lang,
           signal: options?.signal,
         },
       );
-    const review = normalizeReview(
+    stageModels.self_critique = critiqueModel;
+    let review = normalizeReview(
       critiquedReview,
       ledger.paperTitle,
       ledger.author,
       prepared.venueTarget,
       reviewDate,
     );
-    await stageDone(3);
+    await stageDone(5);
 
-    await stage(4, "finalize", "complete");
+    await stage(6, "source_validation", "source_validation");
+    review = {
+      ...review,
+      sources: await validateReviewSources(review.sources),
+    };
+    await prisma.paperReview.update({
+      where: { id },
+      data: { sourceAudit: JSON.stringify(review.sources) },
+    });
+    await stageDone(6);
+
+    await stage(7, "quality_audit", "quality_audit");
+    const { quality: rawQuality, model: qualityModel } =
+      await auditPaperReviewQuality(
+        {
+          review,
+          specs: specialistResults,
+          computations,
+          sources: review.sources,
+        },
+        {
+          modelId: criticModel,
+          lang: prepared.lang,
+          signal: options?.signal,
+        },
+      );
+    const quality = completeQualityDecisions(rawQuality, specialistResults);
+    stageModels.quality_audit = qualityModel;
+    let retention = buildRetentionAudit(specialistResults, review, quality);
+    const requiresRepair =
+      retention.missingFindingIds.length > 0 ||
+      quality.flags.some((flag) => flag.severity === "blocking");
+    let finalModel = critiqueModel;
+
+    if (requiresRepair) {
+      const repaired = await repairPaperReview(
+        {
+          paper: pageTaggedPaper,
+          ledger,
+          research,
+          specs: specialistResults,
+          computations,
+          review,
+          quality,
+          missingFindingIds: retention.missingFindingIds,
+          venueProfile,
+          reviewDate,
+        },
+        {
+          modelId: deepModel,
+          lang: prepared.lang,
+          signal: options?.signal,
+        },
+      );
+      finalModel = repaired.model;
+      stageModels.final_repair = repaired.model;
+      review = normalizeReview(
+        repaired.review,
+        ledger.paperTitle,
+        ledger.author,
+        prepared.venueTarget,
+        reviewDate,
+      );
+      review = { ...review, sources: await validateReviewSources(review.sources) };
+      retention = buildRetentionAudit(specialistResults, review, quality);
+    }
+
+    review = enforceRetention(review, specialistResults, retention.missingFindingIds);
+    retention = buildRetentionAudit(specialistResults, review, quality);
+    review = {
+      ...review,
+      audit: buildPublicAuditSummary({
+        depth: prepared.reviewDepth,
+        specs: specialistResults,
+        computations,
+        quality,
+        retention,
+        sources: review.sources,
+        criticModel: qualityModel,
+      }),
+    };
+    await prisma.paperReview.update({
+      where: { id },
+      data: {
+        qualityAudit: JSON.stringify({
+          ...quality,
+          model: qualityModel,
+          stageModels,
+        }),
+        retentionAudit: JSON.stringify(retention),
+        sourceAudit: JSON.stringify(review.sources),
+      },
+    });
+    await stageDone(7);
+
+    await stage(8, "finalize", "complete");
     const markdown = paperReviewToMarkdown(review, venueProfile);
     await prisma.paperReview.update({
       where: { id },
@@ -305,7 +490,7 @@ export async function runPreparedPaperReview(
         finishedAt: new Date(),
       },
     });
-    await stageDone(4);
+    await stageDone(8);
     return review;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -380,6 +565,118 @@ function severityRank(
   if (severity === "MAJOR") return 0;
   if (severity === "MODERATE") return 1;
   return 2;
+}
+
+function modelForCriterion(
+  criterion: SpecsCriterion,
+  depth: ReviewDepth,
+  selectedModel: string,
+  deepModel: string,
+): string {
+  if (depth === "standard") return selectedModel;
+  return criterion === "story" || criterion === "presentation"
+    ? selectedModel
+    : deepModel;
+}
+
+function visualPagesForCriterion(
+  criterion: SpecsCriterion,
+  screenshots: PreparedScreenshot[],
+): PreparedScreenshot[] {
+  return criterion === "presentation" ||
+    criterion === "evaluations" ||
+    criterion === "correctness"
+    ? screenshots
+    : [];
+}
+
+function completeQualityDecisions(
+  quality: QualityAudit,
+  stages: SpecsStageResult[],
+): QualityAudit {
+  const validIds = new Set(
+    stages.flatMap((stage) => stage.findings.map((finding) => finding.id)),
+  );
+  const decisions = new Map(
+    quality.findingDecisions
+      .filter((decision) => validIds.has(decision.findingId))
+      .map((decision) => [decision.findingId, decision]),
+  );
+  for (const finding of stages.flatMap((stage) => stage.findings)) {
+    if (!decisions.has(finding.id)) {
+      decisions.set(finding.id, {
+        findingId: finding.id,
+        decision: "retain",
+        reason:
+          "The critic omitted this finding, so the conservative retention policy applies.",
+      });
+    }
+  }
+  return { ...quality, findingDecisions: Array.from(decisions.values()) };
+}
+
+function enforceRetention(
+  review: PaperReviewResult,
+  stages: SpecsStageResult[],
+  missingFindingIds: string[],
+): PaperReviewResult {
+  if (missingFindingIds.length === 0) return review;
+  const findings = new Map(
+    stages
+      .flatMap((stage) => stage.findings)
+      .map((finding) => [finding.id, finding]),
+  );
+  const weaknesses = [...review.weaknesses];
+  for (const findingId of missingFindingIds) {
+    const finding = findings.get(findingId);
+    if (!finding) continue;
+    weaknesses.push({
+      id: `W${weaknesses.length + 1}`,
+      severity: finding.severity,
+      title: finding.title,
+      body: finding.body,
+      locations: finding.locations,
+      sourceFindingIds: [finding.id],
+    });
+  }
+  return normalizeReview(
+    { ...review, weaknesses },
+    review.paper,
+    review.author,
+    review.venueTarget,
+    review.reviewDate,
+  );
+}
+
+function buildPublicAuditSummary(args: {
+  depth: ReviewDepth;
+  specs: SpecsStageResult[];
+  computations: ReturnType<typeof auditComputations>;
+  quality: QualityAudit;
+  retention: ReturnType<typeof buildRetentionAudit>;
+  sources: PaperReviewResult["sources"];
+  criticModel: string;
+}): NonNullable<PaperReviewResult["audit"]> {
+  const findings = args.specs.flatMap((stage) => stage.findings);
+  const verified = args.sources.filter(
+    (source) => source.verificationStatus === "verified",
+  ).length;
+  return {
+    methodology:
+      "Independent SPECS specialists, deterministic computation checks, source metadata validation, adversarial self-critique, independent quality audit, and a finding-retention gate.",
+    depth: args.depth,
+    specialistFindings: findings.length,
+    retainedFindings: args.retention.retainedFindingIds.length,
+    dismissedFindings: args.retention.dismissedFindingIds.length,
+    computationChecks: args.computations.length,
+    computationFailures: args.computations.filter(
+      (check) => check.status !== "passed",
+    ).length,
+    sourcesVerified: verified,
+    sourcesUnverified: args.sources.length - verified,
+    criticModel: args.criticModel,
+    criticFlags: args.quality.flags.length,
+  };
 }
 
 function looksLikePdf(buffer: ArrayBuffer): boolean {

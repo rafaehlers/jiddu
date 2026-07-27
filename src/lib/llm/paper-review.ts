@@ -11,16 +11,29 @@ import {
 } from "../paper-review-schema";
 import type { ResolvedVenueProfile } from "../venues";
 import {
+  QualityAuditSchema,
+  SpecsStageResultSchema,
+  type ComputationAuditItem,
+  type QualityAudit,
+  type SpecsCriterion,
+  type SpecsStageResult,
+} from "../paper-review-audit-schema";
+import {
+  buildFinalRepairPrompt,
   buildInitialReviewPrompt,
   buildLedgerPrompt,
+  buildQualityAuditPrompt,
   buildResearchPrompt,
   buildSelfCritiquePrompt,
+  buildSpecsStagePrompt,
   paperReviewContract,
 } from "../paper-review-prompt";
-import { resolveModel } from "./openrouter";
+import { resolvePaperReviewModel } from "./openrouter";
 import {
   PAPER_LEDGER_JSON_SCHEMA,
   PAPER_REVIEW_JSON_SCHEMA,
+  QUALITY_AUDIT_JSON_SCHEMA,
+  SPECS_STAGE_JSON_SCHEMA,
 } from "./paperReviewJsonSchema";
 import { DEFAULT_MODEL_CHAIN } from "./fallback";
 
@@ -36,6 +49,7 @@ type RunOptions = {
   modelId?: string;
   lang: Lang;
   signal?: AbortSignal;
+  strictModel?: boolean;
 };
 
 let cachedClient: OpenAI | null = null;
@@ -96,8 +110,8 @@ export async function researchPaperNovelty(
   const client = getClient();
   const errors: string[] = [];
 
-  for (const modelId of modelChain(opts.modelId)) {
-    const choice = resolveModel(modelId);
+  for (const modelId of modelChain(opts.modelId, opts.strictModel)) {
+    const choice = resolvePaperReviewModel(modelId);
     try {
       const response = await client.chat.completions.create(
         {
@@ -128,6 +142,7 @@ export async function researchPaperNovelty(
             },
           ],
           max_tool_calls: 5,
+          max_tokens: 8_000,
           ...providerExtras(choice),
         } as unknown as OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming,
         opts.signal ? { signal: opts.signal } : undefined,
@@ -146,6 +161,7 @@ export async function researchPaperNovelty(
       return {
         synthesis,
         sources: sourcesFromAnnotations(message?.annotations ?? []),
+        model: choice.id,
       };
     } catch (err) {
       if (opts.signal?.aborted) throw err;
@@ -162,6 +178,8 @@ export async function buildInitialPaperReview(
     paper: string;
     ledger: PaperLedger;
     research: PaperResearch;
+    specs: SpecsStageResult[];
+    computations: ComputationAuditItem[];
     venueProfile: ResolvedVenueProfile;
     reviewDate: string;
   },
@@ -184,6 +202,8 @@ export async function selfCritiquePaperReview(
     paper: string;
     ledger: PaperLedger;
     research: PaperResearch;
+    specs: SpecsStageResult[];
+    computations: ComputationAuditItem[];
     initialReview: PaperReviewResult;
     venueProfile: ResolvedVenueProfile;
     reviewDate: string;
@@ -193,6 +213,95 @@ export async function selfCritiquePaperReview(
   return runStructuredWithFallback(
     paperReviewContract(opts.lang),
     buildSelfCritiquePrompt(args),
+    PAPER_REVIEW_JSON_SCHEMA,
+    PaperReviewResultSchema,
+    opts,
+  ).then(({ value, model }) => ({
+    review: mergeResearchSources(value, args.research.sources),
+    model,
+  }));
+}
+
+export async function runSpecsStage(
+  args: {
+    criterion: SpecsCriterion;
+    paper: string;
+    ledger: PaperLedger;
+    research?: PaperResearch;
+    venueProfile: ResolvedVenueProfile;
+    visualPages: VisualPage[];
+  },
+  opts: RunOptions,
+): Promise<{ stage: SpecsStageResult; model: string }> {
+  const content: OpenAI.Chat.Completions.ChatCompletionContentPart[] = [
+    { type: "text", text: buildSpecsStagePrompt(args) },
+    ...args.visualPages.flatMap(
+      (page): OpenAI.Chat.Completions.ChatCompletionContentPart[] => [
+        {
+          type: "text",
+          text: `Visual rendering of manuscript page ${page.pageNumber}:`,
+        },
+        {
+          type: "image_url",
+          image_url: {
+            url: `data:image/png;base64,${page.png.toString("base64")}`,
+            detail: "high",
+          },
+        },
+      ],
+    ),
+  ];
+  const result = await runStructuredWithFallback(
+    paperReviewContract(opts.lang),
+    content,
+    SPECS_STAGE_JSON_SCHEMA,
+    SpecsStageResultSchema,
+    opts,
+  );
+  if (result.value.criterion !== args.criterion) {
+    throw new Error(
+      `SPECS stage returned ${result.value.criterion} instead of ${args.criterion}`,
+    );
+  }
+  return { stage: result.value, model: result.model };
+}
+
+export async function auditPaperReviewQuality(
+  args: {
+    review: PaperReviewResult;
+    specs: SpecsStageResult[];
+    computations: ComputationAuditItem[];
+    sources: PaperReviewResult["sources"];
+  },
+  opts: RunOptions,
+): Promise<{ quality: QualityAudit; model: string }> {
+  return runStructuredWithFallback(
+    paperReviewContract(opts.lang),
+    buildQualityAuditPrompt(args),
+    QUALITY_AUDIT_JSON_SCHEMA,
+    QualityAuditSchema,
+    opts,
+  ).then(({ value, model }) => ({ quality: value, model }));
+}
+
+export async function repairPaperReview(
+  args: {
+    paper: string;
+    ledger: PaperLedger;
+    research: PaperResearch;
+    specs: SpecsStageResult[];
+    computations: ComputationAuditItem[];
+    review: PaperReviewResult;
+    quality: QualityAudit;
+    missingFindingIds: string[];
+    venueProfile: ResolvedVenueProfile;
+    reviewDate: string;
+  },
+  opts: RunOptions,
+): Promise<{ review: PaperReviewResult; model: string }> {
+  return runStructuredWithFallback(
+    paperReviewContract(opts.lang),
+    buildFinalRepairPrompt(args),
     PAPER_REVIEW_JSON_SCHEMA,
     PaperReviewResultSchema,
     opts,
@@ -214,8 +323,8 @@ async function runStructuredWithFallback<T>(
   const client = getClient();
   const errors: string[] = [];
 
-  for (const modelId of modelChain(opts.modelId)) {
-    const choice = resolveModel(modelId);
+  for (const modelId of modelChain(opts.modelId, opts.strictModel)) {
+    const choice = resolvePaperReviewModel(modelId);
     try {
       const response = await client.chat.completions.create(
         {
@@ -241,6 +350,7 @@ async function runStructuredWithFallback<T>(
                   type: "function",
                   function: { name: "report_analysis" },
                 },
+          max_tokens: 16_000,
           ...providerExtras(choice),
         } as OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming,
         opts.signal ? { signal: opts.signal } : undefined,
@@ -267,26 +377,33 @@ async function runStructuredWithFallback<T>(
   throw new Error(`Structured review stage failed: ${errors.join(" / ")}`);
 }
 
-function modelChain(selected?: string): string[] {
+function modelChain(selected?: string, strictModel = false): string[] {
+  const resolved = resolvePaperReviewModel(selected).id;
+  if (strictModel) return [resolved];
   return Array.from(
     new Set([
-      resolveModel(selected).id,
+      resolved,
       ...DEFAULT_MODEL_CHAIN,
     ]),
   );
 }
 
 function providerExtras(
-  choice: ReturnType<typeof resolveModel>,
+  choice: ReturnType<typeof resolvePaperReviewModel>,
 ): Record<string, unknown> {
-  return choice.providerOrder
-    ? {
+  return {
+    ...(choice.providerOrder
+      ? {
         provider: {
           order: choice.providerOrder,
           allow_fallbacks: false,
         },
       }
-    : {};
+      : {}),
+    ...(choice.reasoningEffort
+      ? { reasoning: { effort: choice.reasoningEffort } }
+      : {}),
+  };
 }
 
 function sourcesFromAnnotations(

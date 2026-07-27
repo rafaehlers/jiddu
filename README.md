@@ -2,28 +2,17 @@
 
 > *truth is a pathless land* — [J. Krishnamurti](https://en.wikipedia.org/wiki/Jiddu_Krishnamurti)
 
-> ✓ **Pipeline validated against the [PolitiFact](https://www.politifact.com) human-labeled corpus.** On 200 claims drawn from PolitiFact's polar buckets, Jiddu's fact-check verdict matches the human verdict in **67.5%** of cases overall and **81.3%** on the unambiguous true / false / pants-on-fire buckets, with strict polar disagreement in only 4.5%. Full methodology, confusion matrix, and disagreement analysis: [docs/benchmark-politifact.md](./docs/benchmark-politifact.md).
+**Open-source critical reading for text and research papers.**
 
-Jiddu is six tools in one for reading text and papers critically:
+Jiddu keeps the source and the analysis side by side. Drop a URL, paste text, upload a document, or review a complete paper; every finding stays anchored to the passage or page that supports it.
 
-1. **Fallacy detector** — drop a URL, paste text, or upload a PDF/TXT and Jiddu highlights every passage that contains a logical fallacy, explains each in a Word-style margin comment, and assigns the whole piece a fallacy score from 0 to 100.
-2. **Fact-check** — pull every verifiable claim (numbers, dates, quotes, causal and categorical assertions) out of the same text, then optionally run each through a web-search model (Perplexity Sonar) to get a verdict (`supported` / `contradicted` / `mixed` / `unverified`) with cited sources, including a per-source quality tier (primary / scholarly / think tank / journalistic / commercial / informal) and a state-controlled flag.
-3. **Neutrality assessment** — flag the framing, attribution and source-selection patterns that make a text partisan even when it doesn't commit any explicit fallacy and doesn't lie about facts. Covers loaded language, asymmetric attribution, false equivalence, selective omission, source asymmetry, both-sidesing, steering and genetic framing. Deliberately does NOT classify partisan direction.
-4. **Explain** — upload a paper (or paste text / drop a URL), pick an explanation level — child, high school, undergraduate or expert — and Jiddu explains it paragraph by paragraph in a Word-style margin, tagging each paragraph with the role it plays in the paper (background, objective, method, results, interpretation, limitation, conclusion) and writing a plain-language overview of the whole document at the chosen level.
-5. **Slop detector** — flag the AI-slop writing patterns that make prose read machine-assembled: a catalog of 18 patterns (buzzword salad, binary contrast, weasel attribution, fake-profound kicker, colon reveal…) across five categories, each finding quoting the exact span with an explanation and a 0-100 slop score. Detects patterns, never guesses authorship — humans write slop too.
-6. **Adversarial paper review** — upload exactly one final PDF and Jiddu treats it as an autonomous submission: builds a private claim/evidence ledger, audits story, presentation, evaluations and correctness, checks novelty against external published literature, then runs a second adversarial self-critique before returning a localized gatekeeping review.
+Choose the lens that fits the reading: logical fallacies, factual claims, neutrality, plain-language explanation, writing patterns, or an adversarial pre-submission review. Results stream into an inspectable viewer, save to a shareable link, and export to PDF; paper reviews also export structured Markdown.
 
-Plus a **Live mode (beta)** at `/live` — speak into the microphone or capture a browser-tab's audio and the fallacy detector flags issues in near-real-time as the speaker talks. Built on OpenAI's Realtime API (`gpt-realtime-whisper`) for speech-to-text via a direct browser↔OpenAI WebRTC channel (the Jiddu server only mints short-lived tokens and persists the transcript + findings). When you stop the session it commits a normal `/a/<id>` analysis you can share.
-
-Live: **https://jiddu.app**
-
-The methodology behind the fact-check and neutrality pipelines is grounded in two recent papers:
-- [**Claimify**](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson, Microsoft Research 2025) for the 4-stage claim extraction.
-- [**Distilling Expert Judgment at Scale**](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) (Goldfarb, Hall, Fisher, Salam, Wilde — Forum AI / Stanford 2025) for the verdict assessment, the 6-tier source-quality taxonomy and the neutrality framework. Jiddu is not affiliated with either group.
+[Open Jiddu](https://jiddu.app) · [Try the paper-review demo](https://jiddu.app/r/demo-en) · [How it works](https://jiddu.app/how-it-works) · [API & MCP](https://jiddu.app/api-access)
 
 ---
 
-## Features
+## What Jiddu does
 
 ### Fallacy detector
 - **Dual-pane viewer** — text on the left with each fallacious passage highlighted in its own color; explanations stack as anchored comments on the right.
@@ -66,30 +55,46 @@ The methodology behind the fact-check and neutrality pipelines is grounded in tw
 
 ### Adversarial paper review
 - **Complete-paper workflow** at `/review`, results at `/r/[id]` — accepts exactly one PDF plus target venue, edition, track, paper type and optional review date.
+- **Methodological inspiration** — Jiddu adapts the SPECS review dimensions (Story, Presentation, Evaluations, Correctness and Significance) and the staged synthesis/self-critique pattern described in [*AI-Assisted Peer Review at Scale: The AAAI-26 AI Review Pilot*](https://arxiv.org/abs/2604.13940). It is an independent implementation with its own claim/evidence ledger, venue calibration, parser, output contract and safeguards—not a reproduction of the AAAI-26 system.
 - **Layout-aware local parsing** via LiteParse — page-scoped Markdown, spatial reading order, selective OCR and screenshots for visually relevant pages; `pdfjs-dist` remains the fallback.
 - **Auditable venue calibration** — verified, versioned 2026 profiles for NeurIPS, ICML, ICLR, AAAI, IJCAI and CVPR inject their official criteria into both synthesis and adversarial self-critique. DBLP powers account-free venue autocomplete; unmatched venues are clearly marked as using a general scholarly rubric.
 - **Persisted venue standard** — every review stores the exact criteria, requirements, verification status and official-source URLs applied at review time, and exposes them in the viewer and Markdown/PDF export.
-- **Five private stages** — ledger → published-literature research → synthesis → adversarial self-critique → deterministic finalization. Intermediate judgments are never shown as the final review.
+- **Independent SPECS passes** — Story, Presentation, Evaluations, Correctness and Significance are reviewed separately before synthesis, so one broad pass cannot silently skip an entire criterion.
+- **Safe quantitative verification** — Evaluation and Correctness specialists can propose whitelisted arithmetic checks (rates, means, percentage changes, precision/recall/F1). Jiddu recalculates them deterministically and never executes code from the manuscript.
+- **Source + quality audit** — cited URLs are SSRF-checked, fetched with bounded redirects/bytes, compared with observed title metadata and classified as published work, preprint, documentation or unknown. An independent critic then audits support, severity, recommendation, citation reliability and bias.
+- **Retention gate** — every retained MAJOR/MODERATE specialist finding must be represented in a final weakness or explicitly dismissed by the critic; a repair pass and deterministic fallback prevent synthesis loss.
+- **Standard and Deep modes** — Standard uses the selected economical model throughout and another catalog model as critic. Deep routes evaluation, correctness, significance, synthesis and repair to GPT-5.5 (high reasoning by default) and uses Claude Opus 4.8 as the independent critic. Both internal model ids can be changed through environment variables.
 - **Localized evidence** — every substantive weakness carries manuscript page/section references and a `MAJOR` / `MODERATE` / `MINOR` severity.
 - **Markdown + PDF export** — deterministic Markdown follows the required `AI Paper Review` format and the print route supports browser “Save as PDF”.
 - **Curated synthetic demos** in 3 languages (`/r/demo-en`, `/r/demo-pt`, `/r/demo-es`) exercise the full results viewer without uploading a paper or spending API credits.
 
-### Cross-cutting
-- **Six-way mode toggle** on the home composer — fallacies / fact-check / neutrality / explain / slop / adversarial review. The first five share URL, paste and file inputs; adversarial review intentionally accepts one PDF only.
-- **Multi-model via OpenRouter** — `🇺🇸 GPT-5.4 mini` (default) with `🇨🇳 MiniMax M3` as a one-click alternative and an automatic client-side fallback (re-tries only if no SSE events were emitted yet). Sonar Reasoning Pro is used only for fact-check verification, never exposed in the model picker.
-- **User feedback loop** — a "🚩 Report wrong verdict" button on every claim card. Feedback lands in an `/admin/feedback` queue with open/resolved/ignored filters; a badge on the admin home shows the open count.
-- **"Not reviewed" banner** — any analysis that hasn't been manually reviewed by an admin shows a yellow disclaimer banner above the viewer body. The admin home has a one-click toggle to mark an analysis as reviewed.
-- **Public legal page** at `/legal` — automated-tool disclaimer, no-truth-claim language, privacy, methodology citations. Available in EN / PT-BR / ES.
-- **Trilingual UI** (EN, PT-BR, ES) — selector in the header, browser-language detection on first visit, persisted in localStorage. The LLM is also instructed to write in the chosen language.
-- **PDF export** — every viewer (`/a/[id]`, `/f/[id]`, `/n/[id]`, `/e/[id]`, `/s/[id]`, `/r/[id]`) has a print-optimized companion route (`/<route>/print`) that auto-triggers the browser print dialog so the user can "Save as PDF". Paper reviews also export deterministic Markdown.
-- **SSRF-protected URL ingestion** — every fetch hop is DNS-resolved and rejected if it lands on RFC1918, loopback, link-local, CGNAT, multicast, or reserved IPv4/IPv6 ranges (covers the cloud metadata `169.254.169.254`). Body size capped at 5 MB. Requests use a real-browser User-Agent and Sec-Fetch-* headers so naive bot blockers don't reject the fetch.
-- **Rate limiting** — in-memory token bucket per IP for every cost-incurring route. All limits are admin-configurable at `/admin/settings` (capacity + per-hour rate per route) without redeploying.
-- **Dark mode default**, with a toggle that persists in localStorage.
-- **Dynamic OG image** for shareable analysis links (`/a/[id]/opengraph-image`) + static OG for the site root.
-- **Admin** at `/admin` (password-gated cookie) — unified list of fallacy, fact-check, neutrality, explain, slop and paper-review results with type pills, OpenRouter balance + totals, reviewed toggle, plus sub-pages: `/admin/feedback`, `/admin/metrics` (verdict distribution, per-pipeline volume, cache state), `/admin/cache`, `/admin/settings`.
-- **Google Analytics** (GA4 gtag.js) wired in the root layout.
+### Across the product
+- **One reading interface** — the first five modes accept URL, pasted text, PDF or TXT; adversarial review accepts one complete PDF so the manuscript can be assessed as a self-contained submission.
+- **Model choice and fallback** — GPT-5.4 mini is the default, MiniMax M3 is available for comparison, and requests fall back only when the first model fails before emitting output. Sonar Reasoning Pro is reserved for evidence-backed fact-check verdicts.
+- **Inspectable output** — findings quote the source and stay anchored to the relevant sentence, paragraph or paper page. Automated results are marked as unreviewed unless they receive an operator spot-check.
+- **Share and export** — every completed analysis gets an unlisted share URL and a print-ready PDF view. Adversarial reviews also export deterministic Markdown.
+- **English, Portuguese and Spanish** — the interface and model output follow the selected language.
+- **Safer ingestion** — URL fetches reject private, loopback, link-local and reserved network ranges; redirects and response sizes are bounded.
+- **Live mode (beta)** — `/live` transcribes microphone or browser-tab audio through OpenAI Realtime and streams fallacy findings while the speaker talks.
 
-## Stack
+## Methodology and evaluation
+
+Jiddu adapts published methods where they fit, then implements its own prompts, schemas, orchestration and safeguards:
+
+- [**Claimify**](https://arxiv.org/abs/2502.10855) (Metropolitansky & Larson, Microsoft Research, 2025) informs the four-stage claim-extraction process: selection, disambiguation, decomposition and decontextualization.
+- [**Distilling Expert Judgment at Scale**](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) (Goldfarb, Hall, Fisher, Salam & Wilde, Forum AI / Stanford, 2025) informs fact-check verdict assessment, the six-tier source taxonomy and the neutrality framework.
+- [**AI-Assisted Peer Review at Scale: The AAAI-26 AI Review Pilot**](https://arxiv.org/abs/2604.13940) informs the SPECS dimensions and the staged synthesis and self-critique used in adversarial paper review. Jiddu is an independent implementation, not a reproduction of the AAAI-26 system.
+- [**no-ai-slop**](https://github.com/petergyang/no-ai-slop) by Peter Yang supplies the starting taxonomy for the slop detector. Jiddu provides its own catalog text, translations and detection prompt.
+
+The fact-check pipeline has been measured against 200 human-labeled claims from [PolitiFact](https://www.politifact.com)'s polar buckets, sourced through the [LIAR2 dataset](https://github.com/chengxuphd/liar2). Jiddu matched the human verdict in **67.5%** of cases overall and **81.3%** on the unambiguous true / false / pants-on-fire buckets; strict polar disagreement was **4.5%**. See the [full methodology, confusion matrix and disagreement analysis](./docs/benchmark-politifact.md).
+
+Paper review has a separate [30-case synthetic SPECS benchmark](./evals/paper-review/report.md). GPT-5.4 mini and GPT-5.5 detected all 30 injected defects; GPT-5.5 returned 30.6% fewer, more consolidated findings. The set reached a ceiling and does not establish accuracy on complete real-world papers.
+
+Jiddu is not affiliated with the authors, institutions, datasets or venues cited above.
+
+---
+
+## Technical stack
 
 - **Next.js 16** (App Router, Turbopack) + **React 19** + **TypeScript** + **Tailwind 4**
 - **Prisma 7** with `@prisma/adapter-better-sqlite3` — SQLite file persisted in a Docker volume
@@ -105,7 +110,6 @@ cd jiddu
 npm install
 cp .env.example .env
 # Edit .env and set OPENROUTER_API_KEY (one key powers analysis + fact-check).
-# Optional: ADMIN_PASSWORD if you want the /admin area.
 npx prisma migrate dev
 node scripts/seed-demo.mjs           # fallacy detector demos
 node scripts/seed-explain-demo.mjs   # paper-explainer demos
@@ -123,6 +127,8 @@ Open <http://localhost:3000>. Try `/a/demo-en`, `/e/demo-en`, or `/r/demo-en`
 | `DATABASE_URL`         | SQLite path. Local dev: `file:./dev.db`. Docker: `file:/app/data/jiddu.db` |
 | `OPENROUTER_API_KEY`   | Required — unified gateway used for every model. Get one at https://openrouter.ai/keys |
 | `OPENROUTER_REFERER`   | Optional. Identifies the deployment in OpenRouter's analytics. Defaults to `https://jiddu.app` |
+| `PAPER_REVIEW_DEEP_MODEL` | Optional internal model id for Deep specialist/synthesis stages. Defaults to `gpt-5.5`. |
+| `PAPER_REVIEW_CRITIC_MODEL` | Optional independent Deep critic model id. Defaults to `claude-opus-4.8`. |
 
 ## Architecture
 
@@ -156,12 +162,6 @@ src/
 │   ├── r/[id]/
 │   │   ├── page.tsx                   Adversarial review viewer (SSR)
 │   │   └── print/page.tsx             Review PDF/print view
-│   ├── admin/
-│   │   ├── page.tsx                   Login + unified analyses table + dashboard row
-│   │   ├── cache/page.tsx             Verdict cache viewer + invalidator
-│   │   ├── feedback/page.tsx          User "wrong verdict" queue (open/resolved/ignored/all)
-│   │   ├── metrics/page.tsx           Volume, verdict distribution, latency, cache stats
-│   │   └── settings/page.tsx          Runtime-tunable rate limits + cost caps
 │   └── api/
 │       ├── analyze/route.ts                            POST: fallacy SSE stream
 │       ├── analysis/[id]/route.ts                      GET: load a saved analysis
@@ -173,7 +173,7 @@ src/
 │       ├── explain/route.ts                            POST: explain SSE stream (paragraph + level)
 │       ├── slop/route.ts                               POST: slop-pattern SSE stream
 │       └── review/
-│           ├── route.ts                                POST: five-stage paper-review SSE stream
+│           ├── route.ts                                POST: nine-stage paper-review SSE stream
 │           ├── venues/route.ts                         GET: curated + DBLP venue autocomplete
 │           └── [id]/markdown/route.ts                  GET: deterministic Markdown export
 ├── components/
@@ -239,7 +239,7 @@ src/
         └── index.ts                   getProvider() + MODEL_CATALOG (🇺🇸 GPT, 🇨🇳 MiniMax)
 ```
 
-## Public API & MCP (for agents)
+## Public API & MCP
 
 Five text pipelines are exposed as a documented, **synchronous** REST API
 (request → JSON, no SSE). Adversarial paper review uses a persisted,
@@ -256,12 +256,12 @@ POST /api/v1/adversarial-reviews
 GET  /api/v1/adversarial-reviews/{id}
 ```
 
-Body is `{ "text": "…" }` (40–2000 chars) plus optional `lang` (`en`/`pt`/`es`) and, for explain, `level`. Authenticate with an `X-Jiddu-Key` header. Keys are **admin-issued** at `/admin/api-keys` (hashed, shown once) with per-key rate overrides; public limits are tuned via `rate.api*` in admin settings. `fact-check` extracts and verifies each claim via Sonar, capped by `api.maxClaims`.
+Body is `{ "text": "…" }` (40–2000 chars) plus optional `lang` (`en`/`pt`/`es`) and, for explain, `level`. Authenticate with an operator-issued `X-Jiddu-Key`; keys are stored as hashes, shown once and rate-limited independently. `fact-check` extracts and verifies each claim via Sonar, capped by `api.maxClaims`.
 
-- **Adversarial review API:** start a job with one multipart `file`, or JSON `{ "pdf_url": "https://…" }`. The `202` response includes the id and status URL. Poll `GET /api/v1/adversarial-reviews/{id}` until `status` is `complete` or `failed`. Complete jobs include the structured review plus viewer, Markdown and print/PDF URLs.
+- **Adversarial review API:** start a job with one multipart `file`, or JSON `{ "pdf_url": "https://…", "depth": "standard" }`. `depth` is `standard` or `deep`. The `202` response includes the id and status URL. Poll `GET /api/v1/adversarial-reviews/{id}` until `status` is `complete` or `failed`. Complete jobs include the structured review, public audit summary, source-verification metadata, and viewer/Markdown/print URLs.
 - **MCP server (remote, recommended):** a hosted MCP endpoint at `POST /api/mcp` (in-process, reuses the same pipeline) exposes five synchronous text tools plus `start_adversarial_review` and `get_adversarial_review`. Connect any MCP client by URL via the public [`mcp-remote`](https://www.npmjs.com/package/mcp-remote) bridge — nothing to install or publish. Config snippet on [`/api-access`](https://jiddu.app/api-access).
 - **MCP server (local):** the same tools also ship as a standalone package, [`packages/jiddu-mcp`](./packages/jiddu-mcp), for offline/dev use — run from source (`node dist/index.js`), not published to npm. Machine-oriented docs: [`packages/jiddu-mcp/AGENT.md`](./packages/jiddu-mcp/AGENT.md).
-- **Evals:** fixed test sets in [`evals/`](./evals) (15–16 inputs per tool). Run `JIDDU_API_KEY=<key> npx tsx evals/run-evals.ts`; published accuracy in [`evals/report.md`](./evals/report.md).
+- **Evals:** fixed test sets in [`evals/`](./evals), plus a 30-case balanced synthetic SPECS benchmark under [`evals/paper-review`](./evals/paper-review). GPT-5.4 mini and GPT-5.5 both detected 30/30 injected defects; GPT-5.5 returned 30.6% fewer, more consolidated findings. See the [benchmark report](./evals/paper-review/report.md). Run deterministic tests with `npm test`; the paid specialist benchmark is opt-in via `OPENROUTER_API_KEY=<key> npm run eval:paper-review`.
 
 ## API (internal SSE endpoints)
 
@@ -330,7 +330,7 @@ Per-claim refresh — bypasses cache, calls Sonar fresh, replaces just that clai
 
 ### `POST /api/factcheck/[id]/claim/[claimId]/feedback`
 
-User-side "this verdict is wrong" flag. Body: `{ reason?: string }` (capped at 1000 chars). Snapshots the current statement + verdict so the admin can review even if the verdict changes later. Lands in `/admin/feedback` with status `open`.
+User-side "this verdict is wrong" flag. Body: `{ reason?: string }` (capped at 1000 chars). Snapshots the current statement and verdict so the operator can review the report even if the verdict changes later. Reports enter a private moderation queue with status `open`.
 
 ### `POST /api/neutrality`
 
@@ -370,14 +370,14 @@ Same URL/text/file inputs and SSE event pattern as `/api/analyze`. Each `finding
 
 ### `POST /api/review` (web-app internal)
 
-Accepts `multipart/form-data` with exactly one `file` PDF. Optional fields: `lang`, `model`, `venueProfileId`, `venue`, `venueYear`, `venueTrack`, `paperType`, `reviewDate`. The PDF is parsed in LiteParse academic mode, rejected rather than truncated above 300,000 extracted characters, and up to six visually relevant pages are rendered for inspection.
+Accepts `multipart/form-data` with exactly one `file` PDF. Optional fields: `lang`, `model`, `reviewDepth` (`standard` or `deep`), `venueProfileId`, `venue`, `venueYear`, `venueTrack`, `paperType`, `reviewDate`. The PDF is parsed in LiteParse academic mode, rejected rather than truncated above 300,000 extracted characters, and up to six visually relevant pages are rendered for inspection.
 
 This long-running route streams:
 
 | Event       | Payload                                                                                                                |
 |-------------|------------------------------------------------------------------------------------------------------------------------|
-| `meta`      | `{ id, title, sourceRef, parser, pageCount, visualPageCount, model, venueTarget, venueProfileVerified, chunkCount: 5 }` |
-| `stage`     | `{ index, total: 5, name }`, where name is `ledger`, `research`, `synthesis`, `self_critique`, or `finalize`             |
+| `meta`      | `{ id, title, sourceRef, parser, pageCount, visualPageCount, model, venueTarget, venueProfileVerified, chunkCount: 9 }` |
+| `stage`     | `{ index, total: 9, name }`: `ledger`, `research`, `specs`, `verification`, `synthesis`, `self_critique`, `source_validation`, `quality_audit`, or `finalize` |
 | `chunkDone` | `{ index }`                                                                                                            |
 | `done`      | `{ id, recommendation, weaknessCount }`                                                                                |
 | `error`     | `{ error }`                                                                                                            |
@@ -409,38 +409,11 @@ Notes:
 
 Each individual finding has a binary severity (`low` / `high`). The 0–100 score is computed as a weighted average across chunks.
 
-## Production deploy
+## Deployment
 
-The app ships in a multi-stage Docker image (Next standalone output + Prisma CLI in a side directory for migrations). Production runs on Hostinger VPS behind Nginx Proxy Manager.
+Jiddu ships with a multi-stage [`Dockerfile`](./Dockerfile) and [`docker-compose.yml`](./docker-compose.yml). Configure the production environment, provide persistent storage for `DATABASE_URL`, and start the service with your Docker host or orchestration platform.
 
-### Stack on the VPS
-
-| Item             | Location                                                |
-|------------------|---------------------------------------------------------|
-| App files        | `/opt/jiddu/`                                            |
-| Production env   | `/opt/jiddu/.env` (chmod 600)                            |
-| Deploy script    | `/opt/deploy-jiddu.sh` (git pull → build → up)           |
-| Container        | `jiddu-app` (joined to `proxy-network`)                  |
-| Volume           | `jiddu_jiddu_data` mounted at `/app/data`                |
-| Proxy            | NPM proxy host → `http://jiddu-app:3000`                 |
-| SSL              | Let's Encrypt via NPM                                    |
-| SSE              | Custom nginx block in NPM advanced config — disables `proxy_buffering` on `/api/analyze` so findings stream in real time |
-
-### Deploy
-
-```
-bash scripts/deploy.sh  →  git push origin main  →  SSH into VPS  →  /opt/deploy-jiddu.sh
-```
-
-Deploys are triggered from your machine with `bash scripts/deploy.sh`: it refuses to run with uncommitted changes, pushes `main` to GitHub, SSHes into the VPS to run the deploy script, and health-checks the live site (with retry while the container boots). The SSH target defaults to the `jiddu-vps` host alias in `~/.ssh/config` (override with `JIDDU_SSH_HOST`).
-
-> Call the script directly with `bash` rather than `pnpm run deploy`. The pnpm alias exists, but `pnpm run` first verifies dependencies and may trigger an install — the script itself only needs git/ssh/curl, so `bash` is the robust path in any environment.
-
-This replaced the previous GitHub Actions workflow — the Actions runner is blocked from reaching the VPS on port 22, while SSH from a local machine works fine. The entrypoint (`docker-entrypoint.sh`) runs `prisma migrate deploy` and re-seeds the 3 demos (idempotent via `INSERT OR REPLACE`) on every container start.
-
-### First-time setup
-
-See the inline comments in `Dockerfile`, `docker-compose.yml`, `docker-entrypoint.sh`, and the deploy notes in the project memory.
+The container entrypoint applies Prisma migrations and seeds the public demos idempotently on startup. If a reverse proxy sits in front of Jiddu, disable response buffering for the SSE analysis routes so findings reach the browser as they are generated.
 
 ## License
 

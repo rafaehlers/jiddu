@@ -103,7 +103,7 @@ server.tool(
 
 server.tool(
   "start_adversarial_review",
-  "Start a persisted, five-stage adversarial review of one complete PDF available at a public URL. Returns a job id immediately; poll it with get_adversarial_review. The review audits claims and experiments, checks published prior work, applies an optional venue rubric, and produces localized weaknesses plus a recommendation.",
+  "Start a persisted adversarial review of one complete PDF available at a public URL. Independent SPECS specialists, deterministic checks, source validation, and a separate quality critic feed the final review. Returns a job id immediately; poll it with get_adversarial_review.",
   {
     pdf_url: z
       .string()
@@ -133,6 +133,12 @@ server.tool(
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/)
       .optional(),
+    depth: z
+      .enum(["standard", "deep"])
+      .optional()
+      .describe(
+        "Deep uses stronger reasoning and critic models and costs more. Defaults to standard.",
+      ),
   },
   async (input) =>
     toolResult("adversarial-reviews", {
@@ -144,6 +150,7 @@ server.tool(
       venue_track: input.venue_track,
       paper_type: input.paper_type,
       review_date: input.review_date,
+      depth: input.depth,
     }),
 );
 

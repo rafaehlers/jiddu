@@ -160,13 +160,18 @@ URLs are rejected. Optional inputs:
 - `paper_type`: `research` | `position` | `survey` | `dataset` | `theory` |
   `use-inspired` | `concept` | `negative-results`
 - `review_date`: `YYYY-MM-DD`
+- `depth`: `standard` (economical default) | `deep` (stronger reasoning and
+  independent critic models; slower and more expensive)
 
 The start response has `status: "running"`, a job `id`, the current `stage`,
 URLs, and `retry_after_seconds`. Wait that many seconds, then call
 `get_adversarial_review({ id })`. Continue while status is `running`; stop on
 `complete` or `failed`. A completed response includes `result` with stage
 findings, strengths, localized/severity-ranked weaknesses, author questions,
-publication path, recommendation and literature sources.
+publication path, recommendation, literature sources with validation metadata,
+and a public audit summary. The private workflow uses five independent SPECS
+specialists, deterministic arithmetic checks, an independent quality critic,
+and a retention gate before finalization.
 
 REST clients may alternatively upload a local file with multipart
 `POST /api/v1/adversarial-reviews` (`file=@paper.pdf`) and poll

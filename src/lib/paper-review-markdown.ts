@@ -62,6 +62,32 @@ ${
 
 `
     : "";
+  const audit = review.audit
+    ? `### Review Quality Audit
+
+- **Depth:** ${review.audit.depth}
+- **Independent specialist findings:** ${review.audit.specialistFindings} (${review.audit.retainedFindings} retained, ${review.audit.dismissedFindings} dismissed)
+- **Deterministic computation checks:** ${review.audit.computationChecks} (${review.audit.computationFailures} failed)
+- **Source validation:** ${review.audit.sourcesVerified} verified, ${review.audit.sourcesUnverified} unverified
+- **Independent critic:** ${review.audit.criticModel} (${review.audit.criticFlags} flags)
+
+${review.audit.methodology}
+
+`
+    : "";
+  const sources =
+    review.sources.length > 0
+      ? `### Published Literature Consulted
+
+${review.sources
+  .map(
+    (source) =>
+      `- [${source.title || source.url}](${source.url}) — ${source.verificationStatus ?? "not audited"}; ${source.publicationType ?? "unknown type"}`,
+  )
+  .join("\n")}
+
+`
+      : "";
 
   return `## AI Paper Review
 
@@ -71,6 +97,7 @@ ${
 **Review date:** ${review.reviewDate}
 
 ${venueStandard}
+${audit}
 ### Stage Findings
 
 **Story:** ${review.stageFindings.story}
@@ -105,6 +132,7 @@ ${publicationPath}
 
 **Recommendation:** ${review.recommendation}.
 
+${sources}
 *${PAPER_REVIEW_DISCLAIMER}*
 `;
 }

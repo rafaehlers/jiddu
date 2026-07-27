@@ -1,0 +1,989 @@
+[
+  {
+    "id": "S01",
+    "criterion": "story",
+    "title": "Undefined central construct",
+    "pass": true,
+    "requestedModel": "gpt-5.5",
+    "actualModel": "gpt-5.5",
+    "matchedTerms": [
+      "construct",
+      "define",
+      "operational"
+    ],
+    "findings": [
+      {
+        "id": "S1",
+        "criterion": "story",
+        "title": "Central construct is undefined and unoperationalized, so the explanatory story cannot be evaluated",
+        "body": "On p. 1, the manuscript states that it introduces \"alignment density\" as the central construct and claims that it explains reliability, but also states that the term is \"used throughout but never defined or operationalized.\" Because the main argument depends on this construct, the paper lacks a stable meaning for its core explanatory variable, does not specify the scope or unit of analysis of the claim, and gives no basis for assessing whether any later evidence would actually test the proposed relationship to reliability. This is a story-level failure of construct definition and chain of argument, not merely a presentation issue.",
+        "locations": [
+          "p. 1"
+        ],
+        "severity": "MAJOR",
+        "confidence": 0.99,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "S02",
+    "criterion": "story",
+    "title": "Scope changes mid-paper",
+    "pass": true,
+    "requestedModel": "gpt-5.5",
+    "actualModel": "gpt-5.5",
+    "matchedTerms": [
+      "scope",
+      "general",
+      "system"
+    ],
+    "findings": [
+      {
+        "id": "S1",
+        "criterion": "story",
+        "title": "Scope shifts from all clinical language models to all clinical AI systems on evidence from one English summarizer",
+        "body": "The manuscript frames the claim as covering \"all clinical language models\" on p. 1, but the described evaluation on p. 4 is only \"one English summarizer\" and the conclusion is that \"all clinical AI systems are safe.\" This is a major story and framing problem: the unit tested is narrower than the initial population, while the final conclusion is broader than both the tested system and the initial claim. No qualifier, sampling argument, construct bridge, or scope condition is provided in the excerpt to reconcile these levels of generality. As a result, the chain of argument cannot autonomously support the stated contribution.",
+        "locations": [
+          "p. 1",
+          "p. 4"
+        ],
+        "severity": "MAJOR",
+        "confidence": 0.99,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      },
+      {
+        "id": "S2",
+        "criterion": "story",
+        "title": "Key constructs are undefined, preventing evaluation of the framing and contribution",
+        "body": "The excerpt uses broad constructs—\"clinical language models,\" \"English summarizer,\" \"clinical AI systems,\" and \"safe\"—without defining their boundaries or relationships. Because the story depends on moving among these constructs, the absence of definitions makes it impossible to determine the intended scope, what property is being claimed, or what evidence would count as supporting or falsifying the claim. This is a clarity and autonomy problem within the story criterion, independent of any numerical evaluation.",
+        "locations": [
+          "p. 1",
+          "p. 4"
+        ],
+        "severity": "MODERATE",
+        "confidence": 0.95,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "S03",
+    "criterion": "story",
+    "title": "Motivation does not imply contribution",
+    "pass": true,
+    "requestedModel": "gpt-5.5",
+    "actualModel": "gpt-5.5",
+    "matchedTerms": [
+      "motivation",
+      "connect",
+      "argument"
+    ],
+    "findings": [
+      {
+        "id": "S1",
+        "criterion": "story",
+        "title": "Central motivation-to-contribution link is asserted rather than argued",
+        "body": "The paper's central story rests on the claim that because data centers use energy, a new tokenization algorithm is necessary. On p. 1, however, the manuscript explicitly provides no argument connecting tokenization choices to data-center energy consumption. As framed, the motivation does not entail the proposed contribution, so the problem statement does not establish why the claimed intervention addresses the stated problem.",
+        "locations": [
+          "p. 1"
+        ],
+        "severity": "MAJOR",
+        "confidence": 0.99,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      },
+      {
+        "id": "S2",
+        "criterion": "story",
+        "title": "Key constructs and scope of the claimed contribution are undefined",
+        "body": "The excerpt names broad constructs—data-center energy use, necessity, and a new tokenization algorithm—but does not define what aspect of energy use is in scope, what kind of tokenization algorithm is proposed, or what criterion would make such an algorithm necessary. This prevents the reader from identifying the scientific problem, the unit of contribution, or the conditions under which the claim would hold.",
+        "locations": [
+          "p. 1"
+        ],
+        "severity": "MODERATE",
+        "confidence": 0.96,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "S04",
+    "criterion": "story",
+    "title": "Non-autonomous submission",
+    "pass": true,
+    "requestedModel": "gpt-5.5",
+    "actualModel": "gpt-5.5",
+    "matchedTerms": [
+      "autonomous",
+      "companion"
+    ],
+    "findings": [
+      {
+        "id": "S1",
+        "criterion": "story",
+        "title": "Central contribution is explicitly non-autonomous",
+        "body": "The manuscript states that “The proof of our central theorem and full method specification appear only in our companion paper; we omit both here.” Because the proof and method specification are central to the claimed contribution (ledger claim C1), the submitted manuscript does not tell an autonomous scientific story: readers cannot assess what is being proposed, why the theorem follows, what the method consists of, or the scope of the contribution from this paper alone. Under a general scholarly pre-submission standard, a research paper must define and substantiate its central contribution within the submitted work rather than relying on an unavailable companion manuscript.",
+        "locations": [
+          "p. 2"
+        ],
+        "severity": "MAJOR",
+        "confidence": 0.99,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "S05",
+    "criterion": "story",
+    "title": "Hypothesis added after results",
+    "pass": true,
+    "requestedModel": "gpt-5.5",
+    "actualModel": "gpt-5.5",
+    "matchedTerms": [
+      "hypothesis",
+      "post hoc",
+      "result"
+    ],
+    "findings": [
+      {
+        "id": "S1",
+        "criterion": "story",
+        "title": "Hypothesis is explicitly post hoc and tailored to the observed winning condition",
+        "body": "On p. 3, the manuscript states, “After observing Table 2, we define the paper's hypothesis to match the winning condition.” This makes the hypothesis a result-contingent framing rather than a pre-specified or independently motivated scientific claim. As a story-level problem, it breaks the chain of argument from problem framing and construct definition to hypothesis and evaluation, because the central contribution (ledger claim C1) is defined by the observed outcome rather than by a prior theoretical or empirical rationale. Under a general scholarly pre-submission standard, the paper would need to distinguish an exploratory post hoc observation from a hypothesis tested by the reported results; as written, the excerpt presents the post hoc hypothesis as the paper’s central claim.",
+        "locations": [
+          "p. 3"
+        ],
+        "severity": "MAJOR",
+        "confidence": 0.99,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "S06",
+    "criterion": "story",
+    "title": "Contribution contradicts limitation",
+    "pass": true,
+    "requestedModel": "gpt-5.5",
+    "actualModel": "gpt-5.5",
+    "matchedTerms": [
+      "contradict",
+      "label",
+      "qualifier"
+    ],
+    "findings": [
+      {
+        "id": "S1",
+        "criterion": "story",
+        "title": "Central contribution conflicts with stated deployment requirement for expert labels",
+        "body": "The story frames the method as label-free on p. 1, stating that it “requires no labels,” but the limitation on p. 6 states that “every deployment requires 5,000 expert labels.” In the supplied manuscript text, there is no qualifier distinguishing training, calibration, evaluation, pretraining, or deployment-time use that would reconcile these statements. This contradiction undermines the problem framing, scope, and stated contribution: a method that requires 5,000 expert labels per deployment cannot simultaneously be presented, without qualification, as requiring no labels.",
+        "locations": [
+          "p. 1",
+          "p. 6"
+        ],
+        "severity": "MAJOR",
+        "confidence": 0.98,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "P01",
+    "criterion": "presentation",
+    "title": "Missing architecture",
+    "pass": true,
+    "requestedModel": "gpt-5.5",
+    "actualModel": "gpt-5.5",
+    "matchedTerms": [
+      "architecture",
+      "diagram",
+      "specification"
+    ],
+    "findings": [
+      {
+        "id": "P1",
+        "criterion": "presentation",
+        "title": "Main architectural contribution is not presented in inspectable form",
+        "body": "The excerpt states that the novel multi-stage architecture is the main contribution while also saying that no diagram, algorithm, component list, or interface specification is provided. For a paper whose contribution is an architecture, these are core presentation elements: readers need at least the stages/components, their ordering, data/control interfaces, and an inspectable representation such as a figure, pseudocode, or schema. Without them, the prose does not provide visual or structural evidence sufficient to support claim C1 or to permit evaluation of the contribution.",
+        "locations": [
+          "p. 3"
+        ],
+        "severity": "MAJOR",
+        "confidence": 0.99,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "P02",
+    "criterion": "presentation",
+    "title": "Unreadable table",
+    "pass": true,
+    "requestedModel": "gpt-5.5",
+    "actualModel": "gpt-5.5",
+    "matchedTerms": [
+      "table",
+      "unit",
+      "abbreviation"
+    ],
+    "findings": [
+      {
+        "id": "P1",
+        "criterion": "presentation",
+        "title": "Principal results table lacks units, abbreviation definitions, and explanation of boldface",
+        "body": "On p. 5, the manuscript states that Table 2 contains the principal results, but the table columns have no units, abbreviations are undefined, and boldface is not explained. Because this is the principal results table, these omissions make the reported quantities and visual emphasis ambiguous and prevent readers from determining what is being measured or why particular entries are highlighted. This presentation problem directly affects interpretability of the main evidence for ledger claim C1.",
+        "locations": [
+          "p. 5, Table 2"
+        ],
+        "severity": "MAJOR",
+        "confidence": 0.99,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "P03",
+    "criterion": "presentation",
+    "title": "Figure contradicts caption",
+    "pass": true,
+    "requestedModel": "gpt-5.5",
+    "actualModel": "gpt-5.5",
+    "matchedTerms": [
+      "figure",
+      "caption",
+      "contradict"
+    ],
+    "findings": [
+      {
+        "id": "P1",
+        "criterion": "presentation",
+        "title": "Figure trend contradicts its caption",
+        "body": "On p. 4, the manuscript states that Figure 1 visually rises from 20 to 40, while the caption says performance decreases from 40 to 20. This is a direct inconsistency between visual evidence and caption/prose, so the reported direction of the result is ambiguous and the figure cannot reliably support the surrounding claim without correction.",
+        "locations": [
+          "p. 4, Figure 1 and caption"
+        ],
+        "severity": "MODERATE",
+        "confidence": 0.99,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "P04",
+    "criterion": "presentation",
+    "title": "Irreproducible method prose",
+    "pass": true,
+    "requestedModel": "gpt-5.5",
+    "actualModel": "gpt-5.5",
+    "matchedTerms": [
+      "reproduc",
+      "parameter",
+      "method"
+    ],
+    "findings": [
+      {
+        "id": "P1",
+        "criterion": "presentation",
+        "title": "Method description uses evaluative terms instead of reproducible procedural detail",
+        "body": "On p. 3, the manuscript states that the authors “clean the data appropriately” and “tune the model carefully,” then notes that no rules, parameters, versions, or pseudocode are given. This presentation is too imprecise for scholarly review: key terms such as “appropriately” and “carefully” are not operationalized, and the absence of cleaning rules, tuning parameters, software/model versions, or algorithmic/pseudocode detail prevents a reader from reconstructing what was done or assessing whether the prose supports the claimed method.",
+        "locations": [
+          "p. 3"
+        ],
+        "severity": "MAJOR",
+        "confidence": 0.99,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "P05",
+    "criterion": "presentation",
+    "title": "Terminology collision",
+    "pass": true,
+    "requestedModel": "gpt-5.5",
+    "actualModel": "gpt-5.5",
+    "matchedTerms": [
+      "accuracy",
+      "definition"
+    ],
+    "findings": [
+      {
+        "id": "P1",
+        "criterion": "presentation",
+        "title": "The term “Accuracy” is used for two different metrics without disambiguation",
+        "body": "The manuscript excerpt defines “Accuracy” on page 2 as exact-match rate, but page 5 defines “Accuracy” as the average human preference score. No explicit qualifier is supplied in the excerpt to reconcile these definitions, so the same term appears to denote two distinct constructs. This is a presentation problem because readers cannot reliably interpret reported results or compare claims unless the metric names are made precise, e.g., by distinguishing exact-match accuracy from human-preference score. This concerns ledger claim C1.",
+        "locations": [
+          "p. 2",
+          "p. 5"
+        ],
+        "severity": "MAJOR",
+        "confidence": 0.98,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "P06",
+    "criterion": "presentation",
+    "title": "Results only in prose",
+    "pass": true,
+    "requestedModel": "gpt-5.5",
+    "actualModel": "gpt-5.5",
+    "matchedTerms": [
+      "table",
+      "uncertainty",
+      "result"
+    ],
+    "findings": [
+      {
+        "id": "P1",
+        "criterion": "presentation",
+        "title": "Dense prose replaces structured reporting for many comparisons",
+        "body": "Page 6 states that dozens of model-by-dataset comparisons are reported only in a dense paragraph, without a table. For a results section containing many pairwise or cross-factor comparisons, prose-only presentation makes the organization and precision of the evidence inadequate: readers cannot readily scan which models were compared on which datasets, identify missing cells, or verify whether the prose supports each comparison. This issue directly concerns ledger claim C1.",
+        "locations": [
+          "p. 6"
+        ],
+        "severity": "MODERATE",
+        "confidence": 0.98,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      },
+      {
+        "id": "P2",
+        "criterion": "presentation",
+        "title": "Results lack uncertainty and sample-count information needed for interpretable visual or tabular evidence",
+        "body": "Page 6 says the reported comparisons omit uncertainty and sample counts. Even as a presentation issue, this leaves the result statements under-specified: readers cannot tell how stable the reported comparisons are, how much evidence underlies each model-by-dataset result, or whether apparent differences are meaningfully distinguishable. The manuscript therefore lacks the basic contextual annotations that should accompany multi-result reporting. This issue directly concerns ledger claim C1.",
+        "locations": [
+          "p. 6"
+        ],
+        "severity": "MODERATE",
+        "confidence": 0.98,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "E01",
+    "criterion": "evaluations",
+    "title": "No competitive baseline",
+    "pass": true,
+    "requestedModel": "gpt-5.5",
+    "actualModel": "gpt-5.5",
+    "matchedTerms": [
+      "baseline",
+      "competitive",
+      "comparison"
+    ],
+    "findings": [
+      {
+        "id": "E1",
+        "criterion": "evaluations",
+        "title": "Evaluation uses only a random classifier despite acknowledged competitive baselines",
+        "body": "On p. 5, the manuscript states that the proposed model is compared only with a random classifier while also acknowledging that the task has established competitive baselines. Under a general scholarly standard, this control is too weak to falsify any claim of practical or research-relevant model quality: outperforming a random classifier would not show competitiveness against the known task baselines, and failing to include those baselines leaves the central comparison unsupported. This directly affects ledger claim C1.",
+        "locations": [
+          "p. 5"
+        ],
+        "severity": "MAJOR",
+        "confidence": 0.99,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "E02",
+    "criterion": "evaluations",
+    "title": "Train-test leakage",
+    "pass": true,
+    "requestedModel": "gpt-5.5",
+    "actualModel": "gpt-5.5",
+    "matchedTerms": [
+      "leak",
+      "test",
+      "tune"
+    ],
+    "findings": [
+      {
+        "id": "E1",
+        "criterion": "evaluations",
+        "title": "Evaluation uses the test answers for prompt tuning, causing direct train-test leakage",
+        "body": "The manuscript states: “We tune prompts on the test answers and report accuracy on the same test set” (p. 4). This makes the test set part of the optimization procedure, so the resulting accuracy is not an independent held-out evaluation. Under a general scholarly standard, the design cannot support claims about generalization or true task performance; it primarily measures performance after exposure to the evaluation labels. A valid evaluation would need a separate development/tuning set and an untouched test set, or another leakage-free protocol. This directly affects ledger claim C1.",
+        "locations": [
+          "p. 4"
+        ],
+        "severity": "MAJOR",
+        "confidence": 1,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "E03",
+    "criterion": "evaluations",
+    "title": "No ablation",
+    "pass": true,
+    "requestedModel": "gpt-5.5",
+    "actualModel": "gpt-5.5",
+    "matchedTerms": [
+      "ablation",
+      "module",
+      "attribut"
+    ],
+    "findings": [
+      {
+        "id": "E1",
+        "criterion": "evaluations",
+        "title": "No ablation or factorial control isolates the three claimed module contributions",
+        "body": "The manuscript attributes the observed gain to three new modules, but states that only the full system is evaluated. Without ablations, factorial arms, or other controls that remove or vary each module, the evaluation can at most show performance of the integrated system; it cannot support the attribution of the gain to the individual modules or distinguish whether the improvement comes from one module, interactions among modules, implementation changes, or unrelated confounders.",
+        "locations": [
+          "p. 5"
+        ],
+        "severity": "MAJOR",
+        "confidence": 0.98,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "E04",
+    "criterion": "evaluations",
+    "title": "No uncertainty",
+    "pass": true,
+    "requestedModel": "gpt-5.5",
+    "actualModel": "gpt-5.5",
+    "matchedTerms": [
+      "uncertainty",
+      "variance",
+      "seed"
+    ],
+    "findings": [
+      {
+        "id": "E1",
+        "criterion": "evaluations",
+        "title": "Averaging over five seeds without any uncertainty or significance reporting makes the experimental comparisons hard to interpret",
+        "body": "On p. 6, the manuscript says results are averages over five seeds, but provides no variance, confidence interval, per-seed values, or statistical test. Without dispersion or uncertainty estimates, readers cannot judge whether differences between arms/baselines are robust across seeds, whether observed improvements are larger than run-to-run variability, or whether the experiments can falsify performance claims rather than merely report point estimates. This directly affects ledger claim C1.",
+        "locations": [
+          "p. 6"
+        ],
+        "severity": "MODERATE",
+        "confidence": 0.99,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "E05",
+    "criterion": "evaluations",
+    "title": "Metric misses the claim",
+    "pass": true,
+    "requestedModel": "gpt-5.5",
+    "actualModel": "gpt-5.5",
+    "matchedTerms": [
+      "metric",
+      "hallucination"
+    ],
+    "findings": [
+      {
+        "id": "E1",
+        "criterion": "evaluations",
+        "title": "Evaluation metric does not operationalize or falsify the hallucination claim",
+        "body": "The paper claims reduced hallucination on p. 1, but the only reported metric is response length on p. 6. Response length is not, by itself, an evaluation of factuality, unsupported content, contradiction, attribution quality, or any other hallucination construct. As a result, the experiment could show shorter or longer outputs without testing whether hallucinations were reduced, so the central claim C1 is not empirically falsifiable by the reported evaluation.",
+        "locations": [
+          "p. 1",
+          "p. 6"
+        ],
+        "severity": "MAJOR",
+        "confidence": 0.99,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "E06",
+    "criterion": "evaluations",
+    "title": "Single-domain overgeneralization",
+    "pass": true,
+    "requestedModel": "gpt-5.5",
+    "actualModel": "gpt-5.5",
+    "matchedTerms": [
+      "domain",
+      "language"
+    ],
+    "findings": [
+      {
+        "id": "E1",
+        "criterion": "evaluations",
+        "title": "Single English-news dataset cannot support universal cross-language and cross-domain robustness claim",
+        "body": "Page 5 states that only one English news dataset is evaluated, yet the conclusion claims universal robustness across languages and domains. This evaluation design lacks dataset, language, and domain variation, so it cannot falsify failures on non-English languages or non-news domains. The evidence therefore does not test the scope of ledger claim C1.",
+        "locations": [
+          "p. 5"
+        ],
+        "severity": "MAJOR",
+        "confidence": 0.99,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "C01",
+    "criterion": "correctness",
+    "title": "Incorrect percentage",
+    "pass": true,
+    "requestedModel": "gpt-5.5",
+    "actualModel": "gpt-5.5",
+    "matchedTerms": [
+      "80"
+    ],
+    "findings": [
+      {
+        "id": "C1",
+        "criterion": "correctness",
+        "title": "Reported accuracy does not match the printed numerator and denominator",
+        "body": "On manuscript p. 5, the paper states that the system answers 80 of 100 items correctly and reports this as 72% accuracy. Using the stated operands, accuracy is 80/100 × 100 = 80%, so the printed 72% value is arithmetically incorrect. This directly affects ledger claim C1.",
+        "locations": [
+          "p. 5"
+        ],
+        "severity": "MODERATE",
+        "confidence": 1,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "C02",
+    "criterion": "correctness",
+    "title": "Causation from correlation",
+    "pass": true,
+    "requestedModel": "gpt-5.5",
+    "actualModel": "gpt-5.5",
+    "matchedTerms": [
+      "caus",
+      "correl",
+      "observ"
+    ],
+    "findings": [
+      {
+        "id": "C1",
+        "criterion": "correctness",
+        "title": "Observational correlation is asserted to prove causation",
+        "body": "On p. 6, the manuscript states that latency and user satisfaction correlate at r=.31 in an observational log and that this proves latency causes satisfaction (ledger claim C1). This is a logical validity failure: an observational correlation alone is compatible with reverse causation, confounding, selection effects, measurement artifacts, or common causes, and the excerpt provides no causal identification strategy or assumptions under which the causal conclusion would follow. Therefore the conclusion exceeds the evidence provided.",
+        "locations": [
+          "p. 6"
+        ],
+        "severity": "MAJOR",
+        "confidence": 0.99,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "C03",
+    "criterion": "correctness",
+    "title": "Denominator changes",
+    "pass": true,
+    "requestedModel": "gpt-5.5",
+    "actualModel": "gpt-5.5",
+    "matchedTerms": [
+      "denominator",
+      "rate",
+      "80"
+    ],
+    "findings": [
+      {
+        "id": "C1",
+        "criterion": "correctness",
+        "title": "Table 2 reverses the success-rate comparison after changing denominators",
+        "body": "On manuscript p. 5, Table 2 reportedly compares 40 successes out of 50 with 60 successes out of 100 and calls the latter rate higher. This conclusion is arithmetically false if the metric is success rate: 40/50 = 80%, while 60/100 = 60%. The latter has more raw successes but a lower rate, so the stated rate comparison confuses counts with normalized proportions. This directly invalidates ledger claim C1 as written.",
+        "locations": [
+          "p. 5, Table 2"
+        ],
+        "severity": "MAJOR",
+        "confidence": 1,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "C04",
+    "criterion": "correctness",
+    "title": "Conclusion reverses result",
+    "pass": true,
+    "requestedModel": "gpt-5.5",
+    "actualModel": "gpt-5.5",
+    "matchedTerms": [
+      "increase",
+      "conclusion"
+    ],
+    "findings": [
+      {
+        "id": "C1",
+        "criterion": "correctness",
+        "title": "Conclusion reverses the reported error direction",
+        "body": "The manuscript reports that error increases from 10% to 18% on p. 5, but concludes on p. 7 that the method reduces error. With no qualifier or alternate denominator in the supplied excerpt, the conclusion does not follow from the stated result and reverses the direction of the quantitative evidence. The printed operands imply an 8 percentage-point absolute increase, not a reduction.",
+        "locations": [
+          "p. 5",
+          "p. 7"
+        ],
+        "severity": "MAJOR",
+        "confidence": 0.99,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "C05",
+    "criterion": "correctness",
+    "title": "Necessary treated as sufficient",
+    "pass": true,
+    "requestedModel": "gpt-5.5",
+    "actualModel": "gpt-5.5",
+    "matchedTerms": [
+      "necessary",
+      "sufficient",
+      "logic"
+    ],
+    "findings": [
+      {
+        "id": "C1",
+        "criterion": "correctness",
+        "title": "Necessary condition is incorrectly treated as sufficient",
+        "body": "On p. 2, the manuscript states that “Encryption is necessary for this guarantee” and then concludes that “adding encryption alone is sufficient to guarantee privacy.” This conclusion does not follow logically: necessity of encryption only establishes that the guarantee cannot hold without encryption, not that encryption by itself ensures privacy. Additional conditions may be required. This directly affects ledger claim C1 and the central contribution as stated.",
+        "locations": [
+          "p. 2"
+        ],
+        "severity": "MAJOR",
+        "confidence": 0.99,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "C06",
+    "criterion": "correctness",
+    "title": "Unsupported theorem step",
+    "pass": true,
+    "requestedModel": "gpt-5.5",
+    "actualModel": "gpt-5.5",
+    "matchedTerms": [
+      "proof",
+      "assumption",
+      "guarantee"
+    ],
+    "findings": [
+      {
+        "id": "C1",
+        "criterion": "correctness",
+        "title": "Unsupported inference from bounded expectation to almost-sure guarantee",
+        "body": "On p. 4, the manuscript's proof is described as moving from a bounded expectation to an almost-sure guarantee without supplying an assumption or theorem that licenses this step. A bound on expectation alone does not imply an almost-sure bound or guarantee; additional conditions or a concentration/Markov/Borel-Cantelli-type argument with the appropriate premises would be needed, depending on the intended statement. As written, the almost-sure conclusion does not follow from the stated evidence. This directly concerns ledger claim C1.",
+        "locations": [
+          "p. 4"
+        ],
+        "severity": "MAJOR",
+        "confidence": 0.99,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "G01",
+    "criterion": "significance",
+    "title": "Novelty by renaming",
+    "pass": true,
+    "requestedModel": "gpt-5.5",
+    "actualModel": "gpt-5.5",
+    "matchedTerms": [
+      "rename",
+      "prior"
+    ],
+    "findings": [
+      {
+        "id": "G1",
+        "criterion": "significance",
+        "title": "Renaming an unchanged RAG procedure does not establish a significant contribution",
+        "body": "The sole contribution explicitly says that standard retrieval-augmented generation is renamed as “contextual memory injection” and that “the procedure is otherwise unchanged.” Because the manuscript asserts no new method, theory, empirical result, task setting, implementation capability, or practical advantage, it does not show scientific or practical impact beyond relabeling existing work. This also fails to differentiate the contribution from the closest published prior work on retrieval-augmented generation, since the paper’s own claim concedes procedural equivalence. This directly undermines the manuscript’s fit with a general research-paper standard requiring originality and significance beyond a narrow or cosmetic change.",
+        "locations": [
+          "p. 1"
+        ],
+        "severity": "MAJOR",
+        "confidence": 0.99,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "G02",
+    "criterion": "significance",
+    "title": "No closest-work comparison",
+    "pass": true,
+    "requestedModel": "gpt-5.5",
+    "actualModel": "gpt-5.5",
+    "matchedTerms": [
+      "closest",
+      "prior",
+      "compare"
+    ],
+    "findings": [
+      {
+        "id": "G1",
+        "criterion": "significance",
+        "title": "Novelty and impact are not established against the closest published prior work",
+        "body": "On p. 2, the manuscript states that the related work lists broad surveys but never identifies or compares the closest method. Without a precise closest-work comparison, the paper does not substantiate that its contribution is original, non-incremental, or important beyond existing methods. This is a significance problem because practical or scientific impact cannot be judged from survey-level positioning alone; the manuscript must distinguish its claimed contribution from the most relevant published prior work rather than relying on broad background citations.",
+        "locations": [
+          "p. 2"
+        ],
+        "severity": "MAJOR",
+        "confidence": 0.98,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "G03",
+    "criterion": "significance",
+    "title": "Trivial improvement",
+    "pass": true,
+    "requestedModel": "gpt-5.5",
+    "actualModel": "gpt-5.5",
+    "matchedTerms": [
+      "significance",
+      "trivial",
+      "compute"
+    ],
+    "findings": [
+      {
+        "id": "G1",
+        "criterion": "significance",
+        "title": "Claimed gain is too small and costly to establish practical or scientific significance",
+        "body": "On p. 6, the only stated empirical improvement is an accuracy increase from 91.20% to 91.21% while using triple the compute (ledger claim C1). The manuscript excerpt gives no uncertainty estimate, no statistical or practical significance argument, and no downstream consequence showing that a 0.01 percentage-point gain offsets a 3x compute cost. As written, the result does not demonstrate impact beyond a trivial implementation-level change under a general scholarly standard.",
+        "locations": [
+          "p. 6"
+        ],
+        "severity": "MAJOR",
+        "confidence": 0.98,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "G04",
+    "criterion": "significance",
+    "title": "Combination novelty unsupported",
+    "pass": true,
+    "requestedModel": "gpt-5.5",
+    "actualModel": "gpt-5.5",
+    "matchedTerms": [
+      "combination",
+      "non-obvious",
+      "novel"
+    ],
+    "findings": [
+      {
+        "id": "G1",
+        "criterion": "significance",
+        "title": "Novelty and significance are unsupported because the contribution is only an asserted combination of standard components",
+        "body": "On p. 1, the paper’s stated contribution is only that it combines two standard components, while also providing no argument for a non-obvious interaction or effect. This directly affects ledger claim C1: a combination can be significant, but the manuscript must explain why the integration changes capability, theory, practice, or empirical outcomes beyond juxtaposing known parts. As written, the work is not differentiated from closest published prior work and its importance beyond a narrow implementation detail is not established.",
+        "locations": [
+          "p. 1"
+        ],
+        "severity": "MAJOR",
+        "confidence": 0.97,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "G05",
+    "criterion": "significance",
+    "title": "Venue fit unsubstantiated",
+    "pass": true,
+    "requestedModel": "gpt-5.5",
+    "actualModel": "gpt-5.5",
+    "matchedTerms": [
+      "venue",
+      "fit"
+    ],
+    "findings": [
+      {
+        "id": "G1",
+        "criterion": "significance",
+        "title": "Venue fit and significance are asserted solely from AI popularity rather than a substantive research contribution",
+        "body": "On p. 1, the manuscript states that a systems venue should accept the paper because AI is popular, while also acknowledging that no systems research question or artifact is presented. Popularity of a topic does not establish scientific or practical importance, and the absence of a systems research question or artifact prevents the paper from showing impact or fit for a systems-oriented research venue under a general scholarly standard. This directly affects ledger claim C1.",
+        "locations": [
+          "p. 1"
+        ],
+        "severity": "MAJOR",
+        "confidence": 0.99,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      },
+      {
+        "id": "G2",
+        "criterion": "significance",
+        "title": "No differentiation from closest published prior work is provided",
+        "body": "The manuscript excerpt on p. 1 contains no comparison to any published prior work, nor does it identify a precise technical, empirical, conceptual, or practical contribution. As a result, novelty and significance cannot be established against the closest published literature. This is not a matter of missing citation polish: without a defined contribution, the manuscript cannot show that it advances research or practice beyond existing work. This concerns ledger claim C1.",
+        "locations": [
+          "p. 1"
+        ],
+        "severity": "MAJOR",
+        "confidence": 0.98,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "G06",
+    "criterion": "significance",
+    "title": "Impact claim lacks pathway",
+    "pass": true,
+    "requestedModel": "gpt-5.5",
+    "actualModel": "gpt-5.5",
+    "matchedTerms": [
+      "impact",
+      "clinical",
+      "pathway"
+    ],
+    "findings": [
+      {
+        "id": "G1",
+        "criterion": "significance",
+        "title": "Transformative hospital-practice impact is asserted without a credible pathway from toy simulation to practice",
+        "body": "On p. 7, the manuscript claims that a toy simulation will transform hospital practice while explicitly noting the absence of clinical data, deployment analysis, or a transfer argument. This does not establish practical or scientific importance beyond the simulation setting: there is no evidence that the simulated setting corresponds to hospital workflows, no mechanism by which results would transfer to clinical deployment, and no analysis of adoption constraints or patient-care consequences. The claimed significance therefore rests on assertion rather than an evidenced impact pathway.",
+        "locations": [
+          "p. 7"
+        ],
+        "severity": "MAJOR",
+        "confidence": 0.99,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  }
+]

@@ -86,6 +86,7 @@ A peça mais pesada que sobrou do roadmap original. Híbrido: classifier por cla
 
 Pra referência rápida de o que já entrou. Vá movendo pra cima quando entrar item novo.
 
+- ✅ **Revisão adversarial SPECS profunda**: cinco especialistas independentes, recálculo aritmético seguro, validação SSRF-protegida de fontes, autocrítica + crítico de outro modelo, gate de retenção MAJOR/MODERATE, modos Standard/Deep (GPT-5.5 + Claude Opus 4.8 configuráveis), auditoria pública, persistência privada, API/MCP e benchmark sintético balanceado de 30 casos.
 - ✅ **API pública para agentes** (era P3 "API key access"): REST API v1 (`/api/v1/detect-fallacies|fact-check|assess-neutrality|explain`) com API keys admin-issued (`/admin/api-keys`, header `X-Jiddu-Key`) + rate-limit por key; MCP server (remoto in-process em `/api/mcp` via mcp-remote, + pacote local `packages/jiddu-mcp`); evals (`evals/report.md`); `AGENT.md`; página `/api-access` (3 línguas).
 - ✅ De-hifenização de PDF no ingest — junta palavras quebradas por hífen no fim de linha ("self-\nreferent" → "selfreferent"); afeta os 4 pipelines.
 - ✅ Fix de upload de PDF em produção (Node 22): `@napi-rs/canvas` polyfilla DOMMatrix + worker do pdfjs no trace do standalone.

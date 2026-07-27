@@ -215,6 +215,10 @@ export type Messages = {
   review_venue_verified: string;
   review_venue_catalog_only: string;
   review_venue_year: string;
+  review_depth: string;
+  review_depth_standard: string;
+  review_depth_deep: string;
+  review_depth_help: string;
   review_track: string;
   review_track_placeholder: string;
   review_paper_type: string;
@@ -668,8 +672,12 @@ const en: Messages = {
     "Parsing the complete paper",
     "Building the private claim ledger",
     "Checking published prior work",
-    "Auditing story, evidence and correctness",
+    "Running five independent SPECS reviews",
+    "Recalculating reported results",
+    "Synthesizing the specialist findings",
     "Running the adversarial self-critique",
+    "Validating external sources",
+    "Running the independent quality audit",
     "Finalizing the review",
   ],
   review_venue: "Target venue (optional)",
@@ -679,6 +687,11 @@ const en: Messages = {
   review_venue_verified: "Verified rubric",
   review_venue_catalog_only: "Catalog match · general rubric",
   review_venue_year: "Edition",
+  review_depth: "Review depth",
+  review_depth_standard: "Standard",
+  review_depth_deep: "Deep",
+  review_depth_help:
+    "Deep uses stronger reasoning models for evaluations, correctness, synthesis, and an independent critic. It takes longer and costs more.",
   review_track: "Track",
   review_track_placeholder: "Main track",
   review_paper_type: "Paper type",
@@ -714,9 +727,9 @@ const en: Messages = {
     {
       title: "Adversarial paper review",
       paragraphs: [
-        "Adversarial review uses a persisted asynchronous job contract. Start with multipart `POST /api/v1/adversarial-reviews` and one `file`, or JSON with a public `pdf_url`. The `202` response returns an id, a status URL and `retry_after_seconds`; poll `GET /api/v1/adversarial-reviews/{id}` until `status` is `complete` or `failed`.",
-        "```\ncurl -X POST https://jiddu.app/api/v1/adversarial-reviews \\\n  -H \"X-Jiddu-Key: YOUR_KEY\" \\\n  -F \"file=@paper.pdf\" \\\n  -F \"lang=en\" \\\n  -F \"venue_profile_id=neurips-2026-main\"\n\ncurl -H \"X-Jiddu-Key: YOUR_KEY\" \\\n  https://jiddu.app/api/v1/adversarial-reviews/JOB_ID\n```",
-        "A completed job returns the structured review and links to its viewer, deterministic Markdown, and print/PDF view. Optional fields are `lang`, `venue_profile_id`, `venue`, `venue_year`, `venue_track`, `paper_type`, and `review_date`. PDFs are capped at 25 MB and 300,000 extracted characters.",
+        "Adversarial review uses a persisted asynchronous job contract. Start with multipart `POST /api/v1/adversarial-reviews` and one `file`, or JSON with a public `pdf_url`. Choose `depth=standard` for the economical pipeline or `depth=deep` for stronger reasoning and critic models. The `202` response returns an id, a status URL and `retry_after_seconds`; poll `GET /api/v1/adversarial-reviews/{id}` until `status` is `complete` or `failed`.",
+        "```\ncurl -X POST https://jiddu.app/api/v1/adversarial-reviews \\\n  -H \"X-Jiddu-Key: YOUR_KEY\" \\\n  -F \"file=@paper.pdf\" \\\n  -F \"lang=en\" \\\n  -F \"depth=deep\" \\\n  -F \"venue_profile_id=neurips-2026-main\"\n\ncurl -H \"X-Jiddu-Key: YOUR_KEY\" \\\n  https://jiddu.app/api/v1/adversarial-reviews/JOB_ID\n```",
+        "A completed job returns the structured review, a public methodology audit and source-verification metadata, plus links to its viewer, deterministic Markdown, and print/PDF view. Optional fields are `lang`, `depth`, `venue_profile_id`, `venue`, `venue_year`, `venue_track`, `paper_type`, and `review_date`. PDFs are capped at 25 MB and 300,000 extracted characters.",
       ],
     },
     {
@@ -782,20 +795,20 @@ const en: Messages = {
   print_footer_slop:
     "This is an automated report. It flags writing patterns, never authorship — humans write slop too, and the labels may be wrong. Read the quoted passages and judge for yourself. See https://jiddu.app/legal for the full terms.",
   print_generated_at: (when) => `Generated ${when} · jiddu.app`,
-  legal_title: "Terms and disclaimers",
+  legal_title: "Terms, privacy and disclaimers",
   legal_subtitle:
     "Read this before using Jiddu, especially before sharing an analysis publicly.",
-  legal_last_updated: "Last updated: 2026-07-26",
+  legal_last_updated: "Last updated: 2026-07-27",
   legal_sections: [
     {
       title: "1. What Jiddu does",
       paragraphs: [
-        "Jiddu is an automated tool. It uses large language models (currently routed through OpenRouter to OpenAI, Anthropic, MiniMax and Perplexity Sonar) to (a) flag passages that may contain logical fallacies, (b) extract verifiable factual claims and offer a verdict based on a web search, (c) assess how neutral or biased a text is, (d) explain a document paragraph by paragraph at a chosen reading level, (e) flag AI-slop writing patterns (templates and stock phrasing — never a claim about authorship), and (f) produce an adversarial, venue-calibrated pre-submission review of one complete paper. All six workflows are available through the web app, public API and MCP; paper review uses an asynchronous persisted-job contract.",
-        "Jiddu does not employ human editors. Every output you see is produced by software. The tool is meant to assist critical reading — not to replace it.",
+        "Jiddu provides six automated workflows for critical reading: fallacy detection, fact-checking, neutrality assessment, paper explanation, writing-pattern detection and adversarial paper review. The web app, public API and MCP use the same underlying pipelines; paper review runs as an asynchronous job because it has multiple stages.",
+        "Jiddu has no human editorial team. Software produces every analysis. A result marked as reviewed received an operator spot-check, but the report itself remains automated. Use it to support critical reading, not replace it.",
       ],
     },
     {
-      title: "2. No claim of truth",
+      title: "2. Automated output can be wrong",
       paragraphs: [
         "The verdicts (\"supported\", \"contradicted\", \"mixed\", \"unverified\") and the fallacy labels are best-effort automated judgements. They can be wrong — sometimes confidently wrong.",
         "Jiddu does not assert that any statement, person, or document is true, false, lying, or deceitful. The labels are signals to prompt your own verification. Always read the cited sources and form your own conclusion.",
@@ -815,13 +828,13 @@ const en: Messages = {
       title: "4. Persons and public figures",
       paragraphs: [
         "Analyses about named persons (politicians, journalists, executives) are produced by software searching public web sources. The language Jiddu uses is intentionally cautious (\"evidence does not support\", \"we could not find\") — never adopt a stronger framing than the tool emits.",
-        "If you believe a verdict is unfair or unsupported, use the \"report wrong verdict\" button on the relevant claim. Repeated unfair flags against the same person may be removed at the operator's discretion.",
+        "If you believe a verdict is unfair or unsupported, use the \"report wrong verdict\" button on the relevant claim. The operator reviews submitted reports; abusive or repetitive reports may be discarded.",
       ],
     },
     {
       title: "5. Privacy",
       paragraphs: [
-        "Each analysis or paper review is assigned a short id and stored on a server in Brazil. Anyone with the share URL can view the final result. There are no user accounts; private intermediate review stages are not exposed in the public viewer.",
+        "Each completed analysis or paper review receives an unlisted share URL and is stored on a server in Brazil. Anyone with the URL can view the final result, but these pages are not enumerated in the public sitemap. There are no user accounts; private intermediate review stages are not exposed in the public viewer.",
         "Venue autocomplete sends only the venue query — not the manuscript — to the public [DBLP](https://dblp.org) venue search. The literature-research stage searches public scholarly sources using technical claims from the manuscript; prompts prohibit searching by paper title, author name or other manuscripts by the same authors.",
         "We log the request IP for rate-limiting and abuse detection. We do not sell or share that information.",
         "Page traffic is measured via Google Analytics (gtag.js).",
@@ -831,9 +844,11 @@ const en: Messages = {
       title: "6. Methodology",
       paragraphs: [
         "Our claim extraction and verification pipeline is inspired by [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson, MSR 2025) for the extraction stage, and by the evaluation framework described in [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) (Goldfarb, Hall, Fisher, Salam, Wilde — Forum AI / Stanford, 2025) for the verdict assessment, source-quality tiers and neutrality dimension. Our choice of 4 verdict classes (supported / contradicted / mixed / unverified) rather than the 5- or 6-class schemes used by some fact-checking outlets is informed by [Sahitaj et al. 2025](https://arxiv.org/abs/2502.08909), who found that 3-class labeling outperforms 5-class for LLM-based fact-checking — the additional categories in the middle introduce ambiguity without improving accuracy.",
-        "Adversarial paper review builds a page-tagged claim/evidence ledger, researches published literature, synthesizes a structured review, challenges that review in a separate self-critique, and then finalizes it deterministically. Verified venue profiles are edition-specific snapshots of official criteria; the exact criteria and source URLs used are stored with each review. Unmatched venues use a clearly labeled general scholarly rubric, and venue policies can change after a profile is published.",
+        "Adversarial paper review adapts the SPECS dimensions and staged synthesis/self-critique pattern described in [AI-Assisted Peer Review at Scale: The AAAI-26 AI Review Pilot](https://arxiv.org/abs/2604.13940). Jiddu is an independent implementation with its own page-tagged claim/evidence ledger, literature research, arithmetic checks, venue calibration, source validation and finding-retention gate; it does not reproduce the AAAI-26 system.",
+        "The slop detector's starting taxonomy comes from Peter Yang's MIT-licensed [no-ai-slop](https://github.com/petergyang/no-ai-slop) editing skill. Jiddu provides its own catalog wording, translations and detection prompt, and flags observable patterns rather than authorship.",
         "Jiddu is not affiliated with those research groups, DBLP, or any venue whose criteria it summarizes. References and official venue pages are cited so users can audit the methodology and the standard applied.",
         "The fact-check pipeline has been benchmarked against the [PolitiFact](https://www.politifact.com) human-labeled corpus (via the [LIAR2 dataset](https://github.com/chengxuphd/liar2), Apache-2.0). On 200 claims from PolitiFact's polar buckets, Jiddu's verdict matched the human verdict in 67.5% of cases overall and 81.3% on the unambiguous true / false / pants-on-fire buckets, with strict polar disagreement in only 4.5%. Full methodology, confusion matrix and disagreement analysis at [docs/benchmark-politifact.md](/benchmark).",
+        "Paper review has a separate [30-case synthetic SPECS benchmark](https://github.com/rafaehlers/jiddu/blob/main/evals/paper-review/report.md). GPT-5.4 mini and GPT-5.5 detected all 30 injected defects; GPT-5.5 returned 30.6% fewer, more consolidated findings. The set reached a ceiling and does not establish accuracy on complete real-world papers.",
       ],
     },
     {
@@ -852,23 +867,23 @@ const en: Messages = {
       title: "1. The big picture",
       paragraphs: [
         "Jiddu runs six independent analyses: a fallacy detector, a fact-check pipeline (extraction + Sonar-based verdict), a neutrality assessment, a paragraph-by-paragraph paper explainer, an AI-slop detector, and an adversarial review of one autonomous paper with a published-literature check. They are separate routes in the app (`/`, `/factcheck`, `/neutrality`, `/explain`, `/slop`, `/review`) and separate database tables. None of them is required by the others.",
-        "The five text pipelines stream structured tool-call output from an LLM via [OpenRouter](https://openrouter.ai); their JSON Schemas are controlled by Jiddu and [partial-json](https://github.com/promplate/partial-json) lets findings appear while the model is still writing. Paper review also uses SSE, but to report five coarse stages; each stage completes and validates a full structured artifact before the next begins.",
+        "The five text pipelines stream structured tool-call output from an LLM via [OpenRouter](https://openrouter.ai); their JSON Schemas are controlled by Jiddu and [partial-json](https://github.com/promplate/partial-json) lets findings appear while the model is still writing. Paper review also uses SSE, but to report nine coarse stages; each stage completes and validates a full structured artifact before the next begins.",
         "All output is in the user's UI language. The same prompt is used regardless of which model the user picks — the language difference comes from a single `OUTPUT LANGUAGE:` line in the system prompt.",
       ],
     },
     {
       title: "2. Input: ingestion and segmentation",
       paragraphs: [
-        "**URL.** The fetch sends real-browser headers (current Chrome User-Agent, Accept-Language pt-BR, sec-ch-ua, sec-fetch-*) so naive bot-blockers don't reject it. Every redirect hop is DNS-resolved and rejected if the IP falls inside RFC1918, loopback, link-local, CGNAT, multicast or reserved IPv4/IPv6 ranges — that closes the SSRF door, including the AWS metadata IP (169.254.169.254) and the local NPM admin (port 81 on the VPS). Response body is capped at 5 MB. The HTML then passes through [@mozilla/readability](https://github.com/mozilla/readability) for article extraction.",
+        "**URL.** The fetch uses browser-like request headers so simple bot filters are less likely to reject it. Every redirect is DNS-resolved and blocked if it reaches a private, loopback, link-local, carrier-grade NAT, multicast or reserved IPv4/IPv6 range. Response size is capped at 5 MB, then [@mozilla/readability](https://github.com/mozilla/readability) extracts the article body.",
         "**PDF.** Parsed locally with [LiteParse](https://github.com/run-llama/liteparse) as the primary parser and [pdfjs-dist](https://mozilla.github.io/pdf.js/) as fallback. The five text pipelines use LiteParse's fast mode; adversarial review uses academic mode to preserve page-scoped Markdown, spatial reading order, selective OCR, complexity signals and screenshots. The raw PDF is not uploaded as a file, but review sends selected rendered page images through OpenRouter when visual inspection is relevant.",
         "**Paste.** Used as-is, only whitespace-normalized.",
-        "The extracted text is then split into sentences with an abbreviation-aware splitter (`src/lib/sentences.ts`) — it recognizes Portuguese abbreviations (`sr.`, `dr.`, `prof.`), keeps initialisms like `U.S.` intact, and doesn't break in the middle of numbers like `3,4%`. Sentences are grouped into chunks of ~12k characters (`src/lib/chunker.ts`) so long documents fit the model context window without losing sentence boundaries.",
+        "**Segmentation.** The extracted text is split into sentences with an abbreviation-aware splitter (`src/lib/sentences.ts`) — it recognizes Portuguese abbreviations (`sr.`, `dr.`, `prof.`), keeps initialisms like `U.S.` intact, and doesn't break in the middle of numbers like `3,4%`. Sentences are grouped into chunks of ~12k characters (`src/lib/chunker.ts`) so long documents fit the model context window without losing sentence boundaries.",
       ],
     },
     {
       title: "3. Models and fallback",
       paragraphs: [
-        "Two models are exposed in the picker: [🇺🇸 GPT-5.4 mini](https://openrouter.ai/openai/gpt-5.4-mini) (default) and [🇨🇳 MiniMax M3](https://openrouter.ai/minimax/minimax-m3). They were picked from opposite geopolitical backgrounds so a user worried about training-data bias can run the same text through both and compare.",
+        "Two model families are exposed in the picker: [🇺🇸 GPT-5.4 mini](https://openrouter.ai/openai/gpt-5.4-mini) (default) and [🇨🇳 MiniMax M3](https://openrouter.ai/minimax/minimax-m3). Offering both lets users compare borderline interpretations and avoids making every analysis depend on one provider.",
         "If the user-picked model fails *before emitting any event* (rate-limit from upstream, 5xx, etc.), the request falls through to the other model automatically — client-side retry, no UI flicker. Once the model has emitted at least one finding/claim, we don't retry: we accept the partial output and let the partial-parse layer salvage it.",
         "Sonar Reasoning Pro is used exclusively for fact-check verdicts (because it has built-in web search). It is never exposed in the model picker.",
       ],
@@ -879,6 +894,9 @@ const en: Messages = {
         "Catalog of 46 fallacies covering relevance, ambiguity, presumption, emotional appeals, causal reasoning and evidence. Each fallacy has a stable id and a distinct color (golden-angle hue distribution) used to highlight passages. The full list is at [/fallacies](/fallacies).",
         "The system prompt instructs the model to be rigorous and conservative — flag only when there is a clear, defensible fallacy. Two specific rules tighten this: a **disambiguation** clause (don't flag a sentence with multiple plausible readings unless context resolves it) and a **standalone-explanation** clause (each explanation must name the implied premise and conclusion so a reader doesn't need to re-read the source). Both clauses are distilled from the Claimify paper (Microsoft Research 2025).",
         "Each finding has a binary severity (`low` / `high`). The overall fallacy score (0-100) is a weighted average across chunks, weighted by character count. The score range labels (`clean reasoning` / `minor issues` / `several fallacies` / `highly fallacious` / `propagandistic`) are spelled out in the prompt itself so the model has the same calibration the UI uses.",
+        "**Model routing and why.** The selected GPT-5.4 mini or MiniMax M3 performs the complete classification in one structured pass per chunk. This task uses an economical model because the reasoning space is tightly constrained by a fixed 46-item catalog, exact source sentences and a JSON Schema; there is no web search or second-model critic. The alternative model remains available so users can compare borderline interpretations from a different model family.",
+        "Chunks run with bounded concurrency and stream findings as soon as they validate. A failed chunk does not erase successful ones; the final score is computed deterministically from the surviving chunk scores, weighted by character count. That resilience also means a result can be partial, so the score is a reading aid rather than a probability that the document is 'fallacious.'",
+        "The repository includes regression evals for expected detections and false-positive traps, but Jiddu has not yet published a human-labeled accuracy benchmark for this pipeline. A missing flag is not proof of sound reasoning, and a highlighted passage still requires the reader to judge whether the named fallacy actually applies.",
       ],
     },
     {
@@ -887,6 +905,9 @@ const en: Messages = {
         "Same architecture as the fallacy detector — same ingestion, chunking, streaming, model fallback and char-weighted 0-100 score — with a different catalog and prompt, persisted to its own table (results at `/s/:id`, same margin-comment viewer, print view and demos at `/s/demo-en|pt|es`).",
         "The catalog covers 18 AI-slop writing patterns in five families: stock wording, manufactured drama, templated structure, hollow substance, and format tics. The full list with definitions and examples is at [/slop-patterns](/slop-patterns). The pattern selection is based on Peter Yang's MIT-licensed [no-ai-slop](https://github.com/petergyang/no-ai-slop) editing skill; the catalog wording, trilingual content and detection prompt are Jiddu's own.",
         "The prompt detects **patterns, not authorship** — it is forbidden from claiming a text was or wasn't written by AI (humans write slop too). Every finding quotes the exact span, names the pattern, and says in a few words what a cleaner version would do (state the point, name the source, give the number) without rewriting anything. Score bands: 0-15 reads human, 16-35 light seasoning, 36-60 patterned, 61-80 heavily templated, 81-100 assembly-line prose.",
+        "**Model routing and why.** As in fallacy detection, the selected GPT-5.4 mini or MiniMax M3 handles every chunk against a closed catalog and structured schema. No detector model, watermark classifier or authorship model is involved: the LLM is acting as a constrained style critic. The economical models are sufficient for this surface-pattern task, while the second family gives users a useful comparison on prose that sits near a category boundary.",
+        "Chunk failures are isolated and successful findings continue to stream. Jiddu combines the completed chunk scores by character count and takes the summary from the highest-scoring completed chunk; it never infers authorship from that aggregate. Long documents can therefore produce a useful partial result, but the number is only a density indicator for the catalogued patterns.",
+        "The versioned eval set checks representative positives, clean prose and the no-authorship guardrail, but it is not a population-level benchmark of human versus machine writing. Deliberately so: the feature answers 'which stock patterns are present?', not 'who or what wrote this?'",
       ],
     },
     {
@@ -894,7 +915,9 @@ const en: Messages = {
       paragraphs: [
         "Modelled on [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson, MSR 2025). The prompt asks the model to walk every sentence through four stages: **selection** (keep only sentences with a verifiable claim — opinions, value judgements, rhetorical questions get dropped), **disambiguation** (drop sentences with multiple plausible readings when context doesn't resolve them), **decomposition** (split multi-fact sentences into separate claims without chasing infinite atomicity), and **decontextualization** (every emitted claim must stand alone — resolve pronouns, add the year for a number that depends on it, attribute a quote to its source).",
         "Each emitted claim is typed: `numeric`, `date`, `quote`, `causal`, or `categorical`. The type informs how the verifier later searches for evidence.",
-        "Hard cap of 50 claims per extraction (admin-tunable). The cap exists because each claim later costs Sonar credits to verify; an uncapped extraction on a 30-page PDF could rack up serious money before the user notices.",
+        "Hard cap of 50 claims per extraction (operator-configurable). The cap exists because each claim later costs Sonar credits to verify; an uncapped extraction on a 30-page PDF could rack up serious money before the user notices.",
+        "**Model routing and why.** The selected GPT-5.4 mini or MiniMax M3 performs extraction only; it is not asked whether a claim is true. Claimify-style selection rules and a strict schema make this a bounded information-extraction task, so the economical picker models are used here and the expensive search model is reserved for claims the user actually chooses to verify.",
+        "Extraction streams claim cards while chunks run in parallel. Each claim retains the exact source sentence plus a self-contained statement, which lets the reader audit decontextualization before spending on verification. If one chunk fails, claims from completed chunks remain available; the interface must therefore not be read as proof that every checkable statement was found.",
       ],
     },
     {
@@ -904,6 +927,8 @@ const en: Messages = {
         "Sonar returns a JSON payload with the verdict (`supported` / `contradicted` / `mixed` / `unverified`), a confidence between 0 and 1, a rationale, and a list of cited sources collected from Sonar's `annotations` channel. If confidence is below 0.5, the verdict is forced to `unverified` — better to surface 'not enough evidence' than to ship a confident wrong call.",
         "Every cited source is classified into one of six tiers (per Goldfarb et al. 2025): `primary` (official data agencies, court rulings, peer-reviewed papers), `scholarly`, `think_tank`, `journalistic`, `commercial_content`, `informal`. A separate boolean flag marks `state-controlled` outlets (RT, CGTN, Xinhua, etc. — but not BBC/NPR/Deutsche Welle, which are state-FUNDED but editorially independent).",
         "Verdict language is intentionally cautious about named people: never 'X is lying' or 'this is false' — always 'evidence does not support' / 'evidence contradicts the figure' / 'we could not find evidence that supports'. This is a hard rule in the system prompt.",
+        "**Model routing and why.** Perplexity Sonar Reasoning Pro is fixed for verification because this stage needs current web retrieval and source annotations, not just stronger closed-book prose generation. GPT-5.4 mini and MiniMax M3 never manufacture verdict citations; they stop after extraction. Keeping extraction and verification in different calls also makes cost, cache behavior and failures visible per claim.",
+        "Claims are verified independently, so one timeout or weak evidence set does not invalidate the others. Jiddu normalizes Sonar's structured response, applies the confidence floor, preserves the cited URLs and stores the model id used. Source tiers describe the kind of source, not an automatic truth score: a primary source can still be outdated or misread.",
         "How accurate is this in practice? We benchmarked the pipeline against [PolitiFact's human-labeled corpus](/benchmark). On 200 claims drawn from PolitiFact's four polar buckets (true / mostly-true / false / pants-on-fire, 2020-onward), Jiddu's verdict matched the human polar verdict in 67.5% of cases overall and 81.3% on the unambiguous true / false / pants-on-fire buckets. Strict polar disagreement — Jiddu calling a claim the opposite of the human — happened in only 4.5% of cases (9 of 200). The remaining ~28% were Jiddu returning `mixed` or `unverified` instead of a polar verdict, concentrated on PolitiFact's `mostly_true` bucket (where 58% became `mixed` — a structural overlap, not a miss, since both labels describe partial truth). Full methodology, confusion matrix and disagreement analysis at the link.",
       ],
     },
@@ -912,7 +937,7 @@ const en: Messages = {
       paragraphs: [
         "Each verified claim is hashed and stored. The hash is `sha256(lang + ':' + normalize(statement))` where `normalize` lowercases, strips combining-mark accents, collapses whitespace and removes trailing punctuation. That means rewordings of the same claim collide, but cross-language doesn't.",
         "TTLs are per claim type. `numeric` 30 days (IBGE and friends revise series), `date` and `categorical` 365 days (historical facts and definitions are stable), `quote` and `causal` 90 days (re-examinable but unlikely to flip). A best-effort sweep deletes expired rows on the cache-miss path, rate-limited to once every 30 minutes so the hot path stays cheap.",
-        "The user can bypass the cache with a per-claim **refresh** button (forces a fresh Sonar call). That counts against an admin-tunable refresh quota — default is 2 refreshes per claim. After that, the button hides and the API returns 429.",
+        "The user can bypass the cache with a per-claim **refresh** button (forces a fresh Sonar call). That counts against an operator-configurable refresh quota — default is 2 refreshes per claim. After that, the button hides and the API returns 429.",
       ],
     },
     {
@@ -921,29 +946,32 @@ const en: Messages = {
         "Distinct from fallacy detection: a text can be fallacy-free and factually accurate while still using loaded framing, asymmetric attribution or one-sided sourcing. Neutrality surfaces those patterns.",
         "Eight issue types are flagged at the sentence level: `loaded_language`, `asymmetric_attribution`, `false_equivalence`, `selective_omission`, `source_asymmetry`, `both_sidesing`, `steering`, `genetic_framing`. The model also classifies the document into one of seven text types (informational / opinion / political speech / advocacy / analysis / marketing / social_media) which informs how strict the audit is.",
         "The document-level verdict is one of `neutral` / `partisan_lean` / `explicitly_partisan` / `manipulation`. Jiddu **deliberately does not classify partisan direction** (left/right, pro-X/anti-Y). The Forum AI paper that inspired the methodology requires a bipartisan expert panel for that step; without one, partisan labels are unreliable and harmful. We surface specific patterns the reader can audit instead.",
+        "**Model routing and why.** The selected GPT-5.4 mini or MiniMax M3 performs text-type classification, sentence-level issue detection and the chunk verdict in the same structured call. This pipeline does not browse the web and does not decide whether the underlying claims are true; using the economical picker model keeps framing analysis fast, while the alternative family supports side-by-side sensitivity checks.",
+        "For long texts, chunks are analyzed in parallel. The final document verdict is then selected deterministically as the most severe completed chunk verdict (`manipulation` above `explicitly_partisan`, above `partisan_lean`, above `neutral`); confidence and rationale come from the strongest chunk at that level, and document type is the mode across chunks. This intentionally favors recall, so one strongly framed passage can govern the headline verdict.",
+        "The eval suite exercises the eight signals and examples designed not to be flagged, but there is no published human-panel benchmark for neutrality yet. The verdict is therefore a navigation aid into auditable passages, not an objective measurement of political balance.",
       ],
     },
     {
-      title: "10. Storage, privacy and reviewers",
+      title: "10. Storage, privacy and review status",
       paragraphs: [
-        "Persistence is a single SQLite file on a Hostinger VPS, mounted as a Docker volume. There are no user accounts. Results get short ids under `/a`, `/f`, `/n`, `/e`, `/s` or `/r`; anyone with the share URL can view the final result. Paper-review ledgers, research and draft judgements remain private intermediate artifacts.",
+        "There are no user accounts. Completed results use unlisted share URLs: anyone with the URL can view the final result, but those pages are not enumerated in the public sitemap. Paper-review ledgers, research and draft judgements are internal intermediate artifacts and are not exposed in the public result.",
         "Submitted content goes through OpenRouter to the upstream serving the chosen model. Paper review includes selected rendered page images, not only extracted text. Its literature stage searches public scholarly sources using technical claims while prompts prohibit queries by paper title, author name or other manuscripts by the same authors. Venue autocomplete sends only the typed venue query to DBLP. We log the request IP for rate-limiting and abuse signalling and do not sell it.",
-        "Each analysis has a `reviewedAt` timestamp. By default it's null, meaning the analysis is automated and has not been spot-checked by an operator. The admin (at `/admin`, password-gated) can mark individual analyses as reviewed.",
+        "Results are automated and unreviewed by default. A result explicitly marked as reviewed has been spot-checked by the operator; that status is an additional human check, not a guarantee that every finding is correct.",
       ],
     },
     {
       title: "11. Cost and abuse controls",
       paragraphs: [
-        "Every cost-incurring route has an in-memory token-bucket rate limit per IP. Defaults include 30 fallacy analyses / hour, 30 fact-check extractions / hour, 10 bulk verifications / hour, 20 per-claim refreshes / hour and a deliberately conservative 4 paper reviews / hour with burst capacity 2. All values are admin-tunable at runtime via `/admin/settings`; exhausted buckets return 429 with `Retry-After`.",
+        "Every cost-incurring route has an in-memory token-bucket rate limit per IP. Defaults include 30 fallacy analyses / hour, 30 fact-check extractions / hour, 10 bulk verifications / hour, 20 per-claim refreshes / hour and a deliberately conservative 4 paper reviews / hour with burst capacity 2. The operator can tune these values at runtime; exhausted buckets return 429 with `Retry-After`.",
         "Fact-check extraction caps at 50 claims per document and per-claim refresh at 2 calls. Paper review accepts exactly one PDF, refuses to silently truncate past 300,000 extracted characters, limits visual inspection to selected pages and splits the costly work into auditable stages. These controls prevent accidental unbounded fan-out and bills.",
       ],
     },
     {
       title: "12. Feedback loop",
       paragraphs: [
-        "Every fact-check claim card has a **🚩 Report wrong verdict** button. Clicking it captures an optional free-text reason and POSTs to a feedback endpoint, which snapshots the current statement + verdict (so the admin sees what the user was looking at, even if the verdict later gets re-verified).",
-        "Submitted flags land in an admin queue at `/admin/feedback` with status `open`. The operator can mark each as `resolved` (concur with the user, plan to fix) or `ignored` (the verdict was correct, or the flag was spam), or delete it. The admin home shows a red badge with the open count.",
-        "There is currently no automatic action on the verdict when flags accumulate — every entry is reviewed manually. Future improvement: a 'disputed' badge in the public viewer when N flags pile up on the same claim.",
+        "Every fact-check claim card has a **🚩 Report wrong verdict** button. Clicking it captures an optional reason and snapshots the current statement and verdict, so the operator can review what the user saw even if the claim is later re-verified.",
+        "Submitted flags enter a private moderation queue with status `open`. The operator can mark each as `resolved` (concur with the user, plan to fix) or `ignored` (the verdict was correct, or the flag was spam), or delete it.",
+        "Reports do not automatically change a verdict. The operator reviews each entry manually, so report volume alone cannot overturn the evidence shown to readers.",
       ],
     },
     {
@@ -961,13 +989,21 @@ const en: Messages = {
         "Audience levels: **Child** (ELI5, everyday analogies, no jargon), **High school** (clear language, a few technical terms explained), **Undergraduate** (standard academic register, assumes field familiarity), **Expert** (concise, peer-level, full terminology retained). The level controls prose complexity only — it does not filter or validate content.",
         "Role tagging is algorithmic. The model reads each paragraph in context and assigns the role that best describes its function in the argument. Interdisciplinary papers or documents with non-standard structure may receive incorrect tags.",
         "Unlike the general-text pipelines, Explain is optimised for structured academic papers. Results on blog posts, legal filings, or unstructured prose will be lower quality.",
+        "**Model routing and why.** The selected GPT-5.4 mini or MiniMax M3 writes the overview, role tags and paragraph explanations in one schema-constrained pass per chunk. Explanation favors the economical picker models because the task is transformation of supplied text rather than literature research or independent validation; no web search, citation check or second-model critic is run.",
+        "Chunks execute with bounded concurrency and explanations stream into the margin as they arrive. Each chunk can propose an overview, but Jiddu deterministically keeps the earliest non-empty overview because the first chunk normally contains the abstract and introduction. A failed chunk leaves the other paragraph explanations intact, so gaps remain possible on long or unusually formatted papers.",
+        "The current evals check role coverage, audience calibration and schema reliability, not factual faithfulness against expert annotations. Explain can simplify a caveat away or confidently misread a method; it should make the source easier to enter, never substitute for reading it.",
       ],
     },
     {
       title: "15. Adversarial paper review",
       paragraphs: [
         "The review pipeline (`/review`, results at `/r/:id`) accepts exactly one final PDF as an autonomous manuscript, plus target venue, edition, track, paper type and optional review date. It does not combine supplements or multiple files. The public result includes the gatekeeping recommendation, summary, strengths, localized weaknesses, questions, reproducibility checklist, references and the exact venue standard applied; Markdown and print/PDF exports use the same stored final review.",
-        "It runs five private stages: **ledger** (page-tagged claims, evidence, experiments and visual-page inspection), **published-literature research**, **structured synthesis**, **adversarial self-critique**, and **deterministic finalization**. The self-critique must challenge unsupported novelty claims, missed evidence, severity inflation or understatement and inconsistency with the target venue before any draft becomes final.",
+        "Methodologically, Jiddu adapts the **SPECS** review dimensions — Story, Presentation, Evaluations, Correctness and Significance — and the staged synthesis/self-critique pattern described in [AI-Assisted Peer Review at Scale: The AAAI-26 AI Review Pilot](https://arxiv.org/abs/2604.13940). Jiddu is an independent implementation with its own claim/evidence ledger, venue calibration, parser, output contract and safeguards; it does not reproduce the AAAI-26 system.",
+        "After the page-tagged ledger and literature research, five independent specialists audit **Story, Presentation, Evaluations, Correctness and Significance**. Evaluation and Correctness can propose whitelisted arithmetic checks that Jiddu recalculates without executing manuscript code. Synthesis and adversarial self-critique are followed by source-metadata validation, an independent-model quality audit and a deterministic retention gate for every retained MAJOR/MODERATE finding.",
+        "The form offers **Standard** and **Deep** depth. Standard uses the selected economical model plus a different catalog critic. Deep uses stronger high-reasoning models for evaluation, correctness, significance and synthesis, with Claude Opus 4.8 as the independent critic by default; it takes longer and costs more.",
+        "**Model routing and why.** In Standard mode, the model selected in the form — GPT-5.4 mini by default or MiniMax M3 — runs the ledger, literature research, all five SPECS specialists, synthesis and self-critique. The quality audit is deliberately assigned to the other catalog model so the draft is not approved only by the model that wrote it.",
+        "In Deep mode, the selected model still handles the ledger, Story and Presentation; GPT-5.5 with high reasoning handles literature research, Evaluations, Correctness, Significance, synthesis, self-critique and any repair pass; Claude Opus 4.8 audits the resulting review independently. This concentrates the expensive reasoning on numerical validity, experimental design, novelty and cross-stage synthesis, while using a different model family for the final challenge to reduce correlated blind spots.",
+        "On Jiddu's [30-case synthetic SPECS benchmark](https://github.com/rafaehlers/jiddu/blob/main/evals/paper-review/report.md), GPT-5.4 mini and GPT-5.5 both detected every injected defect, but GPT-5.5 produced 30.6% fewer, more consolidated findings. The benchmark reached a ceiling and does not prove superiority on complete papers; Deep is an additional scrutiny tier, not a guarantee of correctness. Operators can override both Deep model IDs through `PAPER_REVIEW_DEEP_MODEL` and `PAPER_REVIEW_CRITIC_MODEL`.",
         "Venue autocomplete combines account-free [DBLP](https://dblp.org) discovery with versioned, verified 2026 profiles for NeurIPS, ICML, ICLR, AAAI, IJCAI and CVPR. A verified profile injects its official criteria and requirements into both synthesis and self-critique and is persisted with source URLs. A DBLP-only or unmatched venue uses a clearly labeled general scholarly rubric; edition, track or paper-type mismatches are marked unverified rather than guessed.",
         "Every substantive weakness must carry a manuscript page or section and a `MAJOR`, `MODERATE` or `MINOR` severity. The review is still automated: it can miss problems, invent comparisons or misapply a criterion, and it is not an official peer review or acceptance prediction.",
       ],
@@ -976,8 +1012,8 @@ const en: Messages = {
       title: "16. Public API & MCP (for agents)",
       paragraphs: [
         "Beyond the web app, the five text pipelines are exposed as a public REST API for agents and scripts: `POST /api/v1/detect-fallacies`, `/fact-check`, `/assess-neutrality`, `/explain`, `/detect-slop`. These are synchronous — one JSON request in (`{ text }`, 40–2000 chars, plus optional `lang` and, for explain, `level`), one JSON response out. They drive the same generators to completion over a single chunk and never persist a row.",
-        "Requests authenticate with an `X-Jiddu-Key` header. Keys are admin-issued at `/admin/api-keys` (stored only as a sha256 hash, shown once) and rate-limited per key, separately from the web app's per-IP limits. Fact-check via the API both extracts and verifies each claim, capped by a per-request claim limit so one call can't fan out unboundedly to the paid Sonar verifier.",
-        "Adversarial review is exposed as a persisted asynchronous job: `POST /api/v1/adversarial-reviews` accepts one uploaded PDF or a public `pdf_url` and returns `202`; `GET /api/v1/adversarial-reviews/{id}` reports the current stage and eventually returns the structured review. This keeps the multi-minute, five-stage workflow out of the synchronous text contract.",
+        "Requests authenticate with an `X-Jiddu-Key` header. Keys are issued by the operator, stored only as a sha256 hash, shown once and rate-limited per key separately from the web app's per-IP limits. Fact-check via the API both extracts and verifies each claim, capped by a per-request claim limit so one call can't fan out unboundedly to the paid Sonar verifier.",
+        "Adversarial review is exposed as a persisted asynchronous job: `POST /api/v1/adversarial-reviews` accepts one uploaded PDF or a public `pdf_url` and returns `202`; `GET /api/v1/adversarial-reviews/{id}` reports the current stage and eventually returns the structured review. This keeps the multi-minute, nine-stage workflow out of the synchronous text contract.",
         "The hosted MCP server at `POST /api/mcp` exposes the five text tools plus `start_adversarial_review` and `get_adversarial_review`. Any MCP client can connect by URL through `mcp-remote`; the same tools also ship in the standalone `jiddu-mcp` package. Setup snippets and machine-oriented docs are at [/api-access](/api-access).",
         "Quality is tracked by a fixed eval suite (15–16 cases per tool) committed in the repo and scored against expected results; the published report lives at [evals/report.md](https://github.com/rafaehlers/jiddu/blob/main/evals/report.md).",
       ],
@@ -986,7 +1022,9 @@ const en: Messages = {
       title: "17. Open source and methodology",
       paragraphs: [
         "Source code is at [github.com/rafaehlers/jiddu](https://github.com/rafaehlers/jiddu) under the [AGPL-3.0-or-later license](https://www.gnu.org/licenses/agpl-3.0.txt). AGPL closes the 'SaaS loophole' that GPL leaves open: anyone running a modified version as a network service must publish the modified source.",
-        "Claimify and Distilling Expert Judgment at Scale ground the fact-check and neutrality design. Paper review additionally uses LiteParse's layout-aware local extraction, DBLP venue discovery and edition-specific criteria transcribed from official venue pages. Jiddu is not affiliated with those groups, DBLP or the venues.",
+        "[Claimify](https://arxiv.org/abs/2502.10855) informs claim extraction, and [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) informs verdict assessment, source tiers and neutrality. [no-ai-slop](https://github.com/petergyang/no-ai-slop) supplies the starting taxonomy for writing-pattern detection.",
+        "Adversarial paper review adapts the SPECS dimensions and staged synthesis/self-critique described in [AI-Assisted Peer Review at Scale: The AAAI-26 AI Review Pilot](https://arxiv.org/abs/2604.13940). Jiddu adds its own ledger, LiteParse extraction, DBLP discovery, venue profiles, source validation and retention gate. It is not affiliated with those groups, DBLP or the venues.",
+        "Published evaluation currently consists of the [200-claim PolitiFact benchmark](/benchmark) and a [30-case synthetic SPECS benchmark](https://github.com/rafaehlers/jiddu/blob/main/evals/paper-review/report.md). Both have documented limits and neither guarantees correctness on a new text or paper.",
         "The full disclaimer about what Jiddu does and doesn't claim is at [/legal](/legal).",
       ],
     },
@@ -1375,8 +1413,12 @@ const pt: Messages = {
     "Interpretando o paper completo",
     "Construindo o ledger privado de claims",
     "Verificando a literatura publicada",
-    "Auditando narrativa, evidência e correção",
+    "Executando cinco revisões SPECS independentes",
+    "Recalculando os resultados reportados",
+    "Sintetizando os achados especializados",
     "Executando a autocrítica adversarial",
+    "Validando as fontes externas",
+    "Executando a auditoria de qualidade independente",
     "Finalizando a review",
   ],
   review_venue: "Venue-alvo (opcional)",
@@ -1386,6 +1428,11 @@ const pt: Messages = {
   review_venue_verified: "Rubrica verificada",
   review_venue_catalog_only: "Resultado do catálogo · rubrica geral",
   review_venue_year: "Edição",
+  review_depth: "Profundidade da revisão",
+  review_depth_standard: "Padrão",
+  review_depth_deep: "Profunda",
+  review_depth_help:
+    "A revisão profunda usa modelos de raciocínio mais fortes em avaliações, correção, síntese e numa crítica independente. Leva mais tempo e custa mais.",
   review_track: "Track",
   review_track_placeholder: "Main track",
   review_paper_type: "Tipo de paper",
@@ -1421,9 +1468,9 @@ const pt: Messages = {
     {
       title: "Revisão adversarial de paper",
       paragraphs: [
-        "A revisão adversarial usa um contrato de jobs assíncronos persistidos. Inicie com `POST /api/v1/adversarial-reviews` multipart e um `file`, ou JSON com uma `pdf_url` pública. A resposta `202` traz id, URL de status e `retry_after_seconds`; consulte `GET /api/v1/adversarial-reviews/{id}` até `status` ser `complete` ou `failed`.",
-        "```\ncurl -X POST https://jiddu.app/api/v1/adversarial-reviews \\\n  -H \"X-Jiddu-Key: SUA_CHAVE\" \\\n  -F \"file=@paper.pdf\" \\\n  -F \"lang=pt\" \\\n  -F \"venue_profile_id=neurips-2026-main\"\n\ncurl -H \"X-Jiddu-Key: SUA_CHAVE\" \\\n  https://jiddu.app/api/v1/adversarial-reviews/JOB_ID\n```",
-        "Um job concluído retorna a revisão estruturada e links para o viewer, Markdown determinístico e tela de impressão/PDF. Campos opcionais: `lang`, `venue_profile_id`, `venue`, `venue_year`, `venue_track`, `paper_type` e `review_date`. PDFs têm limite de 25 MB e 300 mil caracteres extraídos.",
+        "A revisão adversarial usa um contrato de jobs assíncronos persistidos. Inicie com `POST /api/v1/adversarial-reviews` multipart e um `file`, ou JSON com uma `pdf_url` pública. Escolha `depth=standard` para o pipeline econômico ou `depth=deep` para modelos mais fortes de raciocínio e crítica. A resposta `202` traz id, URL de status e `retry_after_seconds`; consulte `GET /api/v1/adversarial-reviews/{id}` até `status` ser `complete` ou `failed`.",
+        "```\ncurl -X POST https://jiddu.app/api/v1/adversarial-reviews \\\n  -H \"X-Jiddu-Key: SUA_CHAVE\" \\\n  -F \"file=@paper.pdf\" \\\n  -F \"lang=pt\" \\\n  -F \"depth=deep\" \\\n  -F \"venue_profile_id=neurips-2026-main\"\n\ncurl -H \"X-Jiddu-Key: SUA_CHAVE\" \\\n  https://jiddu.app/api/v1/adversarial-reviews/JOB_ID\n```",
+        "Um job concluído retorna a revisão estruturada, auditoria pública da metodologia e metadados de verificação das fontes, além de links para viewer, Markdown determinístico e impressão/PDF. Campos opcionais: `lang`, `depth`, `venue_profile_id`, `venue`, `venue_year`, `venue_track`, `paper_type` e `review_date`. PDFs têm limite de 25 MB e 300 mil caracteres extraídos.",
       ],
     },
     {
@@ -1490,20 +1537,20 @@ const pt: Messages = {
     "Este é um relatório automatizado. Ele sinaliza padrões de escrita, nunca autoria — humanos também escrevem slop, e os rótulos podem estar errados. Leia os trechos citados e julgue por conta própria. Termos completos em https://jiddu.app/legal.",
   print_generated_at: (when) => `Gerado em ${when} · jiddu.app`,
 
-  legal_title: "Termos e isenções",
+  legal_title: "Termos, privacidade e isenções",
   legal_subtitle:
     "Leia antes de usar o Jiddu, especialmente antes de compartilhar uma análise publicamente.",
-  legal_last_updated: "Atualizado em: 2026-07-26",
+  legal_last_updated: "Atualizado em: 2026-07-27",
   legal_sections: [
     {
       title: "1. O que o Jiddu faz",
       paragraphs: [
-        "O Jiddu é uma ferramenta automatizada. Ele usa modelos de linguagem (atualmente roteados via OpenRouter para OpenAI, Anthropic, MiniMax e Perplexity Sonar) para (a) sinalizar passagens que podem conter falácias lógicas, (b) extrair afirmações factuais verificáveis e oferecer um veredito baseado em busca na web, (c) avaliar quão neutro ou enviesado um texto é, (d) explicar um documento parágrafo por parágrafo no nível de leitura escolhido, (e) sinalizar padrões de escrita de slop de IA (moldes e frases prontas — nunca uma afirmação sobre autoria) e (f) produzir uma revisão adversarial pré-submissão, calibrada para a venue, de um paper completo. Os seis fluxos estão disponíveis no app web, na API pública e no MCP; a revisão de paper usa um contrato assíncrono de jobs persistidos.",
-        "O Jiddu não tem editores humanos. Todo resultado que você vê é produzido por software. A ferramenta serve como apoio à leitura crítica — não a substitui.",
+        "O Jiddu oferece seis fluxos automatizados de leitura crítica: detecção de falácias, checagem de fatos, avaliação de imparcialidade, explicação de papers, detecção de padrões de escrita e revisão adversarial de papers. O app web, a API pública e o MCP usam os mesmos pipelines; a revisão de paper roda como job assíncrono porque possui várias etapas.",
+        "O Jiddu não tem uma equipe editorial humana. Todo resultado é produzido por software. Uma marca de revisão significa que o operador fez uma conferência pontual, mas o relatório continua automatizado. Use-o como apoio à leitura crítica, não como substituto.",
       ],
     },
     {
-      title: "2. Sem afirmação de verdade",
+      title: "2. Resultados automatizados podem errar",
       paragraphs: [
         'Os vereditos ("sustentado", "contradito", "misto", "não verificado") e os rótulos de falácia são juízos automatizados de melhor esforço. Podem estar errados — às vezes com alta confiança.',
         "O Jiddu não afirma que qualquer declaração, pessoa ou documento seja verdadeiro, falso, mentiroso ou enganoso. Os rótulos são sinais para acionar a sua própria verificação. Sempre leia as fontes citadas e tire sua própria conclusão.",
@@ -1523,13 +1570,13 @@ const pt: Messages = {
       title: "4. Pessoas e figuras públicas",
       paragraphs: [
         "Análises sobre pessoas nomeadas (políticos, jornalistas, executivos) são produzidas por software que pesquisa fontes públicas na web. A linguagem que o Jiddu usa é intencionalmente cuidadosa (\"a evidência não sustenta\", \"não encontramos\") — não adote uma formulação mais forte do que a ferramenta emite.",
-        "Se você acha que um veredito é injusto ou sem suporte, use o botão \"reportar veredito errado\" na afirmação correspondente. Flags repetidas e injustas contra a mesma pessoa podem ser removidas a critério do operador.",
+        "Se você acha que um veredito é injusto ou sem suporte, use o botão \"reportar veredito errado\" na afirmação correspondente. O operador revisa os relatos enviados; relatos abusivos ou repetitivos podem ser descartados.",
       ],
     },
     {
       title: "5. Privacidade",
       paragraphs: [
-        "Cada análise ou revisão de paper recebe um id curto e fica armazenada em um servidor no Brasil. Quem tem a URL compartilhável pode ver o resultado final. Não há contas de usuário; as etapas intermediárias privadas da revisão não aparecem no viewer público.",
+        "Cada análise ou revisão de paper concluída recebe uma URL compartilhável não listada e fica armazenada em um servidor no Brasil. Quem tem a URL pode ver o resultado final, mas essas páginas não são enumeradas no sitemap público. Não há contas de usuário; as etapas intermediárias privadas da revisão não aparecem no viewer público.",
         "O autocomplete de venue envia apenas a consulta da venue — nunca o manuscrito — à busca pública de venues do [DBLP](https://dblp.org). A etapa de pesquisa de literatura consulta fontes acadêmicas públicas usando afirmações técnicas do manuscrito; os prompts proíbem buscas pelo título do paper, nome dos autores ou outros manuscritos dos mesmos autores.",
         "Registramos o IP da requisição para limites de taxa e detecção de abuso. Não vendemos nem compartilhamos essa informação.",
         "O tráfego das páginas é medido via Google Analytics (gtag.js).",
@@ -1539,9 +1586,11 @@ const pt: Messages = {
       title: "6. Metodologia",
       paragraphs: [
         "O pipeline de extração e verificação de afirmações é inspirado em [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson, MSR 2025) para a etapa de extração, e no framework de avaliação descrito em [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) (Goldfarb, Hall, Fisher, Salam, Wilde — Forum AI / Stanford, 2025) para a avaliação de veredito, os tiers de qualidade de fonte e a dimensão de imparcialidade. Nossa escolha de 4 classes de veredito (sustentado / contradito / misto / não verificado) em vez dos esquemas de 5 ou 6 classes usados por alguns outlets de fact-check é baseada em [Sahitaj et al. 2025](https://arxiv.org/abs/2502.08909), que mostraram empiricamente que rotulagem 3-classes supera 5-classes para fact-check com LLMs — as categorias adicionais no meio criam ambiguidade sem ganho de acurácia.",
-        "A revisão adversarial cria um ledger de afirmações e evidências com marcação de página, pesquisa literatura publicada, sintetiza uma revisão estruturada, contesta essa revisão numa autocrítica separada e então a finaliza de forma determinística. Perfis verificados de venue são snapshots específicos de uma edição dos critérios oficiais; os critérios exatos e URLs-fonte usados ficam armazenados em cada revisão. Venues sem correspondência usam uma rubrica acadêmica geral claramente identificada, e as políticas podem mudar depois da publicação do perfil.",
+        "A revisão adversarial adapta as dimensões SPECS e o padrão de síntese e autocrítica por etapas descrito em [AI-Assisted Peer Review at Scale: The AAAI-26 AI Review Pilot](https://arxiv.org/abs/2604.13940). O Jiddu é uma implementação independente, com ledger paginado de afirmações e evidências, pesquisa de literatura, verificações aritméticas, calibração por venue, validação de fontes e gate de retenção de achados próprios; não reproduz o sistema da AAAI-26.",
+        "A taxonomia inicial do detector de slop vem da skill de edição [no-ai-slop](https://github.com/petergyang/no-ai-slop), de Peter Yang, licenciada sob MIT. O Jiddu fornece a redação do catálogo, as traduções e o prompt de detecção e sinaliza padrões observáveis, não autoria.",
         "O Jiddu não tem afiliação com esses grupos de pesquisa, com o DBLP ou com qualquer venue cujos critérios resume. As referências e páginas oficiais são citadas para que o usuário possa auditar a metodologia e o padrão aplicado.",
         "O pipeline de fact-check foi medido contra o corpus humano do [PolitiFact](https://www.politifact.com) (via o [dataset LIAR2](https://github.com/chengxuphd/liar2), Apache-2.0). Em 200 afirmações tiradas dos quatro buckets polares do PolitiFact, o veredito do Jiddu coincidiu com o veredito humano em 67,5% dos casos no total e em 81,3% nas categorias menos ambíguas (true / false / pants-on-fire), com discordância estrita em apenas 4,5%. Metodologia completa, matriz de confusão e análise das discordâncias em [docs/benchmark-politifact.md](/benchmark).",
+        "A revisão de papers tem um [benchmark sintético SPECS separado, com 30 casos](https://github.com/rafaehlers/jiddu/blob/main/evals/paper-review/report.md). GPT-5.4 mini e GPT-5.5 detectaram os 30 defeitos inseridos; GPT-5.5 produziu 30,6% menos achados, mais consolidados. O conjunto atingiu o teto e não estabelece acurácia em papers reais completos.",
       ],
     },
     {
@@ -1560,23 +1609,23 @@ const pt: Messages = {
       title: "1. Visão geral",
       paragraphs: [
         "O Jiddu roda seis análises independentes: um detector de falácias, um pipeline de checagem de fatos (extração + veredito via Sonar), uma avaliação de imparcialidade, um explicador de papers parágrafo a parágrafo, um detector de slop de IA e uma revisão adversarial de um único paper autônomo com verificação de literatura publicada. São rotas separadas no app (`/`, `/factcheck`, `/neutrality`, `/explain`, `/slop`, `/review`) e tabelas separadas no banco. Nenhuma depende das outras.",
-        "Os cinco pipelines de texto transmitem output estruturado de tool call de um LLM via [OpenRouter](https://openrouter.ai); os JSON Schemas são controlados pelo Jiddu e o [partial-json](https://github.com/promplate/partial-json) permite que os achados apareçam enquanto o modelo ainda escreve. A revisão de paper também usa SSE, mas para informar cinco etapas amplas; cada etapa completa e valida um artefato estruturado antes da próxima.",
+        "Os cinco pipelines de texto transmitem output estruturado de tool call de um LLM via [OpenRouter](https://openrouter.ai); os JSON Schemas são controlados pelo Jiddu e o [partial-json](https://github.com/promplate/partial-json) permite que os achados apareçam enquanto o modelo ainda escreve. A revisão de paper também usa SSE, mas para informar nove etapas amplas; cada etapa completa e valida um artefato estruturado antes da próxima.",
         "Todo o output é no idioma da UI escolhido pelo usuário. O mesmo prompt vai independente do modelo selecionado — a diferença de idioma vem de uma única linha `OUTPUT LANGUAGE:` no system prompt.",
       ],
     },
     {
       title: "2. Entrada: ingestão e segmentação",
       paragraphs: [
-        "**URL.** O fetch manda headers de browser real (User-Agent do Chrome atual, Accept-Language pt-BR, sec-ch-ua, sec-fetch-*) pra que bloqueadores simples de bot não rejeitem. Cada hop de redirect tem o DNS resolvido e é rejeitado se o IP cair em RFC1918, loopback, link-local, CGNAT, multicast ou faixas reservadas IPv4/IPv6 — isso fecha a porta de SSRF, incluindo o IP de metadados da AWS (169.254.169.254) e o admin do NPM local (porta 81 do VPS). Corpo da resposta limitado a 5 MB. O HTML passa por [@mozilla/readability](https://github.com/mozilla/readability) pra extração do artigo.",
+        "**URL.** O fetch usa headers parecidos com os de um navegador para reduzir rejeições por filtros simples de bot. Cada redirect tem o DNS resolvido e é bloqueado se alcançar uma faixa privada, loopback, link-local, CGNAT, multicast ou reservada de IPv4/IPv6. O tamanho da resposta é limitado a 5 MB, e o [@mozilla/readability](https://github.com/mozilla/readability) extrai o corpo do artigo.",
         "**PDF.** Parseado localmente com [LiteParse](https://github.com/run-llama/liteparse) como parser principal e [pdfjs-dist](https://mozilla.github.io/pdf.js/) como fallback. Os cinco pipelines de texto usam o modo rápido do LiteParse; a revisão adversarial usa o modo acadêmico para preservar Markdown por página, ordem espacial de leitura, OCR seletivo, sinais de complexidade e screenshots. O PDF bruto não é enviado como arquivo, mas a revisão repassa pelo OpenRouter imagens renderizadas de páginas selecionadas quando a inspeção visual é relevante.",
         "**Paste.** Usado como está, apenas com whitespace normalizado.",
-        "O texto extraído é segmentado por um divisor de sentenças que conhece abreviações (`src/lib/sentences.ts`) — reconhece abreviações em português (`sr.`, `dr.`, `prof.`), mantém siglas como `U.S.` inteiras, e não quebra no meio de números como `3,4%`. As sentenças são agrupadas em chunks de ~12k caracteres (`src/lib/chunker.ts`) pra documentos longos caberem no contexto do modelo sem perder fronteiras de sentença.",
+        "**Segmentação.** O texto extraído é dividido em sentenças por um divisor que reconhece abreviações (`src/lib/sentences.ts`) — identifica abreviações em português (`sr.`, `dr.`, `prof.`), mantém siglas como `U.S.` inteiras e não quebra no meio de números como `3,4%`. As sentenças são agrupadas em chunks de ~12k caracteres (`src/lib/chunker.ts`) para que documentos longos caibam no contexto do modelo sem perder fronteiras de sentença.",
       ],
     },
     {
       title: "3. Modelos e fallback",
       paragraphs: [
-        "Dois modelos no seletor: [🇺🇸 GPT-5.4 mini](https://openrouter.ai/openai/gpt-5.4-mini) (padrão) e [🇨🇳 MiniMax M3](https://openrouter.ai/minimax/minimax-m3). Foram escolhidos por estarem em lados geopolíticos opostos — um usuário preocupado com viés do treinamento pode rodar o mesmo texto pelos dois e comparar.",
+        "Duas famílias de modelos aparecem no seletor: [🇺🇸 GPT-5.4 mini](https://openrouter.ai/openai/gpt-5.4-mini) (padrão) e [🇨🇳 MiniMax M3](https://openrouter.ai/minimax/minimax-m3). Ter ambas permite comparar interpretações limítrofes e evita que toda análise dependa de um único provedor.",
         "Se o modelo escolhido falhar *antes de emitir qualquer evento* (rate-limit do upstream, 5xx etc.), a requisição cai automaticamente pro outro — retry client-side, sem flicker na UI. Quando o modelo já emitiu pelo menos um achado, a gente não retry: aceita o parcial e a camada de partial-parse salva o que dá.",
         "Sonar Reasoning Pro é usado exclusivamente pros vereditos de fact-check (porque tem busca web embutida). Nunca aparece no seletor de modelo.",
       ],
@@ -1587,6 +1636,9 @@ const pt: Messages = {
         "Catálogo de 46 falácias cobrindo relevância, ambiguidade, presunção, apelos emocionais, raciocínio causal e evidência. Cada falácia tem id estável e uma cor distinta (distribuição por golden angle) usada pra destacar passagens. Lista completa em [/fallacies](/fallacies).",
         "O system prompt instrui o modelo a ser rigoroso e conservador — só marcar quando há uma falácia clara e defensável. Duas cláusulas específicas apertam isso: **disambiguation** (não marcar sentença com múltiplas leituras plausíveis a menos que o contexto resolva) e **standalone-explanation** (cada explicação deve nomear a premissa implícita e a conclusão, pra leitor entender sem voltar à fonte). Ambas inspiradas no paper Claimify (Microsoft Research 2025).",
         "Cada achado tem severidade binária (`baixa` / `alta`). A nota geral (0-100) é uma média ponderada por chunks, ponderada por contagem de caracteres. As faixas (`raciocínio limpo` / `questões menores` / `várias falácias` / `altamente falacioso` / `propagandístico`) estão escritas no próprio prompt pra o modelo ter a mesma calibração que a UI mostra.",
+        "**Roteamento do modelo e por quê.** O GPT-5.4 mini ou MiniMax M3 escolhido executa a classificação completa em uma passagem estruturada por chunk. A tarefa usa um modelo econômico porque o espaço de raciocínio é limitado por um catálogo fixo de 46 itens, pelas sentenças exatas da fonte e por um JSON Schema; não há busca na web nem um segundo modelo crítico. O modelo alternativo continua disponível para comparar interpretações limítrofes de outra família.",
+        "Os chunks rodam com concorrência limitada e transmitem achados assim que são validados. A falha de um chunk não apaga os demais; a nota final é calculada deterministicamente com as notas dos chunks concluídos, ponderadas por caracteres. Essa resiliência também significa que o resultado pode ser parcial, portanto a nota é um auxílio de leitura, não a probabilidade de o documento ser 'falacioso'.",
+        "O repositório inclui evals de regressão para detecções esperadas e armadilhas de falso positivo, mas o Jiddu ainda não publicou um benchmark de acurácia com rótulos humanos para este pipeline. A ausência de uma marcação não prova raciocínio sólido, e uma passagem destacada ainda exige que o leitor julgue se a falácia nomeada realmente se aplica.",
       ],
     },
     {
@@ -1595,6 +1647,9 @@ const pt: Messages = {
         "Mesma arquitetura do detector de falácias — mesma ingestão, chunking, streaming, fallback de modelo e nota 0-100 ponderada por caracteres — com catálogo e prompt diferentes, persistido em tabela própria (resultados em `/s/:id`, mesmo viewer de comentários na margem, versão de impressão e demos em `/s/demo-en|pt|es`).",
         "O catálogo cobre 18 padrões de escrita de slop de IA em cinco famílias: vocabulário de estoque, drama fabricado, estrutura de fôrma, substância oca e cacoetes de formato. A lista completa com definições e exemplos está em [/slop-patterns](/slop-patterns). A seleção de padrões é baseada na skill de edição [no-ai-slop](https://github.com/petergyang/no-ai-slop) de Peter Yang (licença MIT); a redação do catálogo, o conteúdo trilíngue e o prompt de detecção são do próprio Jiddu.",
         "O prompt detecta **padrões, não autoria** — ele é proibido de afirmar que um texto foi ou não escrito por IA (humanos também escrevem slop). Cada achado cita o trecho exato, nomeia o padrão e diz em poucas palavras o que uma versão mais limpa faria (afirmar o ponto, nomear a fonte, dar o número) sem reescrever nada. Faixas de nota: 0-15 soa humano, 16-35 tempero leve, 36-60 padronizado, 61-80 muito padronizado, 81-100 prosa de linha de montagem.",
+        "**Roteamento do modelo e por quê.** Como na detecção de falácias, o GPT-5.4 mini ou MiniMax M3 escolhido processa cada chunk contra catálogo fechado e schema estruturado. Não há detector especializado, classificador de watermark nem modelo de autoria: o LLM atua como crítico de estilo restrito. Os modelos econômicos bastam para essa tarefa de padrões de superfície, enquanto a segunda família permite comparar textos próximos da fronteira entre categorias.",
+        "Falhas de chunks são isoladas e os achados válidos continuam aparecendo. O Jiddu combina as notas dos chunks concluídos por contagem de caracteres e usa o resumo do chunk concluído com maior nota; ele nunca infere autoria desse agregado. Documentos longos podem, portanto, gerar um parcial útil, mas o número é apenas um indicador de densidade dos padrões catalogados.",
+        "O conjunto versionado de evals cobre positivos representativos, prosa limpa e a salvaguarda contra inferência de autoria, mas não é um benchmark populacional de escrita humana contra escrita de máquina. De propósito: a função responde 'quais padrões prontos aparecem?', não 'quem ou o que escreveu isto?'.",
       ],
     },
     {
@@ -1602,7 +1657,9 @@ const pt: Messages = {
       paragraphs: [
         "Modelado a partir do [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson, MSR 2025). O prompt pede ao modelo pra passar cada sentença por quatro estágios: **selection** (manter só sentenças com afirmação verificável — opinião, juízo de valor e pergunta retórica saem), **disambiguation** (descartar sentenças com múltiplas leituras plausíveis quando o contexto não resolve), **decomposition** (quebrar sentenças com múltiplos fatos em afirmações separadas, sem perseguir atomicidade infinita) e **decontextualization** (cada afirmação emitida deve ficar de pé sozinha — resolver pronomes, adicionar o ano de um número que depende dele, atribuir uma citação à fonte).",
         "Cada afirmação tem um tipo: `numeric`, `date`, `quote`, `causal`, ou `categorical`. O tipo informa como o verificador procura evidência depois.",
-        "Limite duro de 50 afirmações por extração (ajustável no admin). Existe porque cada afirmação depois custa créditos Sonar pra verificar; uma extração sem cap num PDF de 30 páginas poderia gastar bastante dinheiro antes do usuário perceber.",
+        "Limite duro de 50 afirmações por extração (configurável pelo operador). Existe porque cada afirmação depois custa créditos Sonar pra verificar; uma extração sem cap num PDF de 30 páginas poderia gastar bastante dinheiro antes do usuário perceber.",
+        "**Roteamento do modelo e por quê.** O GPT-5.4 mini ou MiniMax M3 escolhido faz apenas a extração; não decide se a afirmação é verdadeira. As regras inspiradas no Claimify e o schema estrito tornam esta uma tarefa delimitada de extração de informação, por isso os modelos econômicos do seletor são usados aqui e o modelo caro com busca fica reservado às afirmações que o usuário realmente manda verificar.",
+        "A extração transmite cards de afirmação enquanto os chunks rodam em paralelo. Cada afirmação mantém a sentença exata da fonte e uma formulação autônoma, permitindo auditar a descontextualização antes de gastar na verificação. Se um chunk falhar, as afirmações dos chunks concluídos permanecem; a interface não deve, portanto, ser lida como prova de que toda alegação verificável foi encontrada.",
       ],
     },
     {
@@ -1612,6 +1669,8 @@ const pt: Messages = {
         "O Sonar retorna um JSON com o veredito (`sustentado` / `contradito` / `misto` / `não verificado`), uma confiança entre 0 e 1, uma justificativa, e uma lista de fontes citadas tiradas do canal `annotations` do Sonar. Se a confiança ficar abaixo de 0.5, o veredito é forçado pra `não verificado` — melhor sinalizar 'evidência insuficiente' do que entregar uma resposta confiantemente errada.",
         "Toda fonte citada é classificada em um de seis tiers (segundo Goldfarb et al. 2025): `primary` (órgãos oficiais de dados, decisões judiciais, papers peer-reviewed), `scholarly`, `think_tank`, `journalistic`, `commercial_content`, `informal`. Uma flag boolean separada marca veículos `state-controlled` (RT, CGTN, Xinhua etc. — mas não BBC/NPR/Deutsche Welle, que são state-FUNDED mas editorialmente independentes).",
         "A linguagem do veredito é intencionalmente cuidadosa com pessoas nomeadas: nunca 'X está mentindo' ou 'isso é falso' — sempre 'a evidência não sustenta' / 'a evidência contradiz o número' / 'não encontramos evidência que sustente'. É regra dura no system prompt.",
+        "**Roteamento do modelo e por quê.** O Perplexity Sonar Reasoning Pro é fixo na verificação porque esta etapa precisa de recuperação web atual e anotações de fontes, não apenas geração de texto em livro fechado. GPT-5.4 mini e MiniMax M3 nunca fabricam citações de veredito; eles param na extração. Separar extração e verificação também torna visíveis o custo, o comportamento do cache e as falhas de cada afirmação.",
+        "As afirmações são verificadas independentemente, então um timeout ou conjunto fraco de evidências não invalida as demais. O Jiddu normaliza a resposta estruturada do Sonar, aplica o piso de confiança, preserva as URLs citadas e armazena o id do modelo usado. Os tiers descrevem o tipo de fonte, não uma nota automática de verdade: até uma fonte primária pode estar desatualizada ou ser mal interpretada.",
         "Qual a accuracy disso na prática? A gente rodou um [benchmark contra o corpus humano do PolitiFact](/benchmark). Em 200 afirmações puxadas das quatro categorias polares do PolitiFact (true / mostly-true / false / pants-on-fire, de 2020 pra cá), o veredito do Jiddu coincidiu com o veredito humano polar em 67.5% dos casos no total e 81.3% nas categorias menos ambíguas (true / false / pants-on-fire). Discordância estrita — Jiddu dizer o oposto polar do humano — aconteceu em só 4.5% dos casos (9 de 200). Os ~28% restantes foram Jiddu devolvendo `mixed` ou `unverified` no lugar de um veredito polar, concentrados no bucket `mostly_true` do PolitiFact (58% viraram `mixed` — sobreposição estrutural, não erro, já que ambos os rótulos descrevem verdade parcial). Metodologia, matriz de confusão e análise das discordâncias no link.",
       ],
     },
@@ -1620,7 +1679,7 @@ const pt: Messages = {
       paragraphs: [
         "Cada afirmação verificada é hashada e armazenada. O hash é `sha256(lang + ':' + normalize(statement))` onde `normalize` faz lowercase, tira acentos combinantes, colapsa espaços e remove pontuação final. Isso significa que reformulações da mesma afirmação colidem, mas idiomas diferentes não.",
         "TTLs por tipo de afirmação. `numeric` 30 dias (IBGE e companhia revisam séries), `date` e `categorical` 365 dias (fatos históricos e definições são estáveis), `quote` e `causal` 90 dias (re-examináveis mas pouco prováveis de mudar). Uma varredura best-effort apaga linhas expiradas no caminho de cache-miss, limitada a uma vez a cada 30 minutos pra o hot path ficar barato.",
-        "O usuário pode burlar o cache com um botão **refresh** por afirmação (força uma chamada Sonar fresca). Conta contra um quota ajustável no admin — padrão é 2 refreshes por afirmação. Depois disso, o botão some e a API retorna 429.",
+        "O usuário pode burlar o cache com um botão **refresh** por afirmação (força uma chamada Sonar fresca). Conta contra uma cota configurável pelo operador — o padrão é 2 refreshes por afirmação. Depois disso, o botão some e a API retorna 429.",
       ],
     },
     {
@@ -1629,29 +1688,32 @@ const pt: Messages = {
         "Diferente da detecção de falácia: um texto pode ser livre de falácia e factualmente correto e ainda assim usar enquadramento carregado, atribuição assimétrica ou seleção unilateral de fontes. A análise de imparcialidade sinaliza esses padrões.",
         "Oito tipos de issue são sinalizados no nível da sentença: `loaded_language`, `asymmetric_attribution`, `false_equivalence`, `selective_omission`, `source_asymmetry`, `both_sidesing`, `steering`, `genetic_framing`. O modelo também classifica o documento num de sete tipos de texto (informativo / opinião / discurso político / advocacy / análise / marketing / redes sociais) — isso informa quão estrito o audit é.",
         "O veredito a nível de documento é um de `neutral` / `partisan_lean` / `explicitly_partisan` / `manipulation`. O Jiddu **deliberadamente não classifica direção partidária** (esquerda/direita, pró-X/anti-Y). O paper da Forum AI que inspirou a metodologia exige um painel bipartisan de especialistas pra essa etapa; sem ele, rótulos partidários são pouco confiáveis e perigosos. Sinalizamos padrões específicos que o leitor pode auditar, em vez disso.",
+        "**Roteamento do modelo e por quê.** O GPT-5.4 mini ou MiniMax M3 escolhido faz a classificação do tipo de texto, a detecção de issues por sentença e o veredito do chunk na mesma chamada estruturada. Este pipeline não navega na web nem decide se as afirmações são verdadeiras; usar o modelo econômico do seletor mantém a análise de enquadramento rápida, enquanto a família alternativa permite comparar a sensibilidade.",
+        "Em textos longos, os chunks são analisados em paralelo. O veredito final é então escolhido deterministicamente como o mais severo entre os chunks concluídos (`manipulation` acima de `explicitly_partisan`, acima de `partisan_lean`, acima de `neutral`); confiança e justificativa vêm do chunk mais forte nesse nível, e o tipo do documento é a moda entre os chunks. Isso favorece recall de propósito, então uma passagem fortemente enquadrada pode determinar o veredito principal.",
+        "Os evals exercitam os oito sinais e exemplos que não deveriam ser marcados, mas ainda não há benchmark publicado com painel humano para imparcialidade. O veredito é, portanto, um auxílio de navegação para passagens auditáveis, não uma medida objetiva de equilíbrio político.",
       ],
     },
     {
-      title: "10. Armazenamento, privacidade e revisão",
+      title: "10. Privacidade e status de revisão",
       paragraphs: [
-        "A persistência é um único arquivo SQLite num VPS Hostinger, montado como volume Docker. Não há contas de usuário. Os resultados recebem ids curtos em `/a`, `/f`, `/n`, `/e`, `/s` ou `/r`; quem tem a URL compartilhável vê o resultado final. Ledgers, pesquisa e juízos preliminares da revisão permanecem artefatos intermediários privados.",
+        "Não há contas de usuário. Resultados concluídos usam URLs não listadas: qualquer pessoa com a URL pode ver o resultado final, mas essas páginas não são enumeradas no sitemap público. Ledgers, pesquisa e juízos preliminares da revisão de papers são artefatos intermediários internos e não aparecem no resultado público.",
         "O conteúdo submetido passa pelo OpenRouter para o upstream do modelo escolhido. Na revisão de paper, isso inclui imagens renderizadas de páginas selecionadas, não só o texto extraído. A etapa de literatura pesquisa fontes acadêmicas públicas por afirmações técnicas, enquanto os prompts proíbem consultas pelo título, nome dos autores ou outros manuscritos dos mesmos autores. O autocomplete envia apenas a consulta da venue ao DBLP. Registramos o IP para rate-limit e sinais de abuso e não o vendemos.",
-        "Cada análise tem um timestamp `reviewedAt`. Por padrão é nulo, significando que a análise é automatizada e não foi conferida por um operador. O admin (em `/admin`, protegido por senha) pode marcar análises individuais como revisadas.",
+        "Os resultados são automatizados e não revisados por padrão. Um resultado explicitamente marcado como revisado foi conferido pontualmente pelo operador; esse status representa uma verificação humana adicional, não uma garantia de que todos os achados estejam corretos.",
       ],
     },
     {
       title: "11. Controle de custo e abuso",
       paragraphs: [
-        "Toda rota que gera custo tem rate limit token bucket in-memory por IP. Os padrões incluem 30 análises de falácia / hora, 30 extrações de fact-check / hora, 10 verificações em massa / hora, 20 refreshes individuais / hora e, deliberadamente conservador, 4 revisões de paper / hora com burst 2. Tudo é ajustável em runtime no `/admin/settings`; buckets esgotados retornam 429 com `Retry-After`.",
+        "Toda rota que gera custo tem rate limit token bucket in-memory por IP. Os padrões incluem 30 análises de falácia / hora, 30 extrações de fact-check / hora, 10 verificações em massa / hora, 20 refreshes individuais / hora e, deliberadamente conservador, 4 revisões de paper / hora com burst 2. O operador pode ajustar esses valores em runtime; buckets esgotados retornam 429 com `Retry-After`.",
         "A extração de fact-check tem cap de 50 afirmações por documento e o refresh, 2 chamadas por afirmação. A revisão aceita exatamente um PDF, recusa truncamento silencioso acima de 300.000 caracteres extraídos, limita a inspeção visual a páginas selecionadas e divide o trabalho caro em etapas auditáveis. Esses controles evitam fan-out e custos acidentalmente ilimitados.",
       ],
     },
     {
       title: "12. Loop de feedback",
       paragraphs: [
-        "Todo card de afirmação tem um botão **🚩 Reportar veredito errado**. O clique captura um motivo opcional em texto livre e faz POST pra um endpoint de feedback, que tira snapshot do statement + veredito atuais (assim o admin vê o que o usuário tava vendo, mesmo se o veredito for re-verificado depois).",
-        "Flags enviadas caem numa fila em `/admin/feedback` com status `open`. O operador marca cada uma como `resolved` (concorda com o usuário, planeja consertar) ou `ignored` (o veredito tava certo, ou a flag era spam), ou deleta. A home do admin mostra um badge vermelho com a contagem aberta.",
-        "Hoje não há ação automática no veredito quando flags se acumulam — toda entrada é revisada manualmente. Melhoria futura: um badge 'disputed' no viewer público quando N flags juntarem na mesma afirmação.",
+        "Todo card de afirmação tem um botão **🚩 Reportar veredito errado**. O clique captura um motivo opcional e guarda o statement e o veredito atuais, para que o operador possa revisar o que o usuário viu mesmo se a afirmação for verificada novamente depois.",
+        "Flags enviadas entram numa fila privada de moderação com status `open`. O operador marca cada uma como `resolved` (concorda com o usuário, planeja consertar) ou `ignored` (o veredito tava certo, ou a flag era spam), ou deleta.",
+        "Os relatos não alteram automaticamente um veredito. O operador revisa cada entrada manualmente, então o volume de relatos, sozinho, não substitui as evidências mostradas ao leitor.",
       ],
     },
     {
@@ -1669,13 +1731,21 @@ const pt: Messages = {
         "Níveis de audiência: **Criança** (ELI5, analogias do cotidiano, sem jargão), **Ensino médio** (linguagem clara, poucos termos técnicos explicados), **Graduação** (registro acadêmico padrão, pressupõe familiaridade com a área), **Expert** (conciso, nível de pares, terminologia completa mantida). O nível controla apenas a complexidade do texto — não filtra nem valida o conteúdo.",
         "A tag de papel é algorítmica. O modelo lê cada parágrafo em contexto e atribui o papel que melhor descreve sua função no argumento. Artigos interdisciplinares ou documentos com estrutura não padrão podem receber tags incorretas.",
         "Ao contrário dos pipelines de texto geral, o Explain é otimizado para artigos acadêmicos estruturados. Resultados em posts de blog, petições jurídicas ou textos não estruturados serão de menor qualidade.",
+        "**Roteamento do modelo e por quê.** O GPT-5.4 mini ou MiniMax M3 escolhido escreve a visão geral, as tags de papel e as explicações dos parágrafos em uma passagem por chunk limitada pelo schema. A explicação usa os modelos econômicos do seletor porque transforma o texto fornecido, em vez de pesquisar literatura ou validar o conteúdo de forma independente; não há busca web, checagem de citações nem segundo modelo crítico.",
+        "Os chunks rodam com concorrência limitada e as explicações aparecem na margem à medida que chegam. Cada chunk pode propor uma visão geral, mas o Jiddu mantém deterministicamente a primeira não vazia porque o primeiro chunk normalmente contém resumo e introdução. A falha de um chunk preserva as explicações dos demais, então podem existir lacunas em papers longos ou com formatação incomum.",
+        "Os evals atuais verificam cobertura de papéis, calibração da audiência e confiabilidade do schema, não fidelidade factual contra anotações de especialistas. O Explain pode simplificar demais uma ressalva ou interpretar um método com confiança indevida; deve facilitar a entrada no texto-fonte, nunca substituí-lo.",
       ],
     },
     {
       title: "15. Revisão adversarial de paper",
       paragraphs: [
         "O pipeline de revisão (`/review`, resultados em `/r/:id`) aceita exatamente um PDF final como manuscrito autônomo, mais venue-alvo, edição, track, tipo de paper e data opcional. Ele não combina suplementos nem múltiplos arquivos. O resultado público inclui recomendação de gatekeeping, resumo, pontos fortes, fraquezas localizadas, perguntas, checklist de reprodutibilidade, referências e o padrão exato da venue; os exports Markdown e print/PDF usam a mesma revisão final armazenada.",
-        "São cinco etapas privadas: **ledger** (afirmações, evidências, experimentos e inspeção visual com páginas), **pesquisa de literatura publicada**, **síntese estruturada**, **autocrítica adversarial** e **finalização determinística**. A autocrítica precisa contestar novidade sem suporte, evidências ignoradas, severidade inflada ou atenuada e inconsistência com a venue-alvo antes que qualquer rascunho vire final.",
+        "Metodologicamente, o Jiddu adapta as dimensões de revisão **SPECS** — Story, Presentation, Evaluations, Correctness e Significance — e o padrão de síntese e autocrítica em estágios descrito em [AI-Assisted Peer Review at Scale: The AAAI-26 AI Review Pilot](https://arxiv.org/abs/2604.13940). O Jiddu é uma implementação independente, com ledger próprio de claims e evidências, calibração por venue, parser, contrato de saída e salvaguardas; ele não reproduz o sistema da AAAI-26.",
+        "Depois do ledger paginado e da pesquisa de literatura, cinco especialistas independentes auditam **Story, Presentation, Evaluations, Correctness e Significance**. Evaluations e Correctness podem propor cálculos aritméticos permitidos que o Jiddu refaz sem executar código do manuscrito. Síntese e autocrítica são seguidas por validação das fontes, auditoria de qualidade com outro modelo e um gate determinístico que preserva todo achado MAJOR/MODERATE retido.",
+        "O formulário oferece profundidade **Padrão** e **Profunda**. A Padrão usa o modelo econômico selecionado e outro modelo do catálogo como crítico. A Profunda usa modelos de raciocínio mais fortes em avaliação, correção, significância e síntese, com Claude Opus 4.8 como crítico independente por padrão; leva mais tempo e custa mais.",
+        "**Roteamento dos modelos e por quê.** No modo Padrão, o modelo escolhido no formulário — GPT-5.4 mini por padrão ou MiniMax M3 — executa o ledger, a pesquisa de literatura, os cinco especialistas SPECS, a síntese e a autocrítica. A auditoria de qualidade é entregue deliberadamente ao outro modelo do catálogo, para que o rascunho não seja aprovado apenas pelo modelo que o escreveu.",
+        "No modo Profundo, o modelo selecionado continua responsável pelo ledger, Story e Presentation; o GPT-5.5 com raciocínio high executa pesquisa de literatura, Evaluations, Correctness, Significance, síntese, autocrítica e eventual reparo; o Claude Opus 4.8 audita a revisão resultante de forma independente. Assim, o raciocínio caro fica concentrado em validade numérica, desenho experimental, novidade e síntese entre etapas, enquanto uma família diferente de modelos faz o desafio final para reduzir pontos cegos correlacionados.",
+        "No [benchmark sintético SPECS de 30 casos do Jiddu](https://github.com/rafaehlers/jiddu/blob/main/evals/paper-review/report.md), GPT-5.4 mini e GPT-5.5 detectaram todas as falhas inseridas, mas o GPT-5.5 produziu 30,6% menos achados, mais consolidados. O benchmark atingiu o teto e não prova superioridade em papers completos; Profunda é uma camada adicional de escrutínio, não garantia de correção. O operador pode trocar os dois modelos do modo Profundo por `PAPER_REVIEW_DEEP_MODEL` e `PAPER_REVIEW_CRITIC_MODEL`.",
         "O autocomplete combina descoberta gratuita e sem conta pelo [DBLP](https://dblp.org) com perfis 2026 verificados e versionados de NeurIPS, ICML, ICLR, AAAI, IJCAI e CVPR. Um perfil verificado injeta critérios e exigências oficiais na síntese e na autocrítica e fica persistido com URLs-fonte. Uma venue só do DBLP ou sem correspondência usa rubrica acadêmica geral claramente identificada; incompatibilidades de edição, track ou tipo são marcadas como não verificadas, nunca adivinhadas.",
         "Toda fraqueza substantiva precisa trazer página ou seção do manuscrito e severidade `MAJOR`, `MODERATE` ou `MINOR`. A revisão continua automatizada: pode perder problemas, inventar comparações ou aplicar mal um critério, e não é revisão oficial por pares nem previsão de aceitação.",
       ],
@@ -1684,8 +1754,8 @@ const pt: Messages = {
       title: "16. API pública & MCP (para agentes)",
       paragraphs: [
         "Além do app web, os cinco pipelines de texto são expostos como uma API REST pública para agentes e scripts: `POST /api/v1/detect-fallacies`, `/fact-check`, `/assess-neutrality`, `/explain`, `/detect-slop`. Eles são síncronos — uma requisição JSON entra (`{ text }`, 40–2000 caracteres, mais `lang` opcional e, no explain, `level`) e uma resposta JSON sai. Os geradores rodam até o fim sobre um único chunk e não persistem uma linha.",
-        "As requisições se autenticam com o cabeçalho `X-Jiddu-Key`. As chaves são emitidas pelo admin em `/admin/api-keys` (guardadas só como hash sha256, mostradas uma vez) e têm limite de taxa por chave, separado dos limites por IP do app web. O fact-check via API extrai e verifica cada afirmação, com um teto de afirmações por requisição pra que uma chamada não dispare verificações ilimitadas no Sonar pago.",
-        "A revisão adversarial é exposta como job assíncrono persistido: `POST /api/v1/adversarial-reviews` recebe um PDF enviado ou uma `pdf_url` pública e devolve `202`; `GET /api/v1/adversarial-reviews/{id}` informa a etapa atual e, no fim, entrega a revisão estruturada. Assim o fluxo de cinco etapas e vários minutos não é forçado no contrato síncrono de texto.",
+        "As requisições se autenticam com o cabeçalho `X-Jiddu-Key`. As chaves são emitidas pelo operador, guardadas apenas como hash sha256, mostradas uma vez e limitadas por chave separadamente dos limites por IP do app web. O fact-check via API extrai e verifica cada afirmação, com um teto de afirmações por requisição pra que uma chamada não dispare verificações ilimitadas no Sonar pago.",
+        "A revisão adversarial é exposta como job assíncrono persistido: `POST /api/v1/adversarial-reviews` recebe um PDF enviado ou uma `pdf_url` pública e devolve `202`; `GET /api/v1/adversarial-reviews/{id}` informa a etapa atual e, no fim, entrega a revisão estruturada. Assim o fluxo de nove etapas e vários minutos não é forçado no contrato síncrono de texto.",
         "O servidor MCP hospedado em `POST /api/mcp` expõe as cinco ferramentas de texto mais `start_adversarial_review` e `get_adversarial_review`. Qualquer cliente MCP conecta via `mcp-remote`; as mesmas ferramentas também vêm no pacote standalone `jiddu-mcp`. Snippets e docs orientadas a máquina em [/api-access](/api-access).",
         "A qualidade é acompanhada por um conjunto fixo de evals (15–16 casos por ferramenta) versionado no repositório e comparado com resultados esperados; o relatório publicado está em [evals/report.md](https://github.com/rafaehlers/jiddu/blob/main/evals/report.md).",
       ],
@@ -1694,7 +1764,9 @@ const pt: Messages = {
       title: "17. Open source e metodologia",
       paragraphs: [
         "Código fonte em [github.com/rafaehlers/jiddu](https://github.com/rafaehlers/jiddu) sob licença [AGPL-3.0-or-later](https://www.gnu.org/licenses/agpl-3.0.txt). A AGPL fecha o 'SaaS loophole' que a GPL deixa aberto: quem rodar uma versão modificada como serviço de rede tem que publicar o código modificado.",
-        "Claimify e Distilling Expert Judgment at Scale fundamentam o fact-check e a imparcialidade. A revisão de paper também usa extração local sensível ao layout do LiteParse, descoberta de venues pelo DBLP e critérios específicos por edição transcritos de páginas oficiais. O Jiddu não tem afiliação com esses grupos, com o DBLP nem com as venues.",
+        "O [Claimify](https://arxiv.org/abs/2502.10855) orienta a extração de afirmações, e [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) orienta a avaliação dos vereditos, os tiers de fontes e a imparcialidade. O [no-ai-slop](https://github.com/petergyang/no-ai-slop) fornece a taxonomia inicial da detecção de padrões de escrita.",
+        "A revisão adversarial de papers adapta as dimensões SPECS e a síntese e autocrítica por etapas descritas em [AI-Assisted Peer Review at Scale: The AAAI-26 AI Review Pilot](https://arxiv.org/abs/2604.13940). O Jiddu adiciona ledger, extração por LiteParse, descoberta via DBLP, perfis de venue, validação de fontes e gate de retenção próprios. Não tem afiliação com esses grupos, com o DBLP nem com as venues.",
+        "A avaliação publicada hoje inclui o [benchmark PolitiFact com 200 afirmações](/benchmark) e um [benchmark sintético SPECS com 30 casos](https://github.com/rafaehlers/jiddu/blob/main/evals/paper-review/report.md). Ambos documentam suas limitações e nenhum garante correção em um novo texto ou paper.",
         "O disclaimer completo do que o Jiddu afirma e não afirma está em [/legal](/legal).",
       ],
     },
@@ -2083,8 +2155,12 @@ const es: Messages = {
     "Interpretando el paper completo",
     "Construyendo el ledger privado de claims",
     "Verificando la literatura publicada",
-    "Auditando narrativa, evidencia y corrección",
+    "Ejecutando cinco revisiones SPECS independientes",
+    "Recalculando los resultados reportados",
+    "Sintetizando los hallazgos especializados",
     "Ejecutando la autocrítica adversarial",
+    "Validando las fuentes externas",
+    "Ejecutando la auditoría de calidad independiente",
     "Finalizando la revisión",
   ],
   review_venue: "Venue objetivo (opcional)",
@@ -2094,6 +2170,11 @@ const es: Messages = {
   review_venue_verified: "Rúbrica verificada",
   review_venue_catalog_only: "Resultado del catálogo · rúbrica general",
   review_venue_year: "Edición",
+  review_depth: "Profundidad de revisión",
+  review_depth_standard: "Estándar",
+  review_depth_deep: "Profunda",
+  review_depth_help:
+    "La revisión profunda usa modelos de razonamiento más fuertes para evaluaciones, corrección, síntesis y una crítica independiente. Tarda más y cuesta más.",
   review_track: "Track",
   review_track_placeholder: "Main track",
   review_paper_type: "Tipo de paper",
@@ -2129,9 +2210,9 @@ const es: Messages = {
     {
       title: "Revisión adversarial de papers",
       paragraphs: [
-        "La revisión adversarial usa un contrato de jobs asíncronos persistidos. Inicia con `POST /api/v1/adversarial-reviews` multipart y un `file`, o JSON con una `pdf_url` pública. La respuesta `202` devuelve id, URL de estado y `retry_after_seconds`; consulta `GET /api/v1/adversarial-reviews/{id}` hasta que `status` sea `complete` o `failed`.",
-        "```\ncurl -X POST https://jiddu.app/api/v1/adversarial-reviews \\\n  -H \"X-Jiddu-Key: TU_CLAVE\" \\\n  -F \"file=@paper.pdf\" \\\n  -F \"lang=es\" \\\n  -F \"venue_profile_id=neurips-2026-main\"\n\ncurl -H \"X-Jiddu-Key: TU_CLAVE\" \\\n  https://jiddu.app/api/v1/adversarial-reviews/JOB_ID\n```",
-        "Un job completado devuelve la revisión estructurada y enlaces al visor, Markdown determinista y vista de impresión/PDF. Campos opcionales: `lang`, `venue_profile_id`, `venue`, `venue_year`, `venue_track`, `paper_type` y `review_date`. Los PDF tienen un límite de 25 MB y 300.000 caracteres extraídos.",
+        "La revisión adversarial usa un contrato de jobs asíncronos persistidos. Inicia con `POST /api/v1/adversarial-reviews` multipart y un `file`, o JSON con una `pdf_url` pública. Elige `depth=standard` para el pipeline económico o `depth=deep` para modelos más fuertes de razonamiento y crítica. La respuesta `202` devuelve id, URL de estado y `retry_after_seconds`; consulta `GET /api/v1/adversarial-reviews/{id}` hasta que `status` sea `complete` o `failed`.",
+        "```\ncurl -X POST https://jiddu.app/api/v1/adversarial-reviews \\\n  -H \"X-Jiddu-Key: TU_CLAVE\" \\\n  -F \"file=@paper.pdf\" \\\n  -F \"lang=es\" \\\n  -F \"depth=deep\" \\\n  -F \"venue_profile_id=neurips-2026-main\"\n\ncurl -H \"X-Jiddu-Key: TU_CLAVE\" \\\n  https://jiddu.app/api/v1/adversarial-reviews/JOB_ID\n```",
+        "Un job completado devuelve la revisión estructurada, una auditoría pública de la metodología y metadatos de verificación de fuentes, además de enlaces al visor, Markdown determinista e impresión/PDF. Campos opcionales: `lang`, `depth`, `venue_profile_id`, `venue`, `venue_year`, `venue_track`, `paper_type` y `review_date`. Los PDF tienen un límite de 25 MB y 300.000 caracteres extraídos.",
       ],
     },
     {
@@ -2198,20 +2279,20 @@ const es: Messages = {
     "Este es un informe automatizado. Señala patrones de escritura, nunca autoría — los humanos también escriben slop, y las etiquetas pueden estar equivocadas. Lee los pasajes citados y juzga por tu cuenta. Términos completos en https://jiddu.app/legal.",
   print_generated_at: (when) => `Generado ${when} · jiddu.app`,
 
-  legal_title: "Términos y descargos",
+  legal_title: "Términos, privacidad y descargos",
   legal_subtitle:
     "Lee esto antes de usar Jiddu, especialmente antes de compartir un análisis públicamente.",
-  legal_last_updated: "Actualizado: 2026-07-26",
+  legal_last_updated: "Actualizado: 2026-07-27",
   legal_sections: [
     {
       title: "1. Qué hace Jiddu",
       paragraphs: [
-        "Jiddu es una herramienta automatizada. Usa modelos de lenguaje (actualmente enrutados vía OpenRouter a OpenAI, Anthropic, MiniMax y Perplexity Sonar) para (a) señalar pasajes que pueden contener falacias lógicas, (b) extraer afirmaciones factuales verificables y ofrecer un veredicto basado en búsqueda web, (c) evaluar qué tan neutral o sesgado es un texto, (d) explicar un documento párrafo por párrafo en el nivel de lectura elegido, (e) señalar patrones de escritura de slop de IA (plantillas y frases hechas — nunca una afirmación sobre autoría) y (f) producir una revisión adversarial previa al envío, calibrada para el venue, de un paper completo. Los seis flujos están disponibles en la app web, la API pública y MCP; la revisión de papers usa un contrato asíncrono de jobs persistidos.",
-        "Jiddu no tiene editores humanos. Todo resultado que ves es producido por software. La herramienta es un apoyo a la lectura crítica — no la reemplaza.",
+        "Jiddu ofrece seis flujos automatizados de lectura crítica: detección de falacias, verificación de hechos, evaluación de imparcialidad, explicación de papers, detección de patrones de escritura y revisión adversarial de papers. La app web, la API pública y MCP usan los mismos pipelines; la revisión de papers se ejecuta como job asíncrono porque tiene varias etapas.",
+        "Jiddu no tiene un equipo editorial humano. Todo resultado es producido por software. Una marca de revisión significa que el operador hizo una inspección puntual, pero el informe sigue siendo automatizado. Úsalo como apoyo para la lectura crítica, no como sustituto.",
       ],
     },
     {
-      title: "2. Sin afirmación de verdad",
+      title: "2. Los resultados automatizados pueden fallar",
       paragraphs: [
         'Los veredictos ("respaldado", "contradicho", "mixto", "no verificado") y las etiquetas de falacia son juicios automatizados de mejor esfuerzo. Pueden estar equivocados — a veces con alta confianza.',
         "Jiddu no afirma que ninguna declaración, persona o documento sea verdadero, falso, mentiroso o engañoso. Las etiquetas son señales para activar tu propia verificación. Siempre lee las fuentes citadas y forma tu propia conclusión.",
@@ -2231,13 +2312,13 @@ const es: Messages = {
       title: "4. Personas y figuras públicas",
       paragraphs: [
         "Los análisis sobre personas nombradas (políticos, periodistas, ejecutivos) son producidos por software que busca en fuentes públicas en la web. El lenguaje que usa Jiddu es intencionalmente cauto (\"la evidencia no respalda\", \"no encontramos\") — no adoptes una formulación más fuerte de la que emite la herramienta.",
-        "Si crees que un veredicto es injusto o sin sustento, usa el botón \"reportar veredicto incorrecto\" en la afirmación correspondiente. Flags repetidas e injustas contra la misma persona pueden ser eliminadas a criterio del operador.",
+        "Si crees que un veredicto es injusto o sin sustento, usa el botón \"reportar veredicto incorrecto\" en la afirmación correspondiente. El operador revisa los reportes enviados; los reportes abusivos o repetitivos pueden descartarse.",
       ],
     },
     {
       title: "5. Privacidad",
       paragraphs: [
-        "Cada análisis o revisión de paper recibe un id corto y se almacena en un servidor en Brasil. Quien tenga la URL compartible puede ver el resultado final. No hay cuentas de usuario; las etapas intermedias privadas de la revisión no aparecen en el visor público.",
+        "Cada análisis o revisión de paper completado recibe una URL compartible no listada y se almacena en un servidor en Brasil. Quien tenga la URL puede ver el resultado final, pero esas páginas no se enumeran en el sitemap público. No hay cuentas de usuario; las etapas intermedias privadas de la revisión no aparecen en el visor público.",
         "El autocompletado de venue envía solo la consulta del venue — nunca el manuscrito — a la búsqueda pública de venues de [DBLP](https://dblp.org). La etapa de investigación de literatura consulta fuentes académicas públicas usando afirmaciones técnicas del manuscrito; los prompts prohíben buscar por el título del paper, el nombre de los autores u otros manuscritos de los mismos autores.",
         "Registramos el IP de la solicitud para límites de tasa y detección de abuso. No vendemos ni compartimos esa información.",
         "El tráfico de las páginas se mide vía Google Analytics (gtag.js).",
@@ -2247,9 +2328,11 @@ const es: Messages = {
       title: "6. Metodología",
       paragraphs: [
         "Nuestro pipeline de extracción y verificación de afirmaciones se inspira en [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson, MSR 2025) para la etapa de extracción, y en el framework de evaluación descrito en [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) (Goldfarb, Hall, Fisher, Salam, Wilde — Forum AI / Stanford, 2025) para la evaluación de veredicto, los niveles de calidad de fuente y la dimensión de imparcialidad. Nuestra elección de 4 clases de veredicto (respaldado / contradicho / mixto / no verificado) en lugar de los esquemas de 5 o 6 clases usados por algunos outlets de fact-check se basa en [Sahitaj et al. 2025](https://arxiv.org/abs/2502.08909), que mostraron empíricamente que el etiquetado de 3 clases supera al de 5 clases para fact-check con LLMs — las categorías adicionales en el medio introducen ambigüedad sin mejorar la precisión.",
-        "La revisión adversarial crea un ledger de afirmaciones y evidencias etiquetado por página, investiga literatura publicada, sintetiza una revisión estructurada, cuestiona esa revisión en una autocrítica separada y luego la finaliza de forma determinista. Los perfiles verificados de venue son snapshots específicos de una edición de los criterios oficiales; los criterios exactos y las URL fuente utilizadas se guardan con cada revisión. Los venues sin coincidencia usan una rúbrica académica general claramente identificada, y las políticas pueden cambiar después de publicar el perfil.",
+        "La revisión adversarial adapta las dimensiones SPECS y el patrón de síntesis y autocrítica por etapas descrito en [AI-Assisted Peer Review at Scale: The AAAI-26 AI Review Pilot](https://arxiv.org/abs/2604.13940). Jiddu es una implementación independiente, con ledger paginado de afirmaciones y evidencias, investigación de literatura, comprobaciones aritméticas, calibración por venue, validación de fuentes y gate de retención de hallazgos propios; no reproduce el sistema de AAAI-26.",
+        "La taxonomía inicial del detector de slop proviene de la skill de edición [no-ai-slop](https://github.com/petergyang/no-ai-slop), de Peter Yang, con licencia MIT. Jiddu aporta la redacción del catálogo, las traducciones y el prompt de detección, y señala patrones observables, no autoría.",
         "Jiddu no está afiliado a esos grupos de investigación, a DBLP ni a ningún venue cuyos criterios resume. Se citan las referencias y páginas oficiales para que el usuario pueda auditar la metodología y el estándar aplicado.",
         "El pipeline de fact-check se midió contra el corpus humano de [PolitiFact](https://www.politifact.com) (vía el [dataset LIAR2](https://github.com/chengxuphd/liar2), Apache-2.0). En 200 afirmaciones tomadas de los cuatro buckets polares de PolitiFact, el veredicto de Jiddu coincidió con el veredicto humano en 67,5% de los casos en total y en 81,3% en las categorías menos ambiguas (true / false / pants-on-fire), con desacuerdo estricto en apenas 4,5%. Metodología completa, matriz de confusión y análisis de desacuerdos en [docs/benchmark-politifact.md](/benchmark).",
+        "La revisión de papers tiene un [benchmark sintético SPECS separado de 30 casos](https://github.com/rafaehlers/jiddu/blob/main/evals/paper-review/report.md). GPT-5.4 mini y GPT-5.5 detectaron los 30 defectos insertados; GPT-5.5 produjo 30,6% menos hallazgos, más consolidados. El conjunto alcanzó un techo y no establece precisión en papers reales completos.",
       ],
     },
     {
@@ -2268,23 +2351,23 @@ const es: Messages = {
       title: "1. Visión general",
       paragraphs: [
         "Jiddu corre seis análisis independientes: un detector de falacias, un pipeline de verificación de hechos (extracción + veredicto vía Sonar), una evaluación de imparcialidad, un explicador de papers párrafo a párrafo, un detector de slop de IA y una revisión adversarial de un único paper autónomo con verificación de literatura publicada. Son rutas separadas en la app (`/`, `/factcheck`, `/neutrality`, `/explain`, `/slop`, `/review`) y tablas separadas en la base. Ninguno depende de los otros.",
-        "Los cinco pipelines de texto transmiten output estructurado de tool call de un LLM vía [OpenRouter](https://openrouter.ai); Jiddu controla los JSON Schemas y [partial-json](https://github.com/promplate/partial-json) permite que los hallazgos aparezcan mientras el modelo todavía escribe. La revisión de papers también usa SSE, pero para informar cinco etapas amplias; cada etapa completa y valida un artefacto estructurado antes de la siguiente.",
+        "Los cinco pipelines de texto transmiten output estructurado de tool call de un LLM vía [OpenRouter](https://openrouter.ai); Jiddu controla los JSON Schemas y [partial-json](https://github.com/promplate/partial-json) permite que los hallazgos aparezcan mientras el modelo todavía escribe. La revisión de papers también usa SSE, pero para informar nueve etapas amplias; cada etapa completa y valida un artefacto estructurado antes de la siguiente.",
         "Todo el output va en el idioma de la UI elegido por el usuario. El mismo prompt se usa sin importar qué modelo elija el usuario — la diferencia de idioma viene de una única línea `OUTPUT LANGUAGE:` en el system prompt.",
       ],
     },
     {
       title: "2. Entrada: ingestión y segmentación",
       paragraphs: [
-        "**URL.** El fetch envía headers de navegador real (User-Agent de Chrome actual, Accept-Language pt-BR, sec-ch-ua, sec-fetch-*) para que bloqueadores ingenuos de bots no rechacen. Cada salto de redirect tiene el DNS resuelto y se rechaza si el IP cae en RFC1918, loopback, link-local, CGNAT, multicast o rangos reservados IPv4/IPv6 — eso cierra la puerta de SSRF, incluyendo el IP de metadatos de AWS (169.254.169.254) y el admin local del NPM (puerto 81 del VPS). El cuerpo de la respuesta está limitado a 5 MB. El HTML pasa por [@mozilla/readability](https://github.com/mozilla/readability) para extraer el artículo.",
+        "**URL.** El fetch usa headers similares a los de un navegador para reducir rechazos de filtros simples de bots. Cada redirect resuelve el DNS y se bloquea si alcanza un rango privado, loopback, link-local, CGNAT, multicast o reservado de IPv4/IPv6. El tamaño de la respuesta se limita a 5 MB y [@mozilla/readability](https://github.com/mozilla/readability) extrae el cuerpo del artículo.",
         "**PDF.** Parseado localmente con [LiteParse](https://github.com/run-llama/liteparse) como parser principal y [pdfjs-dist](https://mozilla.github.io/pdf.js/) como fallback. Los cinco pipelines de texto usan el modo rápido de LiteParse; la revisión adversarial usa el modo académico para preservar Markdown por página, orden espacial de lectura, OCR selectivo, señales de complejidad y screenshots. El PDF bruto no se sube como archivo, pero la revisión envía por OpenRouter imágenes renderizadas de páginas seleccionadas cuando la inspección visual es relevante.",
         "**Paste.** Usado tal cual, solo con espacios en blanco normalizados.",
-        "El texto extraído se segmenta en oraciones con un divisor consciente de abreviaturas (`src/lib/sentences.ts`) — reconoce abreviaturas en portugués (`sr.`, `dr.`, `prof.`), mantiene siglas como `U.S.` intactas y no rompe en medio de números como `3,4%`. Las oraciones se agrupan en chunks de ~12k caracteres (`src/lib/chunker.ts`) para que documentos largos quepan en la ventana de contexto del modelo sin perder fronteras de oración.",
+        "**Segmentación.** El texto extraído se divide en oraciones con un separador que reconoce abreviaturas (`src/lib/sentences.ts`) — identifica abreviaturas en portugués (`sr.`, `dr.`, `prof.`), mantiene siglas como `U.S.` intactas y no rompe en medio de números como `3,4%`. Las oraciones se agrupan en chunks de ~12k caracteres (`src/lib/chunker.ts`) para que documentos largos quepan en la ventana de contexto del modelo sin perder los límites entre oraciones.",
       ],
     },
     {
       title: "3. Modelos y fallback",
       paragraphs: [
-        "Dos modelos en el selector: [🇺🇸 GPT-5.4 mini](https://openrouter.ai/openai/gpt-5.4-mini) (por defecto) y [🇨🇳 MiniMax M3](https://openrouter.ai/minimax/minimax-m3). Fueron elegidos por estar en lados geopolíticos opuestos — un usuario preocupado por sesgo en los datos de entrenamiento puede pasar el mismo texto por los dos y comparar.",
+        "Dos familias de modelos aparecen en el selector: [🇺🇸 GPT-5.4 mini](https://openrouter.ai/openai/gpt-5.4-mini) (por defecto) y [🇨🇳 MiniMax M3](https://openrouter.ai/minimax/minimax-m3). Tener ambas permite comparar interpretaciones limítrofes y evita que todo análisis dependa de un solo proveedor.",
         "Si el modelo elegido falla *antes de emitir cualquier evento* (rate-limit del upstream, 5xx, etc.), la petición cae automáticamente al otro modelo — retry client-side, sin parpadeo en la UI. Una vez que el modelo ya emitió al menos un hallazgo/afirmación, no reintentamos: aceptamos la salida parcial y la capa de partial-parse rescata lo que pueda.",
         "Sonar Reasoning Pro se usa exclusivamente para los veredictos de fact-check (porque tiene búsqueda web incorporada). Nunca aparece en el selector de modelo.",
       ],
@@ -2295,6 +2378,9 @@ const es: Messages = {
         "Catálogo de 46 falacias cubriendo relevancia, ambigüedad, presunción, apelaciones emocionales, razonamiento causal y evidencia. Cada falacia tiene un id estable y un color distinto (distribución por golden angle) usado para resaltar pasajes. La lista completa está en [/fallacies](/fallacies).",
         "El system prompt instruye al modelo a ser riguroso y conservador — marcar solo cuando hay una falacia clara y defendible. Dos cláusulas específicas aprietan esto: una cláusula de **disambiguation** (no marcar una oración con múltiples lecturas plausibles a menos que el contexto la resuelva) y una cláusula de **standalone-explanation** (cada explicación debe nombrar la premisa implícita y la conclusión para que el lector no tenga que volver a la fuente). Ambas destiladas del paper Claimify (Microsoft Research 2025).",
         "Cada hallazgo tiene severidad binaria (`baja` / `alta`). La puntuación general de falacia (0-100) es un promedio ponderado entre chunks, ponderado por la cuenta de caracteres. Las etiquetas por rango (`razonamiento limpio` / `problemas menores` / `varias falacias` / `muy falaz` / `propagandístico`) están escritas en el propio prompt para que el modelo tenga la misma calibración que muestra la UI.",
+        "**Enrutamiento del modelo y por qué.** El GPT-5.4 mini o MiniMax M3 elegido realiza la clasificación completa en una pasada estructurada por chunk. La tarea usa un modelo económico porque el espacio de razonamiento está limitado por un catálogo fijo de 46 elementos, las oraciones exactas de la fuente y un JSON Schema; no hay búsqueda web ni un segundo modelo crítico. El modelo alternativo sigue disponible para comparar interpretaciones limítrofes de otra familia.",
+        "Los chunks se ejecutan con concurrencia limitada y transmiten hallazgos en cuanto se validan. El fallo de un chunk no borra los demás; la puntuación final se calcula de forma determinista con los chunks completados, ponderados por caracteres. Esa resiliencia también significa que el resultado puede ser parcial, por lo que la puntuación es una ayuda de lectura y no la probabilidad de que el documento sea 'falaz'.",
+        "El repositorio incluye evals de regresión para detecciones esperadas y trampas de falso positivo, pero Jiddu aún no ha publicado un benchmark de precisión con etiquetas humanas para este pipeline. Una ausencia no prueba razonamiento sólido, y un pasaje resaltado todavía exige que el lector juzgue si la falacia nombrada realmente aplica.",
       ],
     },
     {
@@ -2303,6 +2389,9 @@ const es: Messages = {
         "Misma arquitectura que el detector de falacias — misma ingestión, chunking, streaming, fallback de modelo y puntuación 0-100 ponderada por caracteres — con catálogo y prompt distintos, persistido en su propia tabla (resultados en `/s/:id`, mismo visor de comentarios al margen, vista de impresión y demos en `/s/demo-en|pt|es`).",
         "El catálogo cubre 18 patrones de escritura de slop de IA en cinco familias: vocabulario de catálogo, drama fabricado, estructura de plantilla, sustancia hueca y tics de formato. La lista completa con definiciones y ejemplos está en [/slop-patterns](/slop-patterns). La selección de patrones se basa en la skill de edición [no-ai-slop](https://github.com/petergyang/no-ai-slop) de Peter Yang (licencia MIT); la redacción del catálogo, el contenido trilingüe y el prompt de detección son propios de Jiddu.",
         "El prompt detecta **patrones, no autoría** — tiene prohibido afirmar que un texto fue o no escrito por IA (los humanos también escriben slop). Cada hallazgo cita el fragmento exacto, nombra el patrón y dice en pocas palabras qué haría una versión más limpia (afirmar el punto, nombrar la fuente, dar el número) sin reescribir nada. Bandas de puntuación: 0-15 suena humano, 16-35 condimento ligero, 36-60 con plantillas, 61-80 dominado por plantillas, 81-100 prosa de línea de montaje.",
+        "**Enrutamiento del modelo y por qué.** Como en la detección de falacias, el GPT-5.4 mini o MiniMax M3 elegido procesa cada chunk contra un catálogo cerrado y un schema estructurado. No intervienen detector especializado, clasificador de marcas de agua ni modelo de autoría: el LLM actúa como crítico de estilo restringido. Los modelos económicos bastan para esta tarea de patrones superficiales, mientras la segunda familia permite comparar prosa cercana a una frontera de categoría.",
+        "Los fallos de chunks quedan aislados y los hallazgos válidos siguen transmitiéndose. Jiddu combina las puntuaciones de los chunks completados por cantidad de caracteres y toma el resumen del chunk completado con mayor puntuación; nunca infiere autoría de ese agregado. Los documentos largos pueden producir un parcial útil, pero el número es solo un indicador de densidad de los patrones catalogados.",
+        "El conjunto versionado de evals comprueba positivos representativos, prosa limpia y la salvaguarda de no inferir autoría, pero no es un benchmark poblacional de escritura humana frente a máquina. Deliberadamente: la función responde '¿qué patrones prefabricados aparecen?', no '¿quién o qué escribió esto?'.",
       ],
     },
     {
@@ -2310,7 +2399,9 @@ const es: Messages = {
       paragraphs: [
         "Modelado en [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson, MSR 2025). El prompt pide al modelo pasar cada oración por cuatro etapas: **selection** (mantener solo oraciones con una afirmación verificable — opiniones, juicios de valor, preguntas retóricas se descartan), **disambiguation** (descartar oraciones con múltiples lecturas plausibles cuando el contexto no resuelve), **decomposition** (partir oraciones con múltiples hechos en afirmaciones separadas sin perseguir atomicidad infinita) y **decontextualization** (cada afirmación emitida debe sostenerse sola — resolver pronombres, agregar el año a un número que dependa de él, atribuir una cita a su fuente).",
         "Cada afirmación emitida tiene un tipo: `numeric`, `date`, `quote`, `causal` o `categorical`. El tipo informa cómo el verificador busca evidencia después.",
-        "Tope duro de 50 afirmaciones por extracción (ajustable en el admin). El tope existe porque cada afirmación después cuesta créditos de Sonar para verificar; una extracción sin tope sobre un PDF de 30 páginas podría acumular dinero serio antes de que el usuario lo note.",
+        "Tope duro de 50 afirmaciones por extracción (configurable por el operador). El tope existe porque cada afirmación después cuesta créditos de Sonar para verificar; una extracción sin tope sobre un PDF de 30 páginas podría acumular dinero serio antes de que el usuario lo note.",
+        "**Enrutamiento del modelo y por qué.** El GPT-5.4 mini o MiniMax M3 elegido hace solo la extracción; no decide si una afirmación es verdadera. Las reglas inspiradas en Claimify y el schema estricto convierten esto en una tarea acotada de extracción de información, por eso aquí se usan los modelos económicos del selector y el modelo costoso con búsqueda se reserva para las afirmaciones que el usuario realmente manda verificar.",
+        "La extracción transmite tarjetas de afirmaciones mientras los chunks corren en paralelo. Cada afirmación conserva la oración exacta de la fuente y una formulación autónoma, lo que permite auditar la descontextualización antes de gastar en verificación. Si falla un chunk, las afirmaciones de los chunks completados permanecen; la interfaz no debe leerse como prueba de que se encontró toda afirmación verificable.",
       ],
     },
     {
@@ -2320,6 +2411,8 @@ const es: Messages = {
         "Sonar devuelve un JSON con el veredicto (`respaldado` / `contradicho` / `mixto` / `no verificado`), una confianza entre 0 y 1, una justificación y una lista de fuentes citadas tomadas del canal `annotations` de Sonar. Si la confianza queda por debajo de 0.5, el veredicto se fuerza a `no verificado` — mejor exhibir 'evidencia insuficiente' que entregar una respuesta confiadamente equivocada.",
         "Cada fuente citada se clasifica en uno de seis tiers (según Goldfarb et al. 2025): `primary` (agencias oficiales de datos, decisiones judiciales, papers peer-reviewed), `scholarly`, `think_tank`, `journalistic`, `commercial_content`, `informal`. Una flag booleana aparte marca medios `state-controlled` (RT, CGTN, Xinhua, etc. — pero no BBC/NPR/Deutsche Welle, que son state-FUNDED pero editorialmente independientes).",
         "El lenguaje del veredicto es intencionalmente cauto con personas nombradas: nunca 'X miente' o 'esto es falso' — siempre 'la evidencia no respalda' / 'la evidencia contradice el número' / 'no encontramos evidencia que respalde'. Es una regla dura en el system prompt.",
+        "**Enrutamiento del modelo y por qué.** Perplexity Sonar Reasoning Pro queda fijo para la verificación porque esta etapa necesita recuperación web actual y anotaciones de fuentes, no solo mejor generación de texto sin acceso externo. GPT-5.4 mini y MiniMax M3 nunca fabrican citas de veredicto; terminan después de la extracción. Separar extracción y verificación también hace visibles el costo, el comportamiento del caché y los fallos por afirmación.",
+        "Las afirmaciones se verifican de forma independiente, por lo que un timeout o un conjunto débil de evidencia no invalida las demás. Jiddu normaliza la respuesta estructurada de Sonar, aplica el piso de confianza, conserva las URLs citadas y almacena el id del modelo utilizado. Los tiers describen el tipo de fuente, no una puntuación automática de verdad: incluso una fuente primaria puede estar desactualizada o ser malinterpretada.",
         "¿Qué tan preciso es esto en la práctica? Corrimos un [benchmark contra el corpus humano de PolitiFact](/benchmark). En 200 afirmaciones tomadas de las cuatro categorías polares de PolitiFact (true / mostly-true / false / pants-on-fire, desde 2020), el veredicto de Jiddu coincidió con el veredicto humano polar en 67.5% de los casos en total y 81.3% en las categorías menos ambiguas (true / false / pants-on-fire). Desacuerdo estricto — Jiddu diciendo lo opuesto polar del humano — ocurrió solo en 4.5% de los casos (9 de 200). El ~28% restante fue Jiddu devolviendo `mixed` o `unverified` en lugar de un veredicto polar, concentrado en el bucket `mostly_true` de PolitiFact (58% se volvieron `mixed` — solapamiento estructural, no error, ya que ambas etiquetas describen verdad parcial). Metodología, matriz de confusión y análisis de desacuerdos en el enlace.",
       ],
     },
@@ -2328,7 +2421,7 @@ const es: Messages = {
       paragraphs: [
         "Cada afirmación verificada se hashea y se almacena. El hash es `sha256(lang + ':' + normalize(statement))` donde `normalize` pasa a minúsculas, quita marcas combinantes de acento, colapsa espacios y elimina puntuación final. Eso significa que reformulaciones de la misma afirmación colisionan, pero idiomas distintos no.",
         "Los TTL son por tipo de afirmación. `numeric` 30 días (IBGE y compañía revisan series), `date` y `categorical` 365 días (hechos históricos y definiciones son estables), `quote` y `causal` 90 días (re-examinables pero poco probables de cambiar). Un barrido best-effort borra filas expiradas en el camino de cache-miss, limitado a una vez cada 30 minutos para que el hot path siga barato.",
-        "El usuario puede saltarse el caché con un botón de **refresh** por afirmación (fuerza una llamada Sonar fresca). Cuenta contra una cuota de refresh ajustable en el admin — por defecto 2 refreshes por afirmación. Después de eso, el botón se oculta y la API devuelve 429.",
+        "El usuario puede saltarse el caché con un botón de **refresh** por afirmación (fuerza una llamada Sonar fresca). Cuenta contra una cuota configurable por el operador — por defecto 2 refreshes por afirmación. Después de eso, el botón se oculta y la API devuelve 429.",
       ],
     },
     {
@@ -2337,29 +2430,32 @@ const es: Messages = {
         "Distinto de la detección de falacias: un texto puede estar libre de falacias y ser fácticamente correcto y aun así usar encuadre cargado, atribución asimétrica o selección unilateral de fuentes. La evaluación de imparcialidad expone esos patrones.",
         "Ocho tipos de issue se marcan a nivel de oración: `loaded_language`, `asymmetric_attribution`, `false_equivalence`, `selective_omission`, `source_asymmetry`, `both_sidesing`, `steering`, `genetic_framing`. El modelo también clasifica el documento en uno de siete tipos de texto (informativo / opinión / discurso político / advocacy / análisis / marketing / redes sociales) — eso informa qué tan estricta es la auditoría.",
         "El veredicto a nivel documento es uno de `neutral` / `partisan_lean` / `explicitly_partisan` / `manipulation`. Jiddu **deliberadamente no clasifica dirección partidaria** (izquierda/derecha, pro-X/anti-Y). El paper de Forum AI que inspiró la metodología requiere un panel bipartidista de expertos para esa etapa; sin ese panel, las etiquetas partidarias son poco confiables y dañinas. En su lugar exhibimos patrones específicos que el lector puede auditar.",
+        "**Enrutamiento del modelo y por qué.** El GPT-5.4 mini o MiniMax M3 elegido realiza la clasificación del tipo de texto, la detección de issues por oración y el veredicto del chunk en la misma llamada estructurada. Este pipeline no navega por la web ni decide si las afirmaciones subyacentes son verdaderas; usar el modelo económico del selector mantiene rápido el análisis de encuadre, mientras la familia alternativa permite comparar sensibilidad.",
+        "En textos largos, los chunks se analizan en paralelo. El veredicto final se elige después de forma determinista como el más severo entre los chunks completados (`manipulation` por encima de `explicitly_partisan`, por encima de `partisan_lean`, por encima de `neutral`); confianza y justificación provienen del chunk más fuerte en ese nivel, y el tipo de documento es la moda entre chunks. Esto favorece el recall deliberadamente, así que un pasaje con encuadre fuerte puede gobernar el veredicto principal.",
+        "Los evals ejercitan las ocho señales y ejemplos que no deberían marcarse, pero todavía no hay un benchmark publicado con panel humano para imparcialidad. El veredicto es, por tanto, una ayuda de navegación hacia pasajes auditables, no una medida objetiva de equilibrio político.",
       ],
     },
     {
-      title: "10. Almacenamiento, privacidad y revisión",
+      title: "10. Privacidad y estado de revisión",
       paragraphs: [
-        "La persistencia es un único archivo SQLite en un VPS de Hostinger, montado como volumen Docker. No hay cuentas de usuario. Los resultados reciben ids cortos en `/a`, `/f`, `/n`, `/e`, `/s` o `/r`; cualquiera con la URL compartible puede ver el resultado final. Ledgers, investigación y juicios preliminares de revisión permanecen como artefactos intermedios privados.",
+        "No hay cuentas de usuario. Los resultados completados usan URLs no listadas: cualquiera que tenga la URL puede ver el resultado final, pero esas páginas no se enumeran en el sitemap público. Los ledgers, la investigación y los juicios preliminares de la revisión de papers son artefactos intermedios internos y no se muestran en el resultado público.",
         "El contenido enviado pasa por OpenRouter al upstream del modelo elegido. En revisión de papers incluye imágenes renderizadas de páginas seleccionadas, no solo texto extraído. La etapa de literatura busca fuentes académicas públicas por afirmaciones técnicas, mientras los prompts prohíben consultas por título, autor u otros manuscritos de los mismos autores. El autocompletado envía solo la consulta del venue a DBLP. Registramos el IP para rate-limit y señales de abuso y no lo vendemos.",
-        "Cada análisis tiene un timestamp `reviewedAt`. Por defecto es null, lo que significa que el análisis es automatizado y no fue revisado por un operador. El admin (en `/admin`, protegido por contraseña) puede marcar análisis individuales como revisados.",
+        "Los resultados son automatizados y no revisados por defecto. Un resultado marcado explícitamente como revisado fue inspeccionado puntualmente por el operador; ese estado es una comprobación humana adicional, no una garantía de que todos los hallazgos sean correctos.",
       ],
     },
     {
       title: "11. Costo y controles de abuso",
       paragraphs: [
-        "Cada ruta con costo tiene rate limit token bucket in-memory por IP. Los valores por defecto incluyen 30 análisis de falacias / hora, 30 extracciones de fact-check / hora, 10 verificaciones masivas / hora, 20 refreshes individuales / hora y, deliberadamente conservador, 4 revisiones de paper / hora con burst 2. Todo se ajusta en runtime vía `/admin/settings`; los buckets agotados devuelven 429 con `Retry-After`.",
+        "Cada ruta con costo tiene rate limit token bucket in-memory por IP. Los valores por defecto incluyen 30 análisis de falacias / hora, 30 extracciones de fact-check / hora, 10 verificaciones masivas / hora, 20 refreshes individuales / hora y, deliberadamente conservador, 4 revisiones de paper / hora con burst 2. El operador puede ajustar estos valores en runtime; los buckets agotados devuelven 429 con `Retry-After`.",
         "La extracción de fact-check tiene tope de 50 afirmaciones por documento y el refresh, 2 llamadas por afirmación. La revisión acepta exactamente un PDF, rechaza truncar silenciosamente por encima de 300.000 caracteres extraídos, limita la inspección visual a páginas seleccionadas y divide el trabajo costoso en etapas auditables. Estos controles evitan fan-out y costos accidentalmente ilimitados.",
       ],
     },
     {
       title: "12. Loop de feedback",
       paragraphs: [
-        "Cada card de afirmación de fact-check tiene un botón **🚩 Reportar veredicto incorrecto**. Clicarlo captura una razón opcional en texto libre y hace POST a un endpoint de feedback, que toma snapshot del statement + veredicto actuales (así el admin ve lo que el usuario estaba viendo, aunque el veredicto se re-verifique después).",
-        "Las flags enviadas caen en una cola de admin en `/admin/feedback` con estado `open`. El operador puede marcar cada una como `resolved` (concuerda con el usuario, planea arreglar) o `ignored` (el veredicto estaba bien, o el flag era spam), o eliminarla. La home del admin muestra un badge rojo con el conteo abierto.",
-        "Por ahora no hay acción automática sobre el veredicto cuando las flags se acumulan — cada entrada se revisa manualmente. Mejora futura: un badge 'disputed' en el viewer público cuando se acumulen N flags sobre la misma afirmación.",
+        "Cada card de afirmación de fact-check tiene un botón **🚩 Reportar veredicto incorrecto**. Al pulsarlo se guarda una razón opcional junto con el statement y el veredicto actuales, para que el operador pueda revisar lo que vio el usuario aunque la afirmación se verifique de nuevo después.",
+        "Las flags enviadas entran en una cola privada de moderación con estado `open`. El operador puede marcar cada una como `resolved` (concuerda con el usuario, planea arreglar) o `ignored` (el veredicto estaba bien, o el flag era spam), o eliminarla.",
+        "Los reportes no cambian automáticamente un veredicto. El operador revisa cada entrada manualmente, por lo que el volumen de reportes por sí solo no sustituye la evidencia mostrada al lector.",
       ],
     },
     {
@@ -2377,13 +2473,21 @@ const es: Messages = {
         "Niveles de audiencia: **Niño** (ELI5, analogías cotidianas, sin jerga), **Secundaria** (lenguaje claro, pocos términos técnicos explicados), **Universitario** (registro académico estándar, asume familiaridad con el campo), **Experto** (conciso, nivel de pares, terminología completa conservada). El nivel controla solo la complejidad del texto — no filtra ni valida el contenido.",
         "La etiqueta de rol es algorítmica. El modelo lee cada párrafo en contexto y asigna el rol que mejor describe su función en el argumento. Los artículos interdisciplinarios o los documentos con estructura no estándar pueden recibir etiquetas incorrectas.",
         "A diferencia de los pipelines de texto general, Explain está optimizado para artículos académicos estructurados. Los resultados en posts de blog, escritos legales o textos no estructurados serán de menor calidad.",
+        "**Enrutamiento del modelo y por qué.** El GPT-5.4 mini o MiniMax M3 elegido escribe el resumen general, las etiquetas de rol y las explicaciones de párrafos en una pasada por chunk restringida por el schema. Explain usa los modelos económicos del selector porque transforma el texto suministrado en vez de investigar literatura o validar contenido de forma independiente; no se ejecutan búsqueda web, comprobación de citas ni segundo modelo crítico.",
+        "Los chunks se ejecutan con concurrencia limitada y las explicaciones aparecen en el margen conforme llegan. Cada chunk puede proponer un resumen, pero Jiddu conserva de forma determinista el primero no vacío porque el primer chunk normalmente contiene abstract e introducción. Si un chunk falla, las explicaciones de los demás permanecen, por lo que puede haber huecos en papers largos o con formato inusual.",
+        "Los evals actuales comprueban cobertura de roles, calibración de audiencia y fiabilidad del schema, no fidelidad factual contra anotaciones de expertos. Explain puede simplificar demasiado una salvedad o interpretar mal un método con exceso de confianza; debe facilitar la entrada al texto fuente, nunca sustituir su lectura.",
       ],
     },
     {
       title: "15. Revisión adversarial de papers",
       paragraphs: [
         "El pipeline de revisión (`/review`, resultados en `/r/:id`) acepta exactamente un PDF final como manuscrito autónomo, más venue objetivo, edición, track, tipo de paper y fecha opcional. No combina suplementos ni varios archivos. El resultado público incluye recomendación de gatekeeping, resumen, fortalezas, debilidades localizadas, preguntas, checklist de reproducibilidad, referencias y el estándar exacto del venue; los exports Markdown y print/PDF usan la misma revisión final almacenada.",
-        "Ejecuta cinco etapas privadas: **ledger** (afirmaciones, evidencias, experimentos e inspección visual etiquetados por página), **investigación de literatura publicada**, **síntesis estructurada**, **autocrítica adversarial** y **finalización determinista**. La autocrítica debe cuestionar novedad sin sustento, evidencia omitida, severidad inflada o atenuada e inconsistencia con el venue objetivo antes de que cualquier borrador sea final.",
+        "Metodológicamente, Jiddu adapta las dimensiones de revisión **SPECS** — Story, Presentation, Evaluations, Correctness y Significance — y el patrón de síntesis y autocrítica por etapas descrito en [AI-Assisted Peer Review at Scale: The AAAI-26 AI Review Pilot](https://arxiv.org/abs/2604.13940). Jiddu es una implementación independiente, con su propio ledger de afirmaciones y evidencias, calibración por venue, parser, contrato de salida y salvaguardas; no reproduce el sistema de AAAI-26.",
+        "Después del ledger paginado y la investigación de literatura, cinco especialistas independientes auditan **Story, Presentation, Evaluations, Correctness y Significance**. Evaluations y Correctness pueden proponer cálculos aritméticos permitidos que Jiddu recalcula sin ejecutar código del manuscrito. Síntesis y autocrítica son seguidas por validación de fuentes, auditoría de calidad con otro modelo y un gate determinista que preserva todo hallazgo MAJOR/MODERATE retenido.",
+        "El formulario ofrece profundidad **Estándar** y **Profunda**. Estándar usa el modelo económico seleccionado y otro modelo del catálogo como crítico. Profunda usa modelos de razonamiento más fuertes en evaluación, corrección, significancia y síntesis, con Claude Opus 4.8 como crítico independiente por defecto; tarda más y cuesta más.",
+        "**Enrutamiento de modelos y por qué.** En modo Estándar, el modelo elegido en el formulario — GPT-5.4 mini por defecto o MiniMax M3 — ejecuta el ledger, la investigación de literatura, los cinco especialistas SPECS, la síntesis y la autocrítica. La auditoría de calidad se asigna deliberadamente al otro modelo del catálogo, para que el borrador no sea aprobado solo por el modelo que lo escribió.",
+        "En modo Profundo, el modelo seleccionado conserva ledger, Story y Presentation; GPT-5.5 con razonamiento high ejecuta investigación de literatura, Evaluations, Correctness, Significance, síntesis, autocrítica y cualquier reparación; Claude Opus 4.8 audita de forma independiente la revisión resultante. Esto concentra el razonamiento costoso en validez numérica, diseño experimental, novedad y síntesis entre etapas, mientras una familia diferente de modelos realiza el desafío final para reducir puntos ciegos correlacionados.",
+        "En el [benchmark sintético SPECS de 30 casos de Jiddu](https://github.com/rafaehlers/jiddu/blob/main/evals/paper-review/report.md), GPT-5.4 mini y GPT-5.5 detectaron todos los defectos inyectados, pero GPT-5.5 produjo un 30,6% menos de hallazgos, más consolidados. El benchmark alcanzó un techo y no demuestra superioridad en papers completos; Profunda es una capa adicional de escrutinio, no una garantía de corrección. El operador puede sustituir ambos modelos de Profunda mediante `PAPER_REVIEW_DEEP_MODEL` y `PAPER_REVIEW_CRITIC_MODEL`.",
         "El autocompletado combina descubrimiento gratuito y sin cuenta mediante [DBLP](https://dblp.org) con perfiles 2026 verificados y versionados de NeurIPS, ICML, ICLR, AAAI, IJCAI y CVPR. Un perfil verificado inyecta criterios y requisitos oficiales en la síntesis y la autocrítica y se persiste con URLs fuente. Un venue solo de DBLP o sin coincidencia usa una rúbrica académica general claramente identificada; incompatibilidades de edición, track o tipo se marcan como no verificadas, nunca se adivinan.",
         "Cada debilidad sustantiva debe incluir página o sección del manuscrito y severidad `MAJOR`, `MODERATE` o `MINOR`. La revisión sigue siendo automatizada: puede omitir problemas, inventar comparaciones o aplicar mal un criterio, y no es revisión oficial por pares ni predicción de aceptación.",
       ],
@@ -2392,8 +2496,8 @@ const es: Messages = {
       title: "16. API pública & MCP (para agentes)",
       paragraphs: [
         "Además del app web, los cinco pipelines de texto se exponen como una API REST pública para agentes y scripts: `POST /api/v1/detect-fallacies`, `/fact-check`, `/assess-neutrality`, `/explain`, `/detect-slop`. Son síncronos — entra una solicitud JSON (`{ text }`, 40–2000 caracteres, más `lang` opcional y, en explain, `level`) y sale una respuesta JSON. Ejecutan los generadores hasta el final sobre un único chunk y no persisten filas.",
-        "Las solicitudes se autentican con el encabezado `X-Jiddu-Key`. Las claves las emite el admin en `/admin/api-keys` (guardadas solo como hash sha256, mostradas una vez) y tienen límite de tasa por clave, separado de los límites por IP del app web. El fact-check vía API extrae y verifica cada afirmación, con un tope de afirmaciones por solicitud para que una llamada no dispare verificaciones ilimitadas en el Sonar pago.",
-        "La revisión adversarial se expone como job asíncrono persistido: `POST /api/v1/adversarial-reviews` recibe un PDF subido o una `pdf_url` pública y devuelve `202`; `GET /api/v1/adversarial-reviews/{id}` informa la etapa actual y finalmente entrega la revisión estructurada. Así el flujo de cinco etapas y varios minutos queda fuera del contrato síncrono de texto.",
+        "Las solicitudes se autentican con el encabezado `X-Jiddu-Key`. Las claves las emite el operador, se guardan solo como hash sha256, se muestran una vez y tienen límites por clave separados de los límites por IP del app web. El fact-check vía API extrae y verifica cada afirmación, con un tope de afirmaciones por solicitud para que una llamada no dispare verificaciones ilimitadas en el Sonar pago.",
+        "La revisión adversarial se expone como job asíncrono persistido: `POST /api/v1/adversarial-reviews` recibe un PDF subido o una `pdf_url` pública y devuelve `202`; `GET /api/v1/adversarial-reviews/{id}` informa la etapa actual y finalmente entrega la revisión estructurada. Así el flujo de nueve etapas y varios minutos queda fuera del contrato síncrono de texto.",
         "El servidor MCP alojado en `POST /api/mcp` expone las cinco herramientas de texto más `start_adversarial_review` y `get_adversarial_review`. Cualquier cliente MCP se conecta mediante `mcp-remote`; las mismas herramientas también vienen en el paquete standalone `jiddu-mcp`. Snippets y docs orientadas a máquinas en [/api-access](/api-access).",
         "La calidad se monitorea con un conjunto fijo de evals (15–16 casos por herramienta) versionado en el repositorio y comparado con resultados esperados; el informe publicado está en [evals/report.md](https://github.com/rafaehlers/jiddu/blob/main/evals/report.md).",
       ],
@@ -2402,7 +2506,9 @@ const es: Messages = {
       title: "17. Open source y metodología",
       paragraphs: [
         "El código fuente está en [github.com/rafaehlers/jiddu](https://github.com/rafaehlers/jiddu) bajo licencia [AGPL-3.0-or-later](https://www.gnu.org/licenses/agpl-3.0.txt). AGPL cierra el 'SaaS loophole' que GPL deja abierto: cualquiera que corra una versión modificada como servicio de red debe publicar el código fuente modificado.",
-        "Claimify y Distilling Expert Judgment at Scale fundamentan el fact-check y la imparcialidad. La revisión de papers también usa extracción local sensible al layout de LiteParse, descubrimiento de venues por DBLP y criterios específicos por edición transcritos de páginas oficiales. Jiddu no está afiliado a esos grupos, DBLP ni los venues.",
+        "[Claimify](https://arxiv.org/abs/2502.10855) orienta la extracción de afirmaciones, y [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) orienta la evaluación de veredictos, los tiers de fuentes y la imparcialidad. [no-ai-slop](https://github.com/petergyang/no-ai-slop) aporta la taxonomía inicial para detectar patrones de escritura.",
+        "La revisión adversarial de papers adapta las dimensiones SPECS y la síntesis y autocrítica por etapas descritas en [AI-Assisted Peer Review at Scale: The AAAI-26 AI Review Pilot](https://arxiv.org/abs/2604.13940). Jiddu añade ledger, extracción con LiteParse, descubrimiento vía DBLP, perfiles de venue, validación de fuentes y gate de retención propios. No está afiliado a esos grupos, DBLP ni los venues.",
+        "La evaluación publicada actualmente incluye el [benchmark PolitiFact de 200 afirmaciones](/benchmark) y un [benchmark sintético SPECS de 30 casos](https://github.com/rafaehlers/jiddu/blob/main/evals/paper-review/report.md). Ambos documentan sus límites y ninguno garantiza corrección en un texto o paper nuevo.",
         "El disclaimer completo de lo que Jiddu afirma y no afirma está en [/legal](/legal).",
       ],
     },

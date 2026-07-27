@@ -384,9 +384,13 @@ function LoadingModal({ state, mode }: { state: StreamingState; mode: Mode }) {
       const stageIndex: Record<string, number> = {
         ledger: 1,
         research: 2,
-        synthesis: 3,
-        self_critique: 4,
-        finalize: 5,
+        specs: 3,
+        verification: 4,
+        synthesis: 5,
+        self_critique: 6,
+        source_validation: 7,
+        quality_audit: 8,
+        finalize: 9,
       };
       stage = analysis[stageIndex[stageName] ?? tick % analysis.length];
     } else {

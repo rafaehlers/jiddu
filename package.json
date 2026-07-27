@@ -15,6 +15,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "node --import tsx --test",
+    "eval:paper-review": "node --import tsx evals/run-paper-review-evals.ts",
     "deploy": "bash scripts/deploy.sh"
   },
   "dependencies": {

@@ -2,7 +2,13 @@
 
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { AlertTriangle, BookOpenCheck, CheckCircle2, Search } from "lucide-react";
+import {
+  AlertTriangle,
+  BookOpenCheck,
+  CheckCircle2,
+  Search,
+  ShieldCheck,
+} from "lucide-react";
 import { ShareLinkBar } from "@/components/share-link-bar";
 import { DownloadMarkdownButton } from "@/components/download-markdown-button";
 import { ExportPdfButton } from "@/components/export-pdf-button";
@@ -70,6 +76,42 @@ export function PaperReviewView({
       />
 
       {venueProfile && <VenueStandardCard profile={venueProfile} />}
+
+      {review.audit && (
+        <section className="border border-rule rounded-lg bg-paper p-5 sm:p-6 flex flex-col gap-4">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="h-5 w-5 text-[var(--severity-low)]" />
+            <h2 className="font-serif text-xl">Review quality audit</h2>
+            <span className="ml-auto text-xs uppercase tracking-wide text-muted">
+              {review.audit.depth}
+            </span>
+          </div>
+          <p className="text-sm text-muted">{review.audit.methodology}</p>
+          <dl className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+            <AuditMetric
+              label="Specialist findings"
+              value={review.audit.specialistFindings}
+            />
+            <AuditMetric
+              label="Retained"
+              value={review.audit.retainedFindings}
+            />
+            <AuditMetric
+              label="Calculation failures"
+              value={`${review.audit.computationFailures}/${review.audit.computationChecks}`}
+            />
+            <AuditMetric
+              label="Sources verified"
+              value={`${review.audit.sourcesVerified}/${review.audit.sourcesVerified + review.audit.sourcesUnverified}`}
+            />
+          </dl>
+          <p className="text-xs text-muted">
+            Independent critic: {review.audit.criticModel} ·{" "}
+            {review.audit.criticFlags} flag
+            {review.audit.criticFlags === 1 ? "" : "s"}
+          </p>
+        </section>
+      )}
 
       <section className="border border-rule rounded-lg bg-paper p-5 sm:p-6 flex flex-col gap-3">
         <div className="flex items-center gap-2">
@@ -207,7 +249,7 @@ export function PaperReviewView({
           <h2 className="font-serif text-xl">Published literature consulted</h2>
           <ul className="flex flex-col gap-2 text-sm">
             {review.sources.map((source) => (
-              <li key={source.url}>
+              <li key={source.url} className="flex flex-wrap items-center gap-2">
                 <a
                   href={source.url}
                   target="_blank"
@@ -216,6 +258,26 @@ export function PaperReviewView({
                 >
                   {source.title || source.url}
                 </a>
+                {source.verificationStatus && (
+                  <span
+                    title={source.verificationNote}
+                    className={cn(
+                      "inline-flex text-[10px] uppercase tracking-wide rounded border px-1.5 py-0.5",
+                      source.verificationStatus === "verified"
+                        ? "border-[var(--severity-low)]/40 text-[var(--severity-low)]"
+                        : source.verificationStatus === "mismatch"
+                          ? "border-[var(--severity-high)]/40 text-[var(--severity-high)]"
+                          : "border-rule text-muted",
+                    )}
+                  >
+                    {source.verificationStatus}
+                  </span>
+                )}
+                {source.publicationType && (
+                  <span className="text-xs text-muted">
+                    {source.publicationType}
+                  </span>
+                )}
               </li>
             ))}
           </ul>
@@ -225,6 +287,21 @@ export function PaperReviewView({
       <footer className="border-t border-rule pt-5 text-sm text-muted italic">
         {PAPER_REVIEW_DISCLAIMER}
       </footer>
+    </div>
+  );
+}
+
+function AuditMetric({
+  label,
+  value,
+}: {
+  label: string;
+  value: string | number;
+}) {
+  return (
+    <div className="rounded border border-rule px-3 py-2">
+      <dt className="text-xs text-muted">{label}</dt>
+      <dd className="font-medium mt-0.5">{value}</dd>
     </div>
   );
 }

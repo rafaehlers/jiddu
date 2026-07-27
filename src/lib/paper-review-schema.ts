@@ -25,12 +25,21 @@ export const ReviewWeaknessSchema = z.object({
   title: z.string().min(1),
   body: z.string().min(1),
   locations: z.array(z.string().min(1)).min(1),
+  sourceFindingIds: z.array(z.string().min(1)).default([]),
 });
 export type ReviewWeakness = z.infer<typeof ReviewWeaknessSchema>;
 
 export const ReviewSourceSchema = z.object({
   url: z.string().url(),
   title: z.string().nullable(),
+  verificationStatus: z
+    .enum(["verified", "unverified", "mismatch", "unreachable"])
+    .optional(),
+  publicationType: z
+    .enum(["published", "preprint", "documentation", "unknown"])
+    .optional(),
+  observedTitle: z.string().nullable().optional(),
+  verificationNote: z.string().optional(),
 });
 export type ReviewSource = z.infer<typeof ReviewSourceSchema>;
 
@@ -54,6 +63,21 @@ export const PaperReviewResultSchema = z.object({
   publicationPath: z.array(z.string().min(1)).min(1),
   recommendation: ReviewRecommendationSchema,
   sources: z.array(ReviewSourceSchema),
+  audit: z
+    .object({
+      methodology: z.string().min(1),
+      depth: z.enum(["standard", "deep"]),
+      specialistFindings: z.number().int().nonnegative(),
+      retainedFindings: z.number().int().nonnegative(),
+      dismissedFindings: z.number().int().nonnegative(),
+      computationChecks: z.number().int().nonnegative(),
+      computationFailures: z.number().int().nonnegative(),
+      sourcesVerified: z.number().int().nonnegative(),
+      sourcesUnverified: z.number().int().nonnegative(),
+      criticModel: z.string().min(1),
+      criticFlags: z.number().int().nonnegative(),
+    })
+    .optional(),
 });
 export type PaperReviewResult = z.infer<typeof PaperReviewResultSchema>;
 
@@ -108,4 +132,5 @@ export type PaperLedger = z.infer<typeof PaperLedgerSchema>;
 export type PaperResearch = {
   synthesis: string;
   sources: ReviewSource[];
+  model?: string;
 };

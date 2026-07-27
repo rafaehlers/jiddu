@@ -13,6 +13,7 @@ import { consume, rateLimitResponse } from "@/lib/rate-limit";
 import { bucketFor, loadSettings } from "@/lib/settings";
 import { resolveVenueProfile, type PaperType } from "@/lib/venues";
 import type { Lang } from "@/lib/fallacies";
+import type { ReviewDepth } from "@/lib/paper-review-audit-schema";
 
 export const runtime = "nodejs";
 export const maxDuration = 900;
@@ -25,6 +26,7 @@ type PublicReviewFields = {
   venue_track?: unknown;
   paper_type?: unknown;
   review_date?: unknown;
+  depth?: unknown;
   pdf_url?: unknown;
 };
 
@@ -98,6 +100,7 @@ export async function POST(req: NextRequest) {
       lang: options.lang,
       venueProfile,
       reviewDate: options.reviewDate,
+      reviewDepth: options.depth,
     });
 
     after(async () => {
@@ -158,6 +161,7 @@ function fieldsFromForm(form: FormData): PublicReviewFields {
     venue_track: form.get("venue_track"),
     paper_type: form.get("paper_type"),
     review_date: form.get("review_date"),
+    depth: form.get("depth"),
   };
 }
 
@@ -169,6 +173,7 @@ function parseReviewFields(fields: PublicReviewFields): {
   venueTrack?: string;
   paperType: PaperType;
   reviewDate: string;
+  depth: ReviewDepth;
 } {
   const lang = optionalString(fields.lang)?.toLowerCase() ?? "en";
   if (!["en", "pt", "es"].includes(lang)) {
@@ -204,6 +209,14 @@ function parseReviewFields(fields: PublicReviewFields): {
       "bad_request",
     );
   }
+  const depth = optionalString(fields.depth) ?? "standard";
+  if (depth !== "standard" && depth !== "deep") {
+    throw new PaperReviewInputError(
+      "`depth` must be `standard` or `deep`.",
+      400,
+      "bad_request",
+    );
+  }
 
   return {
     lang: lang as Lang,
@@ -213,6 +226,7 @@ function parseReviewFields(fields: PublicReviewFields): {
     venueTrack: optionalString(fields.venue_track)?.slice(0, 200),
     paperType: paperType as PaperType,
     reviewDate: suppliedDate ?? new Date().toISOString().slice(0, 10),
+    depth,
   };
 }
 

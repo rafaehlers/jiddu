@@ -81,6 +81,7 @@ export type ModelChoice = {
   // only emits tool_calls reliably when the upstream is "MiniMax" itself
   // (Morph/Fireworks burn budget on reasoning and never call the tool).
   providerOrder?: string[];
+  reasoningEffort?: "low" | "medium" | "high";
 };
 
 export const MODEL_CATALOG: ModelChoice[] = [
@@ -109,12 +110,37 @@ export const MODEL_CATALOG: ModelChoice[] = [
 const MODEL_BY_ID: Record<string, ModelChoice> = Object.fromEntries(
   MODEL_CATALOG.map((m) => [m.id, m]),
 );
+const PAPER_REVIEW_INTERNAL_MODELS: Record<string, ModelChoice> = {
+  "gpt-5.5": {
+    id: "gpt-5.5",
+    label: "GPT-5.5",
+    flag: "🇺🇸",
+    family: "openai",
+    openrouter: "openai/gpt-5.5",
+    reasoningEffort: "high",
+  },
+  "claude-opus-4.8": {
+    id: "claude-opus-4.8",
+    label: "Claude Opus 4.8",
+    flag: "🇺🇸",
+    family: "anthropic",
+    openrouter: "anthropic/claude-opus-4.8",
+    reasoningEffort: "high",
+  },
+};
 
 const DEFAULT_MODEL_ID = "gpt-5.4-mini";
 
 export function resolveModel(id?: string | null): ModelChoice {
   if (id && MODEL_BY_ID[id]) return MODEL_BY_ID[id];
   return MODEL_BY_ID[DEFAULT_MODEL_ID];
+}
+
+export function resolvePaperReviewModel(id?: string | null): ModelChoice {
+  if (id && PAPER_REVIEW_INTERNAL_MODELS[id]) {
+    return PAPER_REVIEW_INTERNAL_MODELS[id];
+  }
+  return resolveModel(id);
 }
 
 const OPENROUTER_BASE = "https://openrouter.ai/api/v1";

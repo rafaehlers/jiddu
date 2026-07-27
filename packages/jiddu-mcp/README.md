@@ -45,8 +45,8 @@ The API key is read from the environment and never passed as a tool argument, so
 
 The five text tools take `text` (40–2000 characters) and optional `lang`
 (`en` / `pt` / `es`). `explain` also accepts `level`.
-`start_adversarial_review` takes a public `pdf_url` plus optional venue
-metadata and returns an asynchronous job id; pass that id to
+`start_adversarial_review` takes a public `pdf_url`, optional venue
+metadata, and `depth` (`standard` or `deep`) and returns an asynchronous job id; pass that id to
 `get_adversarial_review` until it completes. Each tool returns the JSON
 response from the corresponding `/api/v1/*` endpoint.
 
