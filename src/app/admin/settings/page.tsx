@@ -67,6 +67,23 @@ const GROUPS: Group[] = [
     ],
   },
   {
+    title: "Rate limits — API/MCP adversarial review",
+    description:
+      "Public asynchronous review jobs started through /api/v1/adversarial-reviews or MCP. Applied per API key.",
+    keys: [
+      {
+        key: "rate.apiReview.capacity",
+        label: "Burst capacity",
+        help: "Max review jobs started at once per key",
+      },
+      {
+        key: "rate.apiReview.perHour",
+        label: "Per hour",
+        help: "Sustained review jobs per key",
+      },
+    ],
+  },
+  {
     title: "Fact-check cost caps",
     description:
       "Hard ceilings independent of rate. The refresh cap is per-claim, persisted on the FactCheck row, and counts every verify call (bulk or single) against the same counter.",

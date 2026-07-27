@@ -15,6 +15,7 @@ echo "[jiddu] seeding demo analyses (idempotent)…"
 node scripts/seed-demo.mjs || echo "[jiddu] demo seed skipped"
 node scripts/seed-explain-demo.mjs || echo "[jiddu] explain demo seed skipped"
 node scripts/seed-slop-demo.mjs || echo "[jiddu] slop demo seed skipped"
+node scripts/seed-review-demo.mjs || echo "[jiddu] review demo seed skipped"
 
 echo "[jiddu] starting server on :${PORT:-3000}"
 exec "$@"

@@ -40,6 +40,8 @@ export const DEFAULT_SETTINGS = {
   "rate.api.perHour": 60,
   "rate.apiFactcheck.capacity": 5,
   "rate.apiFactcheck.perHour": 15,
+  "rate.apiReview.capacity": 1,
+  "rate.apiReview.perHour": 4,
   "api.maxClaims": 10,
 } as const;
 
@@ -109,7 +111,8 @@ export type RateBucketPrefix =
   | "rate.singleVerify"
   | "rate.review"
   | "rate.api"
-  | "rate.apiFactcheck";
+  | "rate.apiFactcheck"
+  | "rate.apiReview";
 
 export function bucketFromSettings(
   s: Record<SettingKey, number>,

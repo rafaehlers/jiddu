@@ -1,7 +1,7 @@
 {
   "name": "jiddu-mcp",
   "version": "0.1.0",
-  "description": "MCP server for Jiddu — detect logical fallacies, fact-check claims, assess neutrality, and explain papers in any text.",
+  "description": "MCP server for Jiddu — critically analyze text and run adversarial reviews of complete papers.",
   "type": "module",
   "license": "AGPL-3.0-or-later",
   "author": "Rafael M. Ehlers",

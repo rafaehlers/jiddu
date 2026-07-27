@@ -1,14 +1,14 @@
 # Jiddu tools — agent guide
 
-Machine-oriented reference for the five Jiddu tools (`detect_fallacies`, `fact_check`, `assess_neutrality`, `explain`, `detect_slop`), exposed via the `jiddu-mcp` MCP server and the REST API at `https://jiddu.app/api/v1/*`.
+Machine-oriented reference for the seven Jiddu tools (`detect_fallacies`, `fact_check`, `assess_neutrality`, `explain`, `detect_slop`, `start_adversarial_review`, `get_adversarial_review`), exposed via the `jiddu-mcp` MCP server and the REST API at `https://jiddu.app/api/v1/*`.
 
 Jiddu helps you read text critically. Reach for it whenever you are about to **trust, quote, cite, or repeat** a piece of text — an argument, a news excerpt, a source, a paper.
 
 ## Shared contract
 
-- **Input:** every tool takes `text` (40–2000 characters). `lang` (`en` | `pt` | `es`, default `en`) sets the language of the human-readable explanations; the structural fields (verdicts, labels, roles, names) are always stable English enums. `explain` also takes `level`.
+- **Input:** the five text tools take `text` (40–2000 characters). `lang` (`en` | `pt` | `es`, default `en`) sets the language of human-readable explanations; structural fields remain stable English enums. `explain` also takes `level`. Adversarial review instead takes one public `pdf_url`.
 - **Auth (REST):** send `X-Jiddu-Key: <key>`. Via MCP the key is configured in the server env — never pass it as a tool argument.
-- **Synchronous:** one request → one JSON response. No streaming, no IDs, nothing persisted.
+- **Execution:** text tools are synchronous and do not persist results. Adversarial review is a persisted asynchronous job: start it, then poll by id.
 - **Errors:** `400` bad input, `401` missing/invalid key, `422` text too short (<40) or no analyzable content, `429` rate limited (body has `retry_after_seconds`), `502/503` upstream model issue.
 
 ## When to use which
@@ -20,6 +20,7 @@ Jiddu helps you read text critically. Reach for it whenever you are about to **t
 | "Is this written even-handedly, or is it slanted?" | `assess_neutrality` |
 | "What does this dense paragraph actually mean?" | `explain` |
 | "Does this prose read templated / machine-assembled?" | `detect_slop` |
+| "Would this complete paper survive a skeptical venue-calibrated review?" | `start_adversarial_review`, then `get_adversarial_review` |
 
 `detect_fallacies`, `assess_neutrality`, `explain`, and `detect_slop` are fast and cheap. `fact_check` is **slower and metered** — it runs a live web search per claim — so call it deliberately, on text you actually need verified.
 
@@ -147,6 +148,32 @@ Explains a passage paragraph by paragraph at a chosen audience level, tagging ea
 
 ---
 
+## `start_adversarial_review` / `get_adversarial_review`
+
+`start_adversarial_review` accepts exactly one complete PDF at a public
+HTTP(S) URL. Private-network, authenticated, nonstandard-port and non-PDF
+URLs are rejected. Optional inputs:
+
+- `lang`: `en` | `pt` | `es`
+- `venue_profile_id`: e.g. `neurips-2026-main`
+- `venue`, `venue_year`, `venue_track`
+- `paper_type`: `research` | `position` | `survey` | `dataset` | `theory` |
+  `use-inspired` | `concept` | `negative-results`
+- `review_date`: `YYYY-MM-DD`
+
+The start response has `status: "running"`, a job `id`, the current `stage`,
+URLs, and `retry_after_seconds`. Wait that many seconds, then call
+`get_adversarial_review({ id })`. Continue while status is `running`; stop on
+`complete` or `failed`. A completed response includes `result` with stage
+findings, strengths, localized/severity-ranked weaknesses, author questions,
+publication path, recommendation and literature sources.
+
+REST clients may alternatively upload a local file with multipart
+`POST /api/v1/adversarial-reviews` (`file=@paper.pdf`) and poll
+`GET /api/v1/adversarial-reviews/{id}`.
+
+---
+
 ## Chaining
 
 The tools compose well for a "should I trust this?" workflow:
@@ -160,6 +187,7 @@ A source can be factually `reliable` yet `highly_biased`, or `clean` of fallacie
 ## Limits
 
 - Text length: 40–2000 characters per call. For longer documents, chunk and call per chunk, or use the Jiddu web app.
+- Paper review: one PDF up to 25 MB and 300,000 extracted characters. Do not chunk a paper; the review treats it as one autonomous submission.
 - Languages: English, Portuguese, Spanish.
 - Rate limits are per-key; on `429`, back off for `retry_after_seconds`.
 - Outputs are automated and can be wrong — they are signals to prompt verification, not final authority. Always surface the `explanation`/`summary`, not just the verdict.

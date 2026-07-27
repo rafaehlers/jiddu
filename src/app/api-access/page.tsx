@@ -6,7 +6,7 @@ import { ApiAccessBody } from "@/components/api-access-body";
 export const metadata: Metadata = {
   title: "Jiddu — API & MCP",
   description:
-    "Use Jiddu's five public text-analysis tools from code or an agent, and understand why adversarial PDF review remains a web-only workflow for now.",
+    "Use Jiddu's text-analysis tools and asynchronous adversarial PDF reviews from code or an MCP agent.",
 };
 
 export default function ApiAccessPage() {

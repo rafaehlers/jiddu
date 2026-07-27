@@ -404,7 +404,7 @@ export type Messages = {
 const en: Messages = {
   tagline: "truth is a pathless land",
 
-  hero_title: "Read any text with a critical mind in the margin.",
+  hero_title: "Read anything with a critical mind.",
   hero_subtitle:
     "Upload a PDF, paste text, or drop a URL. Jiddu highlights the passages that contain logical fallacies and explains each one in a comment — just like a reviewer in Word — and gives the whole piece a fallacy score from 0 to 100.",
   home_hero_subtitle:
@@ -701,7 +701,7 @@ const en: Messages = {
   nav_api: "API",
   api_access_title: "Jiddu API & MCP",
   api_access_subtitle:
-    "Five public text-analysis tools for code and agents. Adversarial PDF review remains a web workflow for now.",
+    "Five synchronous text-analysis tools plus asynchronous adversarial PDF review for code and agents.",
   api_access_sections: [
     {
       title: "Endpoints",
@@ -714,8 +714,9 @@ const en: Messages = {
     {
       title: "Adversarial paper review",
       paragraphs: [
-        "The adversarial review at [/review](/review) is not currently exposed through the API-key `/api/v1` surface or MCP. It requires one complete PDF, layout-aware parsing, selected visual pages, multiple long-running model stages, external literature research and persisted audit artifacts — a different contract from the synchronous 2,000-character tools above.",
-        "The browser uses multipart `POST /api/review` for the five-stage SSE workflow and public, account-free `GET /api/review/venues?q=…` for venue autocomplete. These are application routes, not a stable public automation contract. A future public review API should use asynchronous jobs with status and result endpoints.",
+        "Adversarial review uses a persisted asynchronous job contract. Start with multipart `POST /api/v1/adversarial-reviews` and one `file`, or JSON with a public `pdf_url`. The `202` response returns an id, a status URL and `retry_after_seconds`; poll `GET /api/v1/adversarial-reviews/{id}` until `status` is `complete` or `failed`.",
+        "```\ncurl -X POST https://jiddu.app/api/v1/adversarial-reviews \\\n  -H \"X-Jiddu-Key: YOUR_KEY\" \\\n  -F \"file=@paper.pdf\" \\\n  -F \"lang=en\" \\\n  -F \"venue_profile_id=neurips-2026-main\"\n\ncurl -H \"X-Jiddu-Key: YOUR_KEY\" \\\n  https://jiddu.app/api/v1/adversarial-reviews/JOB_ID\n```",
+        "A completed job returns the structured review and links to its viewer, deterministic Markdown, and print/PDF view. Optional fields are `lang`, `venue_profile_id`, `venue`, `venue_year`, `venue_track`, `paper_type`, and `review_date`. PDFs are capped at 25 MB and 300,000 extracted characters.",
       ],
     },
     {
@@ -728,7 +729,7 @@ const en: Messages = {
     {
       title: "MCP server",
       paragraphs: [
-        "For agents, connect to the hosted Jiddu MCP server by URL — nothing to install or clone. It exposes the same five tools and bridges to your MCP client (e.g. Claude Desktop) via the public `mcp-remote` helper:",
+        "For agents, connect to the hosted Jiddu MCP server by URL — nothing to install or clone. It exposes the five text tools plus `start_adversarial_review` and `get_adversarial_review`, and bridges to your MCP client (e.g. Claude Desktop) via the public `mcp-remote` helper:",
         "```\n{\n  \"mcpServers\": {\n    \"jiddu\": {\n      \"command\": \"npx\",\n      \"args\": [\"-y\", \"mcp-remote\", \"https://jiddu.app/api/mcp\", \"--header\", \"X-Jiddu-Key:your-key-here\"]\n    }\n  }\n}\n```",
         "Machine-oriented docs — when to use each tool, response shapes, and how to chain them — live in [AGENT.md](https://github.com/rafaehlers/jiddu/blob/main/packages/jiddu-mcp/AGENT.md).",
       ],
@@ -736,7 +737,7 @@ const en: Messages = {
     {
       title: "Limits & reliability",
       paragraphs: [
-        "Text is capped at 2000 characters per request. Rate limits are per key; exceeding them returns HTTP 429 with a `retry_after_seconds` field. Outputs are automated and can be wrong — treat them as signals to prompt verification, not as final authority.",
+        "Text tools are capped at 2000 characters per request. Review jobs accept one public or uploaded PDF up to 25 MB and reject papers above 300,000 extracted characters rather than truncating them. Rate limits are per key; exceeding them returns HTTP 429 with a `retry_after_seconds` field. Outputs are automated and can be wrong — treat them as signals to prompt verification, not as final authority.",
         "Quality is measured against fixed test sets published in the repo: [evals/report.md](https://github.com/rafaehlers/jiddu/blob/main/evals/report.md).",
       ],
     },
@@ -789,7 +790,7 @@ const en: Messages = {
     {
       title: "1. What Jiddu does",
       paragraphs: [
-        "Jiddu is an automated tool. It uses large language models (currently routed through OpenRouter to OpenAI, Anthropic, MiniMax and Perplexity Sonar) to (a) flag passages that may contain logical fallacies, (b) extract verifiable factual claims and offer a verdict based on a web search, (c) assess how neutral or biased a text is, (d) explain a document paragraph by paragraph at a chosen reading level, (e) flag AI-slop writing patterns (templates and stock phrasing — never a claim about authorship), and (f) produce an adversarial, venue-calibrated pre-submission review of one complete paper. The first five text tools are available through the public API and MCP; paper review is currently a web-only workflow.",
+        "Jiddu is an automated tool. It uses large language models (currently routed through OpenRouter to OpenAI, Anthropic, MiniMax and Perplexity Sonar) to (a) flag passages that may contain logical fallacies, (b) extract verifiable factual claims and offer a verdict based on a web search, (c) assess how neutral or biased a text is, (d) explain a document paragraph by paragraph at a chosen reading level, (e) flag AI-slop writing patterns (templates and stock phrasing — never a claim about authorship), and (f) produce an adversarial, venue-calibrated pre-submission review of one complete paper. All six workflows are available through the web app, public API and MCP; paper review uses an asynchronous persisted-job contract.",
         "Jiddu does not employ human editors. Every output you see is produced by software. The tool is meant to assist critical reading — not to replace it.",
       ],
     },
@@ -974,11 +975,11 @@ const en: Messages = {
     {
       title: "16. Public API & MCP (for agents)",
       paragraphs: [
-        "Beyond the web app, all five pipelines are exposed as a public REST API for agents and scripts: `POST /api/v1/detect-fallacies`, `/fact-check`, `/assess-neutrality`, `/explain`, `/detect-slop`. Unlike the internal SSE routes above, these are synchronous — one JSON request in (`{ text }`, 40–2000 chars, plus optional `lang` and, for explain, `level`), one JSON response out. They drive the same generators to completion over a single chunk and never persist a row.",
+        "Beyond the web app, the five text pipelines are exposed as a public REST API for agents and scripts: `POST /api/v1/detect-fallacies`, `/fact-check`, `/assess-neutrality`, `/explain`, `/detect-slop`. These are synchronous — one JSON request in (`{ text }`, 40–2000 chars, plus optional `lang` and, for explain, `level`), one JSON response out. They drive the same generators to completion over a single chunk and never persist a row.",
         "Requests authenticate with an `X-Jiddu-Key` header. Keys are admin-issued at `/admin/api-keys` (stored only as a sha256 hash, shown once) and rate-limited per key, separately from the web app's per-IP limits. Fact-check via the API both extracts and verifies each claim, capped by a per-request claim limit so one call can't fan out unboundedly to the paid Sonar verifier.",
-        "An MCP server exposes the same five tools to agents. It is hosted in-process at `POST /api/mcp` (via mcp-handler), so any MCP client can connect by URL through the public `mcp-remote` bridge — nothing to install or publish. The tools call the internal pipeline layer directly, with no extra HTTP hop. The same five tools also ship as a standalone `jiddu-mcp` package for local use. Setup snippets and machine-oriented docs are at [/api-access](/api-access).",
+        "Adversarial review is exposed as a persisted asynchronous job: `POST /api/v1/adversarial-reviews` accepts one uploaded PDF or a public `pdf_url` and returns `202`; `GET /api/v1/adversarial-reviews/{id}` reports the current stage and eventually returns the structured review. This keeps the multi-minute, five-stage workflow out of the synchronous text contract.",
+        "The hosted MCP server at `POST /api/mcp` exposes the five text tools plus `start_adversarial_review` and `get_adversarial_review`. Any MCP client can connect by URL through `mcp-remote`; the same tools also ship in the standalone `jiddu-mcp` package. Setup snippets and machine-oriented docs are at [/api-access](/api-access).",
         "Quality is tracked by a fixed eval suite (15–16 cases per tool) committed in the repo and scored against expected results; the published report lives at [evals/report.md](https://github.com/rafaehlers/jiddu/blob/main/evals/report.md).",
-        "Adversarial review is not part of `/api/v1` or MCP yet. Its internal multipart/SSE routes serve the browser and are not a stable public contract; a public version should be an asynchronous job API.",
       ],
     },
     {
@@ -1109,7 +1110,7 @@ const en: Messages = {
 const pt: Messages = {
   tagline: "truth is a pathless land",
 
-  hero_title: "Leia qualquer texto com um revisor crítico na margem.",
+  hero_title: "Leia qualquer coisa com senso crítico.",
   hero_subtitle:
     "Envie um PDF, cole um texto ou solte uma URL. O Jiddu destaca os trechos com falácias lógicas e explica cada um em um comentário — como um revisor no Word — e dá uma nota de 0 a 100 para o texto inteiro.",
   home_hero_subtitle:
@@ -1407,7 +1408,7 @@ const pt: Messages = {
   nav_api: "API",
   api_access_title: "API & MCP do Jiddu",
   api_access_subtitle:
-    "Cinco ferramentas públicas de análise de texto para código e agentes. A revisão adversarial de PDF continua sendo um fluxo web por enquanto.",
+    "Cinco ferramentas síncronas de texto mais revisão adversarial assíncrona de PDF para código e agentes.",
   api_access_sections: [
     {
       title: "Endpoints",
@@ -1420,8 +1421,9 @@ const pt: Messages = {
     {
       title: "Revisão adversarial de paper",
       paragraphs: [
-        "A revisão adversarial em [/review](/review) ainda não é exposta pela superfície `/api/v1` com chave nem pelo MCP. Ela exige um PDF completo, parsing sensível ao layout, páginas visuais selecionadas, várias etapas longas de modelo, pesquisa de literatura externa e artefatos de auditoria persistidos — um contrato diferente das ferramentas síncronas de 2.000 caracteres acima.",
-        "O navegador usa `POST /api/review` multipart para o fluxo SSE de cinco etapas e `GET /api/review/venues?q=…`, público e sem conta, para o autocomplete de venues. Essas são rotas internas do aplicativo, não um contrato público e estável de automação. Uma futura API pública de revisão deve usar jobs assíncronos com endpoints de status e resultado.",
+        "A revisão adversarial usa um contrato de jobs assíncronos persistidos. Inicie com `POST /api/v1/adversarial-reviews` multipart e um `file`, ou JSON com uma `pdf_url` pública. A resposta `202` traz id, URL de status e `retry_after_seconds`; consulte `GET /api/v1/adversarial-reviews/{id}` até `status` ser `complete` ou `failed`.",
+        "```\ncurl -X POST https://jiddu.app/api/v1/adversarial-reviews \\\n  -H \"X-Jiddu-Key: SUA_CHAVE\" \\\n  -F \"file=@paper.pdf\" \\\n  -F \"lang=pt\" \\\n  -F \"venue_profile_id=neurips-2026-main\"\n\ncurl -H \"X-Jiddu-Key: SUA_CHAVE\" \\\n  https://jiddu.app/api/v1/adversarial-reviews/JOB_ID\n```",
+        "Um job concluído retorna a revisão estruturada e links para o viewer, Markdown determinístico e tela de impressão/PDF. Campos opcionais: `lang`, `venue_profile_id`, `venue`, `venue_year`, `venue_track`, `paper_type` e `review_date`. PDFs têm limite de 25 MB e 300 mil caracteres extraídos.",
       ],
     },
     {
@@ -1434,7 +1436,7 @@ const pt: Messages = {
     {
       title: "Servidor MCP",
       paragraphs: [
-        "Para agentes, conecte-se ao servidor MCP hospedado do Jiddu por URL — nada para instalar ou clonar. Ele expõe as mesmas cinco ferramentas e faz a ponte com seu cliente MCP (ex.: Claude Desktop) via o utilitário público `mcp-remote`:",
+        "Para agentes, conecte-se ao servidor MCP hospedado do Jiddu por URL — nada para instalar ou clonar. Ele expõe as cinco ferramentas de texto mais `start_adversarial_review` e `get_adversarial_review`, e faz a ponte com seu cliente MCP (ex.: Claude Desktop) via o utilitário público `mcp-remote`:",
         "```\n{\n  \"mcpServers\": {\n    \"jiddu\": {\n      \"command\": \"npx\",\n      \"args\": [\"-y\", \"mcp-remote\", \"https://jiddu.app/api/mcp\", \"--header\", \"X-Jiddu-Key:sua-chave-aqui\"]\n    }\n  }\n}\n```",
         "A documentação orientada a máquina — quando usar cada ferramenta, formatos de resposta e como encadeá-las — está em [AGENT.md](https://github.com/rafaehlers/jiddu/blob/main/packages/jiddu-mcp/AGENT.md).",
       ],
@@ -1442,7 +1444,7 @@ const pt: Messages = {
     {
       title: "Limites & confiabilidade",
       paragraphs: [
-        "O texto é limitado a 2000 caracteres por requisição. Os limites de taxa são por chave; ao excedê-los, a resposta é HTTP 429 com um campo `retry_after_seconds`. As saídas são automatizadas e podem errar — trate-as como sinais para verificação, não como autoridade final.",
+        "As ferramentas de texto aceitam até 2000 caracteres por requisição. Jobs de revisão recebem um PDF público ou enviado de até 25 MB e recusam papers acima de 300 mil caracteres extraídos em vez de truncá-los. Os limites de taxa são por chave; ao excedê-los, a resposta é HTTP 429 com `retry_after_seconds`. As saídas são automatizadas e podem errar — trate-as como sinais para verificação, não como autoridade final.",
         "A qualidade é medida contra conjuntos de teste fixos publicados no repositório: [evals/report.md](https://github.com/rafaehlers/jiddu/blob/main/evals/report.md).",
       ],
     },
@@ -1496,7 +1498,7 @@ const pt: Messages = {
     {
       title: "1. O que o Jiddu faz",
       paragraphs: [
-        "O Jiddu é uma ferramenta automatizada. Ele usa modelos de linguagem (atualmente roteados via OpenRouter para OpenAI, Anthropic, MiniMax e Perplexity Sonar) para (a) sinalizar passagens que podem conter falácias lógicas, (b) extrair afirmações factuais verificáveis e oferecer um veredito baseado em busca na web, (c) avaliar quão neutro ou enviesado um texto é, (d) explicar um documento parágrafo por parágrafo no nível de leitura escolhido, (e) sinalizar padrões de escrita de slop de IA (moldes e frases prontas — nunca uma afirmação sobre autoria) e (f) produzir uma revisão adversarial pré-submissão, calibrada para a venue, de um paper completo. As cinco primeiras ferramentas de texto estão na API pública e no MCP; a revisão de paper é, por enquanto, um fluxo exclusivo da web.",
+        "O Jiddu é uma ferramenta automatizada. Ele usa modelos de linguagem (atualmente roteados via OpenRouter para OpenAI, Anthropic, MiniMax e Perplexity Sonar) para (a) sinalizar passagens que podem conter falácias lógicas, (b) extrair afirmações factuais verificáveis e oferecer um veredito baseado em busca na web, (c) avaliar quão neutro ou enviesado um texto é, (d) explicar um documento parágrafo por parágrafo no nível de leitura escolhido, (e) sinalizar padrões de escrita de slop de IA (moldes e frases prontas — nunca uma afirmação sobre autoria) e (f) produzir uma revisão adversarial pré-submissão, calibrada para a venue, de um paper completo. Os seis fluxos estão disponíveis no app web, na API pública e no MCP; a revisão de paper usa um contrato assíncrono de jobs persistidos.",
         "O Jiddu não tem editores humanos. Todo resultado que você vê é produzido por software. A ferramenta serve como apoio à leitura crítica — não a substitui.",
       ],
     },
@@ -1681,11 +1683,11 @@ const pt: Messages = {
     {
       title: "16. API pública & MCP (para agentes)",
       paragraphs: [
-        "Além do app web, os cinco pipelines são expostos como uma API REST pública para agentes e scripts: `POST /api/v1/detect-fallacies`, `/fact-check`, `/assess-neutrality`, `/explain`, `/detect-slop`. Diferente das rotas SSE internas acima, estas são síncronas — uma requisição JSON entra (`{ text }`, 40–2000 caracteres, mais `lang` opcional e, no explain, `level`), uma resposta JSON sai. Elas dirigem os mesmos geradores até o fim sobre um único chunk e nunca persistem uma linha no banco.",
+        "Além do app web, os cinco pipelines de texto são expostos como uma API REST pública para agentes e scripts: `POST /api/v1/detect-fallacies`, `/fact-check`, `/assess-neutrality`, `/explain`, `/detect-slop`. Eles são síncronos — uma requisição JSON entra (`{ text }`, 40–2000 caracteres, mais `lang` opcional e, no explain, `level`) e uma resposta JSON sai. Os geradores rodam até o fim sobre um único chunk e não persistem uma linha.",
         "As requisições se autenticam com o cabeçalho `X-Jiddu-Key`. As chaves são emitidas pelo admin em `/admin/api-keys` (guardadas só como hash sha256, mostradas uma vez) e têm limite de taxa por chave, separado dos limites por IP do app web. O fact-check via API extrai e verifica cada afirmação, com um teto de afirmações por requisição pra que uma chamada não dispare verificações ilimitadas no Sonar pago.",
-        "Um servidor MCP expõe as mesmas cinco ferramentas a agentes. Ele é hospedado no próprio processo em `POST /api/mcp` (via mcp-handler), então qualquer cliente MCP conecta por URL através do bridge público `mcp-remote` — nada para instalar ou publicar. As ferramentas chamam a camada de pipeline interna direto, sem hop HTTP extra. As mesmas cinco ferramentas também vêm como o pacote standalone `jiddu-mcp` para uso local. Snippets de configuração e docs orientadas a máquina em [/api-access](/api-access).",
+        "A revisão adversarial é exposta como job assíncrono persistido: `POST /api/v1/adversarial-reviews` recebe um PDF enviado ou uma `pdf_url` pública e devolve `202`; `GET /api/v1/adversarial-reviews/{id}` informa a etapa atual e, no fim, entrega a revisão estruturada. Assim o fluxo de cinco etapas e vários minutos não é forçado no contrato síncrono de texto.",
+        "O servidor MCP hospedado em `POST /api/mcp` expõe as cinco ferramentas de texto mais `start_adversarial_review` e `get_adversarial_review`. Qualquer cliente MCP conecta via `mcp-remote`; as mesmas ferramentas também vêm no pacote standalone `jiddu-mcp`. Snippets e docs orientadas a máquina em [/api-access](/api-access).",
         "A qualidade é acompanhada por um conjunto fixo de evals (15–16 casos por ferramenta) versionado no repositório e comparado com resultados esperados; o relatório publicado está em [evals/report.md](https://github.com/rafaehlers/jiddu/blob/main/evals/report.md).",
-        "A revisão adversarial ainda não faz parte de `/api/v1` nem do MCP. Suas rotas internas multipart/SSE atendem ao navegador e não são um contrato público estável; uma versão pública deve ser uma API de jobs assíncronos.",
       ],
     },
     {
@@ -1816,7 +1818,7 @@ const pt: Messages = {
 const es: Messages = {
   tagline: "truth is a pathless land",
 
-  hero_title: "Lee cualquier texto con un crítico en el margen.",
+  hero_title: "Lee cualquier cosa con espíritu crítico.",
   hero_subtitle:
     "Sube un PDF, pega un texto o suelta una URL. Jiddu resalta los pasajes con falacias lógicas y explica cada uno en un comentario — como un revisor en Word — y le da al texto entero una puntuación de falacia de 0 a 100.",
   home_hero_subtitle:
@@ -2114,7 +2116,7 @@ const es: Messages = {
   nav_api: "API",
   api_access_title: "API y MCP de Jiddu",
   api_access_subtitle:
-    "Cinco herramientas públicas de análisis de texto para código y agentes. La revisión adversarial de PDF sigue siendo un flujo web por ahora.",
+    "Cinco herramientas síncronas de texto más revisión adversarial asíncrona de PDF para código y agentes.",
   api_access_sections: [
     {
       title: "Endpoints",
@@ -2127,8 +2129,9 @@ const es: Messages = {
     {
       title: "Revisión adversarial de papers",
       paragraphs: [
-        "La revisión adversarial en [/review](/review) todavía no se expone mediante la superficie `/api/v1` con clave ni por MCP. Requiere un PDF completo, parsing sensible al layout, páginas visuales seleccionadas, varias etapas largas de modelo, investigación de literatura externa y artefactos de auditoría persistidos — un contrato distinto de las herramientas síncronas de 2.000 caracteres anteriores.",
-        "El navegador usa `POST /api/review` multipart para el flujo SSE de cinco etapas y `GET /api/review/venues?q=…`, público y sin cuenta, para el autocompletado de venues. Son rutas internas de la aplicación, no un contrato público y estable de automatización. Una futura API pública de revisión debería usar jobs asíncronos con endpoints de estado y resultado.",
+        "La revisión adversarial usa un contrato de jobs asíncronos persistidos. Inicia con `POST /api/v1/adversarial-reviews` multipart y un `file`, o JSON con una `pdf_url` pública. La respuesta `202` devuelve id, URL de estado y `retry_after_seconds`; consulta `GET /api/v1/adversarial-reviews/{id}` hasta que `status` sea `complete` o `failed`.",
+        "```\ncurl -X POST https://jiddu.app/api/v1/adversarial-reviews \\\n  -H \"X-Jiddu-Key: TU_CLAVE\" \\\n  -F \"file=@paper.pdf\" \\\n  -F \"lang=es\" \\\n  -F \"venue_profile_id=neurips-2026-main\"\n\ncurl -H \"X-Jiddu-Key: TU_CLAVE\" \\\n  https://jiddu.app/api/v1/adversarial-reviews/JOB_ID\n```",
+        "Un job completado devuelve la revisión estructurada y enlaces al visor, Markdown determinista y vista de impresión/PDF. Campos opcionales: `lang`, `venue_profile_id`, `venue`, `venue_year`, `venue_track`, `paper_type` y `review_date`. Los PDF tienen un límite de 25 MB y 300.000 caracteres extraídos.",
       ],
     },
     {
@@ -2141,7 +2144,7 @@ const es: Messages = {
     {
       title: "Servidor MCP",
       paragraphs: [
-        "Para agentes, conéctate al servidor MCP alojado de Jiddu por URL — nada que instalar ni clonar. Expone las mismas cinco herramientas y hace de puente con tu cliente MCP (p. ej. Claude Desktop) mediante el utilitario público `mcp-remote`:",
+        "Para agentes, conéctate al servidor MCP alojado de Jiddu por URL — nada que instalar ni clonar. Expone las cinco herramientas de texto más `start_adversarial_review` y `get_adversarial_review`, y hace de puente con tu cliente MCP (p. ej. Claude Desktop) mediante el utilitario público `mcp-remote`:",
         "```\n{\n  \"mcpServers\": {\n    \"jiddu\": {\n      \"command\": \"npx\",\n      \"args\": [\"-y\", \"mcp-remote\", \"https://jiddu.app/api/mcp\", \"--header\", \"X-Jiddu-Key:tu-clave-aquí\"]\n    }\n  }\n}\n```",
         "La documentación orientada a máquinas — cuándo usar cada herramienta, formatos de respuesta y cómo encadenarlas — está en [AGENT.md](https://github.com/rafaehlers/jiddu/blob/main/packages/jiddu-mcp/AGENT.md).",
       ],
@@ -2149,7 +2152,7 @@ const es: Messages = {
     {
       title: "Límites y fiabilidad",
       paragraphs: [
-        "El texto está limitado a 2000 caracteres por solicitud. Los límites de tasa son por clave; al excederlos, la respuesta es HTTP 429 con un campo `retry_after_seconds`. Las salidas son automatizadas y pueden equivocarse — trátalas como señales para verificar, no como autoridad final.",
+        "Las herramientas de texto aceptan hasta 2000 caracteres por solicitud. Los jobs de revisión reciben un PDF público o subido de hasta 25 MB y rechazan papers por encima de 300.000 caracteres extraídos en lugar de truncarlos. Los límites de tasa son por clave; al excederlos, la respuesta es HTTP 429 con `retry_after_seconds`. Las salidas son automatizadas y pueden equivocarse — trátalas como señales para verificar, no como autoridad final.",
         "La calidad se mide contra conjuntos de prueba fijos publicados en el repositorio: [evals/report.md](https://github.com/rafaehlers/jiddu/blob/main/evals/report.md).",
       ],
     },
@@ -2203,7 +2206,7 @@ const es: Messages = {
     {
       title: "1. Qué hace Jiddu",
       paragraphs: [
-        "Jiddu es una herramienta automatizada. Usa modelos de lenguaje (actualmente enrutados vía OpenRouter a OpenAI, Anthropic, MiniMax y Perplexity Sonar) para (a) señalar pasajes que pueden contener falacias lógicas, (b) extraer afirmaciones factuales verificables y ofrecer un veredicto basado en búsqueda web, (c) evaluar qué tan neutral o sesgado es un texto, (d) explicar un documento párrafo por párrafo en el nivel de lectura elegido, (e) señalar patrones de escritura de slop de IA (plantillas y frases hechas — nunca una afirmación sobre autoría) y (f) producir una revisión adversarial previa al envío, calibrada para el venue, de un paper completo. Las primeras cinco herramientas de texto están disponibles mediante la API pública y MCP; la revisión de papers es por ahora un flujo exclusivo de la web.",
+        "Jiddu es una herramienta automatizada. Usa modelos de lenguaje (actualmente enrutados vía OpenRouter a OpenAI, Anthropic, MiniMax y Perplexity Sonar) para (a) señalar pasajes que pueden contener falacias lógicas, (b) extraer afirmaciones factuales verificables y ofrecer un veredicto basado en búsqueda web, (c) evaluar qué tan neutral o sesgado es un texto, (d) explicar un documento párrafo por párrafo en el nivel de lectura elegido, (e) señalar patrones de escritura de slop de IA (plantillas y frases hechas — nunca una afirmación sobre autoría) y (f) producir una revisión adversarial previa al envío, calibrada para el venue, de un paper completo. Los seis flujos están disponibles en la app web, la API pública y MCP; la revisión de papers usa un contrato asíncrono de jobs persistidos.",
         "Jiddu no tiene editores humanos. Todo resultado que ves es producido por software. La herramienta es un apoyo a la lectura crítica — no la reemplaza.",
       ],
     },
@@ -2388,11 +2391,11 @@ const es: Messages = {
     {
       title: "16. API pública & MCP (para agentes)",
       paragraphs: [
-        "Además del app web, los cinco pipelines se exponen como una API REST pública para agentes y scripts: `POST /api/v1/detect-fallacies`, `/fact-check`, `/assess-neutrality`, `/explain`, `/detect-slop`. A diferencia de las rutas SSE internas de arriba, estas son síncronas — entra una solicitud JSON (`{ text }`, 40–2000 caracteres, más `lang` opcional y, en explain, `level`), sale una respuesta JSON. Conducen los mismos generadores hasta el final sobre un único chunk y nunca persisten una fila.",
+        "Además del app web, los cinco pipelines de texto se exponen como una API REST pública para agentes y scripts: `POST /api/v1/detect-fallacies`, `/fact-check`, `/assess-neutrality`, `/explain`, `/detect-slop`. Son síncronos — entra una solicitud JSON (`{ text }`, 40–2000 caracteres, más `lang` opcional y, en explain, `level`) y sale una respuesta JSON. Ejecutan los generadores hasta el final sobre un único chunk y no persisten filas.",
         "Las solicitudes se autentican con el encabezado `X-Jiddu-Key`. Las claves las emite el admin en `/admin/api-keys` (guardadas solo como hash sha256, mostradas una vez) y tienen límite de tasa por clave, separado de los límites por IP del app web. El fact-check vía API extrae y verifica cada afirmación, con un tope de afirmaciones por solicitud para que una llamada no dispare verificaciones ilimitadas en el Sonar pago.",
-        "Un servidor MCP expone las mismas cinco herramientas a los agentes. Está alojado en el mismo proceso en `POST /api/mcp` (vía mcp-handler), así que cualquier cliente MCP se conecta por URL mediante el puente público `mcp-remote` — nada que instalar ni publicar. Las herramientas llaman directamente a la capa de pipeline interna, sin salto HTTP extra. Las mismas cinco herramientas también vienen como el paquete standalone `jiddu-mcp` para uso local. Snippets de configuración y docs orientadas a máquinas en [/api-access](/api-access).",
+        "La revisión adversarial se expone como job asíncrono persistido: `POST /api/v1/adversarial-reviews` recibe un PDF subido o una `pdf_url` pública y devuelve `202`; `GET /api/v1/adversarial-reviews/{id}` informa la etapa actual y finalmente entrega la revisión estructurada. Así el flujo de cinco etapas y varios minutos queda fuera del contrato síncrono de texto.",
+        "El servidor MCP alojado en `POST /api/mcp` expone las cinco herramientas de texto más `start_adversarial_review` y `get_adversarial_review`. Cualquier cliente MCP se conecta mediante `mcp-remote`; las mismas herramientas también vienen en el paquete standalone `jiddu-mcp`. Snippets y docs orientadas a máquinas en [/api-access](/api-access).",
         "La calidad se monitorea con un conjunto fijo de evals (15–16 casos por herramienta) versionado en el repositorio y comparado con resultados esperados; el informe publicado está en [evals/report.md](https://github.com/rafaehlers/jiddu/blob/main/evals/report.md).",
-        "La revisión adversarial todavía no forma parte de `/api/v1` ni de MCP. Sus rutas internas multipart/SSE sirven al navegador y no son un contrato público estable; una versión pública debería ser una API de jobs asíncronos.",
       ],
     },
     {

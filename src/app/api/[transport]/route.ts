@@ -1,6 +1,6 @@
 // Remote MCP server, hosted in-process on jiddu.app.
 //
-// Exposes the same five tools as the standalone `jiddu-mcp` package, but as an
+// Exposes the same tools as the standalone `jiddu-mcp` package, but as an
 // HTTP endpoint so clients can connect by URL (via `mcp-remote`) without
 // installing or cloning anything. The mcp-handler [transport] segment serves
 // /api/mcp (Streamable HTTP) and /api/sse. Tools call the internal run/map
@@ -10,9 +10,20 @@
 // it via --header). We validate + rate-limit before delegating to the MCP
 // handler, reusing the same key store and buckets as the REST API.
 
+import { AsyncLocalStorage } from "node:async_hooks";
+import { after } from "next/server";
 import { createMcpHandler } from "mcp-handler";
 import { z } from "zod";
-import { requireApiKey } from "@/lib/api/auth";
+import { prisma } from "@/lib/db";
+import {
+  requireApiKey,
+  type ApiKeyRecord,
+} from "@/lib/api/auth";
+import { fetchPublicPdf } from "@/lib/api/pdf-source";
+import {
+  findPaperReviewJob,
+  mapPaperReviewJob,
+} from "@/lib/api/paper-review";
 import { consume, rateLimitResponse } from "@/lib/rate-limit";
 import { loadSettings, bucketFor } from "@/lib/settings";
 import { IngestError } from "@/lib/ingest/errors";
@@ -32,6 +43,11 @@ import {
   mapSlop,
 } from "@/lib/api/map";
 import { normalizeLevel } from "@/lib/explain-schema";
+import {
+  preparePaperReview,
+  runPreparedPaperReview,
+} from "@/lib/paper-review-job";
+import { resolveVenueProfile } from "@/lib/venues";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -46,6 +62,17 @@ const langArg = z
   .enum(["en", "pt", "es"])
   .optional()
   .describe("Output language for explanations. Defaults to English.");
+
+const mcpAuth = new AsyncLocalStorage<ApiKeyRecord>();
+const publicOrigin = (() => {
+  try {
+    return new URL(
+      process.env.OPENROUTER_REFERER || "https://jiddu.app",
+    ).origin;
+  } catch {
+    return "https://jiddu.app";
+  }
+})();
 
 type ToolResult = {
   content: { type: "text"; text: string }[];
@@ -164,6 +191,159 @@ const mcpHandler = createMcpHandler(
         }
       },
     );
+
+    server.registerTool(
+      "start_adversarial_review",
+      {
+        title: "Start adversarial paper review",
+        description:
+          "Start a persisted, five-stage adversarial review of one complete PDF available at a public URL. Returns a job id immediately; poll it with get_adversarial_review. The review audits claims and experiments, checks published prior work, applies an optional venue rubric, and produces localized weaknesses plus a recommendation.",
+        inputSchema: {
+          pdf_url: z
+            .string()
+            .url()
+            .max(2_000)
+            .describe(
+              "Public HTTP(S) URL of exactly one PDF. Private-network and authenticated URLs are rejected.",
+            ),
+          lang: langArg,
+          venue_profile_id: z
+            .string()
+            .max(100)
+            .optional()
+            .describe(
+              "Optional verified profile id, e.g. neurips-2026-main, icml-2026-main, or iclr-2026-main.",
+            ),
+          venue: z
+            .string()
+            .max(300)
+            .optional()
+            .describe("Optional venue name when no verified profile id is known."),
+          venue_year: z
+            .number()
+            .int()
+            .min(2000)
+            .max(2100)
+            .optional()
+            .describe("Target edition. Defaults to 2026."),
+          venue_track: z
+            .string()
+            .max(200)
+            .optional()
+            .describe("Target track. Defaults to the profile's main track."),
+          paper_type: z
+            .enum([
+              "research",
+              "position",
+              "survey",
+              "dataset",
+              "theory",
+              "use-inspired",
+              "concept",
+              "negative-results",
+            ])
+            .optional()
+            .describe("Contribution type. Defaults to research."),
+          review_date: z
+            .string()
+            .regex(/^\d{4}-\d{2}-\d{2}$/)
+            .optional()
+            .describe("Review date in YYYY-MM-DD. Defaults to today."),
+        },
+      },
+      async ({
+        pdf_url,
+        lang,
+        venue_profile_id,
+        venue,
+        venue_year,
+        venue_track,
+        paper_type,
+        review_date,
+      }) => {
+        try {
+          const auth = mcpAuth.getStore();
+          if (!auth) throw new Error("MCP authentication context unavailable.");
+          const settings = await loadSettings();
+          const rl = consume(
+            `mcp:adversarial-review:${auth.id}`,
+            bucketFor(settings, "rate.apiReview", auth),
+          );
+          if (!rl.allowed) {
+            throw new Error(
+              `Adversarial-review rate limit reached. Retry in ${rl.retryAfterSec}s.`,
+            );
+          }
+
+          const source = await fetchPublicPdf(pdf_url);
+          const venueProfile = resolveVenueProfile({
+            profileId: venue_profile_id,
+            venueName: venue,
+            year: venue_year?.toString(),
+            track: venue_track,
+            paperType: paper_type,
+          });
+          const prepared = await preparePaperReview({
+            ...source,
+            lang: lang ?? "en",
+            venueProfile,
+            reviewDate:
+              review_date ?? new Date().toISOString().slice(0, 10),
+          });
+          after(async () => {
+            await runPreparedPaperReview(prepared).catch((err) => {
+              console.error(
+                `[mcp:adversarial-review:${prepared.id}]`,
+                err instanceof Error ? err.message : err,
+              );
+            });
+          });
+          const row = await prisma.paperReview.findUnique({
+            where: { id: prepared.id },
+          });
+          if (!row) throw new Error("Review job could not be created.");
+          return ok({
+            ...mapPaperReviewJob(row, publicOrigin),
+            retry_after_seconds: 10,
+            next_tool: "get_adversarial_review",
+          });
+        } catch (err) {
+          return fail(err);
+        }
+      },
+    );
+
+    server.registerTool(
+      "get_adversarial_review",
+      {
+        title: "Get adversarial paper review",
+        description:
+          "Check a previously started adversarial-review job. While it is running, returns the current stage. When complete, returns the structured review, viewer URL, Markdown URL, and print/PDF URL.",
+        inputSchema: {
+          id: z
+            .string()
+            .regex(/^[A-Za-z0-9_-]{6,30}$/)
+            .describe("Job id returned by start_adversarial_review."),
+        },
+      },
+      async ({ id }) => {
+        try {
+          const row = await findPaperReviewJob(id);
+          if (!row) throw new Error("Review job not found.");
+          return ok({
+            ...mapPaperReviewJob(row, publicOrigin),
+            ...(row.status === "running"
+              ? {
+                  retry_after_seconds: 10,
+                  next_tool: "get_adversarial_review",
+                }
+              : {}),
+          });
+        } catch (err) {
+          return fail(err);
+        }
+      },
+    );
   },
   {},
   { basePath: "/api", maxDuration: 300 },
@@ -176,7 +356,7 @@ async function handler(req: Request): Promise<Response> {
   const settings = await loadSettings();
   const rl = consume(`mcp:${auth.id}`, bucketFor(settings, "rate.api", auth));
   if (!rl.allowed) return rateLimitResponse(rl.retryAfterSec);
-  return mcpHandler(req);
+  return mcpAuth.run(auth, () => mcpHandler(req));
 }
 
 export { handler as GET, handler as POST, handler as DELETE };

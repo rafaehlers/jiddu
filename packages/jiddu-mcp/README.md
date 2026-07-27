@@ -1,11 +1,14 @@
 # jiddu-mcp
 
-MCP server for [Jiddu](https://jiddu.app) — read any text with a critical mind. Four tools for agents:
+MCP server for [Jiddu](https://jiddu.app) — read anything with a critical mind. Seven tools for agents:
 
 - **`detect_fallacies`** — find logical fallacies in a text.
 - **`fact_check`** — extract factual claims and verify each against live web search.
 - **`assess_neutrality`** — score bias and surface loaded language, one-sidedness, omission, and framing.
 - **`explain`** — explain a dense paper paragraph by paragraph at a chosen audience level.
+- **`detect_slop`** — flag templated, machine-assembled writing patterns without guessing authorship.
+- **`start_adversarial_review`** — start a persisted review of a complete PDF at a public URL.
+- **`get_adversarial_review`** — poll that review job and retrieve the final result.
 
 It's a thin wrapper over the Jiddu public REST API. You need an API key — ask for one at [jiddu.app/api-access](https://jiddu.app/api-access).
 
@@ -40,7 +43,12 @@ The API key is read from the environment and never passed as a tool argument, so
 
 ## Tools
 
-All tools take `text` (40–2000 characters) and an optional `lang` (`en` / `pt` / `es`). `explain` also takes an optional `level` (`eli5` / `high_school` / `undergrad` / `expert`). Each returns the JSON response from the corresponding `/api/v1/*` endpoint.
+The five text tools take `text` (40–2000 characters) and optional `lang`
+(`en` / `pt` / `es`). `explain` also accepts `level`.
+`start_adversarial_review` takes a public `pdf_url` plus optional venue
+metadata and returns an asynchronous job id; pass that id to
+`get_adversarial_review` until it completes. Each tool returns the JSON
+response from the corresponding `/api/v1/*` endpoint.
 
 See [AGENT.md](./AGENT.md) for machine-oriented docs: when to use each tool, response shapes, limits, examples, and how to chain them.
 

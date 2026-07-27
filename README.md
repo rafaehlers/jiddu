@@ -72,6 +72,7 @@ The methodology behind the fact-check and neutrality pipelines is grounded in tw
 - **Five private stages** — ledger → published-literature research → synthesis → adversarial self-critique → deterministic finalization. Intermediate judgments are never shown as the final review.
 - **Localized evidence** — every substantive weakness carries manuscript page/section references and a `MAJOR` / `MODERATE` / `MINOR` severity.
 - **Markdown + PDF export** — deterministic Markdown follows the required `AI Paper Review` format and the print route supports browser “Save as PDF”.
+- **Curated synthetic demos** in 3 languages (`/r/demo-en`, `/r/demo-pt`, `/r/demo-es`) exercise the full results viewer without uploading a paper or spending API credits.
 
 ### Cross-cutting
 - **Six-way mode toggle** on the home composer — fallacies / fact-check / neutrality / explain / slop / adversarial review. The first five share URL, paste and file inputs; adversarial review intentionally accepts one PDF only.
@@ -108,10 +109,12 @@ cp .env.example .env
 npx prisma migrate dev
 node scripts/seed-demo.mjs           # fallacy detector demos
 node scripts/seed-explain-demo.mjs   # paper-explainer demos
+node scripts/seed-review-demo.mjs    # adversarial-review demos
 npm run dev
 ```
 
-Open <http://localhost:3000>. Try `/a/demo-en` or `/e/demo-en` (and the `-pt` / `-es` variants) to see the viewers without spending a token.
+Open <http://localhost:3000>. Try `/a/demo-en`, `/e/demo-en`, or `/r/demo-en`
+(and the `-pt` / `-es` variants) to see the viewers without spending a token.
 
 ## Environment
 
@@ -238,7 +241,10 @@ src/
 
 ## Public API & MCP (for agents)
 
-Five text pipelines are exposed as a documented, **synchronous** REST API (request → JSON, no SSE) for agents and scripts, plus an MCP server. Docs page: [`/api-access`](https://jiddu.app/api-access).
+Five text pipelines are exposed as a documented, **synchronous** REST API
+(request → JSON, no SSE). Adversarial paper review uses a persisted,
+**asynchronous** job API. Both surfaces are also available through MCP. Docs:
+[`/api-access`](https://jiddu.app/api-access).
 
 ```
 POST /api/v1/detect-fallacies
@@ -246,15 +252,16 @@ POST /api/v1/fact-check
 POST /api/v1/assess-neutrality
 POST /api/v1/explain
 POST /api/v1/detect-slop
+POST /api/v1/adversarial-reviews
+GET  /api/v1/adversarial-reviews/{id}
 ```
 
 Body is `{ "text": "…" }` (40–2000 chars) plus optional `lang` (`en`/`pt`/`es`) and, for explain, `level`. Authenticate with an `X-Jiddu-Key` header. Keys are **admin-issued** at `/admin/api-keys` (hashed, shown once) with per-key rate overrides; public limits are tuned via `rate.api*` in admin settings. `fact-check` extracts and verifies each claim via Sonar, capped by `api.maxClaims`.
 
-- **MCP server (remote, recommended):** a hosted MCP endpoint at `POST /api/mcp` (in-process, reuses the run/map layer) exposes the same five tools. Connect any MCP client by URL via the public [`mcp-remote`](https://www.npmjs.com/package/mcp-remote) bridge — nothing to install or publish. Config snippet on [`/api-access`](https://jiddu.app/api-access).
+- **Adversarial review API:** start a job with one multipart `file`, or JSON `{ "pdf_url": "https://…" }`. The `202` response includes the id and status URL. Poll `GET /api/v1/adversarial-reviews/{id}` until `status` is `complete` or `failed`. Complete jobs include the structured review plus viewer, Markdown and print/PDF URLs.
+- **MCP server (remote, recommended):** a hosted MCP endpoint at `POST /api/mcp` (in-process, reuses the same pipeline) exposes five synchronous text tools plus `start_adversarial_review` and `get_adversarial_review`. Connect any MCP client by URL via the public [`mcp-remote`](https://www.npmjs.com/package/mcp-remote) bridge — nothing to install or publish. Config snippet on [`/api-access`](https://jiddu.app/api-access).
 - **MCP server (local):** the same tools also ship as a standalone package, [`packages/jiddu-mcp`](./packages/jiddu-mcp), for offline/dev use — run from source (`node dist/index.js`), not published to npm. Machine-oriented docs: [`packages/jiddu-mcp/AGENT.md`](./packages/jiddu-mcp/AGENT.md).
 - **Evals:** fixed test sets in [`evals/`](./evals) (15–16 inputs per tool). Run `JIDDU_API_KEY=<key> npx tsx evals/run-evals.ts`; published accuracy in [`evals/report.md`](./evals/report.md).
-
-Adversarial paper review is deliberately **not** part of `/api/v1` or MCP yet. It is a PDF-only, long-running, persisted workflow with external literature research and visual-page evidence; forcing it into the synchronous 2,000-character API contract would be misleading. The web app currently uses internal `POST /api/review` (multipart + SSE) and `GET /api/review/venues?q=…` routes. Treat those as application internals, not a stable public automation contract. A future public review API should use asynchronous jobs.
 
 ## API (internal SSE endpoints)
 
@@ -375,7 +382,7 @@ This long-running route streams:
 | `done`      | `{ id, recommendation, weaknessCount }`                                                                                |
 | `error`     | `{ error }`                                                                                                            |
 
-The persisted final result is shown at `/r/[id]`; `GET /api/review/[id]/markdown` exports the same stored review as deterministic Markdown. `GET /api/review/venues?q=…` merges curated profiles with account-free DBLP venue discovery. These routes support the browser and are **not** a stable public `/api/v1` contract.
+The persisted final result is shown at `/r/[id]`; `GET /api/review/[id]/markdown` exports the same stored review as deterministic Markdown. `GET /api/review/venues?q=…` merges curated profiles with account-free DBLP venue discovery. These routes support the browser. Automation should use the stable asynchronous `/api/v1/adversarial-reviews` contract above.
 
 ### Live mode (beta) — `/live`
 

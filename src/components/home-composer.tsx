@@ -276,6 +276,16 @@ export function HomeComposer({ initialMode = "detector" }: { initialMode?: Mode 
 
         <ModeCards mode={mode} onChange={switchMode} />
 
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="text-muted">{t.see_demo_hint}</span>
+          <Link
+            href={`${cfg.resultPrefix}/demo-${lang}`}
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md border border-rule hover:border-foreground transition-colors"
+          >
+            {t.see_demo} <span aria-hidden>→</span>
+          </Link>
+        </div>
+
         <UploadForm
           onSubmit={startStream}
           error={submitError}
@@ -284,18 +294,6 @@ export function HomeComposer({ initialMode = "detector" }: { initialMode?: Mode 
           mode={mode}
           showModeTabs={false}
         />
-
-        {mode !== "review" && (
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm">
-            <span className="text-muted">{t.see_demo_hint}</span>
-            <Link
-              href={`${cfg.resultPrefix}/demo-${lang}`}
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md border border-rule hover:border-foreground transition-colors self-start sm:self-auto"
-            >
-              {t.see_demo} <span aria-hidden>→</span>
-            </Link>
-          </div>
-        )}
 
         {/* Benchmark quality card — fact-check only, as before. */}
         {mode === "factcheck" && (

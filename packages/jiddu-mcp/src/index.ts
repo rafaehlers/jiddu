@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Jiddu MCP server — exposes the five Jiddu analysis tools over stdio.
+// Jiddu MCP server — exposes the Jiddu analysis tools over stdio.
 //
 // Each tool is a thin wrapper over POST /api/v1/* on the deployed Jiddu API.
 // Configure JIDDU_API_KEY (required) and optionally JIDDU_API_URL via the MCP
@@ -8,7 +8,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { call, type CallBody } from "./client.js";
+import { call, get, type CallBody } from "./client.js";
 
 const server = new McpServer({ name: "jiddu", version: "0.1.0" });
 
@@ -33,6 +33,27 @@ async function toolResult(endpoint: string, body: CallBody) {
       isError: true,
       content: [
         { type: "text" as const, text: err instanceof Error ? err.message : String(err) },
+      ],
+    };
+  }
+}
+
+async function getToolResult(endpoint: string) {
+  try {
+    const data = await get(endpoint);
+    return {
+      content: [
+        { type: "text" as const, text: JSON.stringify(data, null, 2) },
+      ],
+    };
+  } catch (err) {
+    return {
+      isError: true,
+      content: [
+        {
+          type: "text" as const,
+          text: err instanceof Error ? err.message : String(err),
+        },
       ],
     };
   }
@@ -78,6 +99,64 @@ server.tool(
       .describe("Audience level for the explanation. Defaults to undergrad."),
   },
   async ({ text, lang, level }) => toolResult("explain", { text, lang, level }),
+);
+
+server.tool(
+  "start_adversarial_review",
+  "Start a persisted, five-stage adversarial review of one complete PDF available at a public URL. Returns a job id immediately; poll it with get_adversarial_review. The review audits claims and experiments, checks published prior work, applies an optional venue rubric, and produces localized weaknesses plus a recommendation.",
+  {
+    pdf_url: z
+      .string()
+      .url()
+      .max(2_000)
+      .describe(
+        "Public HTTP(S) URL of exactly one PDF. Private-network and authenticated URLs are rejected.",
+      ),
+    lang: langArg,
+    venue_profile_id: z.string().max(100).optional(),
+    venue: z.string().max(300).optional(),
+    venue_year: z.number().int().min(2000).max(2100).optional(),
+    venue_track: z.string().max(200).optional(),
+    paper_type: z
+      .enum([
+        "research",
+        "position",
+        "survey",
+        "dataset",
+        "theory",
+        "use-inspired",
+        "concept",
+        "negative-results",
+      ])
+      .optional(),
+    review_date: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional(),
+  },
+  async (input) =>
+    toolResult("adversarial-reviews", {
+      pdf_url: input.pdf_url,
+      lang: input.lang,
+      venue_profile_id: input.venue_profile_id,
+      venue: input.venue,
+      venue_year: input.venue_year,
+      venue_track: input.venue_track,
+      paper_type: input.paper_type,
+      review_date: input.review_date,
+    }),
+);
+
+server.tool(
+  "get_adversarial_review",
+  "Check a previously started adversarial-review job. While it is running, returns the current stage. When complete, returns the structured review, viewer URL, Markdown URL, and print/PDF URL.",
+  {
+    id: z
+      .string()
+      .regex(/^[A-Za-z0-9_-]{6,30}$/)
+      .describe("Job id returned by start_adversarial_review."),
+  },
+  async ({ id }) => getToolResult(`adversarial-reviews/${id}`),
 );
 
 async function main() {
