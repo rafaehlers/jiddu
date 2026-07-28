@@ -1,10 +1,5 @@
-import Link from "next/link";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import { AdminPage } from "@/components/admin/admin-page";
 import { prisma } from "@/lib/db";
-import { SiteHeader } from "@/components/site-header";
-import { SiteFooter } from "@/components/site-footer";
-import { ADMIN_COOKIE_NAME, adminTokenIsValid } from "../auth";
 import type { Verdict } from "@/lib/verdict-schema";
 import type { Claim } from "@/lib/claims-schema";
 
@@ -17,11 +12,6 @@ export const metadata = {
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export default async function AdminMetricsPage() {
-  const jar = await cookies();
-  if (!adminTokenIsValid(jar.get(ADMIN_COOKIE_NAME)?.value)) {
-    redirect("/admin");
-  }
-
   const now = new Date();
   const since24h = new Date(now.getTime() - DAY_MS);
   const since7d = new Date(now.getTime() - 7 * DAY_MS);
@@ -130,23 +120,10 @@ export default async function AdminMetricsPage() {
   const verdictTotal = Object.values(verdictCounts).reduce((a, b) => a + b, 0);
 
   return (
-    <>
-      <SiteHeader variant="guide" />
-      <main className="mx-auto max-w-7xl w-full px-4 sm:px-6 py-8 flex-1 flex flex-col gap-8">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div>
-            <h1 className="font-serif text-3xl">Metrics</h1>
-            <p className="text-sm text-muted mt-1">
-              Aggregate stats over the whole DB. Recomputed on each page load.
-            </p>
-          </div>
-          <Link
-            href="/admin"
-            className="text-sm text-muted hover:text-foreground transition-colors"
-          >
-            ← Back to admin
-          </Link>
-        </div>
+    <AdminPage
+      title="Metrics"
+      description="Aggregate stats over the whole database, recomputed on each page load."
+    >
 
         {/* Volume — over time */}
         <section className="flex flex-col gap-3">
@@ -230,8 +207,8 @@ export default async function AdminMetricsPage() {
               <strong>
                 {((verdictCounts.unverified / verdictTotal) * 100).toFixed(1)}%
               </strong>{" "}
-              — Roadmap target: under 20%. High values usually mean Sonar's
-              retrieval is underperforming for the kind of claims you're
+              — Roadmap target: under 20%. High values usually mean Sonar&apos;s
+              retrieval is underperforming for the kind of claims you&apos;re
               submitting.
             </p>
           )}
@@ -282,9 +259,7 @@ export default async function AdminMetricsPage() {
           warrants — for now, the ratio of cache entries to total
           verifications is a rough proxy.
         </p>
-      </main>
-      <SiteFooter />
-    </>
+    </AdminPage>
   );
 }
 

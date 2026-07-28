@@ -9,6 +9,7 @@ import { SkeletonReveal } from "@/components/skeleton-reveal";
 import { AnalysisSkeleton } from "@/components/analysis-skeleton";
 import type { SlopFinding } from "@/lib/slop-schema";
 import type { Sentence } from "@/lib/schema";
+import { analysisSocialMetadata } from "@/lib/social-metadata";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -31,20 +32,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             ? "Light seasoning"
             : "Reads human";
   const desc = `${score}/100 — ${label}. Checked for AI-slop patterns with Jiddu.`;
-  return {
+  return analysisSocialMetadata({
     title: `${title} · Jiddu`,
     description: desc,
-    openGraph: {
-      title: `${title} · Jiddu`,
-      description: desc,
-      type: "article",
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: `${title} · Jiddu`,
-      description: desc,
-    },
-  };
+    path: `/s/${id}`,
+  });
 }
 
 export default async function SlopPage({ params }: Props) {

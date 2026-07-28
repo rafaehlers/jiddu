@@ -1,11 +1,16 @@
-import Link from "next/link";
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
-import { SiteHeader } from "@/components/site-header";
-import { SiteFooter } from "@/components/site-footer";
+import {
+  AdminPage,
+  AdminPanel,
+  AdminSection,
+  AdminTableShell,
+} from "@/components/admin/admin-page";
 import { prisma } from "@/lib/db";
-import { ADMIN_COOKIE_NAME, adminTokenIsValid } from "../auth";
-import { createApiKeyAction, revokeApiKeyAction } from "./actions";
+import {
+  assignApiKeyOwnerAction,
+  createApiKeyAction,
+  revokeApiKeyAction,
+} from "./actions";
 import { NEW_KEY_COOKIE } from "./cookie";
 
 export const dynamic = "force-dynamic";
@@ -17,37 +22,29 @@ export const metadata = {
 export default async function AdminApiKeysPage({
   searchParams,
 }: {
-  searchParams: Promise<{ created?: string; revoked?: string }>;
+  searchParams: Promise<{
+    created?: string;
+    revoked?: string;
+    assigned?: string;
+    error?: string;
+  }>;
 }) {
   const jar = await cookies();
-  if (!adminTokenIsValid(jar.get(ADMIN_COOKIE_NAME)?.value)) {
-    redirect("/admin");
-  }
-
-  const { created, revoked } = await searchParams;
+  const { created, revoked, assigned, error } = await searchParams;
   const newSecret = created ? jar.get(NEW_KEY_COOKIE)?.value : undefined;
 
   const keys = await prisma.apiKey.findMany({ orderBy: { createdAt: "desc" } });
 
   return (
-    <>
-      <SiteHeader variant="guide" />
-      <main className="mx-auto max-w-3xl w-full px-4 sm:px-6 py-8 flex-1">
-        <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
-          <div>
-            <h1 className="font-serif text-3xl">API keys</h1>
-            <p className="text-sm text-muted mt-1">
-              Keys for the public REST API (POST /api/v1/*). Sent by clients in
-              the <code>X-Jiddu-Key</code> header.
-            </p>
-          </div>
-          <Link
-            href="/admin"
-            className="text-sm text-muted hover:text-foreground transition-colors"
-          >
-            ← Back to admin
-          </Link>
-        </div>
+    <AdminPage
+      title="API keys"
+      description={
+        <>
+          Keys for the public REST API (<code>POST /api/v1/*</code>), sent by
+          clients in the <code>X-Jiddu-Key</code> header.
+        </>
+      }
+    >
 
         {newSecret && (
           <div className="mb-6 text-sm bg-emerald-500/10 border border-emerald-500/30 rounded-md p-4 flex flex-col gap-2">
@@ -64,12 +61,22 @@ export default async function AdminApiKeysPage({
             Key revoked.
           </div>
         )}
+        {assigned && (
+          <div className="mb-4 text-sm text-muted bg-paper border border-rule rounded-md p-3">
+            API key owner updated.
+          </div>
+        )}
+        {error && (
+          <div className="mb-4 rounded-md border border-[var(--severity-high)]/40 p-3 text-sm text-[var(--severity-high)]">
+            {error === "owner_unverified"
+              ? "That WorkOS account has not verified its email."
+              : "No WorkOS account was found for that email."}
+          </div>
+        )}
 
         {/* Create form */}
-        <form
-          action={createApiKeyAction}
-          className="flex flex-col gap-3 border border-rule rounded-lg p-4 mb-8"
-        >
+        <AdminPanel>
+          <form action={createApiKeyAction} className="flex flex-col gap-3">
           <span className="font-medium text-sm">Create a key</span>
           <label className="flex flex-col gap-1 text-sm">
             <span>Label</span>
@@ -80,6 +87,20 @@ export default async function AdminApiKeysPage({
               placeholder="e.g. research-agent, alice@example.com"
               className="bg-background border border-rule rounded-md px-3 py-2 outline-none focus:border-accent"
             />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            <span>WorkOS owner email</span>
+            <input
+              type="email"
+              name="ownerEmail"
+              required
+              placeholder="alice@example.com"
+              className="bg-background border border-rule rounded-md px-3 py-2 outline-none focus:border-accent"
+            />
+            <span className="text-xs text-muted">
+              Usage follows this account&apos;s included access, connected
+              included platform access or Jiddu credit balance.
+            </span>
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <label className="flex flex-col gap-1 text-sm">
@@ -111,15 +132,18 @@ export default async function AdminApiKeysPage({
               Generate key
             </button>
           </div>
-        </form>
+          </form>
+        </AdminPanel>
 
         {/* Existing keys */}
-        <div className="overflow-x-auto border border-rule rounded-lg">
+        <AdminSection title="Existing keys">
+          <AdminTableShell>
           <table className="w-full text-sm">
             <thead className="bg-paper">
               <tr className="text-left text-muted">
                 <th className="px-3 py-2 font-medium">Label</th>
                 <th className="px-3 py-2 font-medium">Prefix</th>
+                <th className="px-3 py-2 font-medium">WorkOS owner</th>
                 <th className="px-3 py-2 font-medium">Created</th>
                 <th className="px-3 py-2 font-medium">Last used</th>
                 <th className="px-3 py-2 font-medium">Status</th>
@@ -129,7 +153,7 @@ export default async function AdminApiKeysPage({
             <tbody>
               {keys.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-3 py-8 text-center text-muted">
+                  <td colSpan={7} className="px-3 py-8 text-center text-muted">
                     No keys yet.
                   </td>
                 </tr>
@@ -139,6 +163,34 @@ export default async function AdminApiKeysPage({
                   <td className="px-3 py-2 font-medium">{k.label}</td>
                   <td className="px-3 py-2 font-mono text-xs text-muted">
                     {k.prefix}…
+                  </td>
+                  <td className="px-3 py-2 min-w-56">
+                    <form
+                      action={assignApiKeyOwnerAction}
+                      className="flex items-center gap-2"
+                    >
+                      <input type="hidden" name="id" value={k.id} />
+                      <input
+                        type="email"
+                        name="ownerEmail"
+                        required
+                        defaultValue={k.ownerEmail ?? ""}
+                        placeholder="Assign owner"
+                        aria-label={`WorkOS owner for ${k.label}`}
+                        className="min-w-0 w-44 rounded border border-rule bg-background px-2 py-1 text-xs"
+                      />
+                      <button
+                        type="submit"
+                        className="text-xs text-muted hover:text-foreground"
+                      >
+                        Save
+                      </button>
+                    </form>
+                    {!k.ownerWorkosUserId && (
+                      <span className="mt-1 block text-xs text-[var(--severity-high)]">
+                        Disabled until assigned
+                      </span>
+                    )}
                   </td>
                   <td className="px-3 py-2 text-muted whitespace-nowrap">
                     {formatDate(k.createdAt)}
@@ -174,10 +226,9 @@ export default async function AdminApiKeysPage({
               ))}
             </tbody>
           </table>
-        </div>
-      </main>
-      <SiteFooter />
-    </>
+          </AdminTableShell>
+        </AdminSection>
+    </AdminPage>
   );
 }
 

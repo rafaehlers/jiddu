@@ -91,21 +91,21 @@ Pelo perfil atual do projeto (solo, prod no ar, sem time/CNPJ ainda):
 
 ## 6. O que ajuda em qualquer aplicação
 
-- **Open source ou source-available** → abre NLnet, Mozilla, OTF, Hugging Face.
+- **Código fechado** → priorizar programas que não exigem publicação do software; NLnet, Mozilla, OTF e Hugging Face podem deixar de ser elegíveis.
 - **Métricas de uso reais** → abre GNI, Knight, Luminate.
 - **Enquadramento "social good" claro** → abre AI for Good, OSF.
 - **Partnership com fact-check org acreditada** → multiplicador universal.
 - **Afiliação acadêmica** (USP, UFRJ, FGV, UFMG) → abre FAPESP, FINEP, programas universitários.
-- **Documentação técnica boa** (o repo + roadmap + casos de uso) → reduz fricção em qualquer review.
+- **Documentação técnica boa** (metodologia, roadmap e casos de uso) → reduz fricção em qualquer review.
 
 ---
 
 ## 7. Decisões a tomar antes de aplicar nos grants maiores
 
-- **Licença do código**: open-source (e qual)? Source-available? Fechado? Decisão impacta quais grants ficam acessíveis.
+- **Licença do código**: decidido — Jiddu é software proprietário de código fechado. Filtrar grants por compatibilidade com esse modelo.
 - **Entidade jurídica**: CNPJ próprio, MEI, vinculação a ONG existente? Necessário para grants maiores.
 - **Política de compartilhamento de dados**: análises são públicas via URL — isso é feature ou risco? Definir antes da aplicação.
-- **Roadmap público**: o `docs/fact-check-roadmap.md` já ajuda. Adicionar issues no GitHub com `good first issue` reforça narrativa de projeto comunitário.
+- **Roadmap apresentável**: o `docs/fact-check-roadmap.md` já ajuda. Preparar uma versão adequada para candidaturas sem expor detalhes internos.
 - **Disclaimer e termos**: quando entrar fact-check, termos de uso e disclaimer ficam obrigatórios — alguns grants pedem para revisar.
 
 ---

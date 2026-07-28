@@ -6,6 +6,22 @@ import { bucketFromSettings, loadSettings } from "@/lib/settings";
 import type { Claim } from "@/lib/claims-schema";
 import type { Verdict } from "@/lib/verdict-schema";
 import type { Lang } from "@/lib/fallacies";
+import {
+  isAccessResponse,
+  requireWebAnalysisAccess,
+} from "@/lib/web-analysis-access";
+import {
+  modelCreditRate,
+} from "@/lib/jiddu-credit-rates";
+import {
+  releaseJidduCreditReservation,
+  settleJidduCreditReservationFromUsage,
+} from "@/lib/jiddu-credits";
+import {
+  isCreditResponse,
+  reserveWebAnalysisCredits,
+} from "@/lib/web-credit-billing";
+import type { OpenRouterUsage } from "@/lib/openrouter-usage";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -18,6 +34,9 @@ export async function POST(
   req: NextRequest,
   ctx: { params: Promise<{ id: string }> },
 ) {
+  const access = await requireWebAnalysisAccess();
+  if (isAccessResponse(access)) return access;
+
   const settings = await loadSettings();
   const rl = consume(
     `verify:${ipFromRequest(req)}`,
@@ -33,6 +52,9 @@ export async function POST(
   const { id } = await ctx.params;
   const fc = await prisma.factCheck.findUnique({ where: { id } });
   if (!fc) return jsonError("Not found", 404);
+  if (access.userId && fc.ownerWorkosUserId !== access.userId) {
+    return jsonError("Not found", 404);
+  }
   if (fc.verifyStatus === "running") {
     return jsonError("Verification already in progress", 409);
   }
@@ -56,23 +78,55 @@ export async function POST(
     );
   }
 
+  const reservation = await reserveWebAnalysisCredits(access, {
+    amount: eligibleClaims.length * modelCreditRate(VERIFY_MODEL),
+    feature: "factcheck_verify",
+    resourceId: id,
+    metadata: { eligibleClaimCount: eligibleClaims.length },
+  });
+  if (isCreditResponse(reservation)) return reservation;
+
   const lang = (fc.language && ["en", "pt", "es"].includes(fc.language)
     ? fc.language
     : "en") as Lang;
 
-  await prisma.factCheck.update({
-    where: { id },
-    data: {
-      verifyStatus: "running",
-      verifyModel: VERIFY_MODEL,
-      verifyStartedAt: new Date(),
-      verifyFinishedAt: null,
-      verdicts: JSON.stringify([]),
-    },
-  });
+  try {
+    await prisma.factCheck.update({
+      where: { id },
+      data: {
+        verifyStatus: "running",
+        verifyModel: VERIFY_MODEL,
+        verifyStartedAt: new Date(),
+        verifyFinishedAt: null,
+        verdicts: JSON.stringify([]),
+      },
+    });
+  } catch {
+    await releaseJidduCreditReservation(reservation);
+    return jsonError("Could not start verification", 500);
+  }
 
   const encoder = new TextEncoder();
   const abortController = new AbortController();
+  let billableCacheMisses = 0;
+  const usages: OpenRouterUsage[] = [];
+  let settled = false;
+  const settle = async () => {
+    if (settled) return;
+    settled = true;
+    await settleJidduCreditReservationFromUsage(
+      reservation,
+      {
+        usages,
+        fallbackModels: Array.from(
+          { length: billableCacheMisses },
+          () => VERIFY_MODEL,
+        ),
+        resourceId: id,
+        metadata: { uncachedClaimCalls: billableCacheMisses },
+      },
+    );
+  };
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -107,12 +161,18 @@ export async function POST(
             const result = await verifyClaim(claim, {
               lang,
               signal: abortController.signal,
+              apiKey: access.apiKey,
             });
             localRefreshCounts[claim.id] = (localRefreshCounts[claim.id] ?? 0) + 1;
             if (result.cached) cacheHits++;
-            else cacheMisses++;
+            else {
+              cacheMisses++;
+              billableCacheMisses++;
+              if (result.usage) usages.push(result.usage);
+            }
             // Strip the cache flag before persisting; UI still sees it via SSE.
-            const { cached, ...verdict } = result;
+            const { cached, usage: _usage, ...verdict } = result;
+            void _usage;
             verdicts.push(verdict);
             send("verdict", { ...verdict, cached });
           } catch (err) {
@@ -146,6 +206,7 @@ export async function POST(
           },
         });
         send("error", { error: message });
+        await settle();
         controller.close();
         return;
       }
@@ -173,10 +234,12 @@ export async function POST(
         cacheHits,
         cacheMisses,
       });
+      await settle();
       controller.close();
     },
-    cancel() {
+    async cancel() {
       abortController.abort();
+      await settle();
     },
   });
 

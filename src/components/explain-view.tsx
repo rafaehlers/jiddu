@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable react-hooks/refs -- DOM refs are read only in effects and interaction/ref callbacks. */
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {

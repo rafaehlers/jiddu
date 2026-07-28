@@ -37,7 +37,6 @@ export function AnalysisPrintView({
   sourceRef,
   source,
   text,
-  sentences: _sentences,
   findings,
   score,
   summary,
@@ -124,7 +123,9 @@ export function AnalysisPrintView({
                     </span>
                     <span className="print-fallacy-name">{fallacyName}</span>
                   </div>
-                  <blockquote className="print-quote">"{f.quote}"</blockquote>
+                  <blockquote className="print-quote">
+                    &ldquo;{f.quote}&rdquo;
+                  </blockquote>
                   <p className="print-explanation">{f.explanation}</p>
                 </li>
               );

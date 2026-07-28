@@ -19,6 +19,7 @@ export async function* withModelFallback<E, R>(
   models: string[],
   makeStream: StreamFactory<E, R>,
   signal?: AbortSignal,
+  onModelUsed?: (model: string) => void,
 ): AsyncGenerator<E, R, void> {
   if (models.length === 0) {
     throw new Error("withModelFallback: empty model list");
@@ -31,9 +32,17 @@ export async function* withModelFallback<E, R>(
     try {
       const gen = makeStream(model);
       let result: IteratorResult<E, R>;
+      let usageRecorded = false;
       while (true) {
         result = await gen.next();
-        if (result.done) return result.value;
+        if (result.done) {
+          if (!usageRecorded) onModelUsed?.(model);
+          return result.value;
+        }
+        if (!usageRecorded) {
+          onModelUsed?.(model);
+          usageRecorded = true;
+        }
         emitted = true;
         yield result.value;
       }

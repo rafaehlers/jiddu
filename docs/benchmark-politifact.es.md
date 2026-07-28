@@ -156,8 +156,7 @@ Son casos donde la lectura cuidadosa de Sonar es técnicamente más defendible q
 ## Reproducción
 
 ```bash
-git clone git@github.com:rafaehlers/jiddu.git
-cd jiddu
+# Desde un checkout local autorizado:
 npm install
 cp .env.example .env   # agrega tu OPENROUTER_API_KEY
 npx prisma migrate dev

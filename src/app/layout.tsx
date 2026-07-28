@@ -1,8 +1,16 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Newsreader } from "next/font/google";
 import { cookies, headers } from "next/headers";
+import { withAuth } from "@workos-inc/authkit-nextjs";
+import { effectiveAnalysisAccessMode } from "@/lib/analysis-access";
+import { isAdminIdentity } from "@/lib/admin-auth";
+import { AuthKitProvider } from "@workos-inc/authkit-nextjs/components";
+import { AuthControlsProvider } from "@/components/auth-controls";
 import { I18nProvider } from "@/lib/i18n/provider";
+import { isWorkOSConfigured } from "@/lib/auth-config";
 import type { Lang } from "@/lib/fallacies";
+import "@radix-ui/themes/styles.css";
+import "@workos-inc/widgets/styles.css";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -33,18 +41,35 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://jiddu.app"),
   title: "Jiddu — truth is a pathless land",
   description: SITE_DESCRIPTION,
+  alternates: {
+    canonical: "https://jiddu.app",
+  },
   openGraph: {
     title: "Jiddu — truth is a pathless land",
     description: SITE_DESCRIPTION,
     url: "https://jiddu.app",
+    siteName: "Jiddu",
     type: "website",
-    images: [{ url: "/og.png" }],
+    images: [
+      {
+        url: "/og.png",
+        width: 1200,
+        height: 630,
+        type: "image/png",
+        alt: "Jiddu — truth is a pathless land — Read anything with a critical mind — https://jiddu.app",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Jiddu — truth is a pathless land",
     description: SITE_DESCRIPTION,
-    images: ["/og.png"],
+    images: [
+      {
+        url: "/og.png",
+        alt: "Jiddu — truth is a pathless land — Read anything with a critical mind — https://jiddu.app",
+      },
+    ],
   },
 };
 
@@ -95,6 +120,13 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const initialLang = await resolveInitialLang();
+  const authConfigured = isWorkOSConfigured();
+  const auth = authConfigured ? await withAuth() : { user: null as null };
+  const hasPlatformAccess =
+    (await effectiveAnalysisAccessMode(auth.user)) === "platform";
+  const { accessToken: _accessToken, ...initialAuth } =
+    "accessToken" in auth ? auth : { ...auth, accessToken: undefined };
+  void _accessToken;
   return (
     <html
       lang={initialLang}
@@ -103,6 +135,8 @@ export default async function RootLayout({
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        {/* gtag is intentionally loaded directly; no third-party wrapper dependency. */}
+        {/* eslint-disable-next-line @next/next/next-script-for-ga */}
         <script
           async
           src="https://www.googletagmanager.com/gtag/js?id=G-X4Y2D32654"
@@ -110,7 +144,15 @@ export default async function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: gtagInitScript }} />
       </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
-        <I18nProvider initialLang={initialLang}>{children}</I18nProvider>
+        <AuthKitProvider initialAuth={initialAuth}>
+          <AuthControlsProvider
+            enabled={authConfigured}
+            isAdmin={isAdminIdentity(auth.user)}
+            hasPlatformAccess={hasPlatformAccess}
+          >
+            <I18nProvider initialLang={initialLang}>{children}</I18nProvider>
+          </AuthControlsProvider>
+        </AuthKitProvider>
       </body>
     </html>
   );

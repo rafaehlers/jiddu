@@ -11,6 +11,7 @@ import type { Sentence } from "@/lib/schema";
 import type { Claim } from "@/lib/claims-schema";
 import type { Verdict } from "@/lib/verdict-schema";
 import { loadSettings } from "@/lib/settings";
+import { analysisSocialMetadata } from "@/lib/social-metadata";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -23,20 +24,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const title = f.title ?? "Untitled";
   const claims = JSON.parse(f.claims) as (Claim & { id: string })[];
   const desc = `${claims.length} verifiable claim${claims.length === 1 ? "" : "s"} extracted. Reviewed with Jiddu fact-check.`;
-  return {
+  return analysisSocialMetadata({
     title: `${title} · Jiddu fact-check`,
     description: desc,
-    openGraph: {
-      title: `${title} · Jiddu fact-check`,
-      description: desc,
-      type: "article",
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: `${title} · Jiddu fact-check`,
-      description: desc,
-    },
-  };
+    path: `/f/${id}`,
+  });
 }
 
 export default async function FactCheckPageView({ params }: Props) {

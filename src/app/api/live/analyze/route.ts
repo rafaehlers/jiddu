@@ -5,13 +5,26 @@ import { splitSentences } from "@/lib/sentences";
 import { getProvider, resolveModel } from "@/lib/llm";
 import { FindingSchema, type Finding, type Sentence } from "@/lib/schema";
 import type { Lang } from "@/lib/fallacies";
+import {
+  isAccessResponse,
+  requireWebAnalysisAccess,
+} from "@/lib/web-analysis-access";
+import { modelCreditRate } from "@/lib/jiddu-credit-rates";
+import {
+  settleJidduCreditReservationFromUsage,
+} from "@/lib/jiddu-credits";
+import {
+  isCreditResponse,
+  reserveWebAnalysisCredits,
+} from "@/lib/web-credit-billing";
+import type { OpenRouterUsage } from "@/lib/openrouter-usage";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
 const MAX_TRANSCRIPT_CHARS = 500_000;
 const MIN_NEW_CHARS_TO_ANALYZE = 80;
-const CONTEXT_SENTENCE_COUNT = 2;
+const CONTEXT_SENTENCE_COUNT = 4;
 
 type Body = {
   sessionId?: string;
@@ -22,6 +35,9 @@ type Body = {
 };
 
 export async function POST(req: NextRequest) {
+  const access = await requireWebAnalysisAccess();
+  if (isAccessResponse(access)) return access;
+
   const body = (await req.json().catch(() => null)) as Body | null;
   if (!body) return jsonError("Invalid JSON", 400);
 
@@ -42,6 +58,12 @@ export async function POST(req: NextRequest) {
   if (body.sessionId) {
     row = await prisma.analysis.findUnique({ where: { id: body.sessionId } });
     if (!row) return jsonError("Session not found", 404);
+    if (
+      access.userId &&
+      row.ownerWorkosUserId !== access.userId
+    ) {
+      return jsonError("Session not found", 404);
+    }
     if (row.source !== "live") return jsonError("Not a live session", 400);
     if (row.status === "complete" || row.status === "failed") {
       return jsonError(`Session already ${row.status}`, 409);
@@ -50,7 +72,7 @@ export async function POST(req: NextRequest) {
     const chosenModel = resolveModel(body.model);
     let llm;
     try {
-      llm = getProvider(chosenModel.id);
+      llm = getProvider(chosenModel.id, access.apiKey);
     } catch (err) {
       return jsonError(err instanceof Error ? err.message : "Provider error", 400);
     }
@@ -58,6 +80,7 @@ export async function POST(req: NextRequest) {
     row = await prisma.analysis.create({
       data: {
         id,
+        ownerWorkosUserId: access.userId ?? null,
         status: "running",
         source: "live",
         sourceRef: null,
@@ -103,14 +126,45 @@ export async function POST(req: NextRequest) {
   const chosenModel = resolveModel(body.model ?? row.model);
   let llm;
   try {
-    llm = getProvider(chosenModel.id);
+    llm = getProvider(chosenModel.id, access.apiKey);
   } catch (err) {
     return jsonError(err instanceof Error ? err.message : "Provider error", 400);
+  }
+
+  const reservation = shouldAnalyze
+    ? await reserveWebAnalysisCredits(access, {
+        amount: modelCreditRate(chosenModel.id),
+        feature: "live_analysis",
+        resourceId: row.id,
+        metadata: { model: chosenModel.id },
+      })
+    : null;
+  if (reservation && isCreditResponse(reservation)) {
+    if (isNew) {
+      await prisma.analysis.delete({ where: { id: row.id } });
+    }
+    return reservation;
   }
 
   // ── Stream ───────────────────────────────────────────────────────────
   const encoder = new TextEncoder();
   const abortController = new AbortController();
+  let billableModelCall = false;
+  const usages: OpenRouterUsage[] = [];
+  let settled = false;
+  const settle = async () => {
+    if (settled) return;
+    settled = true;
+    await settleJidduCreditReservationFromUsage(
+      reservation,
+      {
+        usages,
+        fallbackModels: billableModelCall ? [chosenModel.id] : [],
+        resourceId: row.id,
+        metadata: { model: chosenModel.id },
+      },
+    );
+  };
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -136,8 +190,12 @@ export async function POST(req: NextRequest) {
         try {
           for await (const event of llm.analyzeStream(
             { sentences: toAnalyze, lang, contextSentences },
-            { signal: abortController.signal },
+            {
+              signal: abortController.signal,
+              onUsage: (usage) => usages.push(usage),
+            },
           )) {
+            billableModelCall = true;
             if (event.type === "finding") {
               // Guard: drop findings the model wrongly anchored to context
               // sentences or to ids we don't recognize.
@@ -168,6 +226,7 @@ export async function POST(req: NextRequest) {
           }
         }
       }
+      await settle();
 
       // ── Persist ──────────────────────────────────────────────────────
       // The committed sentence set grows by the count we actually analyzed
@@ -175,7 +234,9 @@ export async function POST(req: NextRequest) {
       // what we've seen so future calls can pick up from there.
       const persistedSentences = finalize
         ? allSentences
-        : allSentences.slice(0, committedCount + toAnalyze.length);
+        : shouldAnalyze
+          ? allSentences.slice(0, committedCount + toAnalyze.length)
+          : allSentences.slice(0, committedCount);
       const allFindings = [...existingFindings, ...newFindings];
 
       // Recompute score: on finalize, derive from density + severity.
@@ -214,8 +275,9 @@ export async function POST(req: NextRequest) {
       });
       controller.close();
     },
-    cancel() {
+    async cancel() {
       abortController.abort();
+      await settle();
     },
   });
 

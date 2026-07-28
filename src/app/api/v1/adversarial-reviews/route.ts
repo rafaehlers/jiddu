@@ -14,6 +14,14 @@ import { bucketFor, loadSettings } from "@/lib/settings";
 import { resolveVenueProfile, type PaperType } from "@/lib/venues";
 import type { Lang } from "@/lib/fallacies";
 import type { ReviewDepth } from "@/lib/paper-review-audit-schema";
+import {
+  createApiCreditMeter,
+  isApiCreditResponse,
+} from "@/lib/api/credit-billing";
+import {
+  creditsForModels,
+  paperReviewMaximumModels,
+} from "@/lib/jiddu-credit-rates";
 
 export const runtime = "nodejs";
 export const maxDuration = 900;
@@ -97,19 +105,58 @@ export async function POST(req: NextRequest) {
       buffer: source.buffer,
       filename: source.filename,
       sourceRef: source.sourceRef,
+      ownerWorkosUserId: auth.userId,
       lang: options.lang,
       venueProfile,
       reviewDate: options.reviewDate,
       reviewDepth: options.depth,
     });
+    const maximumModels = paperReviewMaximumModels({
+      depth: prepared.reviewDepth,
+      selectedModel: prepared.modelId,
+      deepModel: process.env.PAPER_REVIEW_DEEP_MODEL,
+      criticModel: process.env.PAPER_REVIEW_CRITIC_MODEL,
+    });
+    const meter = await createApiCreditMeter(auth, {
+      amount: creditsForModels(maximumModels),
+      feature:
+        prepared.reviewDepth === "deep" ? "review_deep" : "review_standard",
+      resourceId: prepared.id,
+      metadata: {
+        apiKeyId: auth.id,
+        depth: prepared.reviewDepth,
+        maximumModels,
+      },
+    });
+    if (isApiCreditResponse(meter)) {
+      await prisma.paperReview.delete({ where: { id: prepared.id } });
+      return meter;
+    }
 
     after(async () => {
-      await runPreparedPaperReview(prepared).catch((err) => {
+      try {
+        await runPreparedPaperReview(prepared, {
+          apiKey: auth.apiKey,
+          callbacks: {
+            onBillableCall(event) {
+              meter.recordModel(event.model);
+            },
+            onUsage(usage) {
+              meter.recordUsage(usage);
+            },
+          },
+        });
+        await meter.settle({ resourceId: prepared.id });
+      } catch (err) {
+        await meter.settle({
+          resourceId: prepared.id,
+          note: "REST adversarial review failed before completion.",
+        });
         console.error(
           `[api:v1:adversarial-review:${prepared.id}]`,
           err instanceof Error ? err.message : err,
         );
-      });
+      }
     });
 
     const row = await prisma.paperReview.findUnique({

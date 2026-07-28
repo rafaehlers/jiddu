@@ -41,7 +41,6 @@ export function SlopPrintView({
   sourceRef,
   source,
   text,
-  sentences: _sentences,
   findings,
   score,
   summary,
@@ -124,7 +123,9 @@ export function SlopPrintView({
                     </span>
                     <span className="print-fallacy-name">{patternName}</span>
                   </div>
-                  <blockquote className="print-quote">"{f.quote}"</blockquote>
+                  <blockquote className="print-quote">
+                    &ldquo;{f.quote}&rdquo;
+                  </blockquote>
                   <p className="print-explanation">{f.explanation}</p>
                 </li>
               );

@@ -1,10 +1,6 @@
 import Link from "next/link";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import { AdminPage } from "@/components/admin/admin-page";
 import { prisma } from "@/lib/db";
-import { SiteHeader } from "@/components/site-header";
-import { SiteFooter } from "@/components/site-footer";
-import { ADMIN_COOKIE_NAME, adminTokenIsValid } from "../auth";
 import { deleteCacheEntryAction, deleteExpiredCacheAction } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -20,11 +16,6 @@ export default async function AdminCachePage({
 }: {
   searchParams: Promise<{ page?: string }>;
 }) {
-  const jar = await cookies();
-  if (!adminTokenIsValid(jar.get(ADMIN_COOKIE_NAME)?.value)) {
-    redirect("/admin");
-  }
-
   const { page: pageStr } = await searchParams;
   const page = Math.max(0, Number.parseInt(pageStr ?? "0", 10) || 0);
 
@@ -39,35 +30,22 @@ export default async function AdminCachePage({
   ]);
 
   return (
-    <>
-      <SiteHeader variant="guide" />
-      <main className="mx-auto max-w-7xl w-full px-4 sm:px-6 py-8 flex-1">
-        <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
-          <div>
-            <h1 className="font-serif text-3xl">Claim verdict cache</h1>
-            <p className="text-sm text-muted mt-1">
-              {total} total entries · {expiredCount} expired · page {page + 1}
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link
-              href="/admin"
-              className="text-sm text-muted hover:text-foreground transition-colors"
+    <AdminPage
+      title="Claim verdict cache"
+      description={`${total} total entries · ${expiredCount} expired · page ${page + 1}`}
+      actions={
+        expiredCount > 0 ? (
+          <form action={deleteExpiredCacheAction}>
+            <button
+              type="submit"
+              className="rounded-md border border-rule px-3 py-1.5 text-sm text-muted transition-colors hover:text-foreground"
             >
-              ← Back to admin
-            </Link>
-            {expiredCount > 0 && (
-              <form action={deleteExpiredCacheAction}>
-                <button
-                  type="submit"
-                  className="text-sm px-3 py-1.5 rounded-md border border-rule text-muted hover:text-foreground transition-colors"
-                >
-                  Delete {expiredCount} expired
-                </button>
-              </form>
-            )}
-          </div>
-        </div>
+              Delete {expiredCount} expired
+            </button>
+          </form>
+        ) : undefined
+      }
+    >
 
         <div className="overflow-x-auto border border-rule rounded-lg">
           <table className="w-full text-sm">
@@ -161,9 +139,7 @@ export default async function AdminCachePage({
             )}
           </div>
         )}
-      </main>
-      <SiteFooter />
-    </>
+    </AdminPage>
   );
 }
 

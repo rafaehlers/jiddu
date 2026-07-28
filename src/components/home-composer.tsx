@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
@@ -150,6 +151,14 @@ export function HomeComposer({ initialMode = "detector" }: { initialMode?: Mode 
   }, []);
 
   const cfg = MODE_CONFIG[mode];
+  const modeLabel: Record<Mode, string> = {
+    detector: t.mode_detector,
+    factcheck: t.mode_factcheck,
+    neutrality: t.mode_neutrality,
+    explain: t.mode_explain,
+    slop: t.mode_slop,
+    review: t.mode_review,
+  };
 
   function switchMode(next: Mode) {
     if (next === mode) return;
@@ -265,13 +274,36 @@ export function HomeComposer({ initialMode = "detector" }: { initialMode?: Mode 
       <section className="mx-auto max-w-5xl w-full px-4 sm:px-6 py-8 sm:py-14 flex flex-col gap-8 sm:gap-10">
         {/* Standard hero — the same for all lenses, so switching a
             lens never reflows the top of the page. */}
-        <div className="flex flex-col gap-3 sm:gap-4">
-          <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl leading-tight text-balance">
-            {t.hero_title}
-          </h1>
-          <p className="text-foreground/85 text-base sm:text-lg max-w-3xl leading-relaxed">
-            {t.home_hero_subtitle}
-          </p>
+        <div className="flex items-center justify-between gap-4 sm:gap-8 md:gap-12">
+          <span
+            className="relative size-20 shrink-0 sm:size-28 md:size-40"
+            aria-hidden="true"
+          >
+            <Image
+              src="/brand/jiddu_logo_inverted_256.webp"
+              alt=""
+              fill
+              sizes="(min-width: 768px) 160px, (min-width: 640px) 112px, 80px"
+              className="jiddu-brand-logo jiddu-brand-logo-inverted object-cover mix-blend-lighten"
+              priority
+            />
+            <Image
+              src="/brand/jiddu_logo_256.webp"
+              alt=""
+              fill
+              sizes="(min-width: 768px) 160px, (min-width: 640px) 112px, 80px"
+              className="jiddu-brand-logo jiddu-brand-logo-default object-cover mix-blend-darken"
+              priority
+            />
+          </span>
+          <div className="flex min-w-0 flex-1 flex-col gap-3 sm:gap-4">
+            <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl leading-tight text-balance">
+              {t.hero_title}
+            </h1>
+            <p className="text-foreground/85 text-base sm:text-lg max-w-3xl leading-relaxed">
+              {t.home_hero_subtitle}
+            </p>
+          </div>
         </div>
 
         <ModeCards mode={mode} onChange={switchMode} />
@@ -282,7 +314,7 @@ export function HomeComposer({ initialMode = "detector" }: { initialMode?: Mode 
             href={`${cfg.resultPrefix}/demo-${lang}`}
             className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md border border-rule hover:border-foreground transition-colors"
           >
-            {t.see_demo} <span aria-hidden>→</span>
+            {t.see_demo_for(modeLabel[mode])} <span aria-hidden>→</span>
           </Link>
         </div>
 

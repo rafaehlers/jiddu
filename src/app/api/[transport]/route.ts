@@ -1,14 +1,14 @@
 // Remote MCP server, hosted in-process on jiddu.app.
 //
 // Exposes the same tools as the standalone `jiddu-mcp` package, but as an
-// HTTP endpoint so clients can connect by URL (via `mcp-remote`) without
-// installing or cloning anything. The mcp-handler [transport] segment serves
-// /api/mcp (Streamable HTTP) and /api/sse. Tools call the internal run/map
-// layer directly — no internal HTTP hop.
+// HTTP endpoint so clients can connect by URL without installing or cloning
+// anything. The mcp-handler [transport] segment serves /api/mcp (Streamable
+// HTTP) and /api/sse. Tools call the internal run/map layer directly — no
+// internal HTTP hop.
 //
-// Auth: every request must carry the X-Jiddu-Key header (mcp-remote forwards
-// it via --header). We validate + rate-limit before delegating to the MCP
-// handler, reusing the same key store and buckets as the REST API.
+// Auth: WorkOS AuthKit is the OAuth authorization server. Every request carries
+// a bearer token whose subject maps to a WorkOS user. Allowlisted accounts use
+// included platform access; everyone else spends Jiddu Credits.
 
 import { AsyncLocalStorage } from "node:async_hooks";
 import { after } from "next/server";
@@ -16,16 +16,19 @@ import { createMcpHandler } from "mcp-handler";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import {
-  requireApiKey,
-  type ApiKeyRecord,
-} from "@/lib/api/auth";
+  requireMcpUser,
+  type McpUserContext,
+} from "@/lib/mcp-auth";
 import { fetchPublicPdf } from "@/lib/api/pdf-source";
 import {
   findPaperReviewJob,
   mapPaperReviewJob,
 } from "@/lib/api/paper-review";
 import { consume, rateLimitResponse } from "@/lib/rate-limit";
-import { loadSettings, bucketFor } from "@/lib/settings";
+import {
+  loadSettings,
+  bucketFromSettings,
+} from "@/lib/settings";
 import { IngestError } from "@/lib/ingest/errors";
 import {
   runFallacies,
@@ -48,6 +51,20 @@ import {
   runPreparedPaperReview,
 } from "@/lib/paper-review-job";
 import { resolveVenueProfile } from "@/lib/venues";
+import {
+  createApiCreditMeter,
+  isApiCreditResponse,
+  type ApiCreditMeter,
+} from "@/lib/api/credit-billing";
+import {
+  creditsForModels,
+  maxCreditsForCalls,
+  modelCreditRate,
+  paperReviewMaximumModels,
+  type JidduCreditFeature,
+} from "@/lib/jiddu-credit-rates";
+import { DEFAULT_MODEL_CHAIN } from "@/lib/llm/fallback";
+import { VERIFY_MODEL } from "@/lib/llm/verifyClaim";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -63,7 +80,7 @@ const langArg = z
   .optional()
   .describe("Output language for explanations. Defaults to English.");
 
-const mcpAuth = new AsyncLocalStorage<ApiKeyRecord>();
+const mcpAuth = new AsyncLocalStorage<McpUserContext>();
 const publicOrigin = (() => {
   try {
     return new URL(
@@ -94,6 +111,39 @@ function fail(err: unknown): ToolResult {
   return { isError: true, content: [{ type: "text", text: message }] };
 }
 
+function currentMcpAuth(): McpUserContext {
+  const auth = mcpAuth.getStore();
+  if (!auth) throw new Error("MCP authentication context unavailable.");
+  return auth;
+}
+
+async function createMcpCreditMeter(input: {
+  amount: number;
+  feature: JidduCreditFeature;
+  resourceId?: string;
+  metadata?: Record<string, unknown>;
+}): Promise<ApiCreditMeter> {
+  const auth = currentMcpAuth();
+  const meter = await createApiCreditMeter(auth, {
+    ...input,
+    metadata: {
+      transport: "mcp",
+      ...(input.metadata ?? {}),
+    },
+  });
+  if (isApiCreditResponse(meter)) {
+    throw new Error(await creditResponseMessage(meter));
+  }
+  return meter;
+}
+
+async function creditResponseMessage(response: Response): Promise<string> {
+  const payload = (await response.json().catch(() => null)) as
+    | { error?: string }
+    | null;
+  return payload?.error ?? "This tool requires more Jiddu Credits.";
+}
+
 const mcpHandler = createMcpHandler(
   (server) => {
     server.registerTool(
@@ -105,9 +155,25 @@ const mcpHandler = createMcpHandler(
         inputSchema: { text: textArg, lang: langArg },
       },
       async ({ text, lang }) => {
+        let meter: ApiCreditMeter | null = null;
         try {
-          return ok(mapFallacies(await runFallacies(text, { lang })));
+          const auth = currentMcpAuth();
+          meter = await createMcpCreditMeter({
+            amount: maxCreditsForCalls(DEFAULT_MODEL_CHAIN, 1),
+            feature: "fallacy",
+          });
+          const result = await runFallacies(text, {
+            lang,
+            apiKey: auth.apiKey,
+            onModelUsed: meter.recordModel,
+            onUsage: meter.recordUsage,
+          });
+          await meter.settle();
+          return ok(
+            mapFallacies(result),
+          );
         } catch (err) {
+          await meter?.settle({ note: "MCP fallacy analysis failed." });
           return fail(err);
         }
       },
@@ -122,12 +188,40 @@ const mcpHandler = createMcpHandler(
         inputSchema: { text: textArg, lang: langArg },
       },
       async ({ text, lang }) => {
+        let meter: ApiCreditMeter | null = null;
         try {
+          const auth = currentMcpAuth();
           const settings = await loadSettings();
+          const maxClaims = Math.max(
+            1,
+            Math.floor(settings["api.maxClaims"]),
+          );
+          meter = await createMcpCreditMeter({
+            amount:
+              maxCreditsForCalls(DEFAULT_MODEL_CHAIN, 1) +
+              maxClaims * modelCreditRate(VERIFY_MODEL),
+            feature: "factcheck_api",
+            metadata: { maxClaims },
+          });
+          const result = await runFactCheck(text, {
+            lang,
+            maxClaims,
+            apiKey: auth.apiKey,
+            onModelUsed: meter.recordModel,
+            onUsage: meter.recordUsage,
+            onVerificationUsed: meter.recordVerification,
+          });
+          await meter.settle({
+            metadata: {
+              claimCount: result.claims.length,
+              verificationCount: result.verdicts.length,
+            },
+          });
           return ok(
-            mapFactCheck(await runFactCheck(text, { lang, maxClaims: settings["api.maxClaims"] })),
+            mapFactCheck(result),
           );
         } catch (err) {
+          await meter?.settle({ note: "MCP fact-check failed." });
           return fail(err);
         }
       },
@@ -142,9 +236,25 @@ const mcpHandler = createMcpHandler(
         inputSchema: { text: textArg, lang: langArg },
       },
       async ({ text, lang }) => {
+        let meter: ApiCreditMeter | null = null;
         try {
-          return ok(mapNeutrality(await runNeutrality(text, { lang })));
+          const auth = currentMcpAuth();
+          meter = await createMcpCreditMeter({
+            amount: maxCreditsForCalls(DEFAULT_MODEL_CHAIN, 1),
+            feature: "neutrality",
+          });
+          const result = await runNeutrality(text, {
+            lang,
+            apiKey: auth.apiKey,
+            onModelUsed: meter.recordModel,
+            onUsage: meter.recordUsage,
+          });
+          await meter.settle();
+          return ok(
+            mapNeutrality(result),
+          );
         } catch (err) {
+          await meter?.settle({ note: "MCP neutrality analysis failed." });
           return fail(err);
         }
       },
@@ -159,9 +269,25 @@ const mcpHandler = createMcpHandler(
         inputSchema: { text: textArg, lang: langArg },
       },
       async ({ text, lang }) => {
+        let meter: ApiCreditMeter | null = null;
         try {
-          return ok(mapSlop(await runSlop(text, { lang })));
+          const auth = currentMcpAuth();
+          meter = await createMcpCreditMeter({
+            amount: maxCreditsForCalls(DEFAULT_MODEL_CHAIN, 1),
+            feature: "slop",
+          });
+          const result = await runSlop(text, {
+            lang,
+            apiKey: auth.apiKey,
+            onModelUsed: meter.recordModel,
+            onUsage: meter.recordUsage,
+          });
+          await meter.settle();
+          return ok(
+            mapSlop(result),
+          );
         } catch (err) {
+          await meter?.settle({ note: "MCP slop analysis failed." });
           return fail(err);
         }
       },
@@ -183,10 +309,28 @@ const mcpHandler = createMcpHandler(
         },
       },
       async ({ text, lang, level }) => {
+        let meter: ApiCreditMeter | null = null;
         try {
+          const auth = currentMcpAuth();
           const lvl = normalizeLevel(level);
-          return ok(mapExplain(await runExplain(text, { lang, level: lvl }), lvl));
+          meter = await createMcpCreditMeter({
+            amount: maxCreditsForCalls(DEFAULT_MODEL_CHAIN, 1),
+            feature: "explain",
+            metadata: { level: lvl },
+          });
+          const result = await runExplain(text, {
+            lang,
+            level: lvl,
+            apiKey: auth.apiKey,
+            onModelUsed: meter.recordModel,
+            onUsage: meter.recordUsage,
+          });
+          await meter.settle();
+          return ok(
+            mapExplain(result, lvl),
+          );
         } catch (err) {
+          await meter?.settle({ note: "MCP explanation failed." });
           return fail(err);
         }
       },
@@ -269,12 +413,11 @@ const mcpHandler = createMcpHandler(
         depth,
       }) => {
         try {
-          const auth = mcpAuth.getStore();
-          if (!auth) throw new Error("MCP authentication context unavailable.");
+          const auth = currentMcpAuth();
           const settings = await loadSettings();
           const rl = consume(
             `mcp:adversarial-review:${auth.id}`,
-            bucketFor(settings, "rate.apiReview", auth),
+            bucketFromSettings(settings, "rate.apiReview"),
           );
           if (!rl.allowed) {
             throw new Error(
@@ -292,19 +435,60 @@ const mcpHandler = createMcpHandler(
           });
           const prepared = await preparePaperReview({
             ...source,
+            ownerWorkosUserId: auth.userId,
             lang: lang ?? "en",
             venueProfile,
             reviewDate:
               review_date ?? new Date().toISOString().slice(0, 10),
             reviewDepth: depth ?? "standard",
           });
+          const maximumModels = paperReviewMaximumModels({
+            depth: prepared.reviewDepth,
+            selectedModel: prepared.modelId,
+            deepModel: process.env.PAPER_REVIEW_DEEP_MODEL,
+            criticModel: process.env.PAPER_REVIEW_CRITIC_MODEL,
+          });
+          const meterResult = await createApiCreditMeter(auth, {
+            amount: creditsForModels(maximumModels),
+            feature:
+              prepared.reviewDepth === "deep"
+                ? "review_deep"
+                : "review_standard",
+            resourceId: prepared.id,
+            metadata: {
+              transport: "mcp",
+              depth: prepared.reviewDepth,
+              maximumModels,
+            },
+          });
+          if (isApiCreditResponse(meterResult)) {
+            await prisma.paperReview.delete({ where: { id: prepared.id } });
+            throw new Error(await creditResponseMessage(meterResult));
+          }
           after(async () => {
-            await runPreparedPaperReview(prepared).catch((err) => {
+            try {
+              await runPreparedPaperReview(prepared, {
+                apiKey: auth.apiKey,
+                callbacks: {
+                  onBillableCall(event) {
+                    meterResult.recordModel(event.model);
+                  },
+                  onUsage(usage) {
+                    meterResult.recordUsage(usage);
+                  },
+                },
+              });
+              await meterResult.settle({ resourceId: prepared.id });
+            } catch (err) {
+              await meterResult.settle({
+                resourceId: prepared.id,
+                note: "MCP adversarial review failed.",
+              });
               console.error(
                 `[mcp:adversarial-review:${prepared.id}]`,
                 err instanceof Error ? err.message : err,
               );
-            });
+            }
           });
           const row = await prisma.paperReview.findUnique({
             where: { id: prepared.id },
@@ -357,12 +541,16 @@ const mcpHandler = createMcpHandler(
   { basePath: "/api", maxDuration: 300 },
 );
 
-// Validate the API key and rate-limit before handing off to the MCP handler.
+// Validate the WorkOS bearer token, resolve included or credit billing, and
+// rate-limit before handing off to the MCP handler.
 async function handler(req: Request): Promise<Response> {
-  const auth = await requireApiKey(req);
+  const auth = await requireMcpUser(req);
   if (auth instanceof Response) return auth;
   const settings = await loadSettings();
-  const rl = consume(`mcp:${auth.id}`, bucketFor(settings, "rate.api", auth));
+  const rl = consume(
+    `mcp:${auth.id}`,
+    bucketFromSettings(settings, "rate.api"),
+  );
   if (!rl.allowed) return rateLimitResponse(rl.retryAfterSec);
   return mcpAuth.run(auth, () => mcpHandler(req));
 }

@@ -1,22 +1,14 @@
 "use server";
 
-import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { assertAdminUser } from "@/lib/admin-auth";
 import { prisma } from "@/lib/db";
-import { ADMIN_COOKIE_NAME, adminTokenIsValid } from "./auth";
-
-async function assertAdmin(): Promise<void> {
-  const jar = await cookies();
-  if (!adminTokenIsValid(jar.get(ADMIN_COOKIE_NAME)?.value)) {
-    throw new Error("Forbidden");
-  }
-}
 
 // Toggle reviewedAt on any analysis kind. The form passes the kind
 // ("fallacy" | "factcheck" | "neutrality" | "explain" | "slop" | "review") + row id;
 // we flip null<->now and revalidate the admin list.
 export async function toggleReviewedAction(formData: FormData): Promise<void> {
-  await assertAdmin();
+  await assertAdminUser();
   const kind = String(formData.get("kind") ?? "");
   const id = String(formData.get("id") ?? "");
   if (!id) return;

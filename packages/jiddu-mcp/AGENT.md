@@ -7,7 +7,8 @@ Jiddu helps you read text critically. Reach for it whenever you are about to **t
 ## Shared contract
 
 - **Input:** the five text tools take `text` (40–2000 characters). `lang` (`en` | `pt` | `es`, default `en`) sets the language of human-readable explanations; structural fields remain stable English enums. `explain` also takes `level`. Adversarial review instead takes one public `pdf_url`.
-- **Auth (REST):** send `X-Jiddu-Key: <key>`. Via MCP the key is configured in the server env — never pass it as a tool argument.
+- **Auth (hosted MCP):** WorkOS OAuth is discovered automatically. Sign in to Jiddu; allowlisted accounts use platform access, while everyone else connects OpenRouter once and the server resolves the encrypted provider credential by WorkOS user id.
+- **Auth (REST/local wrapper):** send `X-Jiddu-Key: <key>`. Each key belongs to one verified Jiddu/WorkOS account and uses that account's included access or Jiddu credits. The local stdio wrapper reads it from `JIDDU_API_KEY`; never pass it as a tool argument.
 - **Execution:** text tools are synchronous and do not persist results. Adversarial review is a persisted asynchronous job: start it, then poll by id.
 - **Errors:** `400` bad input, `401` missing/invalid key, `422` text too short (<40) or no analyzable content, `429` rate limited (body has `retry_after_seconds`), `502/503` upstream model issue.
 
@@ -194,5 +195,5 @@ A source can be factually `reliable` yet `highly_biased`, or `clean` of fallacie
 - Text length: 40–2000 characters per call. For longer documents, chunk and call per chunk, or use the Jiddu web app.
 - Paper review: one PDF up to 25 MB and 300,000 extracted characters. Do not chunk a paper; the review treats it as one autonomous submission.
 - Languages: English, Portuguese, Spanish.
-- Rate limits are per-key; on `429`, back off for `retry_after_seconds`.
+- Hosted MCP rate limits are per WorkOS user; REST/local-wrapper limits are per API key. On `429`, back off for `retry_after_seconds`.
 - Outputs are automated and can be wrong — they are signals to prompt verification, not final authority. Always surface the `explanation`/`summary`, not just the verdict.

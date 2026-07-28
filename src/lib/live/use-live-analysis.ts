@@ -16,7 +16,9 @@ type Options = {
    * feedback. Higher → cheaper but laggier.
    */
   minDeltaChars?: number;
-  /** Periodic timer in ms — fallback so we still call even on slow growth. */
+  /** Minimum new text for the periodic slow-growth fallback. */
+  timerMinDeltaChars?: number;
+  /** Periodic timer in ms — fallback so we still call on slow growth. */
   intervalMs?: number;
 };
 
@@ -39,7 +41,8 @@ export function useLiveAnalysis({
   transcript,
   active,
   language,
-  minDeltaChars = 500,
+  minDeltaChars = 800,
+  timerMinDeltaChars = 120,
   intervalMs = 30_000,
 }: Options): Result {
   const [findings, setFindings] = useState<Finding[]>([]);
@@ -139,16 +142,20 @@ export function useLiveAnalysis({
               const data = JSON.parse(ev.data) as {
                 id: string;
                 score?: number;
+                analyzed?: boolean;
+                finalize?: boolean;
               };
               if (data.id) {
                 sessionIdRef.current = data.id;
                 setSessionId(data.id);
               }
               if (typeof data.score === "number") setScore(data.score);
+              if (data.analyzed || data.finalize) {
+                lastAnalyzedLengthRef.current = text.length;
+              }
             } catch {
               /* ignore */
             }
-            lastAnalyzedLengthRef.current = text.length;
             setError(null);
           } else if (ev.event === "error") {
             try {
@@ -181,14 +188,14 @@ export function useLiveAnalysis({
     const tick = () => {
       const delta =
         transcriptRef.current.length - lastAnalyzedLengthRef.current;
-      if (delta >= minDeltaChars && !inFlightRef.current) {
+      if (delta >= timerMinDeltaChars && !inFlightRef.current) {
         void runAnalyze(false);
       }
     };
 
     const id = window.setInterval(tick, intervalMs);
     return () => window.clearInterval(id);
-  }, [active, intervalMs, minDeltaChars, runAnalyze]);
+  }, [active, intervalMs, timerMinDeltaChars, runAnalyze]);
 
   // Eager trigger on transcript growth — debounced via inFlight guard.
   useEffect(() => {

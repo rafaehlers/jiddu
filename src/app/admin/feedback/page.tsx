@@ -1,10 +1,6 @@
 import Link from "next/link";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import { AdminPage } from "@/components/admin/admin-page";
 import { prisma } from "@/lib/db";
-import { SiteHeader } from "@/components/site-header";
-import { SiteFooter } from "@/components/site-footer";
-import { ADMIN_COOKIE_NAME, adminTokenIsValid } from "../auth";
 import { resolveFeedbackAction, deleteFeedbackAction } from "./actions";
 import type { Verdict } from "@/lib/verdict-schema";
 
@@ -23,11 +19,6 @@ export default async function AdminFeedbackPage({
 }: {
   searchParams: Promise<{ filter?: string; page?: string }>;
 }) {
-  const jar = await cookies();
-  if (!adminTokenIsValid(jar.get(ADMIN_COOKIE_NAME)?.value)) {
-    redirect("/admin");
-  }
-
   const { filter: filterRaw, page: pageStr } = await searchParams;
   const filter: Filter =
     filterRaw === "resolved" || filterRaw === "ignored" || filterRaw === "all"
@@ -48,24 +39,15 @@ export default async function AdminFeedbackPage({
   ]);
 
   return (
-    <>
-      <SiteHeader variant="guide" />
-      <main className="mx-auto max-w-7xl w-full px-4 sm:px-6 py-8 flex-1">
-        <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
-          <div>
-            <h1 className="font-serif text-3xl">Feedback</h1>
-            <p className="text-sm text-muted mt-1">
-              User-reported "wrong verdict" flags. {openCount} open ·{" "}
-              {total} on this filter
-            </p>
-          </div>
-          <Link
-            href="/admin"
-            className="text-sm text-muted hover:text-foreground transition-colors"
-          >
-            ← Back to admin
-          </Link>
-        </div>
+    <AdminPage
+      title="Feedback"
+      description={
+        <>
+          User-reported &ldquo;wrong verdict&rdquo; flags. {openCount} open ·{" "}
+          {total} on this filter
+        </>
+      }
+    >
 
         <div className="flex items-center gap-2 mb-4 text-sm">
           {(["open", "resolved", "ignored", "all"] as const).map((f) => (
@@ -209,9 +191,7 @@ export default async function AdminFeedbackPage({
             )}
           </div>
         )}
-      </main>
-      <SiteFooter />
-    </>
+    </AdminPage>
   );
 }
 

@@ -21,6 +21,10 @@ import {
   getCachedVerdict,
   putCachedVerdict,
 } from "../factcheck/cache";
+import {
+  readOpenRouterUsage,
+  type OpenRouterUsage,
+} from "../openrouter-usage";
 
 // Sonar variant used for verification. Reasoning Pro: built-in web search,
 // returns citations via message.annotations, ~$0.005 per search request.
@@ -31,20 +35,22 @@ const OPENROUTER_BASE = "https://openrouter.ai/api/v1";
 const REFERER = process.env.OPENROUTER_REFERER || "https://jiddu.app";
 
 let cachedClient: OpenAI | null = null;
-function getClient(): OpenAI {
-  if (cachedClient) return cachedClient;
-  if (!process.env.OPENROUTER_API_KEY) {
+function getClient(apiKey?: string): OpenAI {
+  if (!apiKey && cachedClient) return cachedClient;
+  const resolvedKey = apiKey ?? process.env.OPENROUTER_API_KEY;
+  if (!resolvedKey) {
     throw new Error("OPENROUTER_API_KEY is not set in the environment");
   }
-  cachedClient = new OpenAI({
-    apiKey: process.env.OPENROUTER_API_KEY,
+  const client = new OpenAI({
+    apiKey: resolvedKey,
     baseURL: OPENROUTER_BASE,
     defaultHeaders: {
       "HTTP-Referer": REFERER,
       "X-Title": "Jiddu",
     },
   });
-  return cachedClient;
+  if (!apiKey) cachedClient = client;
+  return client;
 }
 
 type ClaimWithId = Claim & { id: string };
@@ -61,8 +67,14 @@ type RawMessage = {
 
 export async function verifyClaim(
   claim: ClaimWithId,
-  opts: { lang: Lang; signal?: AbortSignal; force?: boolean },
-): Promise<Verdict & { cached: boolean }> {
+  opts: {
+    lang: Lang;
+    signal?: AbortSignal;
+    force?: boolean;
+    apiKey?: string;
+    onUsage?: (usage: OpenRouterUsage) => void;
+  },
+): Promise<Verdict & { cached: boolean; usage?: OpenRouterUsage }> {
   // Cache lookup first. Hash is keyed on language so identical statements
   // in different languages don't collide. When `force` is set we skip the
   // read but still write the fresh result back so subsequent calls hit.
@@ -78,7 +90,7 @@ export async function verifyClaim(
     }
   }
 
-  const client = getClient();
+  const client = getClient(opts.apiKey);
   const res = await client.chat.completions.create(
     {
       model: VERIFY_MODEL,
@@ -89,6 +101,8 @@ export async function verifyClaim(
     },
     opts.signal ? { signal: opts.signal } : undefined,
   );
+  const usage = readOpenRouterUsage(res, VERIFY_MODEL);
+  if (usage) opts.onUsage?.(usage);
 
   const choice = res.choices?.[0];
   const message = (choice?.message as unknown as RawMessage | undefined) ?? null;
@@ -135,6 +149,7 @@ export async function verifyClaim(
     sources,
     model: VERIFY_MODEL,
   };
+  if (usage) usage.completed = true;
 
   // Cache the result. Failures are non-fatal — we'd rather return a fresh
   // verdict than fail the request on a write error.
@@ -145,7 +160,11 @@ export async function verifyClaim(
     );
   });
 
-  return { ...verdict, cached: false };
+  return {
+    ...verdict,
+    cached: false,
+    ...(usage ? { usage } : {}),
+  };
 }
 
 // Sonar usually returns clean JSON, but it sometimes wraps in markdown

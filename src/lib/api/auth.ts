@@ -2,12 +2,14 @@
 //
 // Keys are admin-issued (see /admin/api-keys). We store only a sha256 hash of
 // the secret — the plaintext is shown exactly once at creation. Lookup is by
-// hash, so the DB read is the comparison; we still hash with the same
-// primitive used for the admin cookie (src/app/admin/auth.ts) for consistency.
+// hash, so the DB read is the comparison.
 
 import { createHash } from "node:crypto";
 import { nanoid } from "nanoid";
 import { prisma } from "@/lib/db";
+import { effectiveAnalysisAccessMode } from "@/lib/analysis-access";
+import { hasAvailableJidduCredits } from "@/lib/jiddu-credits";
+import { getWorkOSUserById } from "@/lib/workos-users";
 
 export const API_KEY_HEADER = "x-jiddu-key";
 
@@ -27,6 +29,10 @@ export type ApiKeyRecord = {
   label: string;
   rateCapacity: number | null;
   ratePerHour: number | null;
+  userId: string;
+  email: string;
+  apiKey?: string;
+  billing: "platform" | "jiddu";
 };
 
 // Returns the authenticated key record, or a ready-to-return 401 Response.
@@ -42,15 +48,82 @@ export async function requireApiKey(req: Request): Promise<ApiKeyRecord | Respon
   if (!row || row.revokedAt) {
     return unauthorized("Invalid or revoked API key");
   }
-  // Fire-and-forget last-used bump — never block the request on it.
+  if (!row.ownerWorkosUserId) {
+    return Response.json(
+      {
+        error:
+          "This API key has no WorkOS owner. Assign one in the Jiddu admin.",
+        code: "api_key_owner_required",
+      },
+      { status: 403 },
+    );
+  }
+
+  const user = await getWorkOSUserById(row.ownerWorkosUserId);
+  if (!user?.emailVerified) {
+    return Response.json(
+      {
+        error:
+          "The WorkOS account assigned to this API key is unavailable or unverified.",
+        code: "api_key_owner_unverified",
+      },
+      { status: 403 },
+    );
+  }
+
+  let access:
+    | Pick<ApiKeyRecord, "userId" | "email" | "billing">
+    | Response;
+  if ((await effectiveAnalysisAccessMode(user)) === "platform") {
+    if (!process.env.OPENROUTER_API_KEY) {
+      return serviceUnavailable(
+        "Platform analysis access is temporarily unavailable.",
+        "platform_key_unavailable",
+      );
+    }
+    access = {
+      userId: user.id,
+      email: user.email,
+      billing: "platform",
+    };
+  } else {
+    if (
+      process.env.OPENROUTER_API_KEY &&
+      (await hasAvailableJidduCredits(user.id))
+    ) {
+      access = {
+        userId: user.id,
+        email: user.email,
+        billing: "jiddu",
+      };
+    } else {
+      access = Response.json(
+        {
+          error: "Add Jiddu credits to the API key owner's account.",
+          code: "jiddu_credits_required",
+        },
+        { status: 402 },
+      );
+    }
+  }
+  if (access instanceof Response) return access;
+
+  // Fire-and-forget metadata updates — never block the request on them.
   prisma.apiKey
-    .update({ where: { id: row.id }, data: { lastUsedAt: new Date() } })
+    .update({
+      where: { id: row.id },
+      data: {
+        lastUsedAt: new Date(),
+        ownerEmail: user.email.trim().toLowerCase(),
+      },
+    })
     .catch(() => {});
   return {
     id: row.id,
     label: row.label,
     rateCapacity: row.rateCapacity,
     ratePerHour: row.ratePerHour,
+    ...access,
   };
 }
 
@@ -59,4 +132,8 @@ function unauthorized(message: string): Response {
     status: 401,
     headers: { "content-type": "application/json" },
   });
+}
+
+function serviceUnavailable(message: string, code: string): Response {
+  return Response.json({ error: message, code }, { status: 503 });
 }

@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useAuth } from "@workos-inc/authkit-nextjs/components";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { ArrowRight, LogIn, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n/provider";
 import type { Messages } from "@/lib/i18n/messages";
@@ -62,6 +64,8 @@ export function UploadForm({
   showModeTabs = true,
 }: Props) {
   const { t, lang } = useI18n();
+  const { user, loading: authLoading } = useAuth();
+  const pathname = usePathname();
   // File is the default input — it front-loads the drag-and-drop affordance,
   // which is the richest way in (PDF/TXT), with URL and paste one click away.
   const [tab, setTab] = useState<Tab>("file");
@@ -89,6 +93,7 @@ export function UploadForm({
   const [reviewDepth, setReviewDepth] = useState<ReviewDepth>("standard");
   // True while a file is being dragged over the form, for the drop highlight.
   const [dragging, setDragging] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
 
   const visibleError = error ?? localError;
 
@@ -180,6 +185,11 @@ export function UploadForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (authLoading) return;
+    if (!user) {
+      setAuthModalOpen(true);
+      return;
+    }
     setLocalError(null);
     onClearError?.();
     try {
@@ -228,16 +238,17 @@ export function UploadForm({
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-      className={cn(
-        "flex flex-col gap-4 sm:gap-5 bg-paper border border-rule rounded-lg p-4 sm:p-5 shadow-sm transition-shadow",
-        dragging && "ring-2 ring-accent",
-      )}
-    >
+    <>
+      <form
+        onSubmit={handleSubmit}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className={cn(
+          "flex flex-col gap-4 sm:gap-5 bg-paper border border-rule rounded-lg p-4 sm:p-5 shadow-sm transition-shadow",
+          dragging && "ring-2 ring-accent",
+        )}
+      >
       {/* Top row: mode tabs (Detector / Fact-check / …) sit before the
           input-type tabs. Underline-tab style — each is a Link, so the active
           state survives page navigation. The container's bottom rule is the
@@ -617,15 +628,102 @@ export function UploadForm({
         </span>
         <button
           type="submit"
+          disabled={authLoading}
           className={cn(
             "px-5 py-2 rounded-md bg-accent text-white font-medium",
-            "hover:opacity-90 transition-opacity",
+            "hover:opacity-90 transition-opacity disabled:cursor-wait disabled:opacity-60",
           )}
         >
           {submitLabel ?? t.analyze}
         </button>
       </div>
-    </form>
+      </form>
+      <AnalysisAuthModal
+        open={authModalOpen}
+        returnTo={pathname}
+        onClose={() => setAuthModalOpen(false)}
+      />
+    </>
+  );
+}
+
+function AnalysisAuthModal({
+  open,
+  returnTo,
+  onClose,
+}: {
+  open: boolean;
+  returnTo: string;
+  onClose: () => void;
+}) {
+  const { t } = useI18n();
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const encodedReturnTo = encodeURIComponent(returnTo);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    if (open && !dialog.open) dialog.showModal();
+    else if (!open && dialog.open) dialog.close();
+  }, [open]);
+
+  function onDialogClick(event: React.MouseEvent<HTMLDialogElement>) {
+    if (event.target === dialogRef.current) onClose();
+  }
+
+  return (
+    <dialog
+      ref={dialogRef}
+      onClose={onClose}
+      onClick={onDialogClick}
+      aria-labelledby="analysis-auth-title"
+      aria-describedby="analysis-auth-description"
+      className="m-auto border-0 bg-transparent p-0 outline-none backdrop:bg-black/60 backdrop:backdrop-blur-sm"
+    >
+      <div className="relative flex w-[92vw] max-w-md flex-col items-center gap-5 rounded-lg border border-rule bg-paper p-6 text-center text-foreground shadow-2xl sm:p-8">
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label={t.close}
+          className="absolute right-3 top-3 p-1 text-muted transition-colors hover:text-foreground"
+        >
+          <X className="size-5" />
+        </button>
+        <span
+          className="inline-flex size-12 items-center justify-center rounded-full bg-[color-mix(in_oklab,var(--accent)_18%,transparent)] text-accent-hi"
+          aria-hidden
+        >
+          <LogIn className="size-6" />
+        </span>
+        <div className="flex flex-col gap-2">
+          <h2 id="analysis-auth-title" className="font-serif text-2xl">
+            {t.auth_required_title}
+          </h2>
+          <p
+            id="analysis-auth-description"
+            className="text-sm leading-relaxed text-muted"
+          >
+            {t.auth_required_hint}
+          </p>
+        </div>
+        <div className="flex w-full flex-col-reverse gap-3 sm:flex-row sm:justify-center">
+          <Link
+            href={`/login?returnTo=${encodedReturnTo}`}
+            onClick={onClose}
+            className="rounded-md border border-rule px-5 py-2 text-sm font-medium transition-colors hover:border-foreground/50"
+          >
+            {t.auth_sign_in}
+          </Link>
+          <Link
+            href={`/signup?returnTo=${encodedReturnTo}`}
+            onClick={onClose}
+            className="rounded-md bg-accent px-5 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
+          >
+            {t.auth_create_account}
+          </Link>
+        </div>
+      </div>
+    </dialog>
   );
 }
 
@@ -660,6 +758,14 @@ function ErrorBox({
   fromTab: Tab;
 }) {
   const friendly = friendlyError(error.code, t);
+  const accessAction =
+    error.code === "authentication_required"
+      ? { href: "/login", label: t.auth_sign_in }
+      : error.code === "analysis_funding_required" ||
+          error.code === "jiddu_credits_required" ||
+          error.code === "insufficient_jiddu_credits"
+        ? { href: "/account", label: t.credits_open_account }
+        : null;
   const isUrlError =
     fromTab === "url" &&
     !!error.code &&
@@ -690,6 +796,17 @@ function ErrorBox({
           </button>
         </div>
       )}
+      {accessAction && (
+        <div>
+          <Link
+            href={accessAction.href}
+            className="inline-flex items-center gap-2 rounded-md bg-accent px-3 py-1.5 text-sm text-white hover:opacity-90 transition-opacity"
+          >
+            {accessAction.label}
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      )}
     </div>
   );
 }
@@ -718,6 +835,18 @@ function friendlyError(
       return { title: t.ingest_invalid_url_title };
     case "too_short":
       return { title: t.ingest_too_short_title };
+    case "authentication_required":
+      return {
+        title: t.auth_required_title,
+        hint: t.auth_required_hint,
+      };
+    case "analysis_funding_required":
+    case "jiddu_credits_required":
+    case "insufficient_jiddu_credits":
+      return {
+        title: t.credits_required_title,
+        hint: t.credits_required_hint,
+      };
     default:
       return { title: t.analysis_failed };
   }

@@ -5,7 +5,7 @@ import { SiteFooter } from "@/components/site-footer";
 export default function Home() {
   return (
     <main className="flex-1 flex flex-col">
-      <SiteHeader />
+      <SiteHeader showLogo={false} />
       <HomeComposer initialMode="detector" />
       <SiteFooter />
     </main>

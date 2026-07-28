@@ -7,6 +7,7 @@ import { SiteHeader } from "@/components/site-header";
 import { PaperReviewView } from "@/components/paper-review-view";
 import { ScrollIndicator } from "@/components/scroll-indicator";
 import { parseStoredVenueProfile } from "@/lib/venues";
+import { analysisSocialMetadata } from "@/lib/social-metadata";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -16,11 +17,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const row = await prisma.paperReview.findUnique({ where: { id } });
   if (!row) return { title: "Jiddu" };
-  return {
+  return analysisSocialMetadata({
     title: `${row.title ?? "Paper"} · adversarial review`,
     description:
       "AI-generated adversarial pre-submission review. Validate with a human domain expert.",
-  };
+    path: `/r/${id}`,
+  });
 }
 
 export default async function PaperReviewPage({ params }: Props) {

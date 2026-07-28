@@ -1,19 +1,11 @@
 "use server";
 
-import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { assertAdminUser } from "@/lib/admin-auth";
 import { prisma } from "@/lib/db";
-import { ADMIN_COOKIE_NAME, adminTokenIsValid } from "../auth";
-
-async function assertAdmin(): Promise<void> {
-  const jar = await cookies();
-  if (!adminTokenIsValid(jar.get(ADMIN_COOKIE_NAME)?.value)) {
-    throw new Error("Forbidden");
-  }
-}
 
 export async function deleteCacheEntryAction(formData: FormData): Promise<void> {
-  await assertAdmin();
+  await assertAdminUser();
   const hash = String(formData.get("hash") ?? "");
   if (!hash) return;
   await prisma.claimVerdict.delete({ where: { hash } }).catch(() => null);
@@ -21,7 +13,7 @@ export async function deleteCacheEntryAction(formData: FormData): Promise<void> 
 }
 
 export async function deleteExpiredCacheAction(): Promise<void> {
-  await assertAdmin();
+  await assertAdminUser();
   await prisma.claimVerdict.deleteMany({
     where: { expiresAt: { lt: new Date() } },
   });

@@ -67,6 +67,13 @@ body {
   font-feature-settings: "ss01", "cv11";
 }
 
+/* WorkOS renders the profile and security controls as Radix surface cards.
+   Match Jiddu's own account cards instead of using the widget theme's
+   unrelated white/black panel color. */
+.jiddu-workos-widgets .rt-BaseCard {
+  --card-background-color: var(--paper);
+}
+
 /* Plain text links use one consistent indigo treatment across the site.
    Rounded anchors are button/card controls and keep their component colors;
    the serif home logo likewise remains part of the wordmark. */
@@ -164,6 +171,20 @@ mark.highlight {
 mark.highlight:hover,
 mark.highlight[data-active="true"] {
   background: color-mix(in oklab, var(--highlight-color, currentColor) 42%, transparent);
+}
+
+/* Swap the header mark with the class-based theme before React mounts. */
+.jiddu-brand-logo-default {
+  display: none;
+}
+.jiddu-brand-logo-inverted {
+  display: block;
+}
+html.light .jiddu-brand-logo-default {
+  display: block;
+}
+html.light .jiddu-brand-logo-inverted {
+  display: none;
 }
 
 /* Card-activation pulse — drives a single radiating glow when a

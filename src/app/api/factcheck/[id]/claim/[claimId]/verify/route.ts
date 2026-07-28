@@ -1,11 +1,24 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
-import { verifyClaim } from "@/lib/llm/verifyClaim";
+import { verifyClaim, VERIFY_MODEL } from "@/lib/llm/verifyClaim";
 import { consume, ipFromRequest, rateLimitResponse } from "@/lib/rate-limit";
 import { bucketFromSettings, loadSettings } from "@/lib/settings";
 import type { Claim } from "@/lib/claims-schema";
 import type { Verdict } from "@/lib/verdict-schema";
 import type { Lang } from "@/lib/fallacies";
+import {
+  isAccessResponse,
+  requireWebAnalysisAccess,
+} from "@/lib/web-analysis-access";
+import { modelCreditRate } from "@/lib/jiddu-credit-rates";
+import {
+  releaseJidduCreditReservation,
+  settleJidduCreditReservationFromUsage,
+} from "@/lib/jiddu-credits";
+import {
+  isCreditResponse,
+  reserveWebAnalysisCredits,
+} from "@/lib/web-credit-billing";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -16,6 +29,9 @@ export async function POST(
   req: NextRequest,
   ctx: { params: Promise<{ id: string; claimId: string }> },
 ) {
+  const access = await requireWebAnalysisAccess();
+  if (isAccessResponse(access)) return access;
+
   const settings = await loadSettings();
   const rl = consume(
     `verify1:${ipFromRequest(req)}`,
@@ -32,6 +48,9 @@ export async function POST(
 
   const fc = await prisma.factCheck.findUnique({ where: { id } });
   if (!fc) return jsonError("Not found", 404);
+  if (access.userId && fc.ownerWorkosUserId !== access.userId) {
+    return jsonError("Not found", 404);
+  }
 
   const claims = JSON.parse(fc.claims) as ClaimWithId[];
   const claim = claims.find((c) => c.id === claimId);
@@ -52,12 +71,25 @@ export async function POST(
     ? fc.language
     : "en") as Lang;
 
+  const reservation = await reserveWebAnalysisCredits(access, {
+    amount: modelCreditRate(VERIFY_MODEL),
+    feature: "factcheck_verify",
+    resourceId: id,
+    metadata: { claimId, forcedRefresh: true },
+  });
+  if (isCreditResponse(reservation)) return reservation;
+
   // Force a fresh Sonar call — the per-claim refresh button is the user
   // explicitly saying "I don't trust the cached verdict, do it again".
   let fresh;
   try {
-    fresh = await verifyClaim(claim, { lang, force: true });
+    fresh = await verifyClaim(claim, {
+      lang,
+      force: true,
+      apiKey: access.apiKey,
+    });
   } catch (err) {
+    await releaseJidduCreditReservation(reservation);
     console.error(
       `[/api/factcheck/${id}/claim/${claimId}/verify] error:`,
       err,
@@ -68,26 +100,40 @@ export async function POST(
   // Replace this claim's verdict in the persisted verdicts JSON.
   const current = JSON.parse(fc.verdicts) as Verdict[];
   const filtered = current.filter((v) => v.claimId !== claimId);
-  const { cached: _omitCached, ...verdictRecord } = fresh;
+  const { cached, usage, ...verdictRecord } = fresh;
+  void cached; // Cache provenance is response-only and is not persisted.
   filtered.push(verdictRecord);
 
   const nextCounts = { ...refreshCounts, [claimId]: currentCount + 1 };
 
-  await prisma.factCheck.update({
-    where: { id },
-    data: {
-      verdicts: JSON.stringify(filtered),
-      refreshCounts: JSON.stringify(nextCounts),
-      // If this was the first verdict (none before), mark as complete.
-      verifyStatus:
-        fc.verifyStatus === "none" ? "complete" : fc.verifyStatus,
-      verifyFinishedAt: new Date(),
-    },
-  });
+  try {
+    await prisma.factCheck.update({
+      where: { id },
+      data: {
+        verdicts: JSON.stringify(filtered),
+        refreshCounts: JSON.stringify(nextCounts),
+        // If this was the first verdict (none before), mark as complete.
+        verifyStatus:
+          fc.verifyStatus === "none" ? "complete" : fc.verifyStatus,
+        verifyFinishedAt: new Date(),
+      },
+    });
+  } finally {
+    await settleJidduCreditReservationFromUsage(
+      reservation,
+      {
+        usages: usage ? [usage] : [],
+        fallbackModels: [VERIFY_MODEL],
+        resourceId: id,
+        metadata: { claimId, forcedRefresh: true },
+      },
+    );
+  }
 
   return new Response(
     JSON.stringify({
-      ...fresh,
+      ...verdictRecord,
+      cached,
       refreshCount: currentCount + 1,
       maxRefreshPerClaim,
     }),

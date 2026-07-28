@@ -28,6 +28,7 @@ import {
 import { validateReviewSources } from "@/lib/paper-review-source-validation";
 import type { Lang } from "@/lib/fallacies";
 import type { ResolvedVenueProfile } from "@/lib/venues";
+import type { OpenRouterUsage } from "@/lib/openrouter-usage";
 
 export const MAX_PAPER_TEXT_CHARS = 300_000;
 export const MAX_PDF_BYTES = 25 * 1024 * 1024;
@@ -74,6 +75,11 @@ export type PaperReviewJobCallbacks = {
     name: string;
   }) => void | Promise<void>;
   onStageDone?: (event: { index: number }) => void | Promise<void>;
+  onBillableCall?: (event: {
+    operation: string;
+    model: string;
+  }) => void | Promise<void>;
+  onUsage?: (usage: OpenRouterUsage) => void | Promise<void>;
 };
 
 export class PaperReviewInputError extends Error {
@@ -91,6 +97,7 @@ export async function preparePaperReview(input: {
   buffer: ArrayBuffer;
   filename: string;
   sourceRef?: string;
+  ownerWorkosUserId?: string;
   lang: Lang;
   modelId?: string;
   reviewDepth?: ReviewDepth;
@@ -168,6 +175,7 @@ export async function preparePaperReview(input: {
   await prisma.paperReview.create({
     data: {
       id,
+      ownerWorkosUserId: input.ownerWorkosUserId ?? null,
       status: "running",
       stage: "ledger",
       source: "pdf",
@@ -212,6 +220,7 @@ export async function runPreparedPaperReview(
   prepared: PreparedPaperReview,
   options?: {
     signal?: AbortSignal;
+    apiKey?: string;
     callbacks?: PaperReviewJobCallbacks;
   },
 ): Promise<PaperReviewResult> {
@@ -254,9 +263,15 @@ export async function runPreparedPaperReview(
         modelId: prepared.modelId,
         lang: prepared.lang,
         signal: options?.signal,
+        apiKey: options?.apiKey,
+        onUsage: callbacks?.onUsage,
       },
     );
     stageModels.ledger = ledgerModel;
+    await callbacks?.onBillableCall?.({
+      operation: "ledger",
+      model: ledgerModel,
+    });
     await prisma.paperReview.update({
       where: { id },
       data: {
@@ -273,8 +288,14 @@ export async function runPreparedPaperReview(
       modelId: deepModel,
       lang: prepared.lang,
       signal: options?.signal,
+      apiKey: options?.apiKey,
+      onUsage: callbacks?.onUsage,
     });
     stageModels.research = research.model ?? deepModel;
+    await callbacks?.onBillableCall?.({
+      operation: "research",
+      model: research.model ?? deepModel,
+    });
     await prisma.paperReview.update({
       where: { id },
       data: { research: JSON.stringify(research) },
@@ -303,9 +324,15 @@ export async function runPreparedPaperReview(
             modelId: specialistModel,
             lang: prepared.lang,
             signal: options?.signal,
+            apiKey: options?.apiKey,
+            onUsage: callbacks?.onUsage,
           },
         );
         stageModels[`specs_${criterion}`] = result.model;
+        await callbacks?.onBillableCall?.({
+          operation: `specs_${criterion}`,
+          model: result.model,
+        });
         return result.stage;
       }),
     );
@@ -339,9 +366,15 @@ export async function runPreparedPaperReview(
           modelId: deepModel,
           lang: prepared.lang,
           signal: options?.signal,
+          apiKey: options?.apiKey,
+          onUsage: callbacks?.onUsage,
         },
       );
     stageModels.synthesis = synthesisModel;
+    await callbacks?.onBillableCall?.({
+      operation: "synthesis",
+      model: synthesisModel,
+    });
     await prisma.paperReview.update({
       where: { id },
       data: {
@@ -368,9 +401,15 @@ export async function runPreparedPaperReview(
           modelId: deepModel,
           lang: prepared.lang,
           signal: options?.signal,
+          apiKey: options?.apiKey,
+          onUsage: callbacks?.onUsage,
         },
       );
     stageModels.self_critique = critiqueModel;
+    await callbacks?.onBillableCall?.({
+      operation: "self_critique",
+      model: critiqueModel,
+    });
     let review = normalizeReview(
       critiquedReview,
       ledger.paperTitle,
@@ -404,10 +443,16 @@ export async function runPreparedPaperReview(
           modelId: criticModel,
           lang: prepared.lang,
           signal: options?.signal,
+          apiKey: options?.apiKey,
+          onUsage: callbacks?.onUsage,
         },
       );
     const quality = completeQualityDecisions(rawQuality, specialistResults);
     stageModels.quality_audit = qualityModel;
+    await callbacks?.onBillableCall?.({
+      operation: "quality_audit",
+      model: qualityModel,
+    });
     let retention = buildRetentionAudit(specialistResults, review, quality);
     const requiresRepair =
       retention.missingFindingIds.length > 0 ||
@@ -432,10 +477,16 @@ export async function runPreparedPaperReview(
           modelId: deepModel,
           lang: prepared.lang,
           signal: options?.signal,
+          apiKey: options?.apiKey,
+          onUsage: callbacks?.onUsage,
         },
       );
       finalModel = repaired.model;
       stageModels.final_repair = repaired.model;
+      await callbacks?.onBillableCall?.({
+        operation: "final_repair",
+        model: repaired.model,
+      });
       review = normalizeReview(
         repaired.review,
         ledger.paperTitle,

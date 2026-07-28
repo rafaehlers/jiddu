@@ -24,8 +24,20 @@ import type {
 import type { ExplainFinding, ExplainLevel } from "@/lib/explain-schema";
 import type { SlopFinding } from "@/lib/slop-schema";
 import type { Verdict } from "@/lib/verdict-schema";
+import type { OpenRouterUsage } from "@/lib/openrouter-usage";
 
-export type RunOpts = { lang?: Lang; signal?: AbortSignal };
+export type RunOpts = {
+  lang?: Lang;
+  signal?: AbortSignal;
+  apiKey?: string;
+  onModelUsed?: (model: string) => void;
+  onUsage?: (usage: OpenRouterUsage) => void;
+  onVerificationUsed?: (event: {
+    model: string;
+    cached: boolean;
+    usage?: OpenRouterUsage;
+  }) => void;
+};
 
 const VERIFY_CONCURRENCY = 6;
 
@@ -60,7 +72,7 @@ export async function runFallacies(
   if (sentences.length === 0) throw new NoUnitsError();
 
   const chain = modelChain();
-  const llm = getProvider(chain[0]);
+  const llm = getProvider(chain[0], opts?.apiKey);
 
   const findings: Finding[] = [];
   let score = 0;
@@ -69,8 +81,13 @@ export async function runFallacies(
 
   for await (const ev of withModelFallback(
     chain,
-    (model) => llm.analyzeStream({ sentences, lang }, { model, signal: opts?.signal }),
+    (model) =>
+      llm.analyzeStream(
+        { sentences, lang },
+        { model, signal: opts?.signal, onUsage: opts?.onUsage },
+      ),
     opts?.signal,
+    opts?.onModelUsed,
   )) {
     if (ev.type === "finding") findings.push(ev.finding);
     else if (ev.type === "summary") summary = ev.summary;
@@ -100,7 +117,7 @@ export async function runSlop(
   if (sentences.length === 0) throw new NoUnitsError();
 
   const chain = modelChain();
-  const llm = getProvider(chain[0]);
+  const llm = getProvider(chain[0], opts?.apiKey);
 
   const findings: SlopFinding[] = [];
   let score = 0;
@@ -109,8 +126,13 @@ export async function runSlop(
 
   for await (const ev of withModelFallback(
     chain,
-    (model) => llm.analyzeSlopStream({ sentences, lang }, { model, signal: opts?.signal }),
+    (model) =>
+      llm.analyzeSlopStream(
+        { sentences, lang },
+        { model, signal: opts?.signal, onUsage: opts?.onUsage },
+      ),
     opts?.signal,
+    opts?.onModelUsed,
   )) {
     if (ev.type === "finding") findings.push(ev.finding);
     else if (ev.type === "summary") summary = ev.summary;
@@ -142,7 +164,7 @@ export async function runNeutrality(
   if (sentences.length === 0) throw new NoUnitsError();
 
   const chain = modelChain();
-  const llm = getProvider(chain[0]);
+  const llm = getProvider(chain[0], opts?.apiKey);
 
   const findings: NeutralityFinding[] = [];
   let verdict: NeutralityVerdictValue = "neutral";
@@ -154,8 +176,12 @@ export async function runNeutrality(
   for await (const ev of withModelFallback(
     chain,
     (model) =>
-      llm.analyzeNeutralityStream({ sentences, lang }, { model, signal: opts?.signal }),
+      llm.analyzeNeutralityStream(
+        { sentences, lang },
+        { model, signal: opts?.signal, onUsage: opts?.onUsage },
+      ),
     opts?.signal,
+    opts?.onModelUsed,
   )) {
     if (ev.type === "finding") findings.push(ev.finding);
     else if (ev.type === "verdict") {
@@ -188,7 +214,7 @@ export async function runExplain(
   if (blocks.length === 0) throw new NoUnitsError();
 
   const chain = modelChain();
-  const llm = getProvider(chain[0]);
+  const llm = getProvider(chain[0], opts?.apiKey);
 
   const findings: ExplainFinding[] = [];
   let overview = "";
@@ -196,8 +222,13 @@ export async function runExplain(
 
   for await (const ev of withModelFallback(
     chain,
-    (model) => llm.explainStream({ sentences: blocks, lang }, { model, level, signal: opts?.signal }),
+    (model) =>
+      llm.explainStream(
+        { sentences: blocks, lang },
+        { model, level, signal: opts?.signal, onUsage: opts?.onUsage },
+      ),
     opts?.signal,
+    opts?.onModelUsed,
   )) {
     if (ev.type === "finding") findings.push(ev.finding);
     else if (ev.type === "overview") overview = ev.overview;
@@ -227,15 +258,20 @@ export async function runFactCheck(
   if (sentences.length === 0) throw new NoUnitsError();
 
   const chain = modelChain();
-  const llm = getProvider(chain[0]);
+  const llm = getProvider(chain[0], opts?.apiKey);
 
   // 1. Extract claims (assign stable ids, cap to maxClaims).
   const extracted: Claim[] = [];
   let language: string | null = null;
   for await (const ev of withModelFallback(
     chain,
-    (model) => llm.extractClaimsStream({ sentences, lang }, { model, signal: opts?.signal }),
+    (model) =>
+      llm.extractClaimsStream(
+        { sentences, lang },
+        { model, signal: opts?.signal, onUsage: opts?.onUsage },
+      ),
     opts?.signal,
+    opts?.onModelUsed,
   )) {
     if (ev.type === "claim") extracted.push(ev.claim);
     else if (ev.type === "language") language = ev.language;
@@ -257,7 +293,16 @@ export async function runFactCheck(
       if (opts?.signal?.aborted) return;
       const claim = claims[idx];
       try {
-        const r = await verifyClaim(claim, { lang, signal: opts?.signal });
+        const r = await verifyClaim(claim, {
+          lang,
+          signal: opts?.signal,
+          apiKey: opts?.apiKey,
+          onUsage: opts?.onUsage,
+        });
+        opts?.onVerificationUsed?.({
+          model: VERIFY_MODEL,
+          cached: r.cached,
+        });
         verdicts[idx] = {
           claimId: r.claimId,
           verdict: r.verdict,

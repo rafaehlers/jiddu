@@ -1,0 +1,9 @@
+ALTER TABLE "JidduCreditTransaction" ADD COLUMN "promptTokens" INTEGER;
+ALTER TABLE "JidduCreditTransaction" ADD COLUMN "completionTokens" INTEGER;
+ALTER TABLE "JidduCreditTransaction" ADD COLUMN "totalTokens" INTEGER;
+ALTER TABLE "JidduCreditTransaction" ADD COLUMN "reasoningTokens" INTEGER;
+ALTER TABLE "JidduCreditTransaction" ADD COLUMN "cachedTokens" INTEGER;
+ALTER TABLE "JidduCreditTransaction" ADD COLUMN "providerCostMicros" INTEGER;
+ALTER TABLE "JidduCreditTransaction" ADD COLUMN "billedCostMicros" INTEGER;
+ALTER TABLE "JidduCreditTransaction" ADD COLUMN "marginMultiplier" REAL;
+ALTER TABLE "JidduCreditTransaction" ADD COLUMN "usdPerCredit" REAL;

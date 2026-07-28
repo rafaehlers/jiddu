@@ -244,8 +244,7 @@ function stratifiedSample(rows: LiarRow[]): LiarRow[] {
 // statement text into one of our 5 claim types; an inaccurate type doesn't
 // derail the verdict, it just slightly under-tunes the prompt.
 
-const CLAIM_TYPES = ["numeric", "date", "quote", "causal", "categorical"] as const;
-type ClaimTypeT = (typeof CLAIM_TYPES)[number];
+type ClaimTypeT = "numeric" | "date" | "quote" | "causal" | "categorical";
 
 function classifyClaim(statement: string): ClaimTypeT {
   const s = statement.toLowerCase();

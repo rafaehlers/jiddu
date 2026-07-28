@@ -44,6 +44,8 @@ import {
 import { SLOP_JSON_SCHEMA } from "./slopJsonSchema";
 import { buildSlopSystemPrompt, buildSlopUserPrompt } from "../slop-prompt";
 import type { AnalyzeInput, AnalyzeOutput, LlmProvider, ProviderId } from "./types";
+import type { LlmStreamOptions } from "./types";
+import { readOpenRouterUsage } from "../openrouter-usage";
 import type {
   ClaimStreamEvent,
   ExplainStreamEvent,
@@ -200,7 +202,10 @@ export class OpenRouterProvider implements LlmProvider {
     return {};
   }
 
-  async analyze(input: AnalyzeInput, opts?: { model?: string }): Promise<AnalyzeOutput> {
+  async analyze(
+    input: AnalyzeInput,
+    opts?: LlmStreamOptions,
+  ): Promise<AnalyzeOutput> {
     const model = this.slug(opts?.model);
     const lang = input.lang ?? "en";
 
@@ -223,6 +228,11 @@ export class OpenRouterProvider implements LlmProvider {
       tool_choice: this.toolChoiceFor(opts?.model),
       ...this.openRouterExtras(opts?.model),
     } as OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming);
+    const usage = readOpenRouterUsage(
+      response,
+      opts?.model ?? this.defaultModel,
+    );
+    if (usage) opts?.onUsage?.(usage);
 
     const toolCall = response.choices[0]?.message?.tool_calls?.[0];
     if (!toolCall || toolCall.type !== "function") {
@@ -230,12 +240,18 @@ export class OpenRouterProvider implements LlmProvider {
     }
     const args = toolCall.function.arguments;
     const parsed = AnalysisResultSchema.parse(JSON.parse(args));
-    return { provider: this.id, model: this.defaultModel, result: parsed };
+    if (usage) usage.completed = true;
+    return {
+      provider: this.id,
+      model: opts?.model ?? this.defaultModel,
+      result: parsed,
+      ...(usage ? { usage } : {}),
+    };
   }
 
   async *analyzeStream(
     input: AnalyzeInput,
-    opts?: { model?: string; signal?: AbortSignal },
+    opts?: LlmStreamOptions,
   ): AsyncGenerator<StreamEvent, { model: string }, void> {
     const model = this.slug(opts?.model);
     const lang = input.lang ?? "en";
@@ -265,6 +281,7 @@ export class OpenRouterProvider implements LlmProvider {
     );
 
     let buffer = "";
+    let requestUsage = null as ReturnType<typeof readOpenRouterUsage>;
     const emittedFindings = new Set<number>();
     const emittedFields = new Set<string>();
 
@@ -293,6 +310,12 @@ export class OpenRouterProvider implements LlmProvider {
     }
 
     for await (const chunk of stream) {
+      const usage = readOpenRouterUsage(
+        chunk,
+        opts?.model ?? this.defaultModel,
+      );
+      if (usage) opts?.onUsage?.(usage);
+      if (usage) requestUsage = usage;
       const delta = chunk.choices[0]?.delta;
       const tc = delta?.tool_calls?.[0];
       const args = tc?.function?.arguments;
@@ -358,12 +381,13 @@ export class OpenRouterProvider implements LlmProvider {
       emittedFields.add("score");
     }
 
-    return { model: this.defaultModel };
+    if (requestUsage) requestUsage.completed = true;
+    return { model: opts?.model ?? this.defaultModel };
   }
 
   async *extractClaimsStream(
     input: AnalyzeInput,
-    opts?: { model?: string; signal?: AbortSignal },
+    opts?: LlmStreamOptions,
   ): AsyncGenerator<ClaimStreamEvent, { model: string }, void> {
     const model = this.slug(opts?.model);
     const lang = input.lang ?? "en";
@@ -401,6 +425,7 @@ export class OpenRouterProvider implements LlmProvider {
     );
 
     let buffer = "";
+    let requestUsage = null as ReturnType<typeof readOpenRouterUsage>;
     const emittedClaims = new Set<number>();
     let emittedLanguage = false;
 
@@ -429,6 +454,12 @@ export class OpenRouterProvider implements LlmProvider {
     }
 
     for await (const chunk of stream) {
+      const usage = readOpenRouterUsage(
+        chunk,
+        opts?.model ?? this.defaultModel,
+      );
+      if (usage) opts?.onUsage?.(usage);
+      if (usage) requestUsage = usage;
       const delta = chunk.choices[0]?.delta;
       const tc = delta?.tool_calls?.[0];
       const args = tc?.function?.arguments;
@@ -477,12 +508,13 @@ export class OpenRouterProvider implements LlmProvider {
       emittedLanguage = true;
     }
 
-    return { model: this.defaultModel };
+    if (requestUsage) requestUsage.completed = true;
+    return { model: opts?.model ?? this.defaultModel };
   }
 
   async *analyzeNeutralityStream(
     input: AnalyzeInput,
-    opts?: { model?: string; signal?: AbortSignal },
+    opts?: LlmStreamOptions,
   ): AsyncGenerator<NeutralityStreamEvent, { model: string }, void> {
     const model = this.slug(opts?.model);
     const lang = input.lang ?? "en";
@@ -520,6 +552,7 @@ export class OpenRouterProvider implements LlmProvider {
     );
 
     let buffer = "";
+    let requestUsage = null as ReturnType<typeof readOpenRouterUsage>;
     const emittedFindings = new Set<number>();
     const emittedFields = new Set<string>();
 
@@ -548,6 +581,12 @@ export class OpenRouterProvider implements LlmProvider {
     }
 
     for await (const chunk of stream) {
+      const usage = readOpenRouterUsage(
+        chunk,
+        opts?.model ?? this.defaultModel,
+      );
+      if (usage) opts?.onUsage?.(usage);
+      if (usage) requestUsage = usage;
       const delta = chunk.choices[0]?.delta;
       const tc = delta?.tool_calls?.[0];
       const args = tc?.function?.arguments;
@@ -616,12 +655,13 @@ export class OpenRouterProvider implements LlmProvider {
       emittedFields.add("verdict");
     }
 
-    return { model: this.defaultModel };
+    if (requestUsage) requestUsage.completed = true;
+    return { model: opts?.model ?? this.defaultModel };
   }
 
   async *analyzeSlopStream(
     input: AnalyzeInput,
-    opts?: { model?: string; signal?: AbortSignal },
+    opts?: LlmStreamOptions,
   ): AsyncGenerator<SlopStreamEvent, { model: string }, void> {
     const model = this.slug(opts?.model);
     const lang = input.lang ?? "en";
@@ -658,6 +698,7 @@ export class OpenRouterProvider implements LlmProvider {
     );
 
     let buffer = "";
+    let requestUsage = null as ReturnType<typeof readOpenRouterUsage>;
     const emittedFindings = new Set<number>();
     const emittedFields = new Set<string>();
 
@@ -686,6 +727,12 @@ export class OpenRouterProvider implements LlmProvider {
     }
 
     for await (const chunk of stream) {
+      const usage = readOpenRouterUsage(
+        chunk,
+        opts?.model ?? this.defaultModel,
+      );
+      if (usage) opts?.onUsage?.(usage);
+      if (usage) requestUsage = usage;
       const delta = chunk.choices[0]?.delta;
       const tc = delta?.tool_calls?.[0];
       const args = tc?.function?.arguments;
@@ -752,12 +799,13 @@ export class OpenRouterProvider implements LlmProvider {
       emittedFields.add("score");
     }
 
-    return { model: this.defaultModel };
+    if (requestUsage) requestUsage.completed = true;
+    return { model: opts?.model ?? this.defaultModel };
   }
 
   async *explainStream(
     input: AnalyzeInput,
-    opts: { model?: string; signal?: AbortSignal; level: ExplainLevel },
+    opts: LlmStreamOptions & { level: ExplainLevel },
   ): AsyncGenerator<ExplainStreamEvent, { model: string }, void> {
     const model = this.slug(opts.model);
     const lang = input.lang ?? "en";
@@ -796,6 +844,7 @@ export class OpenRouterProvider implements LlmProvider {
     );
 
     let buffer = "";
+    let requestUsage = null as ReturnType<typeof readOpenRouterUsage>;
     const emittedFindings = new Set<number>();
     const emittedFields = new Set<string>();
 
@@ -824,6 +873,12 @@ export class OpenRouterProvider implements LlmProvider {
     }
 
     for await (const chunk of stream) {
+      const usage = readOpenRouterUsage(
+        chunk,
+        opts.model ?? this.defaultModel,
+      );
+      if (usage) opts.onUsage?.(usage);
+      if (usage) requestUsage = usage;
       const delta = chunk.choices[0]?.delta;
       const tc = delta?.tool_calls?.[0];
       const args = tc?.function?.arguments;
@@ -877,6 +932,7 @@ export class OpenRouterProvider implements LlmProvider {
       emittedFields.add("overview");
     }
 
-    return { model: this.defaultModel };
+    if (requestUsage) requestUsage.completed = true;
+    return { model: opts.model ?? this.defaultModel };
   }
 }

@@ -55,7 +55,9 @@ export function I18nProvider({
     try {
       const legacy = localStorage.getItem("lang");
       if (legacy === "en" || legacy === "pt" || legacy === "es") {
-        if (legacy !== lang) setLangState(legacy);
+        if (legacy !== lang) {
+          window.setTimeout(() => setLangState(legacy), 0);
+        }
         writeCookie(legacy as Lang);
         // Optional cleanup; harmless if it fails.
         localStorage.removeItem("lang");

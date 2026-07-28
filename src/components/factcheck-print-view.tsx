@@ -35,7 +35,6 @@ export function FactCheckPrintView({
   sourceRef,
   source,
   text,
-  sentences: _sentences,
   claims,
   verdicts,
   verifyModel,

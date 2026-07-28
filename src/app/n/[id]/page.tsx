@@ -13,6 +13,7 @@ import type {
   NeutralityVerdictValue,
   TextType,
 } from "@/lib/neutrality-schema";
+import { analysisSocialMetadata } from "@/lib/social-metadata";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -24,20 +25,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!n) return { title: "Jiddu" };
   const title = n.title ?? "Untitled";
   const desc = `${n.verdict.replace(/_/g, " ")} (${Math.round(n.confidence * 100)}% confidence). Assessed with Jiddu.`;
-  return {
+  return analysisSocialMetadata({
     title: `${title} · Jiddu neutrality`,
     description: desc,
-    openGraph: {
-      title: `${title} · Jiddu neutrality`,
-      description: desc,
-      type: "article",
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: `${title} · Jiddu neutrality`,
-      description: desc,
-    },
-  };
+    path: `/n/${id}`,
+  });
 }
 
 export default async function NeutralityViewerPage({ params }: Props) {

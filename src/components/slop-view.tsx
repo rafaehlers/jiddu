@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable react-hooks/refs -- DOM refs are read only in effects and interaction/ref callbacks. */
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
@@ -12,9 +13,9 @@ import { useI18n } from "@/lib/i18n/provider";
 import { MobileHintModal } from "@/components/mobile-hint-modal";
 import { ShareLinkBar } from "@/components/share-link-bar";
 import { ExportPdfButton } from "@/components/export-pdf-button";
+import { useMobileHint } from "@/lib/mobile-hint";
 
 const MOBILE_BREAKPOINT = 1024; // matches Tailwind's `lg`
-const MOBILE_HINT_KEY = "mobileHintSeen";
 
 // Viewer for the slop-pattern lens. Same reading idiom as AnalysisView
 // (colored sentence highlights on the left, color-matched margin cards on
@@ -71,26 +72,7 @@ export function SlopView({
   const [active, setActive] = useState<string | null>(null);
   const [modalPatternId, setModalPatternId] = useState<string | null>(null);
   const [findingForModal, setFindingForModal] = useState<FindingWithKey | null>(null);
-  // Starts false on server and client so hydration matches; the width /
-  // localStorage check runs post-hydration (see AnalysisView for the why).
-  const [showHint, setShowHint] = useState<boolean>(false);
-  useEffect(() => {
-    try {
-      if (
-        window.innerWidth < MOBILE_BREAKPOINT &&
-        localStorage.getItem(MOBILE_HINT_KEY) !== "1"
-      ) {
-        setShowHint(true);
-      }
-    } catch {}
-  }, []);
-
-  function dismissHint() {
-    setShowHint(false);
-    try {
-      localStorage.setItem(MOBILE_HINT_KEY, "1");
-    } catch {}
-  }
+  const { showHint, dismissHint } = useMobileHint();
   const textColRef = useRef<HTMLDivElement>(null);
   const commentsColRef = useRef<HTMLDivElement>(null);
   const scoreRef = useRef<HTMLDivElement>(null);

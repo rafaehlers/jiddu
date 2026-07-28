@@ -2,7 +2,7 @@
 
 > *truth is a pathless land* — [J. Krishnamurti](https://en.wikipedia.org/wiki/Jiddu_Krishnamurti)
 
-**Open-source critical reading for text and research papers.**
+**Critical reading for text and research papers.**
 
 Jiddu keeps the source and the analysis side by side. Drop a URL, paste text, upload a document, or review a complete paper; every finding stays anchored to the passage or page that supports it.
 
@@ -101,15 +101,17 @@ Jiddu is not affiliated with the authors, institutions, datasets or venues cited
 - **Streaming**: server-side `ReadableStream` emitting SSE; `partial-json` for incremental finding extraction
 - **PDF parsing**: `@llamaindex/liteparse` (layout/OCR/screenshots) with `pdfjs-dist` fallback
 - **Article extraction**: `@mozilla/readability` + `jsdom`
+- **Accounts and billing access**: WorkOS AuthKit sessions; allowlisted users
+  receive included platform access and everyone else spends an independent
+  Jiddu credit balance across web, REST and hosted MCP analyses
 
 ## Local development
 
 ```bash
-git clone git@github.com:rafaehlers/jiddu.git
-cd jiddu
+# From an authorized local checkout:
 npm install
 cp .env.example .env
-# Edit .env and set OPENROUTER_API_KEY (one key powers analysis + fact-check).
+# Set OPENROUTER_API_KEY and configure the WorkOS variables below.
 npx prisma migrate dev
 node scripts/seed-demo.mjs           # fallacy detector demos
 node scripts/seed-explain-demo.mjs   # paper-explainer demos
@@ -125,10 +127,45 @@ Open <http://localhost:3000>. Try `/a/demo-en`, `/e/demo-en`, or `/r/demo-en`
 | Variable               | Purpose                                                              |
 |------------------------|----------------------------------------------------------------------|
 | `DATABASE_URL`         | SQLite path. Local dev: `file:./dev.db`. Docker: `file:/app/data/jiddu.db` |
-| `OPENROUTER_API_KEY`   | Required — unified gateway used for every model. Get one at https://openrouter.ai/keys |
+| `NEXT_PUBLIC_APP_URL`  | Canonical origin used for OAuth callbacks (`http://localhost:3000` locally) |
+| `WORKOS_API_KEY`       | WorkOS AuthKit server key |
+| `WORKOS_CLIENT_ID`     | WorkOS AuthKit client id |
+| `WORKOS_COOKIE_PASSWORD` | 32+ character secret used by AuthKit to encrypt its session cookie |
+| `NEXT_PUBLIC_WORKOS_REDIRECT_URI` | WorkOS callback URI, normally `<origin>/callback` |
+| `WORKOS_AUTHKIT_DOMAIN` | AuthKit issuer origin used to validate MCP OAuth tokens |
+| `MCP_RESOURCE_URL`     | Exact hosted MCP audience registered as a WorkOS Resource Indicator |
+| `OPENROUTER_API_KEY`   | Deployment key for `platform` mode, public REST API, evals and operator balance |
+| `ADMIN_EMAILS`         | Comma-separated verified WorkOS emails allowed into `/admin`; these accounts also receive platform-funded analysis access |
 | `OPENROUTER_REFERER`   | Optional. Identifies the deployment in OpenRouter's analytics. Defaults to `https://jiddu.app` |
+| `JIDDU_CREDIT_USD_VALUE` | Installation default for the dollar value represented by one Jiddu credit. Defaults to `0.01`; the admin can override it at runtime. |
+| `JIDDU_CREDIT_MARGIN_MULTIPLIER` | Installation default for the multiplier applied to OpenRouter's reported cost. Defaults to `1.5`; the admin can override it at runtime. |
+| `JIDDU_LIVE_TRANSCRIPTION_CREDITS` | Default fixed Jiddu Credit charge for one GPT Live Transcribe session. Defaults to `20`; the admin can override it at runtime. |
 | `PAPER_REVIEW_DEEP_MODEL` | Optional internal model id for Deep specialist/synthesis stages. Defaults to `gpt-5.5`. |
 | `PAPER_REVIEW_CRITIC_MODEL` | Optional independent Deep critic model id. Defaults to `claude-opus-4.8`. |
+| `OPENAI_LIVE_TRANSCRIBE_DELAY` | GPT Live Transcribe latency/accuracy profile: `minimal`, `low`, `medium`, `high`, or `xhigh`. Defaults to `medium`. |
+
+For AuthKit, register `<origin>/callback` as a redirect URI, `<origin>/login`
+as the sign-in endpoint and `<origin>/` as the logout URI in WorkOS. Register
+each web origin under the application's Sessions → CORS settings so the
+WorkOS profile and security widgets can run inside `/account`. `/signup`
+opens AuthKit's hosted registration flow; `/account` uses WorkOS widgets for
+verified email changes and password or MFA management. Users with Jiddu
+credits can run web, account-owned REST and hosted MCP analyses through
+`OPENROUTER_API_KEY`; this ledger is independent
+of the deployment's OpenRouter dollar balance. Each route reserves its
+maximum rate-card cost before execution, settles only completed model calls,
+and releases the unused reservation. Completed OpenRouter calls are settled
+from the provider's returned prompt/completion tokens and real cost plus a
+configurable margin; the rate card is a reservation estimate and fallback when
+usage accounting is unavailable. Balance, transactions, token/cost usage and
+the versioned rate card appear in `/account`; administrators can grant or remove credits at
+`/admin/credits`. Paid packs are intentionally not wired yet. Verified
+accounts granted access through `/admin/platform-access` instead receive
+included use of `OPENROUTER_API_KEY`; administrator emails configured in
+`ADMIN_EMAILS` always receive that access. Jiddu credits cover the web app,
+REST API and hosted MCP, while
+REST keys remain a separately operator-issued integration surface bound to a
+verified WorkOS account.
 
 ## Architecture
 
@@ -142,6 +179,9 @@ src/
 │   ├── explain/page.tsx               Explain composer (paper explainer)
 │   ├── slop/page.tsx                  AI-slop composer
 │   ├── review/page.tsx                Adversarial paper-review composer
+│   ├── account/page.tsx               WorkOS account + OpenRouter connection
+│   ├── callback/route.ts              WorkOS AuthKit callback
+│   ├── signup/route.ts                WorkOS AuthKit hosted registration
 │   ├── legal/page.tsx                 Terms + disclaimer + methodology citations
 │   ├── a/[id]/
 │   │   ├── page.tsx                   Analysis viewer (SSR)
@@ -256,10 +296,10 @@ POST /api/v1/adversarial-reviews
 GET  /api/v1/adversarial-reviews/{id}
 ```
 
-Body is `{ "text": "…" }` (40–2000 chars) plus optional `lang` (`en`/`pt`/`es`) and, for explain, `level`. Authenticate with an operator-issued `X-Jiddu-Key`; keys are stored as hashes, shown once and rate-limited independently. `fact-check` extracts and verifies each claim via Sonar, capped by `api.maxClaims`.
+Body is `{ "text": "…" }` (40–2000 chars) plus optional `lang` (`en`/`pt`/`es`) and, for explain, `level`. Authenticate with an operator-issued `X-Jiddu-Key`. Every key is assigned to one verified WorkOS account, stored only as a hash, shown once and rate-limited independently. Requests use that account's included access or Jiddu credits. Credit-funded calls reserve the maximum route estimate, then settle from OpenRouter's returned token counts and real cost plus the configured margin; the rate card is used only when provider accounting is unavailable. `fact-check` extracts and verifies each claim via Sonar, capped by `api.maxClaims`; uncached verification calls are charged individually.
 
 - **Adversarial review API:** start a job with one multipart `file`, or JSON `{ "pdf_url": "https://…", "depth": "standard" }`. `depth` is `standard` or `deep`. The `202` response includes the id and status URL. Poll `GET /api/v1/adversarial-reviews/{id}` until `status` is `complete` or `failed`. Complete jobs include the structured review, public audit summary, source-verification metadata, and viewer/Markdown/print URLs.
-- **MCP server (remote, recommended):** a hosted MCP endpoint at `POST /api/mcp` (in-process, reuses the same pipeline) exposes five synchronous text tools plus `start_adversarial_review` and `get_adversarial_review`. Connect any MCP client by URL via the public [`mcp-remote`](https://www.npmjs.com/package/mcp-remote) bridge — nothing to install or publish. Config snippet on [`/api-access`](https://jiddu.app/api-access).
+- **MCP server (remote, recommended):** the hosted endpoint at `https://jiddu.app/api/mcp` exposes five synchronous text tools plus `start_adversarial_review` and `get_adversarial_review`. Compatible MCP clients discover [WorkOS AuthKit MCP](https://workos.com/docs/authkit/mcp) automatically, open Jiddu sign-in and receive a resource-scoped bearer token. Tool calls use included platform access for allowlisted users and reserve, settle and debit Jiddu Credits for everyone else, so no manually issued `X-Jiddu-Key` is required.
 - **MCP server (local):** the same tools also ship as a standalone package, [`packages/jiddu-mcp`](./packages/jiddu-mcp), for offline/dev use — run from source (`node dist/index.js`), not published to npm. Machine-oriented docs: [`packages/jiddu-mcp/AGENT.md`](./packages/jiddu-mcp/AGENT.md).
 - **Evals:** fixed test sets in [`evals/`](./evals), plus a 30-case balanced synthetic SPECS benchmark under [`evals/paper-review`](./evals/paper-review). GPT-5.4 mini and GPT-5.5 both detected 30/30 injected defects; GPT-5.5 returned 30.6% fewer, more consolidated findings. See the [benchmark report](./evals/paper-review/report.md). Run deterministic tests with `npm test`; the paid specialist benchmark is opt-in via `OPENROUTER_API_KEY=<key> npm run eval:paper-review`.
 
@@ -386,15 +426,15 @@ The persisted final result is shown at `/r/[id]`; `GET /api/review/[id]/markdown
 
 ### Live mode (beta) — `/live`
 
-A separate page at `/live` listens to live audio (microphone or browser-tab capture) via the OpenAI Realtime API (`gpt-realtime-whisper`) and surfaces fallacies as the speaker talks. Two endpoints back it:
+A separate page at `/live` listens to live audio (microphone or browser-tab capture) via the OpenAI Realtime API (`gpt-live-transcribe`) and surfaces fallacies as the speaker talks. The transcription session uses the balanced `medium` delay profile by default and passes English, Portuguese and Spanish together as language hints so the interface locale does not constrain multilingual speech. Two endpoints back it:
 
-- `POST /api/live/token` — mints a short-lived ephemeral client secret so the browser can open a WebRTC connection directly to OpenAI for **transcription** (`gpt-realtime-whisper`). Requires `OPENAI_API_KEY`. This call never touches OpenRouter.
-- `POST /api/live/analyze` — a separate, later call: SSE stream that ingests the cumulative transcript in sliding windows (~500 char delta or every 30s) and emits `finding` events. **This is the analysis step**, running the same fallacy prompt routed via OpenRouter (same GPT-5.4 mini / MiniMax M3 picker as the other pipelines) — a different model and provider from the OpenAI transcription above. Send `{ finalize: true }` on Stop to compute the final score and commit the session.
+- `POST /api/live/token` — mints a short-lived ephemeral client secret so the browser can open a WebRTC connection directly to OpenAI for **transcription** (`gpt-live-transcribe`). Requires `OPENAI_API_KEY`. This call never touches OpenRouter.
+- `POST /api/live/analyze` — a separate, later call: SSE stream that ingests the cumulative transcript in sliding windows (eagerly after ~800 new characters, or every 30s once at least ~120 characters are available) and emits `finding` events. Each window receives the preceding four sentences as context. **This is the analysis step**, running the same fallacy prompt routed via OpenRouter (same GPT-5.4 mini / MiniMax M3 picker as the other pipelines) — a different model and provider from the OpenAI transcription above. Send `{ finalize: true }` on Stop to process the remaining text, compute the final score and commit the session.
 
 Notes:
 - Tab capture requires Chrome or Edge — Safari/Firefox don't expose tab audio via `getDisplayMedia`. The Microphone source works everywhere.
 - Audio is streamed Browser → OpenAI directly via WebRTC; the Jiddu server only mints tokens and persists the transcript + findings.
-- Hard cap of 60 minutes per session to keep cost predictable (`gpt-realtime-whisper` is $0.017/min ≈ $1/hour, plus the analysis LLM cost).
+- Hard cap of 60 minutes per session to keep cost predictable (`gpt-live-transcribe` is $0.017/min ≈ $1/hour, plus the analysis LLM cost).
 - The page is intentionally not linked from the nav while in beta — access it by URL.
 
 ## Fallacy score
@@ -415,15 +455,8 @@ Jiddu ships with a multi-stage [`Dockerfile`](./Dockerfile) and [`docker-compose
 
 The container entrypoint applies Prisma migrations and seeds the public demos idempotently on startup. If a reverse proxy sits in front of Jiddu, disable response buffering for the SSE analysis routes so findings reach the browser as they are generated.
 
-## License
+## Proprietary software
 
-Licensed under the **GNU Affero General Public License v3.0 or later** (AGPL-3.0-or-later). See [LICENSE](./LICENSE) for the full text.
+Copyright © 2026 Rafael M. Ehlers. All rights reserved.
 
-In short:
-
-- You can use, modify and self-host Jiddu — for free.
-- If you run a modified version as a **network-accessible service**, you must publish the complete source code of your modified version (this is what AGPL adds on top of GPL — it closes the "SaaS loophole").
-- You can incorporate Jiddu's code into another project only if that project is itself released under AGPL-3.0-or-later.
-- "Jiddu" the name and the `jiddu.app` domain are not part of the license — they remain the operator's. Forks should pick a different name.
-
-If you want to use the code under non-AGPL terms (e.g. inside a closed-source product), contact the author for a commercial licence.
+Jiddu is proprietary software. The source code is not licensed for copying, redistribution, modification, or self-hosting without prior written permission.

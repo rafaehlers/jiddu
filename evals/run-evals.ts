@@ -40,6 +40,35 @@ const selected = process.argv.slice(2).filter((a): a is Tool =>
 const tools = selected.length > 0 ? selected : ALL_TOOLS;
 
 type Input = { id: string; text: string; lang?: string; level?: string };
+type JsonObject = Record<string, unknown>;
+type GradeResult = { pass: boolean; detail: string };
+type EvalRow = {
+  id: string;
+  pass: boolean;
+  detail: string;
+  expected: JsonObject;
+  response: JsonObject | null;
+};
+
+function asObject(value: unknown): JsonObject {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    ? (value as JsonObject)
+    : {};
+}
+
+function asString(value: unknown): string | undefined {
+  return typeof value === "string" ? value : undefined;
+}
+
+function asStringArray(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : [];
+}
+
+function asObjectArray(value: unknown): JsonObject[] {
+  return Array.isArray(value) ? value.map(asObject) : [];
+}
 
 function load<T>(tool: Tool, file: string): T {
   return JSON.parse(
@@ -67,11 +96,11 @@ async function callApi(tool: Tool, input: Input): Promise<unknown> {
 // Run items through a tool with bounded concurrency.
 async function runTool(
   tool: Tool,
-  grade: (input: Input, expected: any, response: any) => { pass: boolean; detail: string },
-): Promise<{ pass: number; total: number; rows: any[] }> {
+  grade: (input: Input, expected: JsonObject, response: JsonObject) => GradeResult,
+): Promise<{ pass: number; total: number; rows: EvalRow[] }> {
   const inputs = load<Input[]>(tool, "inputs.json");
-  const expected = load<Record<string, any>>(tool, "expected.json");
-  const rows: any[] = new Array(inputs.length);
+  const expected = load<Record<string, JsonObject>>(tool, "expected.json");
+  const rows: EvalRow[] = new Array(inputs.length);
 
   let cursor = 0;
   let pass = 0;
@@ -80,9 +109,9 @@ async function runTool(
       const idx = cursor++;
       if (idx >= inputs.length) return;
       const input = inputs[idx];
-      const exp = expected[input.id];
+      const exp = expected[input.id] ?? {};
       try {
-        const response = await callApi(tool, input);
+        const response = asObject(await callApi(tool, input));
         const g = grade(input, exp, response);
         if (g.pass) pass++;
         rows[idx] = { id: input.id, pass: g.pass, detail: g.detail, expected: exp, response };
@@ -105,45 +134,59 @@ async function runTool(
 
 // ---------- graders ----------
 
-function gradeFallacies(_i: Input, exp: any, res: any) {
-  const verdictOk = res?.verdict === exp.verdict;
-  const names: string[] = (res?.fallacies ?? []).map((f: any) => String(f.name).toLowerCase());
-  const wanted: string[] = exp.fallacies ?? [];
+function gradeFallacies(_i: Input, exp: JsonObject, res: JsonObject): GradeResult {
+  const verdict = asString(res.verdict);
+  const expectedVerdict = asString(exp.verdict);
+  const verdictOk = verdict === expectedVerdict;
+  const names = asObjectArray(res.fallacies)
+    .map((finding) => asString(finding.name)?.toLowerCase())
+    .filter((name): name is string => name !== undefined);
+  const wanted = asStringArray(exp.fallacies);
   const found = wanted.filter((w) => names.some((n) => n.includes(w.toLowerCase())));
   const recallOk = wanted.length === 0 ? true : found.length === wanted.length;
   const pass = verdictOk && recallOk;
   return {
     pass,
-    detail: `verdict ${res?.verdict} (want ${exp.verdict}); matched ${found.length}/${wanted.length} [${wanted.join(", ") || "—"}]`,
+    detail: `verdict ${verdict} (want ${expectedVerdict}); matched ${found.length}/${wanted.length} [${wanted.join(", ") || "—"}]`,
   };
 }
 
-function gradeNeutrality(_i: Input, exp: any, res: any) {
-  const labelOk = res?.label === exp.label;
-  const biased = res?.label === "biased" || res?.label === "highly_biased";
+function gradeNeutrality(_i: Input, exp: JsonObject, res: JsonObject): GradeResult {
+  const label = asString(res.label);
+  const expectedLabel = asString(exp.label);
+  const labelOk = label === expectedLabel;
+  const biased = label === "biased" || label === "highly_biased";
   const directionOk = biased === exp.biased;
   return {
     pass: labelOk,
-    detail: `label ${res?.label} (want ${exp.label}); direction ${directionOk ? "ok" : "wrong"}; score ${res?.score}`,
+    detail: `label ${label} (want ${expectedLabel}); direction ${directionOk ? "ok" : "wrong"}; score ${String(res.score)}`,
   };
 }
 
-function gradeFactCheck(_i: Input, exp: any, res: any) {
-  const pass = res?.overall_verdict === exp.overall_verdict;
+function gradeFactCheck(_i: Input, exp: JsonObject, res: JsonObject): GradeResult {
+  const verdict = asString(res.overall_verdict);
+  const expectedVerdict = asString(exp.overall_verdict);
+  const pass = verdict === expectedVerdict;
+  const claimCount = Array.isArray(res.claims) ? res.claims.length : 0;
   return {
     pass,
-    detail: `overall ${res?.overall_verdict} (want ${exp.overall_verdict}); ${res?.claims?.length ?? 0} claims`,
+    detail: `overall ${verdict} (want ${expectedVerdict}); ${claimCount} claims`,
   };
 }
 
-function gradeExplain(_i: Input, exp: any, res: any) {
-  const roles: string[] = (res?.paragraphs ?? []).map((p: any) => String(p.role));
-  const wanted: string[] = exp.roles ?? [];
+function gradeExplain(_i: Input, exp: JsonObject, res: JsonObject): GradeResult {
+  const roles = asObjectArray(res.paragraphs)
+    .map((paragraph) => asString(paragraph.role))
+    .filter((role): role is string => role !== undefined);
+  const wanted = asStringArray(exp.roles);
   const pass = roles.some((r) => wanted.includes(r));
   return { pass, detail: `roles [${roles.join(", ")}] (want one of [${wanted.join(", ")}])` };
 }
 
-const GRADERS: Record<Tool, (i: Input, e: any, r: any) => { pass: boolean; detail: string }> = {
+const GRADERS: Record<
+  Tool,
+  (input: Input, expected: JsonObject, response: JsonObject) => GradeResult
+> = {
   fallacies: gradeFallacies,
   "fact-check": gradeFactCheck,
   neutrality: gradeNeutrality,
@@ -161,7 +204,7 @@ const TOOL_TITLE: Record<Tool, string> = {
 
 async function main() {
   console.log(`Running evals against ${BASE} for: ${tools.join(", ")}\n`);
-  const summary: { tool: Tool; pass: number; total: number; rows: any[] }[] = [];
+  const summary: { tool: Tool; pass: number; total: number; rows: EvalRow[] }[] = [];
   for (const tool of tools) {
     console.log(`# ${tool}`);
     const r = await runTool(tool, GRADERS[tool]);

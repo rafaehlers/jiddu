@@ -8,6 +8,7 @@ import { AnalysisHeaderActions } from "@/components/analysis-header-actions";
 import { ScrollIndicator } from "@/components/scroll-indicator";
 import { SkeletonReveal } from "@/components/skeleton-reveal";
 import { AnalysisSkeleton } from "@/components/analysis-skeleton";
+import { analysisSocialMetadata } from "@/lib/social-metadata";
 import type { Finding, Sentence } from "@/lib/schema";
 
 type Props = { params: Promise<{ id: string }> };
@@ -31,20 +32,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             ? "Minor issues"
             : "Clean reasoning";
   const desc = `${score}/100 — ${label}. Analyzed with Jiddu.`;
-  return {
+  return analysisSocialMetadata({
     title: `${title} · Jiddu`,
     description: desc,
-    openGraph: {
-      title: `${title} · Jiddu`,
-      description: desc,
-      type: "article",
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: `${title} · Jiddu`,
-      description: desc,
-    },
-  };
+    path: `/a/${id}`,
+  });
 }
 
 export default async function AnalysisPage({ params }: Props) {

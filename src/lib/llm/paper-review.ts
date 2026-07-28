@@ -36,6 +36,10 @@ import {
   SPECS_STAGE_JSON_SCHEMA,
 } from "./paperReviewJsonSchema";
 import { DEFAULT_MODEL_CHAIN } from "./fallback";
+import {
+  readOpenRouterUsage,
+  type OpenRouterUsage,
+} from "../openrouter-usage";
 
 const OPENROUTER_BASE = "https://openrouter.ai/api/v1";
 const REFERER = process.env.OPENROUTER_REFERER || "https://jiddu.app";
@@ -50,24 +54,28 @@ type RunOptions = {
   lang: Lang;
   signal?: AbortSignal;
   strictModel?: boolean;
+  apiKey?: string;
+  onUsage?: (usage: OpenRouterUsage) => void;
 };
 
 let cachedClient: OpenAI | null = null;
 
-function getClient(): OpenAI {
-  if (cachedClient) return cachedClient;
-  if (!process.env.OPENROUTER_API_KEY) {
+function getClient(apiKey?: string): OpenAI {
+  if (!apiKey && cachedClient) return cachedClient;
+  const resolvedKey = apiKey ?? process.env.OPENROUTER_API_KEY;
+  if (!resolvedKey) {
     throw new Error("OPENROUTER_API_KEY is not set in the environment");
   }
-  cachedClient = new OpenAI({
-    apiKey: process.env.OPENROUTER_API_KEY,
+  const client = new OpenAI({
+    apiKey: resolvedKey,
     baseURL: OPENROUTER_BASE,
     defaultHeaders: {
       "HTTP-Referer": REFERER,
       "X-Title": "Jiddu",
     },
   });
-  return cachedClient;
+  if (!apiKey) cachedClient = client;
+  return client;
 }
 
 export async function buildPaperLedger(
@@ -107,7 +115,7 @@ export async function researchPaperNovelty(
   venueProfile: ResolvedVenueProfile,
   opts: RunOptions,
 ): Promise<PaperResearch> {
-  const client = getClient();
+  const client = getClient(opts.apiKey);
   const errors: string[] = [];
 
   for (const modelId of modelChain(opts.modelId, opts.strictModel)) {
@@ -147,6 +155,8 @@ export async function researchPaperNovelty(
         } as unknown as OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming,
         opts.signal ? { signal: opts.signal } : undefined,
       );
+      const usage = readOpenRouterUsage(response, choice.id);
+      if (usage) opts.onUsage?.(usage);
       const message = response.choices[0]?.message as
         | (OpenAI.Chat.Completions.ChatCompletionMessage & {
             annotations?: Array<{
@@ -158,6 +168,7 @@ export async function researchPaperNovelty(
       const synthesis =
         typeof message?.content === "string" ? message.content.trim() : "";
       if (!synthesis) throw new Error("Research model returned no memo");
+      if (usage) usage.completed = true;
       return {
         synthesis,
         sources: sourcesFromAnnotations(message?.annotations ?? []),
@@ -320,7 +331,7 @@ async function runStructuredWithFallback<T>(
   validator: ZodType<T>,
   opts: RunOptions,
 ): Promise<{ value: T; model: string }> {
-  const client = getClient();
+  const client = getClient(opts.apiKey);
   const errors: string[] = [];
 
   for (const modelId of modelChain(opts.modelId, opts.strictModel)) {
@@ -355,6 +366,8 @@ async function runStructuredWithFallback<T>(
         } as OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming,
         opts.signal ? { signal: opts.signal } : undefined,
       );
+      const usage = readOpenRouterUsage(response, choice.id);
+      if (usage) opts.onUsage?.(usage);
       const toolCall = response.choices[0]?.message?.tool_calls?.find(
         (call) =>
           call.type === "function" &&
@@ -363,8 +376,10 @@ async function runStructuredWithFallback<T>(
       if (!toolCall || toolCall.type !== "function") {
         throw new Error("Model response missing report_analysis tool call");
       }
+      const value = validator.parse(JSON.parse(toolCall.function.arguments));
+      if (usage) usage.completed = true;
       return {
-        value: validator.parse(JSON.parse(toolCall.function.arguments)),
+        value,
         model: choice.id,
       };
     } catch (err) {

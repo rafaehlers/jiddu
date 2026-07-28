@@ -1,16 +1,12 @@
 {
   "name": "jiddu-mcp",
   "version": "0.1.0",
+  "private": true,
   "description": "MCP server for Jiddu — critically analyze text and run adversarial reviews of complete papers.",
   "type": "module",
-  "license": "AGPL-3.0-or-later",
+  "license": "UNLICENSED",
   "author": "Rafael M. Ehlers",
   "homepage": "https://jiddu.app",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/rafaehlers/jiddu.git",
-    "directory": "packages/jiddu-mcp"
-  },
   "keywords": ["mcp", "model-context-protocol", "fact-check", "fallacy", "claude", "agents"],
   "bin": {
     "jiddu-mcp": "dist/index.js"

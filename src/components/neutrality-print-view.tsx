@@ -38,7 +38,6 @@ export function NeutralityPrintView({
   sourceRef,
   source,
   text,
-  sentences: _sentences,
   findings,
   verdict,
   confidence,
@@ -127,7 +126,9 @@ export function NeutralityPrintView({
                     {t[`ni_${f.issue as NeutralityIssue}` as keyof Messages] as string}
                   </span>
                 </div>
-                <blockquote className="print-quote">"{f.quote}"</blockquote>
+                <blockquote className="print-quote">
+                  &ldquo;{f.quote}&rdquo;
+                </blockquote>
                 <p className="print-explanation">{f.explanation}</p>
               </li>
             ))}

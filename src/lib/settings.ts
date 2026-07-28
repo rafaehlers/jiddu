@@ -1,5 +1,13 @@
 import { prisma } from "@/lib/db";
 
+function positiveEnvironmentNumber(
+  value: string | undefined,
+  fallback: number,
+): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
 // Defaults baked into the code. The admin can override any of these via
 // /admin/settings; overrides are persisted in the AppSetting table and
 // override the defaults on read. Add a new key here when you need a new
@@ -9,6 +17,21 @@ import { prisma } from "@/lib/db";
 // in-memory rate-limit token bucket: `capacity` is the burst, `perHour`
 // is the long-run rate (we convert to per-second internally).
 export const DEFAULT_SETTINGS = {
+  // Jiddu credit economics. Environment variables establish installation
+  // defaults; persisted admin overrides are authoritative at runtime.
+  "credits.marginMultiplier": positiveEnvironmentNumber(
+    process.env.JIDDU_CREDIT_MARGIN_MULTIPLIER,
+    1.5,
+  ),
+  "credits.usdPerCredit": positiveEnvironmentNumber(
+    process.env.JIDDU_CREDIT_USD_VALUE,
+    0.01,
+  ),
+  "credits.liveTranscription": positiveEnvironmentNumber(
+    process.env.JIDDU_LIVE_TRANSCRIPTION_CREDITS,
+    20,
+  ),
+
   // Fallacy detector (POST /api/analyze)
   "rate.analyze.capacity": 10,
   "rate.analyze.perHour": 30,
@@ -33,9 +56,10 @@ export const DEFAULT_SETTINGS = {
   "factcheck.maxClaims": 50,
   "factcheck.maxRefreshPerClaim": 2,
 
-  // Public REST/MCP API (per-key buckets, independent of the web UI's
-  // per-IP limits above). Fact-check via the API does extract + verify
-  // (Sonar) so it gets a tighter bucket and its own claim cap.
+  // Public REST/MCP API. REST buckets are per API key; hosted MCP buckets are
+  // per WorkOS user. Both are independent of the web UI's per-IP limits.
+  // Fact-check via the API does extract + verify (Sonar), so it gets a tighter
+  // bucket and its own claim cap.
   "rate.api.capacity": 20,
   "rate.api.perHour": 60,
   "rate.apiFactcheck.capacity": 5,

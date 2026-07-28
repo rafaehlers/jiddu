@@ -8,25 +8,28 @@ datasource db {
 }
 
 model Analysis {
-  id              String    @id
-  status          String    @default("pending") // "pending" | "running" | "complete" | "failed"
-  source          String // "url" | "pdf" | "txt" | "paste" | "live"
-  sourceRef       String? // URL or filename
-  title           String?
-  text            String // full normalized text
-  language        String? // "pt" | "en" | ...
-  provider        String // "anthropic" | "openai"
-  model           String
-  score           Int       @default(0) // 0..100 fallacy intensity
-  summary         String? // short verdict
-  sentences       String    @default("[]") // JSON array of {id,start,end,text}
-  findings        String    @default("[]") // JSON array of findings
-  transcript      String? // raw transcript accumulated during a live session
-  audioDurationMs Int? // total audio duration captured (live mode)
-  errorMessage    String?
-  createdAt       DateTime  @default(now())
-  finishedAt      DateTime?
-  reviewedAt      DateTime? // null = not yet human-reviewed; viewer shows a warning banner until set
+  id                String    @id
+  ownerWorkosUserId String?
+  status            String    @default("pending") // "pending" | "running" | "complete" | "failed"
+  source            String // "url" | "pdf" | "txt" | "paste" | "live"
+  sourceRef         String? // URL or filename
+  title             String?
+  text              String // full normalized text
+  language          String? // "pt" | "en" | ...
+  provider          String // "anthropic" | "openai"
+  model             String
+  score             Int       @default(0) // 0..100 fallacy intensity
+  summary           String? // short verdict
+  sentences         String    @default("[]") // JSON array of {id,start,end,text}
+  findings          String    @default("[]") // JSON array of findings
+  transcript        String? // raw transcript accumulated during a live session
+  audioDurationMs   Int? // total audio duration captured (live mode)
+  errorMessage      String?
+  createdAt         DateTime  @default(now())
+  finishedAt        DateTime?
+  reviewedAt        DateTime? // null = not yet human-reviewed; viewer shows a warning banner until set
+
+  @@index([ownerWorkosUserId, createdAt])
 }
 
 model AppSetting {
@@ -36,115 +39,233 @@ model AppSetting {
 }
 
 model ApiKey {
-  id           String    @id // nanoid(12) — public identifier, safe to log
-  keyHash      String    @unique // sha256("jiddu-api:" + secret) — the secret itself is never stored
-  prefix       String // first chars of the secret, shown in admin to identify the key
-  label        String // human label set at creation
-  createdAt    DateTime  @default(now())
-  lastUsedAt   DateTime?
-  revokedAt    DateTime? // null = active
-  rateCapacity Int? // per-key burst override (null = use global settings)
-  ratePerHour  Int? // per-key sustained-rate override (null = use global settings)
+  id                String    @id // nanoid(12) — public identifier, safe to log
+  keyHash           String    @unique // sha256("jiddu-api:" + secret) — the secret itself is never stored
+  prefix            String // first chars of the secret, shown in admin to identify the key
+  label             String // human label set at creation
+  ownerWorkosUserId String?
+  ownerEmail        String?
+  createdAt         DateTime  @default(now())
+  lastUsedAt        DateTime?
+  revokedAt         DateTime? // null = active
+  rateCapacity      Int? // per-key burst override (null = use global settings)
+  ratePerHour       Int? // per-key sustained-rate override (null = use global settings)
 
   @@index([keyHash])
   @@index([revokedAt])
+  @@index([ownerWorkosUserId])
+  @@index([ownerEmail])
+}
+
+model ProviderCredential {
+  id              String   @id @default(cuid())
+  workosUserId    String
+  provider        String
+  encryptedSecret String
+  connectedAt     DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([workosUserId, provider])
+  @@index([workosUserId])
+}
+
+model PlatformAccessGrant {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+}
+
+model JidduCreditAccount {
+  workosUserId String   @id
+  email        String
+  balance      Int      @default(0)
+  reserved     Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  transactions JidduCreditTransaction[]
+  reservations JidduCreditReservation[]
+
+  @@index([email])
+  @@index([updatedAt])
+}
+
+model JidduCreditTransaction {
+  id                 String   @id @default(cuid())
+  workosUserId       String
+  amount             Int
+  balanceAfter       Int
+  kind               String // grant | adjustment | usage
+  feature            String?
+  resourceId         String?
+  rateVersion        String?
+  note               String?
+  metadata           String   @default("{}")
+  actorWorkosUserId  String?
+  promptTokens       Int?
+  completionTokens   Int?
+  totalTokens        Int?
+  reasoningTokens    Int?
+  cachedTokens       Int?
+  providerCostMicros Int?
+  billedCostMicros   Int?
+  marginMultiplier   Float?
+  usdPerCredit       Float?
+  createdAt          DateTime @default(now())
+
+  account JidduCreditAccount @relation(fields: [workosUserId], references: [workosUserId], onDelete: Cascade)
+
+  @@index([workosUserId, createdAt])
+  @@index([kind, createdAt])
+  @@index([resourceId])
+}
+
+model JidduCreditReservation {
+  id           String    @id @default(cuid())
+  workosUserId String
+  amount       Int
+  actualAmount Int?
+  status       String    @default("pending") // pending | settled | released | expired
+  feature      String
+  resourceId   String?
+  rateVersion  String
+  metadata     String    @default("{}")
+  createdAt    DateTime  @default(now())
+  expiresAt    DateTime
+  settledAt    DateTime?
+
+  account JidduCreditAccount @relation(fields: [workosUserId], references: [workosUserId], onDelete: Cascade)
+
+  @@index([workosUserId, status])
+  @@index([expiresAt, status])
+  @@index([resourceId])
+}
+
+model JidduCreditPackage {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  credits     Int
+  priceCents  Int
+  active      Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([active, sortOrder])
 }
 
 model SlopCheck {
-  id           String    @id
-  status       String    @default("pending") // "pending" | "running" | "complete" | "failed"
-  source       String // "url" | "pdf" | "txt" | "paste"
-  sourceRef    String?
-  title        String?
-  text         String
-  language     String?
-  provider     String
-  model        String
-  score        Int       @default(0) // 0..100 slop intensity
-  summary      String?
-  sentences    String    @default("[]") // JSON array of {id,start,end,text}
-  findings     String    @default("[]") // JSON array of SlopFinding
-  errorMessage String?
-  createdAt    DateTime  @default(now())
-  finishedAt   DateTime?
-  reviewedAt   DateTime?
+  id                String    @id
+  ownerWorkosUserId String?
+  status            String    @default("pending") // "pending" | "running" | "complete" | "failed"
+  source            String // "url" | "pdf" | "txt" | "paste"
+  sourceRef         String?
+  title             String?
+  text              String
+  language          String?
+  provider          String
+  model             String
+  score             Int       @default(0) // 0..100 slop intensity
+  summary           String?
+  sentences         String    @default("[]") // JSON array of {id,start,end,text}
+  findings          String    @default("[]") // JSON array of SlopFinding
+  errorMessage      String?
+  createdAt         DateTime  @default(now())
+  finishedAt        DateTime?
+  reviewedAt        DateTime?
+
+  @@index([ownerWorkosUserId, createdAt])
 }
 
 model Neutrality {
-  id           String    @id
-  status       String    @default("pending") // "pending" | "running" | "complete" | "failed"
-  source       String // "url" | "pdf" | "txt" | "paste"
-  sourceRef    String?
-  title        String?
-  text         String
-  language     String?
-  provider     String
-  model        String
-  textType     String? // informational | opinion | political_speech | advocacy | analysis | marketing | social_media
-  verdict      String    @default("pending") // neutral | partisan_lean | explicitly_partisan | manipulation | pending
-  confidence   Float     @default(0)
-  rationale    String?
-  sentences    String    @default("[]") // JSON array of {id,start,end,text}
-  findings     String    @default("[]") // JSON array of NeutralityFinding
-  errorMessage String?
-  createdAt    DateTime  @default(now())
-  finishedAt   DateTime?
-  reviewedAt   DateTime?
+  id                String    @id
+  ownerWorkosUserId String?
+  status            String    @default("pending") // "pending" | "running" | "complete" | "failed"
+  source            String // "url" | "pdf" | "txt" | "paste"
+  sourceRef         String?
+  title             String?
+  text              String
+  language          String?
+  provider          String
+  model             String
+  textType          String? // informational | opinion | political_speech | advocacy | analysis | marketing | social_media
+  verdict           String    @default("pending") // neutral | partisan_lean | explicitly_partisan | manipulation | pending
+  confidence        Float     @default(0)
+  rationale         String?
+  sentences         String    @default("[]") // JSON array of {id,start,end,text}
+  findings          String    @default("[]") // JSON array of NeutralityFinding
+  errorMessage      String?
+  createdAt         DateTime  @default(now())
+  finishedAt        DateTime?
+  reviewedAt        DateTime?
+
+  @@index([ownerWorkosUserId, createdAt])
 }
 
 model Explanation {
-  id           String    @id
-  status       String    @default("pending") // "pending" | "running" | "complete" | "failed"
-  source       String // "url" | "pdf" | "txt" | "paste"
-  sourceRef    String?
-  title        String?
-  text         String
-  language     String?
-  provider     String
-  model        String
-  level        String    @default("undergrad") // eli5 | high_school | undergrad | expert
-  overview     String? // plain-language abstract of the whole paper at the chosen level
-  blocks       String    @default("[]") // JSON array of {id,start,end,text} paragraph blocks
-  findings     String    @default("[]") // JSON array of ExplainFinding {blockIds, role, explanation}
-  errorMessage String?
-  createdAt    DateTime  @default(now())
-  finishedAt   DateTime?
-  reviewedAt   DateTime?
+  id                String    @id
+  ownerWorkosUserId String?
+  status            String    @default("pending") // "pending" | "running" | "complete" | "failed"
+  source            String // "url" | "pdf" | "txt" | "paste"
+  sourceRef         String?
+  title             String?
+  text              String
+  language          String?
+  provider          String
+  model             String
+  level             String    @default("undergrad") // eli5 | high_school | undergrad | expert
+  overview          String? // plain-language abstract of the whole paper at the chosen level
+  blocks            String    @default("[]") // JSON array of {id,start,end,text} paragraph blocks
+  findings          String    @default("[]") // JSON array of ExplainFinding {blockIds, role, explanation}
+  errorMessage      String?
+  createdAt         DateTime  @default(now())
+  finishedAt        DateTime?
+  reviewedAt        DateTime?
+
+  @@index([ownerWorkosUserId, createdAt])
 }
 
 model PaperReview {
-  id               String    @id
-  status           String    @default("pending") // pending | running | complete | failed
-  stage            String    @default("ingest") // ingest | ledger | research | specs | verification | synthesis | self_critique | source_validation | quality_audit | complete
-  source           String    @default("pdf")
-  sourceRef        String?
-  title            String?
-  author           String?
-  venueTarget      String
-  venueProfile     String? // versioned resolved venue rubric, criteria, and official sources
-  reviewDate       String // YYYY-MM-DD, kept verbatim for deterministic export
-  language         String?
-  provider         String
-  model            String
-  reviewDepth      String    @default("standard") // standard | deep
-  parser           String? // liteparse | pdfjs
-  text             String
-  pages            String    @default("[]") // page-numbered LiteParse/PDF.js output
-  complexity       String    @default("[]") // per-page OCR/layout signals
-  ledger           String? // private structured claim/evidence ledger
-  research         String? // external published-literature memo + citations
-  specsReviews     String? // five private independent SPECS specialist artifacts
-  computationAudit String? // deterministic checks proposed by specialists
-  initialReview    String? // private first synthesis, retained for audit/debugging
-  sourceAudit      String? // URL reachability, title consistency, publication type
-  qualityAudit     String? // independent critic flags and finding decisions
-  retentionAudit   String? // deterministic specialist-finding retention gate
-  review           String? // final self-critiqued PaperReviewResult JSON
-  markdown         String? // deterministic export generated from final JSON
-  errorMessage     String?
-  createdAt        DateTime  @default(now())
-  finishedAt       DateTime?
-  reviewedAt       DateTime?
+  id                String    @id
+  ownerWorkosUserId String?
+  status            String    @default("pending") // pending | running | complete | failed
+  stage             String    @default("ingest") // ingest | ledger | research | specs | verification | synthesis | self_critique | source_validation | quality_audit | complete
+  source            String    @default("pdf")
+  sourceRef         String?
+  title             String?
+  author            String?
+  venueTarget       String
+  venueProfile      String? // versioned resolved venue rubric, criteria, and official sources
+  reviewDate        String // YYYY-MM-DD, kept verbatim for deterministic export
+  language          String?
+  provider          String
+  model             String
+  reviewDepth       String    @default("standard") // standard | deep
+  parser            String? // liteparse | pdfjs
+  text              String
+  pages             String    @default("[]") // page-numbered LiteParse/PDF.js output
+  complexity        String    @default("[]") // per-page OCR/layout signals
+  ledger            String? // private structured claim/evidence ledger
+  research          String? // external published-literature memo + citations
+  specsReviews      String? // five private independent SPECS specialist artifacts
+  computationAudit  String? // deterministic checks proposed by specialists
+  initialReview     String? // private first synthesis, retained for audit/debugging
+  sourceAudit       String? // URL reachability, title consistency, publication type
+  qualityAudit      String? // independent critic flags and finding decisions
+  retentionAudit    String? // deterministic specialist-finding retention gate
+  review            String? // final self-critiqued PaperReviewResult JSON
+  markdown          String? // deterministic export generated from final JSON
+  errorMessage      String?
+  createdAt         DateTime  @default(now())
+  finishedAt        DateTime?
+  reviewedAt        DateTime?
+
+  @@index([ownerWorkosUserId, createdAt])
 }
 
 model VerdictFeedback {
@@ -181,25 +302,28 @@ model ClaimVerdict {
 }
 
 model FactCheck {
-  id               String    @id
-  status           String    @default("pending") // "pending" | "running" | "complete" | "failed"
-  source           String // "url" | "pdf" | "txt" | "paste"
-  sourceRef        String? // URL or filename
-  title            String?
-  text             String // full normalized text
-  language         String? // "pt" | "en" | "es"
-  provider         String // "openai" (mapped from MODEL_CATALOG family)
-  model            String // catalog id, e.g. "gpt-5.4-mini"
-  sentences        String    @default("[]") // JSON array of {id,start,end,text}
-  claims           String    @default("[]") // JSON array of {id, sentenceIds, statement, type, rationale}
-  verdicts         String    @default("[]") // JSON array of {claimId, verdict, confidence, rationale, sources, model}
-  refreshCounts    String    @default("{}") // JSON map { claimId: count } — each verify call bumps the per-claim counter
-  verifyStatus     String    @default("none") // "none" | "running" | "complete" | "failed"
-  verifyModel      String? // model id used for verification, e.g. "sonar-reasoning"
-  verifyStartedAt  DateTime?
-  verifyFinishedAt DateTime?
-  errorMessage     String?
-  createdAt        DateTime  @default(now())
-  finishedAt       DateTime?
-  reviewedAt       DateTime? // null = not yet human-reviewed; viewer shows a warning banner until set
+  id                String    @id
+  ownerWorkosUserId String?
+  status            String    @default("pending") // "pending" | "running" | "complete" | "failed"
+  source            String // "url" | "pdf" | "txt" | "paste"
+  sourceRef         String? // URL or filename
+  title             String?
+  text              String // full normalized text
+  language          String? // "pt" | "en" | "es"
+  provider          String // "openai" (mapped from MODEL_CATALOG family)
+  model             String // catalog id, e.g. "gpt-5.4-mini"
+  sentences         String    @default("[]") // JSON array of {id,start,end,text}
+  claims            String    @default("[]") // JSON array of {id, sentenceIds, statement, type, rationale}
+  verdicts          String    @default("[]") // JSON array of {claimId, verdict, confidence, rationale, sources, model}
+  refreshCounts     String    @default("{}") // JSON map { claimId: count } — each verify call bumps the per-claim counter
+  verifyStatus      String    @default("none") // "none" | "running" | "complete" | "failed"
+  verifyModel       String? // model id used for verification, e.g. "sonar-reasoning"
+  verifyStartedAt   DateTime?
+  verifyFinishedAt  DateTime?
+  errorMessage      String?
+  createdAt         DateTime  @default(now())
+  finishedAt        DateTime?
+  reviewedAt        DateTime? // null = not yet human-reviewed; viewer shows a warning banner until set
+
+  @@index([ownerWorkosUserId, createdAt])
 }

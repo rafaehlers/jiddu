@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable react-hooks/refs -- DOM refs are read only in effects and interaction/ref callbacks. */
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { FALLACY_BY_ID } from "@/lib/fallacies";
@@ -11,9 +12,9 @@ import { FindingModal } from "@/components/finding-modal";
 import { MobileHintModal } from "@/components/mobile-hint-modal";
 import { ShareLinkBar } from "@/components/share-link-bar";
 import { ExportPdfButton } from "@/components/export-pdf-button";
+import { useMobileHint } from "@/lib/mobile-hint";
 
 const MOBILE_BREAKPOINT = 1024; // matches Tailwind's `lg`
-const MOBILE_HINT_KEY = "mobileHintSeen";
 
 type Props = {
   id: string;
@@ -64,30 +65,7 @@ export function AnalysisView({
   const [active, setActive] = useState<string | null>(null);
   const [modalFallacyId, setModalFallacyId] = useState<string | null>(null);
   const [findingForModal, setFindingForModal] = useState<FindingWithKey | null>(null);
-  // Must start as `false` on both server and client so hydration produces
-  // the same HTML. The lazy-initializer pattern (checking window.innerWidth
-  // and localStorage directly in useState) runs during client hydration —
-  // not after it — which made server ("false") and client ("maybe true")
-  // disagree and triggered React error #418. Move the check to a useEffect
-  // so it only fires after hydration is complete.
-  const [showHint, setShowHint] = useState<boolean>(false);
-  useEffect(() => {
-    try {
-      if (
-        window.innerWidth < MOBILE_BREAKPOINT &&
-        localStorage.getItem(MOBILE_HINT_KEY) !== "1"
-      ) {
-        setShowHint(true);
-      }
-    } catch {}
-  }, []);
-
-  function dismissHint() {
-    setShowHint(false);
-    try {
-      localStorage.setItem(MOBILE_HINT_KEY, "1");
-    } catch {}
-  }
+  const { showHint, dismissHint } = useMobileHint();
   const textColRef = useRef<HTMLDivElement>(null);
   const commentsColRef = useRef<HTMLDivElement>(null);
   const scoreRef = useRef<HTMLDivElement>(null);

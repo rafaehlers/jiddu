@@ -10,11 +10,31 @@ import { bucketFromSettings, loadSettings } from "@/lib/settings";
 import type { Lang } from "@/lib/fallacies";
 import { resolveVenueProfile } from "@/lib/venues";
 import type { ReviewDepth } from "@/lib/paper-review-audit-schema";
+import {
+  isAccessResponse,
+  requireWebAnalysisAccess,
+} from "@/lib/web-analysis-access";
+import {
+  creditsForModels,
+  paperReviewMaximumModels,
+} from "@/lib/jiddu-credit-rates";
+import {
+  settleJidduCreditReservationFromUsage,
+} from "@/lib/jiddu-credits";
+import {
+  isCreditResponse,
+  reserveWebAnalysisCredits,
+} from "@/lib/web-credit-billing";
+import { prisma } from "@/lib/db";
+import type { OpenRouterUsage } from "@/lib/openrouter-usage";
 
 export const runtime = "nodejs";
 export const maxDuration = 900;
 
 export async function POST(req: NextRequest) {
+  const access = await requireWebAnalysisAccess();
+  if (isAccessResponse(access)) return access;
+
   const settings = await loadSettings();
   const rl = consume(
     `review:${ipFromRequest(req)}`,
@@ -59,15 +79,18 @@ export async function POST(req: NextRequest) {
   const reviewDate =
     normalizeDate(normalizeString(form.get("reviewDate"))) ??
     new Date().toISOString().slice(0, 10);
+  const selectedModel = normalizeString(form.get("model")) ?? "gpt-5.4-mini";
+  const reviewDepth = normalizeReviewDepth(form.get("reviewDepth"));
 
   let prepared;
   try {
     prepared = await preparePaperReview({
       buffer: await file.arrayBuffer(),
       filename,
+      ownerWorkosUserId: access.userId,
       lang,
-      modelId: normalizeString(form.get("model")),
-      reviewDepth: normalizeReviewDepth(form.get("reviewDepth")),
+      modelId: selectedModel,
+      reviewDepth,
       venueProfile,
       reviewDate,
     });
@@ -78,9 +101,47 @@ export async function POST(req: NextRequest) {
     return jsonError("PDF ingestion failed.", 422, "pdf_ingestion_failed");
   }
 
+  const maximumModels = paperReviewMaximumModels({
+    depth: prepared.reviewDepth,
+    selectedModel: prepared.modelId,
+    deepModel: process.env.PAPER_REVIEW_DEEP_MODEL,
+    criticModel: process.env.PAPER_REVIEW_CRITIC_MODEL,
+  });
+  const reservation = await reserveWebAnalysisCredits(access, {
+    amount: creditsForModels(maximumModels),
+    feature:
+      prepared.reviewDepth === "deep" ? "review_deep" : "review_standard",
+    resourceId: prepared.id,
+    metadata: {
+      depth: prepared.reviewDepth,
+      selectedModel: prepared.modelId,
+      maximumModels,
+    },
+  });
+  if (isCreditResponse(reservation)) {
+    await prisma.paperReview.delete({ where: { id: prepared.id } });
+    return reservation;
+  }
+
   const encoder = new TextEncoder();
   const abortController = new AbortController();
   let streamOpen = true;
+  const billableCalls: { operation: string; model: string }[] = [];
+  const usages: OpenRouterUsage[] = [];
+  let settled = false;
+  const settle = async () => {
+    if (settled) return;
+    settled = true;
+    await settleJidduCreditReservationFromUsage(
+      reservation,
+      {
+        usages,
+        fallbackModels: billableCalls.map((call) => call.model),
+        resourceId: prepared.id,
+        metadata: { calls: billableCalls },
+      },
+    );
+  };
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -108,12 +169,19 @@ export async function POST(req: NextRequest) {
       try {
         const review = await runPreparedPaperReview(prepared, {
           signal: abortController.signal,
+          apiKey: access.apiKey,
           callbacks: {
             onStage(event) {
               send("stage", event);
             },
             onStageDone(event) {
               send("chunkDone", event);
+            },
+            onBillableCall(event) {
+              billableCalls.push(event);
+            },
+            onUsage(usage) {
+              usages.push(usage);
             },
           },
         });
@@ -122,18 +190,21 @@ export async function POST(req: NextRequest) {
           recommendation: review.recommendation,
           weaknessCount: review.weaknesses.length,
         });
+        await settle();
         if (streamOpen) controller.close();
         streamOpen = false;
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         send("error", { error: message });
+        await settle();
         if (streamOpen) controller.close();
         streamOpen = false;
       }
     },
-    cancel() {
+    async cancel() {
       streamOpen = false;
       abortController.abort();
+      await settle();
     },
   });
 

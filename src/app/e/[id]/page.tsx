@@ -9,6 +9,7 @@ import { ScrollIndicator } from "@/components/scroll-indicator";
 import { ExplainView } from "@/components/explain-view";
 import type { Block } from "@/lib/paragraphs";
 import type { ExplainFinding, ExplainLevel } from "@/lib/explain-schema";
+import { analysisSocialMetadata } from "@/lib/social-metadata";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -22,20 +23,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const desc = e.overview
     ? e.overview.slice(0, 200)
     : "Explained paragraph by paragraph with Jiddu.";
-  return {
+  return analysisSocialMetadata({
     title: `${title} · Jiddu explainer`,
     description: desc,
-    openGraph: {
-      title: `${title} · Jiddu explainer`,
-      description: desc,
-      type: "article",
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: `${title} · Jiddu explainer`,
-      description: desc,
-    },
-  };
+    path: `/e/${id}`,
+  });
 }
 
 export default async function ExplainViewerPage({ params }: Props) {

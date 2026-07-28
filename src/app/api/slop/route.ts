@@ -14,6 +14,19 @@ import type { IngestedDocument } from "@/lib/ingest/url";
 import { IngestError } from "@/lib/ingest/errors";
 import type { SlopFinding } from "@/lib/slop-schema";
 import type { Lang } from "@/lib/fallacies";
+import {
+  isAccessResponse,
+  requireWebAnalysisAccess,
+} from "@/lib/web-analysis-access";
+import {
+  isCreditResponse,
+  reserveWebAnalysisCredits,
+} from "@/lib/web-credit-billing";
+import {
+  maxCreditsForCalls,
+} from "@/lib/jiddu-credit-rates";
+import { settleJidduCreditReservationFromUsage } from "@/lib/jiddu-credits";
+import type { OpenRouterUsage } from "@/lib/openrouter-usage";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -27,6 +40,9 @@ const MAX_SOURCE_REF_CHARS = 2_000;
 // fallback and char-weighted score aggregation — running the slop-pattern
 // prompt instead and persisting to the SlopCheck table.
 export async function POST(req: NextRequest) {
+  const access = await requireWebAnalysisAccess();
+  if (isAccessResponse(access)) return access;
+
   const settings = await loadSettings();
   // Cost-equivalent to fallacy detection (one LLM call per chunk, no web
   // search), so it shares the analyze rate bucket — same as neutrality.
@@ -99,17 +115,27 @@ export async function POST(req: NextRequest) {
 
   let llm;
   try {
-    llm = getProvider(modelChain[0]);
+    llm = getProvider(modelChain[0], access.apiKey);
   } catch (err) {
     return jsonError(err instanceof Error ? err.message : "Provider error", 400);
   }
 
   const id = nanoid(10);
   const chunks = chunkSentences(sentences);
+  const creditReservation = await reserveWebAnalysisCredits(access, {
+    amount: maxCreditsForCalls(modelChain, chunks.length),
+    feature: "slop",
+    resourceId: id,
+    metadata: { modelChain, chunkCount: chunks.length },
+  });
+  if (isCreditResponse(creditReservation)) return creditReservation;
+  const billableModels: string[] = [];
+  const usages: OpenRouterUsage[] = [];
 
   await prisma.slopCheck.create({
     data: {
       id,
+      ownerWorkosUserId: access.userId ?? null,
       status: "running",
       source: doc.source,
       sourceRef: cap(doc.sourceRef, MAX_SOURCE_REF_CHARS),
@@ -171,9 +197,14 @@ export async function POST(req: NextRequest) {
               (model) =>
                 llm.analyzeSlopStream(
                   { sentences: chunk.sentences, lang },
-                  { model, signal: abortController.signal },
+                  {
+                    model,
+                    signal: abortController.signal,
+                    onUsage: (usage) => usages.push(usage),
+                  },
                 ),
               abortController.signal,
+              (model) => billableModels.push(model),
             )) {
               if (event.type === "finding") {
                 allFindings.push(event.finding);
@@ -215,6 +246,15 @@ export async function POST(req: NextRequest) {
           where: { id },
           data: { status: "failed", errorMessage: message, finishedAt: new Date() },
         });
+        await settleJidduCreditReservationFromUsage(
+          creditReservation,
+          {
+            usages,
+            fallbackModels: billableModels,
+            resourceId: id,
+            metadata: { models: billableModels, completedChunks: 0 },
+          },
+        );
         send("error", { error: message });
         controller.close();
         return;
@@ -243,12 +283,34 @@ export async function POST(req: NextRequest) {
           finishedAt: new Date(),
         },
       });
+      await settleJidduCreditReservationFromUsage(
+        creditReservation,
+        {
+          usages,
+          fallbackModels: billableModels,
+          resourceId: id,
+          metadata: {
+            models: billableModels,
+            completedChunks: chunkResults.length,
+          },
+        },
+      );
 
       send("done", { id, score: finalScore, summary: finalSummary });
       controller.close();
     },
-    cancel() {
+    async cancel() {
       abortController.abort();
+      await settleJidduCreditReservationFromUsage(
+        creditReservation,
+        {
+          usages,
+          fallbackModels: billableModels,
+          resourceId: id,
+          note: "Client disconnected before completion.",
+          metadata: { models: billableModels },
+        },
+      );
     },
   });
 

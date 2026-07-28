@@ -1,72 +1,18 @@
 import Link from "next/link";
-import { cookies } from "next/headers";
+import {
+  AdminPage as AdminPageLayout,
+  AdminTableShell,
+} from "@/components/admin/admin-page";
 import { prisma } from "@/lib/db";
-import { SiteHeader } from "@/components/site-header";
-import { SiteFooter } from "@/components/site-footer";
-import { ADMIN_COOKIE_NAME, adminTokenIsValid } from "./auth";
-import { loginAction, logoutAction } from "./actions";
 import { toggleReviewedAction } from "./review-actions";
 import { getOpenRouterCredits, isCreditsSnapshot } from "@/lib/openrouter-credits";
+import { getWorkOSUserEmails } from "@/lib/workos-users";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Admin · Jiddu", robots: { index: false, follow: false } };
 
-type SearchParams = Promise<{ error?: string }>;
-
-export default async function AdminPage({
-  searchParams,
-}: {
-  searchParams: SearchParams;
-}) {
-  const { error } = await searchParams;
-  const jar = await cookies();
-  const authed = adminTokenIsValid(jar.get(ADMIN_COOKIE_NAME)?.value);
-
-  return (
-    <>
-      <SiteHeader variant="guide" />
-      <main className="mx-auto max-w-7xl w-full px-4 sm:px-6 py-8 flex-1">
-        {authed ? <AdminList /> : <LoginForm error={error} />}
-      </main>
-      <SiteFooter />
-    </>
-  );
-}
-
-function LoginForm({ error }: { error?: string }) {
-  const message =
-    error === "wrong"
-      ? "Wrong password."
-      : error === "not_configured"
-        ? "ADMIN_PASSWORD is not set on the server."
-        : null;
-  return (
-    <div className="max-w-sm mx-auto mt-12">
-      <h1 className="font-serif text-3xl mb-2">Admin</h1>
-      <p className="text-sm text-muted mb-6">Enter the admin password to view all analyses.</p>
-      <form action={loginAction} className="flex flex-col gap-3">
-        <input
-          type="password"
-          name="password"
-          required
-          autoFocus
-          autoComplete="current-password"
-          placeholder="Password"
-          aria-label="Password"
-          className="w-full bg-background border border-rule rounded-md px-3 py-2 outline-none focus:border-accent"
-        />
-        {message && (
-          <p className="text-sm text-[var(--severity-high)]">{message}</p>
-        )}
-        <button
-          type="submit"
-          className="px-4 py-2 rounded-md bg-accent text-white font-medium hover:opacity-90 transition-opacity"
-        >
-          Unlock
-        </button>
-      </form>
-    </div>
-  );
+export default async function AdminPage() {
+  return <AdminList />;
 }
 
 type AdminRow = {
@@ -85,6 +31,7 @@ type AdminRow = {
   model: string;
   status: string;
   signal: string; // right-aligned number column: score for fallacy, claim count for factcheck
+  ownerWorkosUserId: string | null;
   createdAt: Date;
   reviewedAt: Date | null;
 };
@@ -104,6 +51,7 @@ async function AdminList() {
         model: true,
         score: true,
         status: true,
+        ownerWorkosUserId: true,
         createdAt: true,
         reviewedAt: true,
       },
@@ -119,6 +67,7 @@ async function AdminList() {
         model: true,
         claims: true,
         status: true,
+        ownerWorkosUserId: true,
         createdAt: true,
         reviewedAt: true,
       },
@@ -135,6 +84,7 @@ async function AdminList() {
         findings: true,
         verdict: true,
         status: true,
+        ownerWorkosUserId: true,
         createdAt: true,
         reviewedAt: true,
       },
@@ -151,6 +101,7 @@ async function AdminList() {
         findings: true,
         level: true,
         status: true,
+        ownerWorkosUserId: true,
         createdAt: true,
         reviewedAt: true,
       },
@@ -166,6 +117,7 @@ async function AdminList() {
         model: true,
         score: true,
         status: true,
+        ownerWorkosUserId: true,
         createdAt: true,
         reviewedAt: true,
       },
@@ -181,6 +133,7 @@ async function AdminList() {
         model: true,
         status: true,
         review: true,
+        ownerWorkosUserId: true,
         createdAt: true,
         reviewedAt: true,
       },
@@ -188,9 +141,6 @@ async function AdminList() {
   ]);
 
   const credits = await getOpenRouterCredits();
-  const openFeedbackCount = await prisma.verdictFeedback.count({
-    where: { status: "open" },
-  });
 
   const rows: AdminRow[] = [
     ...analyses.map<AdminRow>((a) => ({
@@ -203,6 +153,7 @@ async function AdminList() {
       model: a.model,
       status: a.status,
       signal: String(a.score ?? 0),
+      ownerWorkosUserId: a.ownerWorkosUserId,
       createdAt: a.createdAt,
       reviewedAt: a.reviewedAt,
     })),
@@ -224,6 +175,7 @@ async function AdminList() {
         model: f.model,
         status: f.status,
         signal: String(claimCount),
+        ownerWorkosUserId: f.ownerWorkosUserId,
         createdAt: f.createdAt,
         reviewedAt: f.reviewedAt,
       };
@@ -248,6 +200,7 @@ async function AdminList() {
         // Show the verdict on the signal column for neutrality rows; it's
         // more meaningful than a raw issue count.
         signal: `${findingsCount} · ${n.verdict.replace(/_/g, " ")}`,
+        ownerWorkosUserId: n.ownerWorkosUserId,
         createdAt: n.createdAt,
         reviewedAt: n.reviewedAt,
       };
@@ -271,6 +224,7 @@ async function AdminList() {
         status: e.status,
         // Paragraph count + the reading level chosen for the explanation.
         signal: `${findingsCount} · ${e.level}`,
+        ownerWorkosUserId: e.ownerWorkosUserId,
         createdAt: e.createdAt,
         reviewedAt: e.reviewedAt,
       };
@@ -285,6 +239,7 @@ async function AdminList() {
       model: s.model,
       status: s.status,
       signal: String(s.score ?? 0),
+      ownerWorkosUserId: s.ownerWorkosUserId,
       createdAt: s.createdAt,
       reviewedAt: s.reviewedAt,
     })),
@@ -311,66 +266,23 @@ async function AdminList() {
         model: review.model,
         status: review.status,
         signal,
+        ownerWorkosUserId: review.ownerWorkosUserId,
         createdAt: review.createdAt,
         reviewedAt: review.reviewedAt,
       };
     }),
   ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  const userEmails = await getWorkOSUserEmails(
+    rows.map((row) => row.ownerWorkosUserId),
+  );
 
   return (
-    <div>
-      <div className="flex items-start justify-between mb-6 gap-4 flex-wrap">
-        <h1 className="font-serif text-3xl">Analyses</h1>
-        <div className="flex items-center gap-3 flex-wrap">
-          <Link
-            href="/admin/metrics"
-            className="text-sm px-3 py-1.5 rounded-md border border-rule text-muted hover:text-foreground transition-colors"
-          >
-            Metrics →
-          </Link>
-          <Link
-            href="/admin/feedback"
-            className="text-sm px-3 py-1.5 rounded-md border border-rule text-muted hover:text-foreground transition-colors inline-flex items-center gap-2"
-          >
-            Feedback
-            {openFeedbackCount > 0 && (
-              <span className="inline-flex items-center justify-center text-xs px-1.5 py-0.5 rounded-full bg-[var(--severity-high)] text-background min-w-[1.25rem]">
-                {openFeedbackCount}
-              </span>
-            )}
-            <span>→</span>
-          </Link>
-          <Link
-            href="/admin/settings"
-            className="text-sm px-3 py-1.5 rounded-md border border-rule text-muted hover:text-foreground transition-colors"
-          >
-            Settings →
-          </Link>
-          <Link
-            href="/admin/cache"
-            className="text-sm px-3 py-1.5 rounded-md border border-rule text-muted hover:text-foreground transition-colors"
-          >
-            Cache →
-          </Link>
-          <Link
-            href="/admin/api-keys"
-            className="text-sm px-3 py-1.5 rounded-md border border-rule text-muted hover:text-foreground transition-colors"
-          >
-            API keys →
-          </Link>
-          <form action={logoutAction}>
-            <button
-              type="submit"
-              className="text-sm px-3 py-1.5 rounded-md border border-rule text-muted hover:text-foreground transition-colors"
-            >
-              Log out
-            </button>
-          </form>
-        </div>
-      </div>
-
+    <AdminPageLayout
+      title="Analyses"
+      description="Review every analysis, its owner, status and human-review state."
+    >
       {/* Compact dashboard row — credits + counts per analysis kind. */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mb-6">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
         <CreditsStat credits={credits} />
         <Stat label="Total" value={rows.length} />
         <Stat label="Fallacies" value={analyses.length} accent="amber" />
@@ -385,7 +297,7 @@ async function AdminList() {
         <Stat label="Reviews" value={paperReviews.length} accent="red" />
       </div>
 
-      <div className="overflow-x-auto border border-rule rounded-lg">
+      <AdminTableShell>
         <table className="w-full text-sm">
           <thead className="bg-paper">
             <tr className="text-left text-muted">
@@ -402,12 +314,13 @@ async function AdminList() {
               <th className="px-3 py-2 font-medium" title="Mark as human-reviewed (removes the warning banner on the viewer)">
                 Rev.
               </th>
+              <th className="px-3 py-2 font-medium">User</th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 && (
               <tr>
-                <td colSpan={9} className="px-3 py-8 text-center text-muted">
+                <td colSpan={10} className="px-3 py-8 text-center text-muted">
                   No analyses yet.
                 </td>
               </tr>
@@ -473,13 +386,28 @@ async function AdminList() {
                       </button>
                     </form>
                   </td>
+                  <td
+                    className="max-w-56 px-3 py-2 text-muted"
+                    title={
+                      r.ownerWorkosUserId
+                        ? userEmails.get(r.ownerWorkosUserId) ??
+                          r.ownerWorkosUserId
+                        : "Legacy analysis without an owner"
+                    }
+                  >
+                    <span className="block truncate">
+                      {r.ownerWorkosUserId
+                        ? userEmails.get(r.ownerWorkosUserId) ?? "Unavailable"
+                        : "—"}
+                    </span>
+                  </td>
                 </tr>
               );
             })}
           </tbody>
         </table>
-      </div>
-    </div>
+      </AdminTableShell>
+    </AdminPageLayout>
   );
 }
 

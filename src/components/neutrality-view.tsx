@@ -9,7 +9,6 @@ import {
   Quote,
   ArrowRightLeft,
   GitBranch,
-  Eye,
   EyeOff,
   Scale,
   Compass,
@@ -380,7 +379,7 @@ export function NeutralityView({
                       </div>
                     </div>
                     <blockquote className="text-sm leading-relaxed italic border-l-2 border-rule pl-3 py-0.5">
-                      "{f.quote}"
+                      &ldquo;{f.quote}&rdquo;
                     </blockquote>
                     <p className="text-xs text-muted leading-snug">
                       {f.explanation}

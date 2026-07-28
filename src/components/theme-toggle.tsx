@@ -1,32 +1,33 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { Moon, Sun } from "lucide-react";
 import { useI18n } from "@/lib/i18n/provider";
 
 type Theme = "light" | "dark";
 
+function readTheme(): Theme {
+  return document.documentElement.classList.contains("light") ? "light" : "dark";
+}
+
+function subscribeTheme(notify: () => void): () => void {
+  const observer = new MutationObserver(notify);
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["class"],
+  });
+  return () => observer.disconnect();
+}
+
 export function ThemeToggle() {
   const { t } = useI18n();
 
-  // Must initialize as "dark" (the default) on both server and client.
-  // The themeInitScript in layout.tsx adds the ".light" class to <html>
-  // before React hydrates, so a lazy-initializer that reads
-  // document.documentElement.classList would return "light" for those
-  // users *during* hydration — server said "dark", client says "light",
-  // React throws #418. Move the DOM read to useEffect so it only runs
-  // after hydration is complete.
-  const [theme, setTheme] = useState<Theme>("dark");
-
-  useEffect(() => {
-    if (document.documentElement.classList.contains("light")) {
-      setTheme("light");
-    }
-  }, []);
+  // The server snapshot stays dark so hydration matches. Once subscribed,
+  // the DOM class installed by the pre-hydration script is the source of truth.
+  const theme = useSyncExternalStore(subscribeTheme, readTheme, () => "dark");
 
   function toggle() {
     const next: Theme = theme === "light" ? "dark" : "light";
-    setTheme(next);
     localStorage.setItem("theme", next);
     document.documentElement.classList.toggle("light", next === "light");
   }

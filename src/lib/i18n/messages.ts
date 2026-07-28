@@ -12,6 +12,7 @@ export type Messages = {
   privacy: string;
   privacy_body: string;
   see_demo: string;
+  see_demo_for: (feature: string) => string;
   see_demo_hint: string;
   bench_badge_label: string;
   bench_badge_link: string;
@@ -44,6 +45,13 @@ export type Messages = {
   analyze: string;
   starting: string;
   form_hint: string;
+  auth_required_title: string;
+  auth_required_hint: string;
+  auth_sign_in: string;
+  auth_create_account: string;
+  credits_required_title: string;
+  credits_required_hint: string;
+  credits_open_account: string;
 
   // Loading
   loading_starting: string;
@@ -301,7 +309,6 @@ export type Messages = {
   nav_fallacies: string;
   nav_slop_patterns: string;
   nav_benchmark: string;
-  nav_source: string;
 
   // Theme
   theme_to_dark: string;
@@ -417,6 +424,11 @@ const en: Messages = {
   privacy_body:
     "your content — including selected PDF page images when visual inspection is needed — is sent to the chosen model via OpenRouter and stored locally under a shareable id.",
   see_demo: "See a demo",
+  see_demo_for: (feature) => {
+    const normalized = feature.toLocaleLowerCase("en-US");
+    const article = /^[aeiou]/i.test(normalized) ? "an" : "a";
+    return `See ${article} ${normalized} demo`;
+  },
   see_demo_hint: "Want a quick look without running an analysis?",
   bench_badge_label:
     "Pipeline validated · 67.5% match with PolitiFact in a 200-claim benchmark",
@@ -453,6 +465,15 @@ const en: Messages = {
   analyze: "Analyze",
   starting: "Starting…",
   form_hint: "Comments appear as the analysis runs. Don't close the page.",
+  auth_required_title: "Sign in required",
+  auth_required_hint:
+    "Create a Jiddu account or sign in to continue. Signed-in accounts use Jiddu Credits or included platform access.",
+  auth_sign_in: "Sign in",
+  auth_create_account: "Create account",
+  credits_required_title: "Jiddu credits required",
+  credits_required_hint:
+    "This analysis needs more Jiddu Credits. Open your account to check the balance and credit activity.",
+  credits_open_account: "View account",
 
   loading_starting: "Starting analysis",
   loading_reading: "Reading the source",
@@ -733,31 +754,31 @@ const en: Messages = {
       ],
     },
     {
-      title: "Authentication",
+      title: "REST API authentication",
       paragraphs: [
-        "Send your API key in the `X-Jiddu-Key` header. Keys are issued by the operator — see “Getting a key” below.",
+        "The REST API is separate from MCP OAuth. Send its API key in the `X-Jiddu-Key` header. Every key is assigned to one verified WorkOS account and follows that account's funding: included platform access or Jiddu Credits. Keys without an owner are disabled. See “Getting a REST API key” below.",
         "```\ncurl -X POST https://jiddu.app/api/v1/detect-fallacies \\\n  -H \"content-type: application/json\" \\\n  -H \"X-Jiddu-Key: YOUR_KEY\" \\\n  -d '{\"text\": \"Everyone agrees this is best, so critics must be fools.\"}'\n```",
       ],
     },
     {
       title: "MCP server",
       paragraphs: [
-        "For agents, connect to the hosted Jiddu MCP server by URL — nothing to install or clone. It exposes the five text tools plus `start_adversarial_review` and `get_adversarial_review`, and bridges to your MCP client (e.g. Claude Desktop) via the public `mcp-remote` helper:",
-        "```\n{\n  \"mcpServers\": {\n    \"jiddu\": {\n      \"command\": \"npx\",\n      \"args\": [\"-y\", \"mcp-remote\", \"https://jiddu.app/api/mcp\", \"--header\", \"X-Jiddu-Key:your-key-here\"]\n    }\n  }\n}\n```",
-        "Machine-oriented docs — when to use each tool, response shapes, and how to chain them — live in [AGENT.md](https://github.com/rafaehlers/jiddu/blob/main/packages/jiddu-mcp/AGENT.md).",
+        "For agents, connect directly to `https://jiddu.app/api/mcp`. The server exposes the five text tools plus `start_adversarial_review` and `get_adversarial_review`. Compatible MCP clients discover WorkOS AuthKit, open Jiddu sign-in and receive a resource-scoped OAuth token automatically. Accounts on the platform allowlist receive included access; every other tool call reserves and spends Jiddu Credits from the signed-in account.",
+        "Clients that still require a local stdio bridge can use `mcp-remote` without a custom authentication header; it handles the OAuth redirect:\n```\n{\n  \"mcpServers\": {\n    \"jiddu\": {\n      \"command\": \"npx\",\n      \"args\": [\"-y\", \"mcp-remote\", \"https://jiddu.app/api/mcp\"]\n    }\n  }\n}\n```",
+        "Machine-oriented setup guidance, response contracts and chaining examples are included on this page.",
       ],
     },
     {
       title: "Limits & reliability",
       paragraphs: [
-        "Text tools are capped at 2000 characters per request. Review jobs accept one public or uploaded PDF up to 25 MB and reject papers above 300,000 extracted characters rather than truncating them. Rate limits are per key; exceeding them returns HTTP 429 with a `retry_after_seconds` field. Outputs are automated and can be wrong — treat them as signals to prompt verification, not as final authority.",
-        "Quality is measured against fixed test sets published in the repo: [evals/report.md](https://github.com/rafaehlers/jiddu/blob/main/evals/report.md).",
+        "Text tools are capped at 2000 characters per request. Review jobs accept one public or uploaded PDF up to 25 MB and reject papers above 300,000 extracted characters rather than truncating them. REST rate limits are per API key; hosted MCP limits are per WorkOS user. Exceeding them returns HTTP 429 with a `retry_after_seconds` field. Outputs are automated and can be wrong — treat them as signals to prompt verification, not as final authority.",
+        "Quality is measured against fixed internal test sets and the benchmark summaries published on this site.",
       ],
     },
     {
-      title: "Getting a key",
+      title: "Getting a REST API key",
       paragraphs: [
-        "Keys are issued manually for now. Open an issue on [GitHub](https://github.com/rafaehlers/jiddu) to request one.",
+        "Keys are issued manually for now and assigned to your verified WorkOS account. Contact the operator through the channel listed on the Terms page to request one. The secret is shown once and stored only as a sha256 hash.",
       ],
     },
   ],
@@ -798,7 +819,7 @@ const en: Messages = {
   legal_title: "Terms, privacy and disclaimers",
   legal_subtitle:
     "Read this before using Jiddu, especially before sharing an analysis publicly.",
-  legal_last_updated: "Last updated: 2026-07-27",
+  legal_last_updated: "Last updated: 2026-07-28",
   legal_sections: [
     {
       title: "1. What Jiddu does",
@@ -834,7 +855,8 @@ const en: Messages = {
     {
       title: "5. Privacy",
       paragraphs: [
-        "Each completed analysis or paper review receives an unlisted share URL and is stored on a server in Brazil. Anyone with the URL can view the final result, but these pages are not enumerated in the public sitemap. There are no user accounts; private intermediate review stages are not exposed in the public viewer.",
+        "Each completed analysis or paper review receives an unlisted share URL and is stored on a server in Brazil. Anyone with the URL can view the final result, but these pages are not enumerated in the public sitemap. Signed-in users can see analyses associated with their account, but the share URL itself remains accessible to anyone who has it; private intermediate review stages are not exposed in the public viewer.",
+        "Authentication is provided by WorkOS AuthKit. Jiddu receives the account identity needed to maintain the session, authorize MCP clients and associate operator-issued REST keys, credit balances and usage with the correct account. REST secrets are shown once and stored only as hashes. Model-provider credentials are managed by Jiddu and are never exposed to browser JavaScript, REST clients or MCP clients.",
         "Venue autocomplete sends only the venue query — not the manuscript — to the public [DBLP](https://dblp.org) venue search. The literature-research stage searches public scholarly sources using technical claims from the manuscript; prompts prohibit searching by paper title, author name or other manuscripts by the same authors.",
         "We log the request IP for rate-limiting and abuse detection. We do not sell or share that information.",
         "Page traffic is measured via Google Analytics (gtag.js).",
@@ -848,20 +870,20 @@ const en: Messages = {
         "The slop detector's starting taxonomy comes from Peter Yang's MIT-licensed [no-ai-slop](https://github.com/petergyang/no-ai-slop) editing skill. Jiddu provides its own catalog wording, translations and detection prompt, and flags observable patterns rather than authorship.",
         "Jiddu is not affiliated with those research groups, DBLP, or any venue whose criteria it summarizes. References and official venue pages are cited so users can audit the methodology and the standard applied.",
         "The fact-check pipeline has been benchmarked against the [PolitiFact](https://www.politifact.com) human-labeled corpus (via the [LIAR2 dataset](https://github.com/chengxuphd/liar2), Apache-2.0). On 200 claims from PolitiFact's polar buckets, Jiddu's verdict matched the human verdict in 67.5% of cases overall and 81.3% on the unambiguous true / false / pants-on-fire buckets, with strict polar disagreement in only 4.5%. Full methodology, confusion matrix and disagreement analysis at [docs/benchmark-politifact.md](/benchmark).",
-        "Paper review has a separate [30-case synthetic SPECS benchmark](https://github.com/rafaehlers/jiddu/blob/main/evals/paper-review/report.md). GPT-5.4 mini and GPT-5.5 detected all 30 injected defects; GPT-5.5 returned 30.6% fewer, more consolidated findings. The set reached a ceiling and does not establish accuracy on complete real-world papers.",
+        "Paper review has a separate 30-case synthetic SPECS benchmark. GPT-5.4 mini and GPT-5.5 detected all 30 injected defects; GPT-5.5 returned 30.6% fewer, more consolidated findings. The set reached a ceiling and does not establish accuracy on complete real-world papers.",
       ],
     },
     {
       title: "7. Contact",
       paragraphs: [
-        "Operator: Rafael de Menezes Ehlers. For takedown requests, corrections, or other concerns, open an issue on [GitHub](https://github.com/rafaehlers/jiddu).",
+        "Operator: Rafael de Menezes Ehlers. For takedown requests, corrections, or other concerns, use the contact form at [rafaelmehlers.com.br](https://rafaelmehlers.com.br).",
       ],
     },
   ],
 
   how_it_works_title: "How Jiddu works",
   how_it_works_subtitle:
-    "Technical walkthrough of every pipeline. Nothing is hidden — the source code is open under AGPL-3.0 at github.com/rafaehlers/jiddu, so anything described below can be cross-checked against the actual implementation.",
+    "Technical walkthrough of every pipeline, including ingestion, model routing, validation, limits and methodology.",
   how_it_works_sections: [
     {
       title: "1. The big picture",
@@ -954,7 +976,8 @@ const en: Messages = {
     {
       title: "10. Storage, privacy and review status",
       paragraphs: [
-        "There are no user accounts. Completed results use unlisted share URLs: anyone with the URL can view the final result, but those pages are not enumerated in the public sitemap. Paper-review ledgers, research and draft judgements are internal intermediate artifacts and are not exposed in the public result.",
+        "WorkOS AuthKit provides user accounts and sessions. Completed results remain available through unlisted share URLs, and signed-in users can also see their associated analyses in the account area. Anyone with a share URL can still view its final result. Paper-review ledgers, research and draft judgements are internal intermediate artifacts and are not exposed in the public result.",
+        "Jiddu Credits are an application balance for web, account-owned REST and hosted MCP analyses that use Jiddu's server-managed provider credentials. Verified accounts on the operator-managed platform allowlist receive included access instead.",
         "Submitted content goes through OpenRouter to the upstream serving the chosen model. Paper review includes selected rendered page images, not only extracted text. Its literature stage searches public scholarly sources using technical claims while prompts prohibit queries by paper title, author name or other manuscripts by the same authors. Venue autocomplete sends only the typed venue query to DBLP. We log the request IP for rate-limiting and abuse signalling and do not sell it.",
         "Results are automated and unreviewed by default. A result explicitly marked as reviewed has been spot-checked by the operator; that status is an additional human check, not a guarantee that every finding is correct.",
       ],
@@ -962,7 +985,8 @@ const en: Messages = {
     {
       title: "11. Cost and abuse controls",
       paragraphs: [
-        "Every cost-incurring route has an in-memory token-bucket rate limit per IP. Defaults include 30 fallacy analyses / hour, 30 fact-check extractions / hour, 10 bulk verifications / hour, 20 per-claim refreshes / hour and a deliberately conservative 4 paper reviews / hour with burst capacity 2. The operator can tune these values at runtime; exhausted buckets return 429 with `Retry-After`.",
+        "Analyses use either included platform access or Jiddu Credits. Jiddu Credits are independent of the platform's upstream dollar balance and cover web, account-owned REST and hosted MCP analyses. The account page shows the balance, rate card and transaction history. Before execution, Jiddu reserves the rate-card estimate. Completed OpenRouter calls are then settled from the prompt tokens, completion tokens and real cost returned by the provider, converted to credits with a configurable margin; the rate card is a fallback when usage accounting is unavailable. The unused reservation is released. Administrators can grant credits manually; paid packs are planned but are not sold yet.",
+        "Every cost-incurring route also has an in-memory token-bucket rate limit per IP. Defaults include 30 fallacy analyses / hour, 30 fact-check extractions / hour, 10 bulk verifications / hour, 20 per-claim refreshes / hour and a deliberately conservative 4 paper reviews / hour with burst capacity 2. The operator can tune these values at runtime; exhausted buckets return 429 with `Retry-After`.",
         "Fact-check extraction caps at 50 claims per document and per-claim refresh at 2 calls. Paper review accepts exactly one PDF, refuses to silently truncate past 300,000 extracted characters, limits visual inspection to selected pages and splits the costly work into auditable stages. These controls prevent accidental unbounded fan-out and bills.",
       ],
     },
@@ -977,9 +1001,9 @@ const en: Messages = {
     {
       title: "13. Live mode (beta)",
       paragraphs: [
-        "A separate pipeline at [/live](/live): the page captures audio from the user's microphone or, on Chromium browsers, from a browser tab via `getDisplayMedia`. The audio is streamed *directly from the browser to OpenAI's Realtime API* over WebRTC — it never passes through the Jiddu server. The transcription model is `gpt-realtime-whisper`, and the language is honored from the i18n header selector (EN / PT / ES).",
-        "How the wiring works: when the user presses **Start**, the browser calls `POST /api/live/token` to mint a short-lived ephemeral client secret (the Jiddu server holds the actual `OPENAI_API_KEY`; the browser never sees it). The browser then opens the WebRTC peer-connection to OpenAI using that secret and starts receiving transcript deltas. Every ~500 new characters (or every 30 seconds, whichever comes first), a separate SSE call to `POST /api/live/analyze` ships the cumulative transcript and runs the same fallacy prompt used everywhere else — this analysis step is a different call from the OpenAI transcription above, routed via OpenRouter with the same GPT-5.4 mini / MiniMax M3 picker as the text-analysis pipelines. Findings stream back into the UI in near-real-time. On **Stop**, a final `finalize: true` call commits the session as a normal `/a/<id>` analysis, indistinguishable downstream from a pasted-text analysis.",
-        "Cost is bounded by a hard 60-minute session cap (≈ \\$1 of Realtime + LLM analysis cost per session). The raw audio is never stored — only the transcript and the detected findings are persisted. The page is intentionally not linked from the nav while in beta — reach it by typing `/live` in the URL bar. Tab-audio capture works in Chrome / Edge only because Safari and Firefox don't expose tab audio through `getDisplayMedia`; the microphone source works everywhere.",
+        "A separate pipeline at [/live](/live): the page captures audio from the user's microphone or, on Chromium browsers, from a browser tab via `getDisplayMedia`. The audio is streamed *directly from the browser to OpenAI's Realtime API* over WebRTC — it never passes through the Jiddu server. The transcription model is `gpt-live-transcribe`, using the balanced `medium` latency/accuracy profile by default, and the language selected in the i18n header is sent as a transcription hint (EN / PT / ES).",
+        "How the wiring works: when the user presses **Start**, the browser calls `POST /api/live/token` to mint a short-lived ephemeral client secret (the Jiddu server holds the actual `OPENAI_API_KEY`; the browser never sees it). The browser then opens the WebRTC peer-connection to OpenAI using that secret and starts receiving transcript deltas. Analysis starts eagerly after ~800 new characters, or every 30 seconds once at least ~120 new characters are available. A separate SSE call to `POST /api/live/analyze` ships the cumulative transcript, with the previous four sentences as cross-window context, and runs the same fallacy prompt used everywhere else. This analysis step is a different call from the OpenAI transcription above, routed via OpenRouter with the same GPT-5.4 mini / MiniMax M3 picker as the text-analysis pipelines. Findings stream back into the UI in near-real-time. On **Stop**, a final `finalize: true` call processes the remaining text and commits the session as a normal `/a/<id>` analysis, indistinguishable downstream from a pasted-text analysis.",
+        "Cost is bounded by a hard 60-minute session cap. The raw audio is never stored — only the transcript and detected findings are persisted. Live requires included platform access or Jiddu Credits: the configured fixed charge reserves one Realtime transcription session, and each completed analysis window uses the selected model's normal chunk rate. The page is intentionally not linked from the nav while in beta — reach it by typing `/live` in the URL bar. Tab-audio capture works in Chrome / Edge only because Safari and Firefox don't expose tab audio through `getDisplayMedia`; the microphone source works everywhere.",
       ],
     },
     {
@@ -1003,7 +1027,7 @@ const en: Messages = {
         "The form offers **Standard** and **Deep** depth. Standard uses the selected economical model plus a different catalog critic. Deep uses stronger high-reasoning models for evaluation, correctness, significance and synthesis, with Claude Opus 4.8 as the independent critic by default; it takes longer and costs more.",
         "**Model routing and why.** In Standard mode, the model selected in the form — GPT-5.4 mini by default or MiniMax M3 — runs the ledger, literature research, all five SPECS specialists, synthesis and self-critique. The quality audit is deliberately assigned to the other catalog model so the draft is not approved only by the model that wrote it.",
         "In Deep mode, the selected model still handles the ledger, Story and Presentation; GPT-5.5 with high reasoning handles literature research, Evaluations, Correctness, Significance, synthesis, self-critique and any repair pass; Claude Opus 4.8 audits the resulting review independently. This concentrates the expensive reasoning on numerical validity, experimental design, novelty and cross-stage synthesis, while using a different model family for the final challenge to reduce correlated blind spots.",
-        "On Jiddu's [30-case synthetic SPECS benchmark](https://github.com/rafaehlers/jiddu/blob/main/evals/paper-review/report.md), GPT-5.4 mini and GPT-5.5 both detected every injected defect, but GPT-5.5 produced 30.6% fewer, more consolidated findings. The benchmark reached a ceiling and does not prove superiority on complete papers; Deep is an additional scrutiny tier, not a guarantee of correctness. Operators can override both Deep model IDs through `PAPER_REVIEW_DEEP_MODEL` and `PAPER_REVIEW_CRITIC_MODEL`.",
+        "On Jiddu's 30-case synthetic SPECS benchmark, GPT-5.4 mini and GPT-5.5 both detected every injected defect, but GPT-5.5 produced 30.6% fewer, more consolidated findings. The benchmark reached a ceiling and does not prove superiority on complete papers; Deep is an additional scrutiny tier, not a guarantee of correctness. Operators can override both Deep model IDs through `PAPER_REVIEW_DEEP_MODEL` and `PAPER_REVIEW_CRITIC_MODEL`.",
         "Venue autocomplete combines account-free [DBLP](https://dblp.org) discovery with versioned, verified 2026 profiles for NeurIPS, ICML, ICLR, AAAI, IJCAI and CVPR. A verified profile injects its official criteria and requirements into both synthesis and self-critique and is persisted with source URLs. A DBLP-only or unmatched venue uses a clearly labeled general scholarly rubric; edition, track or paper-type mismatches are marked unverified rather than guessed.",
         "Every substantive weakness must carry a manuscript page or section and a `MAJOR`, `MODERATE` or `MINOR` severity. The review is still automated: it can miss problems, invent comparisons or misapply a criterion, and it is not an official peer review or acceptance prediction.",
       ],
@@ -1012,19 +1036,18 @@ const en: Messages = {
       title: "16. Public API & MCP (for agents)",
       paragraphs: [
         "Beyond the web app, the five text pipelines are exposed as a public REST API for agents and scripts: `POST /api/v1/detect-fallacies`, `/fact-check`, `/assess-neutrality`, `/explain`, `/detect-slop`. These are synchronous — one JSON request in (`{ text }`, 40–2000 chars, plus optional `lang` and, for explain, `level`), one JSON response out. They drive the same generators to completion over a single chunk and never persist a row.",
-        "Requests authenticate with an `X-Jiddu-Key` header. Keys are issued by the operator, stored only as a sha256 hash, shown once and rate-limited per key separately from the web app's per-IP limits. Fact-check via the API both extracts and verifies each claim, capped by a per-request claim limit so one call can't fan out unboundedly to the paid Sonar verifier.",
+        "Requests authenticate with an `X-Jiddu-Key` header. Each operator-issued key is assigned to one verified WorkOS account, stored only as a sha256 hash, shown once and rate-limited independently. The request uses that account's included access or Jiddu Credits; credit-funded calls reserve the maximum route estimate and settle from OpenRouter's returned token counts and real cost plus the configured margin. Fact-check both extracts and verifies claims, charging uncached Sonar calls individually and enforcing a per-request claim cap.",
         "Adversarial review is exposed as a persisted asynchronous job: `POST /api/v1/adversarial-reviews` accepts one uploaded PDF or a public `pdf_url` and returns `202`; `GET /api/v1/adversarial-reviews/{id}` reports the current stage and eventually returns the structured review. This keeps the multi-minute, nine-stage workflow out of the synchronous text contract.",
-        "The hosted MCP server at `POST /api/mcp` exposes the five text tools plus `start_adversarial_review` and `get_adversarial_review`. Any MCP client can connect by URL through `mcp-remote`; the same tools also ship in the standalone `jiddu-mcp` package. Setup snippets and machine-oriented docs are at [/api-access](/api-access).",
-        "Quality is tracked by a fixed eval suite (15–16 cases per tool) committed in the repo and scored against expected results; the published report lives at [evals/report.md](https://github.com/rafaehlers/jiddu/blob/main/evals/report.md).",
+        "The hosted MCP server at `POST /api/mcp` exposes the five text tools plus `start_adversarial_review` and `get_adversarial_review`. [WorkOS AuthKit MCP](https://workos.com/docs/authkit/mcp) acts as its OAuth authorization server: compatible clients discover the login flow automatically and receive a bearer token scoped to the MCP resource. Jiddu then resolves included platform access for allowlisted users or reserves and spends Jiddu Credits for everyone else. No manually issued `X-Jiddu-Key` is used by the hosted MCP. Setup snippets and machine-oriented docs are at [/api-access](/api-access).",
+        "Quality is tracked by a fixed internal eval suite (15–16 cases per tool) scored against expected results; public benchmark summaries are presented in the Benchmark and methodology sections.",
       ],
     },
     {
-      title: "17. Open source and methodology",
+      title: "17. Methodology and evaluation",
       paragraphs: [
-        "Source code is at [github.com/rafaehlers/jiddu](https://github.com/rafaehlers/jiddu) under the [AGPL-3.0-or-later license](https://www.gnu.org/licenses/agpl-3.0.txt). AGPL closes the 'SaaS loophole' that GPL leaves open: anyone running a modified version as a network service must publish the modified source.",
         "[Claimify](https://arxiv.org/abs/2502.10855) informs claim extraction, and [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) informs verdict assessment, source tiers and neutrality. [no-ai-slop](https://github.com/petergyang/no-ai-slop) supplies the starting taxonomy for writing-pattern detection.",
         "Adversarial paper review adapts the SPECS dimensions and staged synthesis/self-critique described in [AI-Assisted Peer Review at Scale: The AAAI-26 AI Review Pilot](https://arxiv.org/abs/2604.13940). Jiddu adds its own ledger, LiteParse extraction, DBLP discovery, venue profiles, source validation and retention gate. It is not affiliated with those groups, DBLP or the venues.",
-        "Published evaluation currently consists of the [200-claim PolitiFact benchmark](/benchmark) and a [30-case synthetic SPECS benchmark](https://github.com/rafaehlers/jiddu/blob/main/evals/paper-review/report.md). Both have documented limits and neither guarantees correctness on a new text or paper.",
+        "Published evaluation currently consists of the [200-claim PolitiFact benchmark](/benchmark) and a 30-case synthetic SPECS benchmark. Both have documented limits and neither guarantees correctness on a new text or paper.",
         "The full disclaimer about what Jiddu does and doesn't claim is at [/legal](/legal).",
       ],
     },
@@ -1095,7 +1118,6 @@ const en: Messages = {
   nav_fallacies: "Fallacy guide",
   nav_slop_patterns: "Slop patterns",
   nav_benchmark: "Benchmark",
-  nav_source: "Source code",
 
   theme_to_dark: "Switch to dark mode",
   theme_to_light: "Switch to light mode",
@@ -1157,6 +1179,8 @@ const pt: Messages = {
   privacy_body:
     "seu conteúdo — incluindo imagens de páginas selecionadas do PDF quando a inspeção visual é necessária — é enviado ao modelo escolhido via OpenRouter e armazenado localmente sob um id compartilhável.",
   see_demo: "Ver demonstração",
+  see_demo_for: (feature) =>
+    `Ver uma demonstração de ${feature.toLocaleLowerCase("pt-BR")}`,
   see_demo_hint: "Quer uma amostra rápida sem rodar uma análise?",
   bench_badge_label:
     "Pipeline validado · 67,5% de concordância com PolitiFact em benchmark de 200 claims",
@@ -1194,6 +1218,15 @@ const pt: Messages = {
   analyze: "Analisar",
   starting: "Iniciando…",
   form_hint: "Os comentários aparecem à medida que a análise roda. Não feche a página.",
+  auth_required_title: "É necessário entrar",
+  auth_required_hint:
+    "Crie uma conta no Jiddu ou entre para continuar. Contas conectadas usam créditos Jiddu ou o acesso incluído à plataforma.",
+  auth_sign_in: "Entrar",
+  auth_create_account: "Criar conta",
+  credits_required_title: "Créditos Jiddu necessários",
+  credits_required_hint:
+    "Esta análise precisa de mais créditos Jiddu. Abra sua conta para conferir o saldo e o histórico de créditos.",
+  credits_open_account: "Ver conta",
 
   loading_starting: "Iniciando análise",
   loading_reading: "Lendo o texto",
@@ -1474,31 +1507,31 @@ const pt: Messages = {
       ],
     },
     {
-      title: "Autenticação",
+      title: "Autenticação da REST API",
       paragraphs: [
-        "Envie sua chave de API no cabeçalho `X-Jiddu-Key`. As chaves são emitidas pelo operador — veja “Obter uma chave” abaixo.",
+        "A REST API é separada do OAuth do MCP. Envie a chave no cabeçalho `X-Jiddu-Key`. Cada chave é atribuída a uma conta WorkOS verificada e segue o financiamento dessa conta: acesso incluído da plataforma ou créditos Jiddu. Chaves sem proprietário ficam desativadas. Veja “Obter uma chave da REST API” abaixo.",
         "```\ncurl -X POST https://jiddu.app/api/v1/detect-fallacies \\\n  -H \"content-type: application/json\" \\\n  -H \"X-Jiddu-Key: SUA_CHAVE\" \\\n  -d '{\"text\": \"Todo mundo concorda que isso é o melhor, então quem critica é tolo.\"}'\n```",
       ],
     },
     {
       title: "Servidor MCP",
       paragraphs: [
-        "Para agentes, conecte-se ao servidor MCP hospedado do Jiddu por URL — nada para instalar ou clonar. Ele expõe as cinco ferramentas de texto mais `start_adversarial_review` e `get_adversarial_review`, e faz a ponte com seu cliente MCP (ex.: Claude Desktop) via o utilitário público `mcp-remote`:",
-        "```\n{\n  \"mcpServers\": {\n    \"jiddu\": {\n      \"command\": \"npx\",\n      \"args\": [\"-y\", \"mcp-remote\", \"https://jiddu.app/api/mcp\", \"--header\", \"X-Jiddu-Key:sua-chave-aqui\"]\n    }\n  }\n}\n```",
-        "A documentação orientada a máquina — quando usar cada ferramenta, formatos de resposta e como encadeá-las — está em [AGENT.md](https://github.com/rafaehlers/jiddu/blob/main/packages/jiddu-mcp/AGENT.md).",
+        "Para agentes, conecte-se diretamente a `https://jiddu.app/api/mcp`. O servidor expõe as cinco ferramentas de texto mais `start_adversarial_review` e `get_adversarial_review`. Clientes MCP compatíveis descobrem o WorkOS AuthKit, abrem o login do Jiddu e recebem automaticamente um token OAuth restrito ao recurso. Contas na allowlist da plataforma recebem acesso incluído; cada chamada das demais contas reserva e gasta créditos Jiddu.",
+        "Clientes que ainda exigem uma ponte stdio local podem usar `mcp-remote` sem cabeçalho de autenticação personalizado; ele conduz o redirecionamento OAuth:\n```\n{\n  \"mcpServers\": {\n    \"jiddu\": {\n      \"command\": \"npx\",\n      \"args\": [\"-y\", \"mcp-remote\", \"https://jiddu.app/api/mcp\"]\n    }\n  }\n}\n```",
+        "As orientações de configuração para agentes, os contratos de resposta e os exemplos de encadeamento estão incluídos nesta página.",
       ],
     },
     {
       title: "Limites & confiabilidade",
       paragraphs: [
-        "As ferramentas de texto aceitam até 2000 caracteres por requisição. Jobs de revisão recebem um PDF público ou enviado de até 25 MB e recusam papers acima de 300 mil caracteres extraídos em vez de truncá-los. Os limites de taxa são por chave; ao excedê-los, a resposta é HTTP 429 com `retry_after_seconds`. As saídas são automatizadas e podem errar — trate-as como sinais para verificação, não como autoridade final.",
-        "A qualidade é medida contra conjuntos de teste fixos publicados no repositório: [evals/report.md](https://github.com/rafaehlers/jiddu/blob/main/evals/report.md).",
+        "As ferramentas de texto aceitam até 2000 caracteres por requisição. Jobs de revisão recebem um PDF público ou enviado de até 25 MB e recusam papers acima de 300 mil caracteres extraídos em vez de truncá-los. Os limites da REST são por chave de API; os do MCP hospedado são por usuário WorkOS. Ao excedê-los, a resposta é HTTP 429 com `retry_after_seconds`. As saídas são automatizadas e podem errar — trate-as como sinais para verificação, não como autoridade final.",
+        "A qualidade é medida contra conjuntos de teste internos fixos e os resumos de benchmark publicados neste site.",
       ],
     },
     {
-      title: "Obter uma chave",
+      title: "Obter uma chave da REST API",
       paragraphs: [
-        "As chaves são emitidas manualmente por enquanto. Abra uma issue no [GitHub](https://github.com/rafaehlers/jiddu) para solicitar uma.",
+        "As chaves são emitidas manualmente por enquanto e atribuídas à sua conta WorkOS verificada. Entre em contato com o operador pelo canal indicado na página de Termos para solicitar uma. O segredo é mostrado uma vez e guardado apenas como hash sha256.",
       ],
     },
   ],
@@ -1540,7 +1573,7 @@ const pt: Messages = {
   legal_title: "Termos, privacidade e isenções",
   legal_subtitle:
     "Leia antes de usar o Jiddu, especialmente antes de compartilhar uma análise publicamente.",
-  legal_last_updated: "Atualizado em: 2026-07-27",
+  legal_last_updated: "Atualizado em: 2026-07-28",
   legal_sections: [
     {
       title: "1. O que o Jiddu faz",
@@ -1576,7 +1609,8 @@ const pt: Messages = {
     {
       title: "5. Privacidade",
       paragraphs: [
-        "Cada análise ou revisão de paper concluída recebe uma URL compartilhável não listada e fica armazenada em um servidor no Brasil. Quem tem a URL pode ver o resultado final, mas essas páginas não são enumeradas no sitemap público. Não há contas de usuário; as etapas intermediárias privadas da revisão não aparecem no viewer público.",
+        "Cada análise ou revisão de paper concluída recebe uma URL compartilhável não listada e fica armazenada em um servidor no Brasil. Quem tem a URL pode ver o resultado final, mas essas páginas não são enumeradas no sitemap público. Usuários logados veem as análises associadas à conta, porém a URL compartilhável continua acessível a quem a possuir; as etapas intermediárias privadas da revisão não aparecem no viewer público.",
+        "A autenticação é fornecida pelo WorkOS AuthKit. O Jiddu recebe a identidade necessária para manter a sessão, autorizar clientes MCP e associar chaves REST, saldos e uso à conta correta. Segredos REST são mostrados uma vez e armazenados apenas como hash. As credenciais dos provedores de modelo são administradas pelo Jiddu e nunca são expostas ao JavaScript da página, clientes REST ou clientes MCP.",
         "O autocomplete de venue envia apenas a consulta da venue — nunca o manuscrito — à busca pública de venues do [DBLP](https://dblp.org). A etapa de pesquisa de literatura consulta fontes acadêmicas públicas usando afirmações técnicas do manuscrito; os prompts proíbem buscas pelo título do paper, nome dos autores ou outros manuscritos dos mesmos autores.",
         "Registramos o IP da requisição para limites de taxa e detecção de abuso. Não vendemos nem compartilhamos essa informação.",
         "O tráfego das páginas é medido via Google Analytics (gtag.js).",
@@ -1590,20 +1624,20 @@ const pt: Messages = {
         "A taxonomia inicial do detector de slop vem da skill de edição [no-ai-slop](https://github.com/petergyang/no-ai-slop), de Peter Yang, licenciada sob MIT. O Jiddu fornece a redação do catálogo, as traduções e o prompt de detecção e sinaliza padrões observáveis, não autoria.",
         "O Jiddu não tem afiliação com esses grupos de pesquisa, com o DBLP ou com qualquer venue cujos critérios resume. As referências e páginas oficiais são citadas para que o usuário possa auditar a metodologia e o padrão aplicado.",
         "O pipeline de fact-check foi medido contra o corpus humano do [PolitiFact](https://www.politifact.com) (via o [dataset LIAR2](https://github.com/chengxuphd/liar2), Apache-2.0). Em 200 afirmações tiradas dos quatro buckets polares do PolitiFact, o veredito do Jiddu coincidiu com o veredito humano em 67,5% dos casos no total e em 81,3% nas categorias menos ambíguas (true / false / pants-on-fire), com discordância estrita em apenas 4,5%. Metodologia completa, matriz de confusão e análise das discordâncias em [docs/benchmark-politifact.md](/benchmark).",
-        "A revisão de papers tem um [benchmark sintético SPECS separado, com 30 casos](https://github.com/rafaehlers/jiddu/blob/main/evals/paper-review/report.md). GPT-5.4 mini e GPT-5.5 detectaram os 30 defeitos inseridos; GPT-5.5 produziu 30,6% menos achados, mais consolidados. O conjunto atingiu o teto e não estabelece acurácia em papers reais completos.",
+        "A revisão de papers tem um benchmark sintético SPECS separado, com 30 casos. GPT-5.4 mini e GPT-5.5 detectaram os 30 defeitos inseridos; GPT-5.5 produziu 30,6% menos achados, mais consolidados. O conjunto atingiu o teto e não estabelece acurácia em papers reais completos.",
       ],
     },
     {
       title: "7. Contato",
       paragraphs: [
-        "Operador: Rafael de Menezes Ehlers. Para solicitações de remoção, correções ou outras dúvidas, abra uma issue no [GitHub](https://github.com/rafaehlers/jiddu).",
+        "Operador: Rafael de Menezes Ehlers. Para solicitações de remoção, correções ou outras dúvidas, use o formulário de contato em [rafaelmehlers.com.br](https://rafaelmehlers.com.br).",
       ],
     },
   ],
 
   how_it_works_title: "Como o Jiddu funciona",
   how_it_works_subtitle:
-    "Walkthrough técnico de cada pipeline. Nada é escondido — o código-fonte é aberto sob AGPL-3.0 em github.com/rafaehlers/jiddu, então qualquer coisa descrita abaixo pode ser conferida contra a implementação real.",
+    "Walkthrough técnico de cada pipeline, incluindo ingestão, roteamento de modelos, validação, limites e metodologia.",
   how_it_works_sections: [
     {
       title: "1. Visão geral",
@@ -1696,7 +1730,8 @@ const pt: Messages = {
     {
       title: "10. Privacidade e status de revisão",
       paragraphs: [
-        "Não há contas de usuário. Resultados concluídos usam URLs não listadas: qualquer pessoa com a URL pode ver o resultado final, mas essas páginas não são enumeradas no sitemap público. Ledgers, pesquisa e juízos preliminares da revisão de papers são artefatos intermediários internos e não aparecem no resultado público.",
+        "O WorkOS AuthKit fornece contas e sessões. Resultados concluídos continuam disponíveis por URLs não listadas, e usuários logados também veem suas análises associadas na área da conta. Qualquer pessoa com a URL compartilhável ainda consegue ver o resultado final. Ledgers, pesquisa e juízos preliminares da revisão de papers são artefatos intermediários internos e não aparecem no resultado público.",
+        "Créditos Jiddu são um saldo para análises web, REST vinculadas à conta e MCP hospedadas que usam as credenciais de provedores administradas pelo Jiddu. Contas verificadas na allowlist administrada pelo operador recebem acesso incluído.",
         "O conteúdo submetido passa pelo OpenRouter para o upstream do modelo escolhido. Na revisão de paper, isso inclui imagens renderizadas de páginas selecionadas, não só o texto extraído. A etapa de literatura pesquisa fontes acadêmicas públicas por afirmações técnicas, enquanto os prompts proíbem consultas pelo título, nome dos autores ou outros manuscritos dos mesmos autores. O autocomplete envia apenas a consulta da venue ao DBLP. Registramos o IP para rate-limit e sinais de abuso e não o vendemos.",
         "Os resultados são automatizados e não revisados por padrão. Um resultado explicitamente marcado como revisado foi conferido pontualmente pelo operador; esse status representa uma verificação humana adicional, não uma garantia de que todos os achados estejam corretos.",
       ],
@@ -1704,7 +1739,8 @@ const pt: Messages = {
     {
       title: "11. Controle de custo e abuso",
       paragraphs: [
-        "Toda rota que gera custo tem rate limit token bucket in-memory por IP. Os padrões incluem 30 análises de falácia / hora, 30 extrações de fact-check / hora, 10 verificações em massa / hora, 20 refreshes individuais / hora e, deliberadamente conservador, 4 revisões de paper / hora com burst 2. O operador pode ajustar esses valores em runtime; buckets esgotados retornam 429 com `Retry-After`.",
+        "As análises usam acesso incluído da plataforma ou créditos Jiddu. Os créditos são independentes do saldo upstream em dólares da plataforma e cobrem análises web, REST vinculadas à conta e MCP hospedadas. A área da conta mostra saldo, tabela tarifária e histórico. Antes da execução, o custo máximo da rota fica reservado; ao final, as chamadas concluídas são liquidadas pelo custo real do provedor e o restante é liberado. Administradores podem conceder créditos manualmente; pacotes pagos estão planejados, mas ainda não são vendidos.",
+        "Toda rota que gera custo também tem rate limit token bucket in-memory por IP. Os padrões incluem 30 análises de falácia / hora, 30 extrações de fact-check / hora, 10 verificações em massa / hora, 20 refreshes individuais / hora e, deliberadamente conservador, 4 revisões de paper / hora com burst 2. O operador pode ajustar esses valores em runtime; buckets esgotados retornam 429 com `Retry-After`.",
         "A extração de fact-check tem cap de 50 afirmações por documento e o refresh, 2 chamadas por afirmação. A revisão aceita exatamente um PDF, recusa truncamento silencioso acima de 300.000 caracteres extraídos, limita a inspeção visual a páginas selecionadas e divide o trabalho caro em etapas auditáveis. Esses controles evitam fan-out e custos acidentalmente ilimitados.",
       ],
     },
@@ -1719,9 +1755,9 @@ const pt: Messages = {
     {
       title: "13. Modo Live (beta)",
       paragraphs: [
-        "Pipeline separado em [/live](/live): a página captura áudio do microfone do usuário ou, em browsers Chromium, de uma aba do navegador via `getDisplayMedia`. O áudio é transmitido *direto do browser pra Realtime API da OpenAI* via WebRTC — nunca passa pelo servidor do Jiddu. O modelo de transcrição é `gpt-realtime-whisper`, e o idioma respeita o seletor do header (EN / PT / ES).",
-        "Como o cabeamento funciona: quando o usuário clica em **Iniciar**, o browser chama `POST /api/live/token` pra cunhar um client secret efêmero de curta duração (o servidor do Jiddu guarda a `OPENAI_API_KEY` real; o browser nunca vê). O browser então abre a peer-connection WebRTC pra OpenAI usando esse secret e começa a receber deltas de transcrição. A cada ~500 caracteres novos (ou a cada 30 segundos, o que vier primeiro), uma chamada SSE separada pra `POST /api/live/analyze` envia o transcript cumulativo e roda o mesmo prompt de falácia usado em qualquer lugar — essa etapa de análise é uma chamada diferente da transcrição via OpenAI acima, roteada via OpenRouter com o mesmo seletor GPT-5.4 mini / MiniMax M3 dos pipelines de texto. Os achados aparecem na UI quase em tempo real. No **Parar**, uma última chamada com `finalize: true` commita a sessão como uma análise `/a/<id>` normal, indistinguível downstream de uma análise feita via paste.",
-        "Custo é limitado por um cap duro de 60 minutos por sessão (≈ \\$1 de Realtime + custo de análise LLM). O áudio bruto nunca é armazenado — só a transcrição e os achados detectados persistem. A página é deliberadamente fora do nav enquanto está em beta — chega-se digitando `/live` na barra. Captura de áudio de aba funciona só em Chrome / Edge porque Safari e Firefox não expõem áudio de aba via `getDisplayMedia`; o microfone funciona em qualquer lugar.",
+        "Pipeline separado em [/live](/live): a página captura áudio do microfone do usuário ou, em browsers Chromium, de uma aba do navegador via `getDisplayMedia`. O áudio é transmitido *direto do browser pra Realtime API da OpenAI* via WebRTC — nunca passa pelo servidor do Jiddu. O modelo de transcrição é `gpt-live-transcribe`, usando por padrão o perfil equilibrado `medium` de latência e precisão, e o idioma selecionado no header é enviado como dica de transcrição (EN / PT / ES).",
+        "Como o cabeamento funciona: quando o usuário clica em **Iniciar**, o browser chama `POST /api/live/token` pra cunhar um client secret efêmero de curta duração (o servidor do Jiddu guarda a `OPENAI_API_KEY` real; o browser nunca vê). O browser então abre a peer-connection WebRTC pra OpenAI usando esse secret e começa a receber deltas de transcrição. A análise começa antecipadamente após ~800 caracteres novos, ou a cada 30 segundos quando houver pelo menos ~120 caracteres novos. Uma chamada SSE separada pra `POST /api/live/analyze` envia o transcript cumulativo, com as quatro frases anteriores como contexto entre janelas, e roda o mesmo prompt de falácia usado em qualquer lugar. Essa etapa de análise é uma chamada diferente da transcrição via OpenAI acima, roteada via OpenRouter com o mesmo seletor GPT-5.4 mini / MiniMax M3 dos pipelines de texto. Os achados aparecem na UI quase em tempo real. No **Parar**, uma última chamada com `finalize: true` processa o texto restante e commita a sessão como uma análise `/a/<id>` normal.",
+        "O custo é limitado por um cap rígido de 60 minutos. O áudio bruto nunca é armazenado — só a transcrição e os achados detectados persistem. O Live exige acesso incluído da plataforma ou créditos Jiddu: a taxa fixa configurada reserva uma sessão de transcrição Realtime, e cada janela de análise concluída usa a tarifa normal do modelo escolhido. A página fica fora do nav enquanto está em beta — chega-se digitando `/live` na barra. Captura de áudio de aba funciona só em Chrome / Edge; o microfone funciona nos demais browsers compatíveis.",
       ],
     },
     {
@@ -1745,7 +1781,7 @@ const pt: Messages = {
         "O formulário oferece profundidade **Padrão** e **Profunda**. A Padrão usa o modelo econômico selecionado e outro modelo do catálogo como crítico. A Profunda usa modelos de raciocínio mais fortes em avaliação, correção, significância e síntese, com Claude Opus 4.8 como crítico independente por padrão; leva mais tempo e custa mais.",
         "**Roteamento dos modelos e por quê.** No modo Padrão, o modelo escolhido no formulário — GPT-5.4 mini por padrão ou MiniMax M3 — executa o ledger, a pesquisa de literatura, os cinco especialistas SPECS, a síntese e a autocrítica. A auditoria de qualidade é entregue deliberadamente ao outro modelo do catálogo, para que o rascunho não seja aprovado apenas pelo modelo que o escreveu.",
         "No modo Profundo, o modelo selecionado continua responsável pelo ledger, Story e Presentation; o GPT-5.5 com raciocínio high executa pesquisa de literatura, Evaluations, Correctness, Significance, síntese, autocrítica e eventual reparo; o Claude Opus 4.8 audita a revisão resultante de forma independente. Assim, o raciocínio caro fica concentrado em validade numérica, desenho experimental, novidade e síntese entre etapas, enquanto uma família diferente de modelos faz o desafio final para reduzir pontos cegos correlacionados.",
-        "No [benchmark sintético SPECS de 30 casos do Jiddu](https://github.com/rafaehlers/jiddu/blob/main/evals/paper-review/report.md), GPT-5.4 mini e GPT-5.5 detectaram todas as falhas inseridas, mas o GPT-5.5 produziu 30,6% menos achados, mais consolidados. O benchmark atingiu o teto e não prova superioridade em papers completos; Profunda é uma camada adicional de escrutínio, não garantia de correção. O operador pode trocar os dois modelos do modo Profundo por `PAPER_REVIEW_DEEP_MODEL` e `PAPER_REVIEW_CRITIC_MODEL`.",
+        "No benchmark sintético SPECS de 30 casos do Jiddu, GPT-5.4 mini e GPT-5.5 detectaram todas as falhas inseridas, mas o GPT-5.5 produziu 30,6% menos achados, mais consolidados. O benchmark atingiu o teto e não prova superioridade em papers completos; Profunda é uma camada adicional de escrutínio, não garantia de correção. O operador pode trocar os dois modelos do modo Profundo por `PAPER_REVIEW_DEEP_MODEL` e `PAPER_REVIEW_CRITIC_MODEL`.",
         "O autocomplete combina descoberta gratuita e sem conta pelo [DBLP](https://dblp.org) com perfis 2026 verificados e versionados de NeurIPS, ICML, ICLR, AAAI, IJCAI e CVPR. Um perfil verificado injeta critérios e exigências oficiais na síntese e na autocrítica e fica persistido com URLs-fonte. Uma venue só do DBLP ou sem correspondência usa rubrica acadêmica geral claramente identificada; incompatibilidades de edição, track ou tipo são marcadas como não verificadas, nunca adivinhadas.",
         "Toda fraqueza substantiva precisa trazer página ou seção do manuscrito e severidade `MAJOR`, `MODERATE` ou `MINOR`. A revisão continua automatizada: pode perder problemas, inventar comparações ou aplicar mal um critério, e não é revisão oficial por pares nem previsão de aceitação.",
       ],
@@ -1754,19 +1790,18 @@ const pt: Messages = {
       title: "16. API pública & MCP (para agentes)",
       paragraphs: [
         "Além do app web, os cinco pipelines de texto são expostos como uma API REST pública para agentes e scripts: `POST /api/v1/detect-fallacies`, `/fact-check`, `/assess-neutrality`, `/explain`, `/detect-slop`. Eles são síncronos — uma requisição JSON entra (`{ text }`, 40–2000 caracteres, mais `lang` opcional e, no explain, `level`) e uma resposta JSON sai. Os geradores rodam até o fim sobre um único chunk e não persistem uma linha.",
-        "As requisições se autenticam com o cabeçalho `X-Jiddu-Key`. As chaves são emitidas pelo operador, guardadas apenas como hash sha256, mostradas uma vez e limitadas por chave separadamente dos limites por IP do app web. O fact-check via API extrai e verifica cada afirmação, com um teto de afirmações por requisição pra que uma chamada não dispare verificações ilimitadas no Sonar pago.",
+        "As requisições se autenticam com o cabeçalho `X-Jiddu-Key`. Cada chave emitida pelo operador é atribuída a uma conta WorkOS verificada, guardada apenas como hash sha256, mostrada uma vez e limitada de forma independente. A requisição usa o acesso incluído ou os créditos Jiddu dessa conta; chamadas financiadas por créditos reservam o custo máximo da rota e são liquidadas pelo custo real retornado pelo provedor. O fact-check cobra separadamente as chamadas Sonar sem cache e impõe um teto de afirmações por requisição.",
         "A revisão adversarial é exposta como job assíncrono persistido: `POST /api/v1/adversarial-reviews` recebe um PDF enviado ou uma `pdf_url` pública e devolve `202`; `GET /api/v1/adversarial-reviews/{id}` informa a etapa atual e, no fim, entrega a revisão estruturada. Assim o fluxo de nove etapas e vários minutos não é forçado no contrato síncrono de texto.",
-        "O servidor MCP hospedado em `POST /api/mcp` expõe as cinco ferramentas de texto mais `start_adversarial_review` e `get_adversarial_review`. Qualquer cliente MCP conecta via `mcp-remote`; as mesmas ferramentas também vêm no pacote standalone `jiddu-mcp`. Snippets e docs orientadas a máquina em [/api-access](/api-access).",
-        "A qualidade é acompanhada por um conjunto fixo de evals (15–16 casos por ferramenta) versionado no repositório e comparado com resultados esperados; o relatório publicado está em [evals/report.md](https://github.com/rafaehlers/jiddu/blob/main/evals/report.md).",
+        "O servidor MCP hospedado em `POST /api/mcp` expõe as cinco ferramentas de texto mais `start_adversarial_review` e `get_adversarial_review`. O [WorkOS AuthKit MCP](https://workos.com/docs/authkit/mcp) atua como servidor de autorização OAuth: clientes compatíveis descobrem o login automaticamente e recebem um bearer token restrito ao recurso MCP. O Jiddu então resolve o acesso incluído para usuários na allowlist ou reserva e gasta créditos Jiddu para os demais. O MCP hospedado não usa `X-Jiddu-Key` emitida manualmente. Snippets e docs orientadas a máquina em [/api-access](/api-access).",
+        "A qualidade é acompanhada por um conjunto interno fixo de evals (15–16 casos por ferramenta), comparado com resultados esperados; resumos públicos aparecem nas seções Benchmark e metodologia.",
       ],
     },
     {
-      title: "17. Open source e metodologia",
+      title: "17. Metodologia e avaliação",
       paragraphs: [
-        "Código fonte em [github.com/rafaehlers/jiddu](https://github.com/rafaehlers/jiddu) sob licença [AGPL-3.0-or-later](https://www.gnu.org/licenses/agpl-3.0.txt). A AGPL fecha o 'SaaS loophole' que a GPL deixa aberto: quem rodar uma versão modificada como serviço de rede tem que publicar o código modificado.",
         "O [Claimify](https://arxiv.org/abs/2502.10855) orienta a extração de afirmações, e [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) orienta a avaliação dos vereditos, os tiers de fontes e a imparcialidade. O [no-ai-slop](https://github.com/petergyang/no-ai-slop) fornece a taxonomia inicial da detecção de padrões de escrita.",
         "A revisão adversarial de papers adapta as dimensões SPECS e a síntese e autocrítica por etapas descritas em [AI-Assisted Peer Review at Scale: The AAAI-26 AI Review Pilot](https://arxiv.org/abs/2604.13940). O Jiddu adiciona ledger, extração por LiteParse, descoberta via DBLP, perfis de venue, validação de fontes e gate de retenção próprios. Não tem afiliação com esses grupos, com o DBLP nem com as venues.",
-        "A avaliação publicada hoje inclui o [benchmark PolitiFact com 200 afirmações](/benchmark) e um [benchmark sintético SPECS com 30 casos](https://github.com/rafaehlers/jiddu/blob/main/evals/paper-review/report.md). Ambos documentam suas limitações e nenhum garante correção em um novo texto ou paper.",
+        "A avaliação publicada hoje inclui o [benchmark PolitiFact com 200 afirmações](/benchmark) e um benchmark sintético SPECS com 30 casos. Ambos documentam suas limitações e nenhum garante correção em um novo texto ou paper.",
         "O disclaimer completo do que o Jiddu afirma e não afirma está em [/legal](/legal).",
       ],
     },
@@ -1837,7 +1872,6 @@ const pt: Messages = {
   nav_fallacies: "Guia de Falácias",
   nav_slop_patterns: "Padrões de slop",
   nav_benchmark: "Benchmark",
-  nav_source: "Código-fonte",
 
   theme_to_dark: "Mudar para tema escuro",
   theme_to_light: "Mudar para tema claro",
@@ -1899,6 +1933,8 @@ const es: Messages = {
   privacy_body:
     "tu contenido — incluidas imágenes de páginas seleccionadas del PDF cuando se necesita inspección visual — se envía al modelo elegido vía OpenRouter y se almacena localmente bajo un id compartible.",
   see_demo: "Ver demostración",
+  see_demo_for: (feature) =>
+    `Ver una demostración de ${feature.toLocaleLowerCase("es")}`,
   see_demo_hint: "¿Quieres un vistazo rápido sin ejecutar un análisis?",
   bench_badge_label:
     "Pipeline validado · 67,5% de concordancia con PolitiFact en benchmark de 200 claims",
@@ -1936,6 +1972,15 @@ const es: Messages = {
   analyze: "Analizar",
   starting: "Iniciando…",
   form_hint: "Los comentarios aparecen mientras corre el análisis. No cierres la página.",
+  auth_required_title: "Debes iniciar sesión",
+  auth_required_hint:
+    "Crea una cuenta de Jiddu o inicia sesión para continuar. Las cuentas conectadas usan créditos Jiddu o el acceso incluido a la plataforma.",
+  auth_sign_in: "Ingresar",
+  auth_create_account: "Crear cuenta",
+  credits_required_title: "Se necesitan créditos Jiddu",
+  credits_required_hint:
+    "Este análisis necesita más créditos Jiddu. Abre tu cuenta para consultar el saldo y la actividad de créditos.",
+  credits_open_account: "Ver cuenta",
 
   loading_starting: "Iniciando análisis",
   loading_reading: "Leyendo el texto",
@@ -2216,31 +2261,31 @@ const es: Messages = {
       ],
     },
     {
-      title: "Autenticación",
+      title: "Autenticación de la REST API",
       paragraphs: [
-        "Envía tu clave de API en el encabezado `X-Jiddu-Key`. Las claves las emite el operador — consulta “Obtener una clave” más abajo.",
+        "La REST API está separada del OAuth de MCP. Envía la clave en el encabezado `X-Jiddu-Key`. Cada clave se asigna a una cuenta WorkOS verificada y sigue la financiación de esa cuenta: acceso incluido de plataforma o créditos Jiddu. Las claves sin propietario quedan desactivadas. Consulta “Obtener una clave de la REST API” más abajo.",
         "```\ncurl -X POST https://jiddu.app/api/v1/detect-fallacies \\\n  -H \"content-type: application/json\" \\\n  -H \"X-Jiddu-Key: TU_CLAVE\" \\\n  -d '{\"text\": \"Todos están de acuerdo en que esto es lo mejor, así que quien critica es un tonto.\"}'\n```",
       ],
     },
     {
       title: "Servidor MCP",
       paragraphs: [
-        "Para agentes, conéctate al servidor MCP alojado de Jiddu por URL — nada que instalar ni clonar. Expone las cinco herramientas de texto más `start_adversarial_review` y `get_adversarial_review`, y hace de puente con tu cliente MCP (p. ej. Claude Desktop) mediante el utilitario público `mcp-remote`:",
-        "```\n{\n  \"mcpServers\": {\n    \"jiddu\": {\n      \"command\": \"npx\",\n      \"args\": [\"-y\", \"mcp-remote\", \"https://jiddu.app/api/mcp\", \"--header\", \"X-Jiddu-Key:tu-clave-aquí\"]\n    }\n  }\n}\n```",
-        "La documentación orientada a máquinas — cuándo usar cada herramienta, formatos de respuesta y cómo encadenarlas — está en [AGENT.md](https://github.com/rafaehlers/jiddu/blob/main/packages/jiddu-mcp/AGENT.md).",
+        "Para agentes, conéctate directamente a `https://jiddu.app/api/mcp`. El servidor expone las cinco herramientas de texto más `start_adversarial_review` y `get_adversarial_review`. Los clientes MCP compatibles descubren WorkOS AuthKit, abren el inicio de sesión de Jiddu y reciben automáticamente un token OAuth limitado al recurso. Las cuentas en la allowlist de la plataforma reciben acceso incluido; cada llamada de las demás cuentas reserva y gasta créditos Jiddu.",
+        "Los clientes que aún necesitan un puente stdio local pueden usar `mcp-remote` sin un encabezado de autenticación personalizado; este gestiona la redirección OAuth:\n```\n{\n  \"mcpServers\": {\n    \"jiddu\": {\n      \"command\": \"npx\",\n      \"args\": [\"-y\", \"mcp-remote\", \"https://jiddu.app/api/mcp\"]\n    }\n  }\n}\n```",
+        "Las orientaciones de configuración para agentes, los contratos de respuesta y los ejemplos de encadenamiento están incluidos en esta página.",
       ],
     },
     {
       title: "Límites y fiabilidad",
       paragraphs: [
-        "Las herramientas de texto aceptan hasta 2000 caracteres por solicitud. Los jobs de revisión reciben un PDF público o subido de hasta 25 MB y rechazan papers por encima de 300.000 caracteres extraídos en lugar de truncarlos. Los límites de tasa son por clave; al excederlos, la respuesta es HTTP 429 con `retry_after_seconds`. Las salidas son automatizadas y pueden equivocarse — trátalas como señales para verificar, no como autoridad final.",
-        "La calidad se mide contra conjuntos de prueba fijos publicados en el repositorio: [evals/report.md](https://github.com/rafaehlers/jiddu/blob/main/evals/report.md).",
+        "Las herramientas de texto aceptan hasta 2000 caracteres por solicitud. Los jobs de revisión reciben un PDF público o subido de hasta 25 MB y rechazan papers por encima de 300.000 caracteres extraídos en lugar de truncarlos. Los límites de REST son por clave de API; los del MCP alojado son por usuario de WorkOS. Al excederlos, la respuesta es HTTP 429 con `retry_after_seconds`. Las salidas son automatizadas y pueden equivocarse — trátalas como señales para verificar, no como autoridad final.",
+        "La calidad se mide contra conjuntos de prueba internos fijos y los resúmenes de benchmark publicados en este sitio.",
       ],
     },
     {
-      title: "Obtener una clave",
+      title: "Obtener una clave de la REST API",
       paragraphs: [
-        "Las claves se emiten manualmente por ahora. Abre un issue en [GitHub](https://github.com/rafaehlers/jiddu) para solicitar una.",
+        "Las claves se emiten manualmente por ahora y se asignan a tu cuenta WorkOS verificada. Contacta al operador mediante el canal indicado en la página de Términos para solicitar una. El secreto se muestra una vez y se guarda únicamente como hash sha256.",
       ],
     },
   ],
@@ -2282,7 +2327,7 @@ const es: Messages = {
   legal_title: "Términos, privacidad y descargos",
   legal_subtitle:
     "Lee esto antes de usar Jiddu, especialmente antes de compartir un análisis públicamente.",
-  legal_last_updated: "Actualizado: 2026-07-27",
+  legal_last_updated: "Actualizado: 2026-07-28",
   legal_sections: [
     {
       title: "1. Qué hace Jiddu",
@@ -2318,7 +2363,8 @@ const es: Messages = {
     {
       title: "5. Privacidad",
       paragraphs: [
-        "Cada análisis o revisión de paper completado recibe una URL compartible no listada y se almacena en un servidor en Brasil. Quien tenga la URL puede ver el resultado final, pero esas páginas no se enumeran en el sitemap público. No hay cuentas de usuario; las etapas intermedias privadas de la revisión no aparecen en el visor público.",
+        "Cada análisis o revisión de paper completado recibe una URL compartible no listada y se almacena en un servidor en Brasil. Quien tenga la URL puede ver el resultado final, pero esas páginas no se enumeran en el sitemap público. Los usuarios que iniciaron sesión ven los análisis asociados a su cuenta, pero la URL compartible sigue accesible para quien la tenga; las etapas intermedias privadas de la revisión no aparecen en el visor público.",
+        "La autenticación la proporciona WorkOS AuthKit. Jiddu recibe la identidad necesaria para mantener la sesión, autorizar clientes MCP y asociar claves REST, saldos y uso con la cuenta correcta. Los secretos REST se muestran una vez y se almacenan solo como hashes. Las credenciales de los proveedores de modelos son administradas por Jiddu y nunca se exponen al JavaScript de la página, clientes REST o clientes MCP.",
         "El autocompletado de venue envía solo la consulta del venue — nunca el manuscrito — a la búsqueda pública de venues de [DBLP](https://dblp.org). La etapa de investigación de literatura consulta fuentes académicas públicas usando afirmaciones técnicas del manuscrito; los prompts prohíben buscar por el título del paper, el nombre de los autores u otros manuscritos de los mismos autores.",
         "Registramos el IP de la solicitud para límites de tasa y detección de abuso. No vendemos ni compartimos esa información.",
         "El tráfico de las páginas se mide vía Google Analytics (gtag.js).",
@@ -2332,20 +2378,20 @@ const es: Messages = {
         "La taxonomía inicial del detector de slop proviene de la skill de edición [no-ai-slop](https://github.com/petergyang/no-ai-slop), de Peter Yang, con licencia MIT. Jiddu aporta la redacción del catálogo, las traducciones y el prompt de detección, y señala patrones observables, no autoría.",
         "Jiddu no está afiliado a esos grupos de investigación, a DBLP ni a ningún venue cuyos criterios resume. Se citan las referencias y páginas oficiales para que el usuario pueda auditar la metodología y el estándar aplicado.",
         "El pipeline de fact-check se midió contra el corpus humano de [PolitiFact](https://www.politifact.com) (vía el [dataset LIAR2](https://github.com/chengxuphd/liar2), Apache-2.0). En 200 afirmaciones tomadas de los cuatro buckets polares de PolitiFact, el veredicto de Jiddu coincidió con el veredicto humano en 67,5% de los casos en total y en 81,3% en las categorías menos ambiguas (true / false / pants-on-fire), con desacuerdo estricto en apenas 4,5%. Metodología completa, matriz de confusión y análisis de desacuerdos en [docs/benchmark-politifact.md](/benchmark).",
-        "La revisión de papers tiene un [benchmark sintético SPECS separado de 30 casos](https://github.com/rafaehlers/jiddu/blob/main/evals/paper-review/report.md). GPT-5.4 mini y GPT-5.5 detectaron los 30 defectos insertados; GPT-5.5 produjo 30,6% menos hallazgos, más consolidados. El conjunto alcanzó un techo y no establece precisión en papers reales completos.",
+        "La revisión de papers tiene un benchmark sintético SPECS separado de 30 casos. GPT-5.4 mini y GPT-5.5 detectaron los 30 defectos insertados; GPT-5.5 produjo 30,6% menos hallazgos, más consolidados. El conjunto alcanzó un techo y no establece precisión en papers reales completos.",
       ],
     },
     {
       title: "7. Contacto",
       paragraphs: [
-        "Operador: Rafael de Menezes Ehlers. Para solicitudes de remoción, correcciones u otras consultas, abre un issue en [GitHub](https://github.com/rafaehlers/jiddu).",
+        "Operador: Rafael de Menezes Ehlers. Para solicitudes de remoción, correcciones u otras consultas, usa el formulario de contacto en [rafaelmehlers.com.br](https://rafaelmehlers.com.br).",
       ],
     },
   ],
 
   how_it_works_title: "Cómo funciona Jiddu",
   how_it_works_subtitle:
-    "Walkthrough técnico de cada pipeline. Nada se esconde — el código fuente es abierto bajo AGPL-3.0 en github.com/rafaehlers/jiddu, así que cualquier cosa descrita abajo puede ser contrastada con la implementación real.",
+    "Walkthrough técnico de cada pipeline, incluyendo ingestión, enrutamiento de modelos, validación, límites y metodología.",
   how_it_works_sections: [
     {
       title: "1. Visión general",
@@ -2438,7 +2484,8 @@ const es: Messages = {
     {
       title: "10. Privacidad y estado de revisión",
       paragraphs: [
-        "No hay cuentas de usuario. Los resultados completados usan URLs no listadas: cualquiera que tenga la URL puede ver el resultado final, pero esas páginas no se enumeran en el sitemap público. Los ledgers, la investigación y los juicios preliminares de la revisión de papers son artefactos intermedios internos y no se muestran en el resultado público.",
+        "WorkOS AuthKit proporciona cuentas y sesiones. Los resultados completados siguen disponibles mediante URLs no listadas, y los usuarios que iniciaron sesión también ven sus análisis asociados en el área de cuenta. Cualquiera que tenga la URL compartible todavía puede ver el resultado final. Los ledgers, la investigación y los juicios preliminares de la revisión de papers son artefactos intermedios internos y no se muestran en el resultado público.",
+        "Los créditos Jiddu son un saldo para análisis web, REST asociados a la cuenta y MCP alojados que usan credenciales de proveedores administradas por Jiddu. Las cuentas verificadas en la allowlist administrada por el operador reciben acceso incluido.",
         "El contenido enviado pasa por OpenRouter al upstream del modelo elegido. En revisión de papers incluye imágenes renderizadas de páginas seleccionadas, no solo texto extraído. La etapa de literatura busca fuentes académicas públicas por afirmaciones técnicas, mientras los prompts prohíben consultas por título, autor u otros manuscritos de los mismos autores. El autocompletado envía solo la consulta del venue a DBLP. Registramos el IP para rate-limit y señales de abuso y no lo vendemos.",
         "Los resultados son automatizados y no revisados por defecto. Un resultado marcado explícitamente como revisado fue inspeccionado puntualmente por el operador; ese estado es una comprobación humana adicional, no una garantía de que todos los hallazgos sean correctos.",
       ],
@@ -2446,7 +2493,8 @@ const es: Messages = {
     {
       title: "11. Costo y controles de abuso",
       paragraphs: [
-        "Cada ruta con costo tiene rate limit token bucket in-memory por IP. Los valores por defecto incluyen 30 análisis de falacias / hora, 30 extracciones de fact-check / hora, 10 verificaciones masivas / hora, 20 refreshes individuales / hora y, deliberadamente conservador, 4 revisiones de paper / hora con burst 2. El operador puede ajustar estos valores en runtime; los buckets agotados devuelven 429 con `Retry-After`.",
+        "Los análisis usan acceso incluido de la plataforma o créditos Jiddu. Los créditos son independientes del saldo upstream en dólares de la plataforma y cubren análisis web, REST asociados a la cuenta y MCP alojados. La cuenta muestra saldo, tabla de tarifas e historial. Antes de ejecutar se reserva el costo máximo de la ruta; al final las llamadas completadas se liquidan por el costo real del proveedor y se libera el resto. Los administradores pueden otorgar créditos manualmente; los paquetes pagos están previstos, pero aún no se venden.",
+        "Cada ruta con costo también tiene rate limit token bucket in-memory por IP. Los valores por defecto incluyen 30 análisis de falacias / hora, 30 extracciones de fact-check / hora, 10 verificaciones masivas / hora, 20 refreshes individuales / hora y, deliberadamente conservador, 4 revisiones de paper / hora con burst 2. El operador puede ajustar estos valores en runtime; los buckets agotados devuelven 429 con `Retry-After`.",
         "La extracción de fact-check tiene tope de 50 afirmaciones por documento y el refresh, 2 llamadas por afirmación. La revisión acepta exactamente un PDF, rechaza truncar silenciosamente por encima de 300.000 caracteres extraídos, limita la inspección visual a páginas seleccionadas y divide el trabajo costoso en etapas auditables. Estos controles evitan fan-out y costos accidentalmente ilimitados.",
       ],
     },
@@ -2461,9 +2509,9 @@ const es: Messages = {
     {
       title: "13. Modo Live (beta)",
       paragraphs: [
-        "Pipeline separado en [/live](/live): la página captura audio del micrófono del usuario o, en navegadores Chromium, de una pestaña del navegador vía `getDisplayMedia`. El audio se transmite *directamente del navegador a la Realtime API de OpenAI* por WebRTC — nunca pasa por el servidor de Jiddu. El modelo de transcripción es `gpt-realtime-whisper`, y el idioma respeta el selector del header (EN / PT / ES).",
-        "Cómo funciona el cableado: cuando el usuario hace clic en **Iniciar**, el navegador llama a `POST /api/live/token` para acuñar un client secret efímero de corta vida (el servidor de Jiddu guarda la `OPENAI_API_KEY` real; el navegador nunca la ve). El navegador abre entonces la peer-connection WebRTC con OpenAI usando ese secret y empieza a recibir deltas de transcripción. Cada ~500 caracteres nuevos (o cada 30 segundos, lo que ocurra primero), una llamada SSE separada a `POST /api/live/analyze` envía el transcript acumulado y corre el mismo prompt de falacia usado en cualquier lugar — este paso de análisis es una llamada distinta a la transcripción vía OpenAI de arriba, enrutada vía OpenRouter con el mismo selector GPT-5.4 mini / MiniMax M3 de los pipelines de texto. Los hallazgos aparecen en la UI casi en tiempo real. Al **Detener**, una última llamada con `finalize: true` commitea la sesión como un análisis `/a/<id>` normal, indistinguible aguas abajo de uno hecho vía paste.",
-        "El costo está acotado por un cap duro de 60 minutos por sesión (≈ \\$1 de Realtime + costo del análisis LLM). El audio bruto nunca se almacena — solo la transcripción y los hallazgos detectados persisten. La página deliberadamente no está enlazada desde el nav mientras está en beta — se llega tecleando `/live` en la barra. La captura de audio de pestaña funciona solo en Chrome / Edge porque Safari y Firefox no exponen audio de pestaña vía `getDisplayMedia`; el micrófono funciona en todos lados.",
+        "Pipeline separado en [/live](/live): la página captura audio del micrófono del usuario o, en navegadores Chromium, de una pestaña del navegador vía `getDisplayMedia`. El audio se transmite *directamente del navegador a la Realtime API de OpenAI* por WebRTC — nunca pasa por el servidor de Jiddu. El modelo de transcripción es `gpt-live-transcribe`, usando por defecto el perfil equilibrado `medium` de latencia y precisión, y el idioma seleccionado en el encabezado se envía como pista de transcripción (EN / PT / ES).",
+        "Cómo funciona el cableado: cuando el usuario hace clic en **Iniciar**, el navegador llama a `POST /api/live/token` para acuñar un client secret efímero de corta vida (el servidor de Jiddu guarda la `OPENAI_API_KEY` real; el navegador nunca la ve). El navegador abre entonces la peer-connection WebRTC con OpenAI usando ese secret y empieza a recibir deltas de transcripción. El análisis empieza anticipadamente tras ~800 caracteres nuevos, o cada 30 segundos cuando haya al menos ~120 caracteres nuevos. Una llamada SSE separada a `POST /api/live/analyze` envía el transcript acumulado, con las cuatro frases anteriores como contexto entre ventanas, y ejecuta el mismo prompt de falacias utilizado en el resto del sitio. Este paso de análisis es una llamada distinta a la transcripción de OpenAI, enrutada vía OpenRouter con el mismo selector GPT-5.4 mini / MiniMax M3. Al **Detener**, una última llamada con `finalize: true` procesa el texto restante y guarda la sesión como un análisis `/a/<id>` normal.",
+        "El costo está limitado por un máximo rígido de 60 minutos. El audio bruto nunca se almacena — solo persisten la transcripción y los hallazgos detectados. Live requiere acceso incluido de la plataforma o créditos Jiddu: la tarifa fija configurada reserva una sesión de transcripción Realtime y cada ventana de análisis completada usa la tarifa normal del modelo elegido. La página queda fuera de la navegación mientras está en beta — se llega escribiendo `/live`. La captura de audio de pestaña funciona en Chrome / Edge; el micrófono funciona en los demás navegadores compatibles.",
       ],
     },
     {
@@ -2487,7 +2535,7 @@ const es: Messages = {
         "El formulario ofrece profundidad **Estándar** y **Profunda**. Estándar usa el modelo económico seleccionado y otro modelo del catálogo como crítico. Profunda usa modelos de razonamiento más fuertes en evaluación, corrección, significancia y síntesis, con Claude Opus 4.8 como crítico independiente por defecto; tarda más y cuesta más.",
         "**Enrutamiento de modelos y por qué.** En modo Estándar, el modelo elegido en el formulario — GPT-5.4 mini por defecto o MiniMax M3 — ejecuta el ledger, la investigación de literatura, los cinco especialistas SPECS, la síntesis y la autocrítica. La auditoría de calidad se asigna deliberadamente al otro modelo del catálogo, para que el borrador no sea aprobado solo por el modelo que lo escribió.",
         "En modo Profundo, el modelo seleccionado conserva ledger, Story y Presentation; GPT-5.5 con razonamiento high ejecuta investigación de literatura, Evaluations, Correctness, Significance, síntesis, autocrítica y cualquier reparación; Claude Opus 4.8 audita de forma independiente la revisión resultante. Esto concentra el razonamiento costoso en validez numérica, diseño experimental, novedad y síntesis entre etapas, mientras una familia diferente de modelos realiza el desafío final para reducir puntos ciegos correlacionados.",
-        "En el [benchmark sintético SPECS de 30 casos de Jiddu](https://github.com/rafaehlers/jiddu/blob/main/evals/paper-review/report.md), GPT-5.4 mini y GPT-5.5 detectaron todos los defectos inyectados, pero GPT-5.5 produjo un 30,6% menos de hallazgos, más consolidados. El benchmark alcanzó un techo y no demuestra superioridad en papers completos; Profunda es una capa adicional de escrutinio, no una garantía de corrección. El operador puede sustituir ambos modelos de Profunda mediante `PAPER_REVIEW_DEEP_MODEL` y `PAPER_REVIEW_CRITIC_MODEL`.",
+        "En el benchmark sintético SPECS de 30 casos de Jiddu, GPT-5.4 mini y GPT-5.5 detectaron todos los defectos inyectados, pero GPT-5.5 produjo un 30,6% menos de hallazgos, más consolidados. El benchmark alcanzó un techo y no demuestra superioridad en papers completos; Profunda es una capa adicional de escrutinio, no una garantía de corrección. El operador puede sustituir ambos modelos de Profunda mediante `PAPER_REVIEW_DEEP_MODEL` y `PAPER_REVIEW_CRITIC_MODEL`.",
         "El autocompletado combina descubrimiento gratuito y sin cuenta mediante [DBLP](https://dblp.org) con perfiles 2026 verificados y versionados de NeurIPS, ICML, ICLR, AAAI, IJCAI y CVPR. Un perfil verificado inyecta criterios y requisitos oficiales en la síntesis y la autocrítica y se persiste con URLs fuente. Un venue solo de DBLP o sin coincidencia usa una rúbrica académica general claramente identificada; incompatibilidades de edición, track o tipo se marcan como no verificadas, nunca se adivinan.",
         "Cada debilidad sustantiva debe incluir página o sección del manuscrito y severidad `MAJOR`, `MODERATE` o `MINOR`. La revisión sigue siendo automatizada: puede omitir problemas, inventar comparaciones o aplicar mal un criterio, y no es revisión oficial por pares ni predicción de aceptación.",
       ],
@@ -2496,19 +2544,18 @@ const es: Messages = {
       title: "16. API pública & MCP (para agentes)",
       paragraphs: [
         "Además del app web, los cinco pipelines de texto se exponen como una API REST pública para agentes y scripts: `POST /api/v1/detect-fallacies`, `/fact-check`, `/assess-neutrality`, `/explain`, `/detect-slop`. Son síncronos — entra una solicitud JSON (`{ text }`, 40–2000 caracteres, más `lang` opcional y, en explain, `level`) y sale una respuesta JSON. Ejecutan los generadores hasta el final sobre un único chunk y no persisten filas.",
-        "Las solicitudes se autentican con el encabezado `X-Jiddu-Key`. Las claves las emite el operador, se guardan solo como hash sha256, se muestran una vez y tienen límites por clave separados de los límites por IP del app web. El fact-check vía API extrae y verifica cada afirmación, con un tope de afirmaciones por solicitud para que una llamada no dispare verificaciones ilimitadas en el Sonar pago.",
+        "Las solicitudes se autentican con el encabezado `X-Jiddu-Key`. Cada clave emitida por el operador se asigna a una cuenta WorkOS verificada, se guarda solo como hash sha256, se muestra una vez y tiene límites independientes. La solicitud usa el acceso incluido o los créditos Jiddu de esa cuenta; las llamadas financiadas con créditos reservan el costo máximo de la ruta y se liquidan por el costo real devuelto por el proveedor. El fact-check cobra por separado las llamadas Sonar sin caché e impone un tope de afirmaciones por solicitud.",
         "La revisión adversarial se expone como job asíncrono persistido: `POST /api/v1/adversarial-reviews` recibe un PDF subido o una `pdf_url` pública y devuelve `202`; `GET /api/v1/adversarial-reviews/{id}` informa la etapa actual y finalmente entrega la revisión estructurada. Así el flujo de nueve etapas y varios minutos queda fuera del contrato síncrono de texto.",
-        "El servidor MCP alojado en `POST /api/mcp` expone las cinco herramientas de texto más `start_adversarial_review` y `get_adversarial_review`. Cualquier cliente MCP se conecta mediante `mcp-remote`; las mismas herramientas también vienen en el paquete standalone `jiddu-mcp`. Snippets y docs orientadas a máquinas en [/api-access](/api-access).",
-        "La calidad se monitorea con un conjunto fijo de evals (15–16 casos por herramienta) versionado en el repositorio y comparado con resultados esperados; el informe publicado está en [evals/report.md](https://github.com/rafaehlers/jiddu/blob/main/evals/report.md).",
+        "El servidor MCP alojado en `POST /api/mcp` expone las cinco herramientas de texto más `start_adversarial_review` y `get_adversarial_review`. [WorkOS AuthKit MCP](https://workos.com/docs/authkit/mcp) actúa como servidor de autorización OAuth: los clientes compatibles descubren el inicio de sesión automáticamente y reciben un bearer token limitado al recurso MCP. Jiddu resuelve acceso incluido para usuarios en la allowlist o reserva y gasta créditos Jiddu para los demás. El MCP alojado no usa una `X-Jiddu-Key` emitida manualmente. Snippets y docs orientadas a máquinas en [/api-access](/api-access).",
+        "La calidad se monitorea con un conjunto interno fijo de evals (15–16 casos por herramienta), comparado con resultados esperados; los resúmenes públicos aparecen en las secciones Benchmark y metodología.",
       ],
     },
     {
-      title: "17. Open source y metodología",
+      title: "17. Metodología y evaluación",
       paragraphs: [
-        "El código fuente está en [github.com/rafaehlers/jiddu](https://github.com/rafaehlers/jiddu) bajo licencia [AGPL-3.0-or-later](https://www.gnu.org/licenses/agpl-3.0.txt). AGPL cierra el 'SaaS loophole' que GPL deja abierto: cualquiera que corra una versión modificada como servicio de red debe publicar el código fuente modificado.",
         "[Claimify](https://arxiv.org/abs/2502.10855) orienta la extracción de afirmaciones, y [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) orienta la evaluación de veredictos, los tiers de fuentes y la imparcialidad. [no-ai-slop](https://github.com/petergyang/no-ai-slop) aporta la taxonomía inicial para detectar patrones de escritura.",
         "La revisión adversarial de papers adapta las dimensiones SPECS y la síntesis y autocrítica por etapas descritas en [AI-Assisted Peer Review at Scale: The AAAI-26 AI Review Pilot](https://arxiv.org/abs/2604.13940). Jiddu añade ledger, extracción con LiteParse, descubrimiento vía DBLP, perfiles de venue, validación de fuentes y gate de retención propios. No está afiliado a esos grupos, DBLP ni los venues.",
-        "La evaluación publicada actualmente incluye el [benchmark PolitiFact de 200 afirmaciones](/benchmark) y un [benchmark sintético SPECS de 30 casos](https://github.com/rafaehlers/jiddu/blob/main/evals/paper-review/report.md). Ambos documentan sus límites y ninguno garantiza corrección en un texto o paper nuevo.",
+        "La evaluación publicada actualmente incluye el [benchmark PolitiFact de 200 afirmaciones](/benchmark) y un benchmark sintético SPECS de 30 casos. Ambos documentan sus límites y ninguno garantiza corrección en un texto o paper nuevo.",
         "El disclaimer completo de lo que Jiddu afirma y no afirma está en [/legal](/legal).",
       ],
     },
@@ -2579,7 +2626,6 @@ const es: Messages = {
   nav_fallacies: "Guía de falacias",
   nav_slop_patterns: "Patrones de slop",
   nav_benchmark: "Benchmark",
-  nav_source: "Código fuente",
 
   theme_to_dark: "Cambiar a modo oscuro",
   theme_to_light: "Cambiar a modo claro",

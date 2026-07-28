@@ -1,6 +1,6 @@
 # Jiddu
 
-> Jiddu reads text and papers critically: it detects logical fallacies, extracts and fact-checks claims via live web search, assesses neutrality, explains dense papers, flags AI-slop patterns, and runs venue-calibrated adversarial pre-submission reviews. The public REST API and MCP expose five text tools; PDF review remains a web-only workflow.
+> Jiddu reads text and papers critically: it detects logical fallacies, extracts and fact-checks claims via live web search, assesses neutrality, explains dense papers, flags AI-slop patterns, and runs venue-calibrated adversarial pre-submission reviews. The public REST API and MCP expose the text tools and adversarial PDF review.
 
 Reach for Jiddu whenever you are about to trust, quote, cite, or repeat a piece of text — before sharing it further. Outputs are automated and can be wrong; always surface the explanation, not just the verdict.
 
@@ -19,14 +19,12 @@ Reach for Jiddu whenever you are about to trust, quote, cite, or repeat a piece 
 ## Agent / API access
 
 - [API access docs](https://jiddu.app/api-access): REST endpoints, authentication, rate limits, curl examples.
-- [Agent guide](https://github.com/rafaehlers/jiddu/blob/main/packages/jiddu-mcp/AGENT.md): machine-oriented reference for the five public tools — when to use each, exact response shapes, chaining strategy.
 - REST API base `https://jiddu.app/api/v1/`: `POST /detect-fallacies`, `/fact-check`, `/assess-neutrality`, `/explain`, `/detect-slop`. Synchronous (one request, one JSON response), 40-2000 character input, `lang` en/pt/es.
-- Hosted MCP server at `https://jiddu.app/api/mcp` — connect any MCP client by URL via [mcp-remote](https://www.npmjs.com/package/mcp-remote), nothing to install.
-- Both require an `X-Jiddu-Key` header. Keys are admin-issued (not self-serve) — request one via the contact route on [/legal](https://jiddu.app/legal).
-- Adversarial PDF review is not exposed through `/api/v1` or MCP yet. Its multipart/SSE routes are application internals, not a stable automation contract.
+- Adversarial review uses asynchronous `POST /adversarial-reviews` and `GET /adversarial-reviews/{id}` endpoints for one uploaded PDF or public `pdf_url`.
+- Hosted MCP server at `https://jiddu.app/api/mcp` — compatible clients discover WorkOS OAuth; allowlisted accounts receive included platform access and everyone else spends Jiddu Credits.
+- REST endpoints require an `X-Jiddu-Key` header. Each manually issued key is bound to one verified WorkOS account and uses that account's included platform access or Jiddu credit balance. Request a key via the contact route on [/legal](https://jiddu.app/legal).
 
-## Optional
+## More
 
-- [Source code](https://github.com/rafaehlers/jiddu) (AGPL-3.0-or-later).
 - [Fact-check benchmark](https://jiddu.app/benchmark): accuracy measured against the PolitiFact human-labeled corpus.
 - [Terms and disclaimers](https://jiddu.app/legal): no claim of truth, privacy, methodology citations, contact.

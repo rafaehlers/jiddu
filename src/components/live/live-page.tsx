@@ -11,12 +11,12 @@ import { TranscriptStream } from "./transcript-stream";
 import { FindingsList } from "./findings-list";
 
 // Hard cap: stop the session after this many seconds to prevent runaway cost.
-// 60 minutes ≈ $1 of gpt-realtime-whisper at $0.017/min, before LLM analysis.
+// 60 minutes ≈ $1 of gpt-live-transcribe at $0.017/min, before LLM analysis.
 const MAX_SESSION_MS = 60 * 60 * 1000;
 
 export function LivePage() {
   // Use the site-wide language preference (selector lives in the header) so
-  // both the Whisper transcription hint and the LLM analysis output language
+  // both the transcription hint and the LLM analysis output language
   // follow the rest of the UI.
   const { lang, t } = useI18n();
   const [source, setSource] = useState<LiveSource>("mic");
