@@ -215,7 +215,7 @@ export default async function AccountPage({
                         Change
                       </th>
                       <th className="px-4 py-3 text-right font-medium">
-                        Provider usage
+                        Tokens used
                       </th>
                       <th className="px-4 py-3 text-right font-medium">
                         Balance
@@ -257,20 +257,13 @@ export default async function AccountPage({
                             {transaction.amount}
                           </td>
                           <td className="whitespace-nowrap px-4 py-3 text-right text-xs text-muted">
-                            {transaction.providerCostMicros !== null ? (
-                              <>
-                                <span className="block tabular-nums">
-                                  {USD.format(
-                                    transaction.providerCostMicros / 1_000_000,
-                                  )}
-                                </span>
-                                <span className="block tabular-nums">
-                                  {(
-                                    transaction.totalTokens ?? 0
-                                  ).toLocaleString("en-US")}{" "}
-                                  tokens
-                                </span>
-                              </>
+                            {transaction.totalTokens !== null ? (
+                              <span className="block tabular-nums">
+                                {transaction.totalTokens.toLocaleString(
+                                  "en-US",
+                                )}{" "}
+                                tokens
+                              </span>
                             ) : (
                               "—"
                             )}

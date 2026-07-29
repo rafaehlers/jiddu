@@ -1,8 +1,11 @@
 "use client";
 
+import { useAuth } from "@workos-inc/authkit-nextjs/components";
 import { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Loader2, Play, Square, ExternalLink, RotateCcw } from "lucide-react";
+import { AnalysisAuthModal } from "@/components/analysis-auth-modal";
 import { useLiveSession, type LiveSource } from "@/lib/live/use-live-session";
 import { useLiveAnalysis } from "@/lib/live/use-live-analysis";
 import { useI18n } from "@/lib/i18n/provider";
@@ -19,7 +22,10 @@ export function LivePage() {
   // both the transcription hint and the LLM analysis output language
   // follow the rest of the UI.
   const { lang, t } = useI18n();
+  const { user, loading: authLoading } = useAuth();
+  const pathname = usePathname();
   const [source, setSource] = useState<LiveSource>("mic");
+  const [authModalOpen, setAuthModalOpen] = useState(false);
 
   const session = useLiveSession({ language: lang });
   const analysis = useLiveAnalysis({
@@ -38,6 +44,11 @@ export function LivePage() {
     analysis.sessionId != null;
 
   const handleStart = () => {
+    if (authLoading) return;
+    if (!user) {
+      setAuthModalOpen(true);
+      return;
+    }
     void session.start(source);
   };
 
@@ -84,7 +95,8 @@ export function LivePage() {
           <button
             type="button"
             onClick={handleStart}
-            className="inline-flex items-center gap-2 rounded-md bg-accent text-white px-4 py-2 text-sm font-medium hover:opacity-90"
+            disabled={authLoading}
+            className="inline-flex items-center gap-2 rounded-md bg-accent text-white px-4 py-2 text-sm font-medium hover:opacity-90 disabled:cursor-wait disabled:opacity-60"
           >
             {hasConcludedSession ? (
               <>
@@ -161,6 +173,11 @@ export function LivePage() {
       </section>
 
       <p className="text-xs text-muted mt-6">{t.live_privacy_note}</p>
+      <AnalysisAuthModal
+        open={authModalOpen}
+        returnTo={pathname}
+        onClose={() => setAuthModalOpen(false)}
+      />
     </div>
   );
 }

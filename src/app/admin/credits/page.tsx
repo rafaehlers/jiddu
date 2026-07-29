@@ -16,6 +16,13 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
+const PROVIDER_USD = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 6,
+});
+
 export default async function AdminCreditsPage({
   searchParams,
 }: {
@@ -136,7 +143,7 @@ export default async function AdminCreditsPage({
 
         <AdminSection title="Recent transactions">
           <AdminTableShell>
-            <table className="w-full min-w-[48rem] text-sm">
+            <table className="w-full min-w-[64rem] text-sm">
               <thead className="bg-paper text-left text-muted">
                 <tr>
                   <th className="px-4 py-3 font-medium">When</th>
@@ -144,6 +151,9 @@ export default async function AdminCreditsPage({
                   <th className="px-4 py-3 font-medium">Kind</th>
                   <th className="px-4 py-3 font-medium">Feature</th>
                   <th className="px-4 py-3 text-right font-medium">Change</th>
+                  <th className="px-4 py-3 text-right font-medium">
+                    Provider usage
+                  </th>
                   <th className="px-4 py-3 text-right font-medium">Balance</th>
                   <th className="px-4 py-3 font-medium">Note</th>
                 </tr>
@@ -151,7 +161,7 @@ export default async function AdminCreditsPage({
               <tbody>
                 {transactions.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-muted">
+                    <td colSpan={8} className="px-4 py-8 text-center text-muted">
                       No credit transactions yet.
                     </td>
                   </tr>
@@ -178,6 +188,30 @@ export default async function AdminCreditsPage({
                       >
                         {transaction.amount > 0 ? "+" : ""}
                         {transaction.amount}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 text-right text-xs text-muted">
+                        {transaction.providerCostMicros !== null ||
+                        transaction.totalTokens !== null ? (
+                          <>
+                            {transaction.providerCostMicros !== null && (
+                              <span className="block tabular-nums">
+                                {PROVIDER_USD.format(
+                                  transaction.providerCostMicros / 1_000_000,
+                                )}
+                              </span>
+                            )}
+                            {transaction.totalTokens !== null && (
+                              <span className="block tabular-nums">
+                                {transaction.totalTokens.toLocaleString(
+                                  "en-US",
+                                )}{" "}
+                                tokens
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          "—"
+                        )}
                       </td>
                       <td className="px-4 py-3 text-right tabular-nums">
                         {transaction.balanceAfter}
