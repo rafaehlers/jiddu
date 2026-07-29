@@ -25,6 +25,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${BASE_URL}/fallacies`, changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE_URL}/slop-patterns`, changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE_URL}/how-it-works`, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${BASE_URL}/pricing`, changeFrequency: "weekly", priority: 0.8 },
     { url: `${BASE_URL}/api-access`, changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE_URL}/benchmark`, changeFrequency: "monthly", priority: 0.6 },
     { url: `${BASE_URL}/legal`, changeFrequency: "yearly", priority: 0.3 },

@@ -1,6 +1,6 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { Moon, Sun } from "lucide-react";
 import { useI18n } from "@/lib/i18n/provider";
 
@@ -22,13 +22,24 @@ function subscribeTheme(notify: () => void): () => void {
 export function ThemeToggle() {
   const { t } = useI18n();
 
-  // The server snapshot stays dark so hydration matches. Once subscribed,
-  // the DOM class installed by the pre-hydration script is the source of truth.
+  // The server applies the cookie-backed class. This effect migrates the
+  // previous localStorage-only preference and keeps both stores in sync.
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("theme");
+      if (stored === "light" || stored === "dark") {
+        document.documentElement.classList.toggle("light", stored === "light");
+        document.cookie = `jiddu_theme=${stored}; Path=/; Max-Age=31536000; SameSite=Lax`;
+      }
+    } catch {}
+  }, []);
+
   const theme = useSyncExternalStore(subscribeTheme, readTheme, () => "dark");
 
   function toggle() {
     const next: Theme = theme === "light" ? "dark" : "light";
     localStorage.setItem("theme", next);
+    document.cookie = `jiddu_theme=${next}; Path=/; Max-Age=31536000; SameSite=Lax`;
     document.documentElement.classList.toggle("light", next === "light");
   }
 

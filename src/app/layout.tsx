@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Newsreader } from "next/font/google";
 import { cookies, headers } from "next/headers";
+import Script from "next/script";
 import { withAuth } from "@workos-inc/authkit-nextjs";
 import { effectiveAnalysisAccessMode } from "@/lib/analysis-access";
 import { isAdminIdentity } from "@/lib/admin-auth";
@@ -73,14 +74,6 @@ export const metadata: Metadata = {
   },
 };
 
-const themeInitScript = `
-  try {
-    if (localStorage.getItem('theme') === 'light') {
-      document.documentElement.classList.add('light');
-    }
-  } catch {}
-`;
-
 // Resolve the user's preferred language for this request, with the
 // preference order:
 //   1. Explicit cookie (set when they change the selector or auto-set
@@ -109,6 +102,11 @@ async function resolveInitialLang(): Promise<Lang> {
   return "en";
 }
 
+async function resolveInitialTheme(): Promise<"light" | "dark"> {
+  const cookieStore = await cookies();
+  return cookieStore.get("jiddu_theme")?.value === "light" ? "light" : "dark";
+}
+
 const gtagInitScript = `window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
@@ -120,6 +118,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const initialLang = await resolveInitialLang();
+  const initialTheme = await resolveInitialTheme();
   const authConfigured = isWorkOSConfigured();
   const auth = authConfigured ? await withAuth() : { user: null as null };
   const hasPlatformAccess =
@@ -131,18 +130,8 @@ export default async function RootLayout({
     <html
       lang={initialLang}
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} ${serif.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${serif.variable} h-full antialiased${initialTheme === "light" ? " light" : ""}`}
     >
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
-        {/* gtag is intentionally loaded directly; no third-party wrapper dependency. */}
-        {/* eslint-disable-next-line @next/next/next-script-for-ga */}
-        <script
-          async
-          src="https://www.googletagmanager.com/gtag/js?id=G-X4Y2D32654"
-        />
-        <script dangerouslySetInnerHTML={{ __html: gtagInitScript }} />
-      </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <AuthKitProvider initialAuth={initialAuth}>
           <AuthControlsProvider
@@ -154,6 +143,15 @@ export default async function RootLayout({
           </AuthControlsProvider>
         </AuthKitProvider>
       </body>
+      <Script
+        src="https://www.googletagmanager.com/gtag/js?id=G-X4Y2D32654"
+        strategy="afterInteractive"
+      />
+      <Script
+        id="jiddu-google-analytics"
+        strategy="afterInteractive"
+        dangerouslySetInnerHTML={{ __html: gtagInitScript }}
+      />
     </html>
   );
 }

@@ -6,7 +6,7 @@ import { HowItWorksBody } from "@/components/how-it-works-body";
 export const metadata: Metadata = {
   title: "Jiddu — how it works",
   description:
-    "Technical walkthrough of all six Jiddu pipelines, including LiteParse PDF ingestion, venue-calibrated adversarial paper review, model routing, privacy, rate limits, and methodology.",
+    "Technical walkthrough of Jiddu's pipelines, credit billing, LiteParse PDF ingestion, venue-calibrated adversarial paper review, model routing, privacy, rate limits, and methodology.",
 };
 
 export default function HowItWorksPage() {

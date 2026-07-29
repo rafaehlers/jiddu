@@ -2,14 +2,20 @@
 
 import { Fragment } from "react";
 import { useI18n } from "@/lib/i18n/provider";
+import {
+  JIDDU_CREDIT_RATE_VERSION,
+  MODEL_CREDIT_RATES,
+} from "@/lib/jiddu-credit-rates";
 
 // Technical walkthrough of every Jiddu pipeline. Same content pattern as
 // LegalBody: structured array of {title, paragraphs} lives in i18n so the
 // three locales stay in sync. Paragraphs render markdown-style links —
 // [label](url) — inline.
 export function HowItWorksBody() {
-  const { t } = useI18n();
+  const { lang, t } = useI18n();
   const sections = t.how_it_works_sections;
+  const liveTranscriptionCredits =
+    MODEL_CREDIT_RATES["gpt-live-transcribe"];
   return (
     <article className="mx-auto max-w-3xl w-full px-4 sm:px-6 py-10 sm:py-16 flex flex-col gap-8">
       <header className="flex flex-col gap-2">
@@ -44,33 +50,41 @@ export function HowItWorksBody() {
             <div className="flex flex-col gap-4">
               {s.paragraphs.map((p, j) => {
                 const { heading, body } = splitLeadingHeading(p);
+                const creditTable =
+                  j === 0 && s.creditTable ? (
+                    <PublicCreditRateTable
+                      table={s.creditTable}
+                      liveTranscriptionCredits={liveTranscriptionCredits}
+                      locale={lang === "pt" ? "pt-BR" : lang === "es" ? "es" : "en-US"}
+                    />
+                  ) : null;
                 if (!heading) {
                   return (
-                    <p
-                      key={j}
-                      className="text-base leading-relaxed text-foreground/85"
-                    >
-                      {renderInline(body)}
-                    </p>
+                    <Fragment key={j}>
+                      <p className="text-base leading-relaxed text-foreground/85">
+                        {renderInline(body)}
+                      </p>
+                      {creditTable}
+                    </Fragment>
                   );
                 }
 
                 subsectionNumber += 1;
                 return (
-                  <div key={j} className="min-w-0">
-                    <h3 className="mb-1 font-serif text-lg leading-snug text-foreground">
-                      <span
-                        className="mr-2"
-                        aria-hidden="true"
-                      >
-                        {i + 1}.{subsectionNumber}
-                      </span>
-                      {heading}
-                    </h3>
-                    <p className="text-base leading-relaxed text-foreground/85">
-                      {renderInline(body)}
-                    </p>
-                  </div>
+                  <Fragment key={j}>
+                    <div className="min-w-0">
+                      <h3 className="mb-1 font-serif text-lg leading-snug text-foreground">
+                        <span className="mr-2" aria-hidden="true">
+                          {i + 1}.{subsectionNumber}
+                        </span>
+                        {heading}
+                      </h3>
+                      <p className="text-base leading-relaxed text-foreground/85">
+                        {renderInline(body)}
+                      </p>
+                    </div>
+                    {creditTable}
+                  </Fragment>
                 );
               })}
             </div>
@@ -78,6 +92,63 @@ export function HowItWorksBody() {
         );
       })}
     </article>
+  );
+}
+
+type CreditTable = NonNullable<
+  ReturnType<typeof useI18n>["t"]["how_it_works_sections"][number]["creditTable"]
+>;
+
+function PublicCreditRateTable({
+  table,
+  liveTranscriptionCredits,
+  locale,
+}: {
+  table: CreditTable;
+  liveTranscriptionCredits: number;
+  locale: string;
+}) {
+  const replacements = {
+    "{liveCredits}": Math.ceil(liveTranscriptionCredits).toLocaleString(locale),
+    "{rateVersion}": JIDDU_CREDIT_RATE_VERSION,
+  };
+  const interpolate = (text: string) =>
+    Object.entries(replacements).reduce(
+      (result, [token, value]) => result.replaceAll(token, value),
+      text,
+    );
+
+  return (
+    <div className="my-2 space-y-3">
+      <p className="text-sm leading-relaxed text-muted">{table.intro}</p>
+      <div className="overflow-x-auto rounded-lg border border-rule">
+        <table className="w-full min-w-[42rem] text-sm">
+          <thead className="bg-paper text-left text-muted">
+            <tr>
+              <th className="px-4 py-3 font-medium">
+                {table.headers.feature}
+              </th>
+              <th className="px-4 py-3 font-medium">{table.headers.unit}</th>
+              <th className="px-4 py-3 font-medium">
+                {table.headers.estimate}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {table.rows.map((row) => (
+              <tr key={row.feature} className="border-t border-rule">
+                <td className="px-4 py-3 font-medium">{row.feature}</td>
+                <td className="px-4 py-3 text-muted">{row.unit}</td>
+                <td className="px-4 py-3">{interpolate(row.estimate)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="border-t border-rule px-4 py-3 text-xs leading-relaxed text-muted">
+          {interpolate(table.note)}
+        </p>
+      </div>
+    </div>
   );
 }
 

@@ -63,6 +63,13 @@ export function SiteFooter() {
           </Link>
           <span aria-hidden>·</span>
           <Link
+            href="/pricing"
+            className="hover:text-accent-hi transition-colors"
+          >
+            {t.nav_pricing}
+          </Link>
+          <span aria-hidden>·</span>
+          <Link
             href="/api-access"
             className="hover:text-accent-hi transition-colors"
           >

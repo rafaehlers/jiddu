@@ -309,6 +309,7 @@ export type Messages = {
   nav_fallacies: string;
   nav_slop_patterns: string;
   nav_benchmark: string;
+  nav_pricing: string;
 
   // Theme
   theme_to_dark: string;
@@ -343,7 +344,24 @@ export type Messages = {
   // How-it-works page — technical walkthrough of every pipeline
   how_it_works_title: string;
   how_it_works_subtitle: string;
-  how_it_works_sections: Array<{ title: string; paragraphs: string[] }>;
+  how_it_works_sections: Array<{
+    title: string;
+    paragraphs: string[];
+    creditTable?: {
+      intro: string;
+      headers: {
+        feature: string;
+        unit: string;
+        estimate: string;
+      };
+      rows: Array<{
+        feature: string;
+        unit: string;
+        estimate: string;
+      }>;
+      note: string;
+    };
+  }>;
   nav_how_it_works: string;
 
   // API access page — public REST API + MCP server docs
@@ -983,12 +1001,79 @@ const en: Messages = {
       ],
     },
     {
-      title: "11. Cost and abuse controls",
+      title: "11. Credits, billing and abuse controls",
       paragraphs: [
-        "Analyses use either included platform access or Jiddu Credits. Jiddu Credits are independent of the platform's upstream dollar balance and cover web, account-owned REST and hosted MCP analyses. The account page shows the balance, rate card and transaction history. Before execution, Jiddu reserves the rate-card estimate. Completed OpenRouter calls are then settled from the prompt tokens, completion tokens and real cost returned by the provider, converted to credits with a configurable margin; the rate card is a fallback when usage accounting is unavailable. The unused reservation is released. Administrators can grant credits manually; paid packs are planned but are not sold yet.",
+        "Jiddu Credits pay for analyses across the web app, account-owned REST API keys and hosted MCP. Before work begins, Jiddu temporarily reserves the estimate shown below so concurrent jobs cannot spend the same balance. Metered model calls settle against the work actually completed, and any unused reservation is returned to the account. Some verified accounts have included platform access and do not consume their personal credit balance.",
+        "A reservation is an estimate, not always the final debit. Long documents can contain multiple chunks, fact-check verification is charged per eligible claim, and Live analysis is charged per completed analysis window. Provider retries, reasoning usage or an unusually expensive completion can make the final debit exceed the reservation; if that leaves a negative balance, new analyses stay blocked until credits are added. Fixed services such as Live transcription use the listed session charge.",
+        "Paid credit packs and Stripe checkout are planned but are not sold yet. When purchases launch, package prices will be shown separately; the credit accounting and transaction history described here will remain the source of truth for usage.",
         "Every cost-incurring route also has an in-memory token-bucket rate limit per IP. Defaults include 30 fallacy analyses / hour, 30 fact-check extractions / hour, 10 bulk verifications / hour, 20 per-claim refreshes / hour and a deliberately conservative 4 paper reviews / hour with burst capacity 2. The operator can tune these values at runtime; exhausted buckets return 429 with `Retry-After`.",
         "Fact-check extraction caps at 50 claims per document and per-claim refresh at 2 calls. Paper review accepts exactly one PDF, refuses to silently truncate past 300,000 extracted characters, limits visual inspection to selected pages and splits the costly work into auditable stages. These controls prevent accidental unbounded fan-out and bills.",
       ],
+      creditTable: {
+        intro:
+          "The table shows the maximum initial reservation under the current default routing. It helps users check whether they have enough credits before starting; the final debit for metered calls is based on the work actually completed.",
+        headers: {
+          feature: "Feature",
+          unit: "Billing unit",
+          estimate: "Estimated credit requirement",
+        },
+        rows: [
+          {
+            feature: "Fallacy detector",
+            unit: "Per completed text chunk",
+            estimate: "Up to 2 credits reserved",
+          },
+          {
+            feature: "Fact-check — extraction",
+            unit: "Per completed text chunk",
+            estimate: "Up to 2 credits reserved",
+          },
+          {
+            feature: "Fact-check — verification",
+            unit: "Per eligible claim search",
+            estimate:
+              "Up to 2 credits for each uncached claim; cached results use no credits",
+          },
+          {
+            feature: "Neutrality",
+            unit: "Per completed text chunk",
+            estimate: "Up to 2 credits reserved",
+          },
+          {
+            feature: "Paper explainer",
+            unit: "Per completed text chunk",
+            estimate: "Up to 2 credits reserved",
+          },
+          {
+            feature: "Slop detector",
+            unit: "Per completed text chunk",
+            estimate: "Up to 2 credits reserved",
+          },
+          {
+            feature: "Adversarial review — Standard",
+            unit: "Per review run",
+            estimate: "Up to 21 credits reserved",
+          },
+          {
+            feature: "Adversarial review — Deep",
+            unit: "Per review run",
+            estimate: "Up to 94 credits reserved",
+          },
+          {
+            feature: "Live transcription",
+            unit: "Per Realtime session",
+            estimate:
+              "{liveCredits} fixed credits for one session, capped at 60 minutes",
+          },
+          {
+            feature: "Live analysis",
+            unit: "Per completed analysis window",
+            estimate: "Up to 2 credits reserved",
+          },
+        ],
+        note:
+          "Rate card {rateVersion}. Unused reservations are released. Estimates can change as routing and provider prices evolve; completed usage is always visible in the account credit ledger.",
+      },
     },
     {
       title: "12. Feedback loop",
@@ -1118,6 +1203,7 @@ const en: Messages = {
   nav_fallacies: "Fallacy guide",
   nav_slop_patterns: "Slop patterns",
   nav_benchmark: "Benchmark",
+  nav_pricing: "Pricing",
 
   theme_to_dark: "Switch to dark mode",
   theme_to_light: "Switch to light mode",
@@ -1737,12 +1823,79 @@ const pt: Messages = {
       ],
     },
     {
-      title: "11. Controle de custo e abuso",
+      title: "11. Créditos, cobrança e controles de abuso",
       paragraphs: [
-        "As análises usam acesso incluído da plataforma ou créditos Jiddu. Os créditos são independentes do saldo upstream em dólares da plataforma e cobrem análises web, REST vinculadas à conta e MCP hospedadas. A área da conta mostra saldo, tabela tarifária e histórico. Antes da execução, o custo máximo da rota fica reservado; ao final, as chamadas concluídas são liquidadas pelo custo real do provedor e o restante é liberado. Administradores podem conceder créditos manualmente; pacotes pagos estão planejados, mas ainda não são vendidos.",
+        "Os Créditos Jiddu pagam análises no app web, em chaves REST vinculadas à conta e no MCP hospedado. Antes do trabalho começar, o Jiddu reserva temporariamente a estimativa abaixo para impedir que jobs simultâneos gastem o mesmo saldo. Chamadas medidas de modelos são liquidadas pelo trabalho realmente concluído, e toda reserva não utilizada retorna à conta. Algumas contas verificadas possuem acesso incluído à plataforma e não consomem o saldo pessoal.",
+        "A reserva é uma estimativa, não necessariamente o débito final. Documentos longos podem gerar vários chunks, a verificação de fact-check é cobrada por afirmação elegível e a análise Live por janela concluída. Retentativas do provedor, tokens de raciocínio ou uma resposta excepcionalmente cara podem fazer o débito final superar a reserva; se o saldo ficar negativo, novas análises permanecem bloqueadas até a adição de créditos. Serviços fixos, como a transcrição Live, usam a tarifa de sessão indicada.",
+        "Pacotes pagos e checkout via Stripe estão planejados, mas ainda não são vendidos. Quando as compras forem lançadas, os preços dos pacotes aparecerão separadamente; a contabilidade de créditos e o histórico descritos aqui continuarão sendo a fonte de verdade do consumo.",
         "Toda rota que gera custo também tem rate limit token bucket in-memory por IP. Os padrões incluem 30 análises de falácia / hora, 30 extrações de fact-check / hora, 10 verificações em massa / hora, 20 refreshes individuais / hora e, deliberadamente conservador, 4 revisões de paper / hora com burst 2. O operador pode ajustar esses valores em runtime; buckets esgotados retornam 429 com `Retry-After`.",
         "A extração de fact-check tem cap de 50 afirmações por documento e o refresh, 2 chamadas por afirmação. A revisão aceita exatamente um PDF, recusa truncamento silencioso acima de 300.000 caracteres extraídos, limita a inspeção visual a páginas selecionadas e divide o trabalho caro em etapas auditáveis. Esses controles evitam fan-out e custos acidentalmente ilimitados.",
       ],
+      creditTable: {
+        intro:
+          "A tabela mostra a reserva inicial máxima com o roteamento padrão atual. Ela permite verificar se há créditos suficientes antes de começar; o débito final das chamadas medidas considera o trabalho realmente concluído.",
+        headers: {
+          feature: "Funcionalidade",
+          unit: "Unidade de cobrança",
+          estimate: "Estimativa de créditos necessária",
+        },
+        rows: [
+          {
+            feature: "Detector de falácias",
+            unit: "Por chunk de texto concluído",
+            estimate: "Reserva de até 2 créditos",
+          },
+          {
+            feature: "Fact-check — extração",
+            unit: "Por chunk de texto concluído",
+            estimate: "Reserva de até 2 créditos",
+          },
+          {
+            feature: "Fact-check — verificação",
+            unit: "Por busca de afirmação elegível",
+            estimate:
+              "Até 2 créditos por afirmação sem cache; resultados em cache não consomem créditos",
+          },
+          {
+            feature: "Neutralidade",
+            unit: "Por chunk de texto concluído",
+            estimate: "Reserva de até 2 créditos",
+          },
+          {
+            feature: "Explicador de papers",
+            unit: "Por chunk de texto concluído",
+            estimate: "Reserva de até 2 créditos",
+          },
+          {
+            feature: "Detector de slop",
+            unit: "Por chunk de texto concluído",
+            estimate: "Reserva de até 2 créditos",
+          },
+          {
+            feature: "Revisão adversarial — Standard",
+            unit: "Por revisão",
+            estimate: "Reserva de até 21 créditos",
+          },
+          {
+            feature: "Revisão adversarial — Deep",
+            unit: "Por revisão",
+            estimate: "Reserva de até 94 créditos",
+          },
+          {
+            feature: "Transcrição Live",
+            unit: "Por sessão Realtime",
+            estimate:
+              "{liveCredits} créditos fixos por sessão, limitada a 60 minutos",
+          },
+          {
+            feature: "Análise Live",
+            unit: "Por janela de análise concluída",
+            estimate: "Reserva de até 2 créditos",
+          },
+        ],
+        note:
+          "Tabela {rateVersion}. Reservas não utilizadas são liberadas. As estimativas podem mudar com o roteamento e os preços dos provedores; o consumo concluído permanece visível no ledger de créditos da conta.",
+      },
     },
     {
       title: "12. Loop de feedback",
@@ -1872,6 +2025,7 @@ const pt: Messages = {
   nav_fallacies: "Guia de Falácias",
   nav_slop_patterns: "Padrões de slop",
   nav_benchmark: "Benchmark",
+  nav_pricing: "Preços",
 
   theme_to_dark: "Mudar para tema escuro",
   theme_to_light: "Mudar para tema claro",
@@ -2491,12 +2645,79 @@ const es: Messages = {
       ],
     },
     {
-      title: "11. Costo y controles de abuso",
+      title: "11. Créditos, cobro y controles de abuso",
       paragraphs: [
-        "Los análisis usan acceso incluido de la plataforma o créditos Jiddu. Los créditos son independientes del saldo upstream en dólares de la plataforma y cubren análisis web, REST asociados a la cuenta y MCP alojados. La cuenta muestra saldo, tabla de tarifas e historial. Antes de ejecutar se reserva el costo máximo de la ruta; al final las llamadas completadas se liquidan por el costo real del proveedor y se libera el resto. Los administradores pueden otorgar créditos manualmente; los paquetes pagos están previstos, pero aún no se venden.",
+        "Los Créditos Jiddu pagan análisis en la app web, claves REST vinculadas a la cuenta y MCP alojado. Antes de comenzar, Jiddu reserva temporalmente la estimación mostrada abajo para impedir que jobs simultáneos gasten el mismo saldo. Las llamadas medidas de modelos se liquidan según el trabajo realmente completado, y toda reserva no utilizada vuelve a la cuenta. Algunas cuentas verificadas tienen acceso incluido a la plataforma y no consumen su saldo personal.",
+        "La reserva es una estimación, no siempre el débito final. Los documentos largos pueden generar varios chunks, la verificación de fact-check se cobra por afirmación elegible y el análisis Live por ventana completada. Reintentos del proveedor, tokens de razonamiento o una respuesta excepcionalmente costosa pueden hacer que el débito final supere la reserva; si el saldo queda negativo, nuevos análisis permanecen bloqueados hasta agregar créditos. Los servicios fijos, como la transcripción Live, usan la tarifa de sesión indicada.",
+        "Los paquetes pagados y el checkout con Stripe están previstos, pero todavía no se venden. Cuando se lancen las compras, los precios de los paquetes se mostrarán por separado; la contabilidad de créditos y el historial descritos aquí seguirán siendo la fuente de verdad del consumo.",
         "Cada ruta con costo también tiene rate limit token bucket in-memory por IP. Los valores por defecto incluyen 30 análisis de falacias / hora, 30 extracciones de fact-check / hora, 10 verificaciones masivas / hora, 20 refreshes individuales / hora y, deliberadamente conservador, 4 revisiones de paper / hora con burst 2. El operador puede ajustar estos valores en runtime; los buckets agotados devuelven 429 con `Retry-After`.",
         "La extracción de fact-check tiene tope de 50 afirmaciones por documento y el refresh, 2 llamadas por afirmación. La revisión acepta exactamente un PDF, rechaza truncar silenciosamente por encima de 300.000 caracteres extraídos, limita la inspección visual a páginas seleccionadas y divide el trabajo costoso en etapas auditables. Estos controles evitan fan-out y costos accidentalmente ilimitados.",
       ],
+      creditTable: {
+        intro:
+          "La tabla muestra la reserva inicial máxima con el enrutamiento predeterminado actual. Permite comprobar si hay créditos suficientes antes de empezar; el débito final de las llamadas medidas considera el trabajo realmente completado.",
+        headers: {
+          feature: "Funcionalidad",
+          unit: "Unidad de cobro",
+          estimate: "Estimación de créditos necesaria",
+        },
+        rows: [
+          {
+            feature: "Detector de falacias",
+            unit: "Por chunk de texto completado",
+            estimate: "Reserva de hasta 2 créditos",
+          },
+          {
+            feature: "Fact-check — extracción",
+            unit: "Por chunk de texto completado",
+            estimate: "Reserva de hasta 2 créditos",
+          },
+          {
+            feature: "Fact-check — verificación",
+            unit: "Por búsqueda de afirmación elegible",
+            estimate:
+              "Hasta 2 créditos por afirmación sin caché; los resultados en caché no consumen créditos",
+          },
+          {
+            feature: "Neutralidad",
+            unit: "Por chunk de texto completado",
+            estimate: "Reserva de hasta 2 créditos",
+          },
+          {
+            feature: "Explicador de papers",
+            unit: "Por chunk de texto completado",
+            estimate: "Reserva de hasta 2 créditos",
+          },
+          {
+            feature: "Detector de slop",
+            unit: "Por chunk de texto completado",
+            estimate: "Reserva de hasta 2 créditos",
+          },
+          {
+            feature: "Revisión adversarial — Standard",
+            unit: "Por revisión",
+            estimate: "Reserva de hasta 21 créditos",
+          },
+          {
+            feature: "Revisión adversarial — Deep",
+            unit: "Por revisión",
+            estimate: "Reserva de hasta 94 créditos",
+          },
+          {
+            feature: "Transcripción Live",
+            unit: "Por sesión Realtime",
+            estimate:
+              "{liveCredits} créditos fijos por sesión, limitada a 60 minutos",
+          },
+          {
+            feature: "Análisis Live",
+            unit: "Por ventana de análisis completada",
+            estimate: "Reserva de hasta 2 créditos",
+          },
+        ],
+        note:
+          "Tabla {rateVersion}. Las reservas no utilizadas se liberan. Las estimaciones pueden cambiar con el enrutamiento y los precios de los proveedores; el consumo completado siempre aparece en el ledger de créditos de la cuenta.",
+      },
     },
     {
       title: "12. Loop de feedback",
@@ -2626,6 +2847,7 @@ const es: Messages = {
   nav_fallacies: "Guía de falacias",
   nav_slop_patterns: "Patrones de slop",
   nav_benchmark: "Benchmark",
+  nav_pricing: "Precios",
 
   theme_to_dark: "Cambiar a modo oscuro",
   theme_to_light: "Cambiar a modo claro",
