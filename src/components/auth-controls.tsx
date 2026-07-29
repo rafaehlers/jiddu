@@ -3,6 +3,7 @@
 import { useAuth } from "@workos-inc/authkit-nextjs/components";
 import Link from "next/link";
 import { createContext, useContext } from "react";
+import { signOutAction } from "@/app/auth-actions";
 import { useI18n } from "@/lib/i18n/provider";
 
 type AuthControlsState = {
@@ -52,7 +53,7 @@ export function AuthControls() {
         ? "Crear cuenta"
         : "Create account";
   const account = lang === "pt" ? "Conta" : lang === "es" ? "Cuenta" : "Account";
-  const signOut =
+  const signOutLabel =
     lang === "pt" ? "Sair" : lang === "es" ? "Cerrar sesión" : "Sign out";
   const admin = "Admin";
 
@@ -105,12 +106,14 @@ export function AuthControls() {
       <span className="text-muted" aria-hidden>
         ·
       </span>
-      <Link
-        href="/logout"
-        className="text-sm text-muted hover:text-accent-hi transition-colors"
-      >
-        {signOut}
-      </Link>
+      <form action={signOutAction}>
+        <button
+          type="submit"
+          className="text-sm text-muted hover:text-accent-hi transition-colors"
+        >
+          {signOutLabel}
+        </button>
+      </form>
     </div>
   );
 }
