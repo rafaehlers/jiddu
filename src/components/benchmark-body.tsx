@@ -28,7 +28,7 @@ export function BenchmarkBody({
   const { lang } = useI18n();
   const markdown = lang === "pt" ? pt : lang === "es" ? es : en;
   return (
-    <article className="mx-auto max-w-3xl w-full px-4 sm:px-6 py-10 sm:py-16 flex flex-col gap-4 text-foreground/90">
+    <article className="mx-auto max-w-5xl w-full px-4 sm:px-6 py-10 sm:py-16 flex flex-col gap-4 text-foreground/90">
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={MD_COMPONENTS}>
         {markdown}
       </ReactMarkdown>

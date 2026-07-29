@@ -28,7 +28,7 @@ export function SlopGuide() {
   }, []);
 
   return (
-    <article className="mx-auto max-w-3xl w-full px-6 py-12 flex flex-col gap-10">
+    <article className="mx-auto max-w-5xl w-full px-6 py-12 flex flex-col gap-10">
       <header className="flex flex-col gap-3">
         <h1 className="font-serif text-4xl md:text-5xl leading-tight">
           {t.slop_guide_title}

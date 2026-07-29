@@ -11,7 +11,7 @@ export function ApiAccessBody() {
   const { t } = useI18n();
   const sections = t.api_access_sections;
   return (
-    <article className="mx-auto max-w-3xl w-full px-4 sm:px-6 py-10 sm:py-16 flex flex-col gap-8">
+    <article className="mx-auto max-w-5xl w-full px-4 sm:px-6 py-10 sm:py-16 flex flex-col gap-8">
       <header className="flex flex-col gap-2">
         <h1 className="font-serif text-3xl sm:text-4xl">{t.api_access_title}</h1>
         <p className="text-muted text-base sm:text-lg">{t.api_access_subtitle}</p>
