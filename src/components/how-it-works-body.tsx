@@ -13,7 +13,9 @@ import {
 // [label](url) — inline.
 export function HowItWorksBody() {
   const { lang, t } = useI18n();
-  const sections = t.how_it_works_sections;
+  const sections = HOW_IT_WORKS_SECTION_ORDER.map(
+    (index) => t.how_it_works_sections[index],
+  );
   const liveTranscriptionCredits =
     MODEL_CREDIT_RATES["gpt-live-transcribe"];
   return (
@@ -33,7 +35,7 @@ export function HowItWorksBody() {
             href={`#section-${i}`}
             className="underline decoration-rule hover:decoration-foreground transition-colors"
           >
-            {s.title}
+            {numberedSectionTitle(s.title, i)}
           </a>
         ))}
       </nav>
@@ -46,7 +48,9 @@ export function HowItWorksBody() {
             id={`section-${i}`}
             className="flex flex-col gap-3 scroll-mt-16"
           >
-            <h2 className="font-serif text-xl">{s.title}</h2>
+            <h2 className="font-serif text-xl">
+              {numberedSectionTitle(s.title, i)}
+            </h2>
             <div className="flex flex-col gap-4">
               {s.paragraphs.map((p, j) => {
                 const { heading, body } = splitLeadingHeading(p);
@@ -93,6 +97,17 @@ export function HowItWorksBody() {
       })}
     </article>
   );
+}
+
+// Public narrative order: product capabilities first, then trust, billing,
+// feedback and integration details. Titles are numbered at render time so all
+// locales stay aligned when a section moves.
+const HOW_IT_WORKS_SECTION_ORDER = [
+  0, 1, 2, 3, 5, 6, 7, 8, 13, 4, 14, 12, 9, 10, 11, 15, 16,
+] as const;
+
+function numberedSectionTitle(title: string, index: number): string {
+  return `${index + 1}. ${title.replace(/^\d+\.\s*/, "")}`;
 }
 
 type CreditTable = NonNullable<
