@@ -1,4 +1,4 @@
-export const JIDDU_CREDIT_RATE_VERSION = "2026-07-28.v4";
+export const JIDDU_CREDIT_RATE_VERSION = "2026-07-29.v5";
 
 export const MODEL_CREDIT_RATES = {
   "minimax-m3": 1,
@@ -32,44 +32,50 @@ export const JIDDU_CREDIT_RATE_TABLE: CreditRateRow[] = [
   {
     feature: "Fallacy detector",
     unit: "Per completed text chunk",
-    detail: "1 credit with MiniMax M3; 2 with GPT-5.4 mini.",
+    detail:
+      "2 credits reserved to cover the fallback chain. If cost data is missing, a completed call falls back to 1 with MiniMax M3 or 2 with GPT-5.4 mini.",
   },
   {
     feature: "Fact-check — extraction",
     unit: "Per completed text chunk",
-    detail: "1 credit with MiniMax M3; 2 with GPT-5.4 mini.",
+    detail:
+      "2 credits reserved to cover the fallback chain. If cost data is missing, a completed call falls back to 1 with MiniMax M3 or 2 with GPT-5.4 mini.",
   },
   {
     feature: "Fact-check — verification",
-    unit: "Per uncached claim search",
-    detail: "2 credits for each Sonar Reasoning Pro call; cache hits are free.",
+    unit: "Per eligible claim search",
+    detail:
+      "2 credits reserved per claim. Cache hits settle at 0; an uncached call without cost data falls back to 2 credits.",
   },
   {
     feature: "Neutrality",
     unit: "Per completed text chunk",
-    detail: "1 credit with MiniMax M3; 2 with GPT-5.4 mini.",
+    detail:
+      "2 credits reserved to cover the fallback chain. If cost data is missing, a completed call falls back to 1 with MiniMax M3 or 2 with GPT-5.4 mini.",
   },
   {
     feature: "Paper explainer",
     unit: "Per completed text chunk",
-    detail: "1 credit with MiniMax M3; 2 with GPT-5.4 mini.",
+    detail:
+      "2 credits reserved to cover the fallback chain. If cost data is missing, a completed call falls back to 1 with MiniMax M3 or 2 with GPT-5.4 mini.",
   },
   {
     feature: "Slop detector",
     unit: "Per completed text chunk",
-    detail: "1 credit with MiniMax M3; 2 with GPT-5.4 mini.",
+    detail:
+      "2 credits reserved to cover the fallback chain. If cost data is missing, a completed call falls back to 1 with MiniMax M3 or 2 with GPT-5.4 mini.",
   },
   {
     feature: "Adversarial review — Standard",
-    unit: "Per successful model call",
+    unit: "Per review run",
     detail:
-      "Usually 19–21 credits with GPT-5.4 mini or 10–11 with MiniMax M3; optional repair is charged only when used.",
+      "Up to 21 credits with GPT-5.4 mini (19 without repair) or 12 with MiniMax M3 (11 without repair).",
   },
   {
     feature: "Adversarial review — Deep",
-    unit: "Per successful model call",
+    unit: "Per review run",
     detail:
-      "Usually 84–94 credits: selected-model stages plus GPT-5.5 reasoning and Claude Opus 4.8 critique.",
+      "With default routing, up to 94 credits with GPT-5.4 mini selected (84 without repair) or 91 with MiniMax M3 (81 without repair).",
   },
   {
     feature: "Live transcription",
@@ -80,7 +86,8 @@ export const JIDDU_CREDIT_RATE_TABLE: CreditRateRow[] = [
   {
     feature: "Live analysis",
     unit: "Per completed analysis window",
-    detail: "1 credit with MiniMax M3; 2 with GPT-5.4 mini.",
+    detail:
+      "1 credit reserved with MiniMax M3 or 2 with GPT-5.4 mini; the final debit normally uses actual provider cost.",
   },
 ];
 

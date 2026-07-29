@@ -286,7 +286,7 @@ export default async function AccountPage({
               </div>
               <div className="mt-4">
                 <h2 className="font-serif text-2xl mb-3">
-                  How credits are charged
+                  Credit reservation estimates
                 </h2>
                 <JidduCreditRateTable
                   liveTranscriptionCredits={

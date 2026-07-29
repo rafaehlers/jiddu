@@ -27,19 +27,33 @@ test("reserves the worst possible fallback cost but settles actual models", () =
 });
 
 test("standard paper review includes ten required calls and optional repair", () => {
-  const models = paperReviewMaximumModels({
+  const gptModels = paperReviewMaximumModels({
     depth: "standard",
     selectedModel: "gpt-5.4-mini",
   });
-  assert.equal(models.length, 11);
-  assert.equal(creditsForModels(models), 21);
+  assert.equal(gptModels.length, 11);
+  assert.equal(creditsForModels(gptModels), 21);
+
+  const minimaxModels = paperReviewMaximumModels({
+    depth: "standard",
+    selectedModel: "minimax-m3",
+  });
+  assert.equal(minimaxModels.length, 11);
+  assert.equal(creditsForModels(minimaxModels), 12);
 });
 
 test("deep paper review reserves selected, reasoning, critic and repair calls", () => {
-  const models = paperReviewMaximumModels({
+  const gptModels = paperReviewMaximumModels({
     depth: "deep",
     selectedModel: "gpt-5.4-mini",
   });
-  assert.equal(models.length, 11);
-  assert.equal(creditsForModels(models), 94);
+  assert.equal(gptModels.length, 11);
+  assert.equal(creditsForModels(gptModels), 94);
+
+  const minimaxModels = paperReviewMaximumModels({
+    depth: "deep",
+    selectedModel: "minimax-m3",
+  });
+  assert.equal(minimaxModels.length, 11);
+  assert.equal(creditsForModels(minimaxModels), 91);
 });
