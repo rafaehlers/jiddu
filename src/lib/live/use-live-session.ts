@@ -28,22 +28,52 @@ export type LiveSessionOptions = {
   onCompleted?: (transcript: string) => void;
 };
 
+export type LiveSessionError = {
+  code:
+    | "insufficient_jiddu_credits"
+    | "microphone_permission"
+    | "microphone_unavailable"
+    | "tab_unsupported"
+    | "tab_audio_missing"
+    | "capture_cancelled"
+    | "connection_lost"
+    | "service_unavailable";
+  required?: number;
+  available?: number;
+};
+
 export type LiveSessionHandle = {
   state: LiveSessionState;
   transcript: string;
-  error: string | null;
+  error: LiveSessionError | null;
   /** Milliseconds elapsed since the session went live. */
   elapsedMs: number;
   start: (source: LiveSource) => Promise<void>;
   stop: () => Promise<void>;
 };
 
+type TokenErrorPayload = {
+  code?: string;
+  error?: string;
+  required?: number;
+  available?: number;
+};
+
+class LiveSessionStartError extends Error {
+  constructor(
+    public readonly sessionError: LiveSessionError,
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
 const REALTIME_CALL_URL = "https://api.openai.com/v1/realtime/calls";
 
 export function useLiveSession(opts: LiveSessionOptions = {}): LiveSessionHandle {
   const [state, setState] = useState<LiveSessionState>("idle");
   const [transcript, setTranscript] = useState<string>("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<LiveSessionError | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
 
   const pcRef = useRef<RTCPeerConnection | null>(null);
@@ -122,8 +152,8 @@ export function useLiveSession(opts: LiveSessionOptions = {}): LiveSessionHandle
         return;
       }
       if (isErrorEvent(ev)) {
-        const msg = ev.error?.message ?? "Realtime error";
-        setError(msg);
+        console.error("[live] realtime error", ev.error);
+        setError({ code: "service_unavailable" });
         setState("error");
         cleanup();
       }
@@ -148,8 +178,9 @@ export function useLiveSession(opts: LiveSessionOptions = {}): LiveSessionHandle
           stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         } else {
           if (!navigator.mediaDevices.getDisplayMedia) {
-            throw new Error(
-              "Tab capture is not supported in this browser. Use Chrome or Edge.",
+            throw new LiveSessionStartError(
+              { code: "tab_unsupported" },
+              "Tab capture is not supported in this browser.",
             );
           }
           const display = await navigator.mediaDevices.getDisplayMedia({
@@ -161,8 +192,9 @@ export function useLiveSession(opts: LiveSessionOptions = {}): LiveSessionHandle
           const audioTracks = display.getAudioTracks();
           if (audioTracks.length === 0) {
             display.getTracks().forEach((t) => t.stop());
-            throw new Error(
-              "No audio track from the selected source. Be sure to check 'Share audio' when choosing the tab.",
+            throw new LiveSessionStartError(
+              { code: "tab_audio_missing" },
+              "The selected tab did not provide an audio track.",
             );
           }
           stream = new MediaStream(audioTracks);
@@ -176,9 +208,23 @@ export function useLiveSession(opts: LiveSessionOptions = {}): LiveSessionHandle
           body: JSON.stringify({ language: opts.language ?? null }),
         });
         if (!tokenRes.ok) {
-          const detail = await tokenRes.text().catch(() => "");
-          throw new Error(
-            `Token broker failed (${tokenRes.status}): ${detail.slice(0, 200)}`,
+          const payload = (await tokenRes
+            .json()
+            .catch(() => ({}))) as TokenErrorPayload;
+          console.error("[live] token request failed", tokenRes.status, payload);
+          if (payload.code === "insufficient_jiddu_credits") {
+            throw new LiveSessionStartError(
+              {
+                code: "insufficient_jiddu_credits",
+                required: payload.required,
+                available: payload.available,
+              },
+              "The account does not have enough Jiddu Credits.",
+            );
+          }
+          throw new LiveSessionStartError(
+            { code: "service_unavailable" },
+            payload.error ?? `Token request failed (${tokenRes.status}).`,
           );
         }
         const tokenJson = (await tokenRes.json()) as {
@@ -186,7 +232,10 @@ export function useLiveSession(opts: LiveSessionOptions = {}): LiveSessionHandle
           error?: string;
         };
         if (!tokenJson.clientSecret) {
-          throw new Error(tokenJson.error ?? "Missing client secret");
+          throw new LiveSessionStartError(
+            { code: "service_unavailable" },
+            tokenJson.error ?? "Missing client secret.",
+          );
         }
 
         // 3. WebRTC handshake.
@@ -217,7 +266,7 @@ export function useLiveSession(opts: LiveSessionOptions = {}): LiveSessionHandle
             // pcRef). Only surface a problem if THIS pc is still the active
             // one in the hook.
             if (pcRef.current === pc) {
-              setError("Connection lost");
+              setError({ code: "connection_lost" });
               setState("error");
               cleanup();
             }
@@ -237,8 +286,10 @@ export function useLiveSession(opts: LiveSessionOptions = {}): LiveSessionHandle
         });
         if (!sdpRes.ok) {
           const detail = await sdpRes.text().catch(() => "");
-          throw new Error(
-            `Realtime SDP exchange failed (${sdpRes.status}): ${detail.slice(0, 200)}`,
+          console.error("[live] realtime connection failed", sdpRes.status, detail);
+          throw new LiveSessionStartError(
+            { code: "service_unavailable" },
+            `Realtime connection failed (${sdpRes.status}).`,
           );
         }
         const answerSdp = await sdpRes.text();
@@ -247,8 +298,8 @@ export function useLiveSession(opts: LiveSessionOptions = {}): LiveSessionHandle
         startedAtRef.current = Date.now();
         setState("live");
       } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        setError(message);
+        console.error("[live] session could not start", err);
+        setError(toLiveSessionError(err));
         setState("error");
         cleanup();
       }
@@ -264,4 +315,20 @@ export function useLiveSession(opts: LiveSessionOptions = {}): LiveSessionHandle
   }, [state, cleanup]);
 
   return { state, transcript, error, elapsedMs, start, stop };
+}
+
+function toLiveSessionError(error: unknown): LiveSessionError {
+  if (error instanceof LiveSessionStartError) return error.sessionError;
+  if (error instanceof DOMException) {
+    if (error.name === "NotAllowedError") {
+      return { code: "microphone_permission" };
+    }
+    if (error.name === "NotFoundError") {
+      return { code: "microphone_unavailable" };
+    }
+    if (error.name === "AbortError") {
+      return { code: "capture_cancelled" };
+    }
+  }
+  return { code: "service_unavailable" };
 }
