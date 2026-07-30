@@ -37,6 +37,8 @@ The harness ran with concurrency 6 (matching production). Total wall-clock: 6m 2
 
 PolitiFact uses a 6-level Truth-O-Meter (`pants_on_fire` / `false` / `mostly_false` / `half_true` / `mostly_true` / `true`); Jiddu uses 4 (`supported` / `contradicted` / `mixed` / `unverified`). We benchmarked only on the four polar buckets and applied this mapping:
 
+`pants_on_fire` is [PolitiFact's lowest Truth-O-Meter rating](https://www.politifact.com/article/2018/feb/12/principles-truth-o-meter-politifacts-methodology-i/). PolitiFact applies it when a statement is inaccurate and, in its wording, makes a ridiculous claim. It is a label from the source dataset, not a Jiddu verdict; Jiddu maps both `false` and `pants_on_fire` to `contradicted`.
+
 | PolitiFact label | Expected Jiddu verdict |
 |---|---|
 | `true` | `supported` |

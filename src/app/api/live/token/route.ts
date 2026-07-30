@@ -4,6 +4,7 @@ import {
   requireWebAnalysisAccess,
 } from "@/lib/web-analysis-access";
 import {
+  recordIncludedJidduCreditUsage,
   releaseJidduCreditReservation,
   settleJidduCreditReservation,
 } from "@/lib/jiddu-credits";
@@ -127,6 +128,19 @@ export async function POST(req: NextRequest) {
       },
     },
   );
+  if (access.billing === "platform" && access.userId && access.email) {
+    await recordIncludedJidduCreditUsage({
+      workosUserId: access.userId,
+      email: access.email,
+      feature: "live_transcription",
+      note: "Included platform access",
+      metadata: {
+        model: OPENAI_LIVE_TRANSCRIPTION_MODEL,
+        delay: transcriptionDelay,
+        language: language ?? null,
+      },
+    });
+  }
 
   return json({
     clientSecret: data.value,

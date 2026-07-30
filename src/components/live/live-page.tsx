@@ -115,7 +115,7 @@ export function LivePage() {
             type="button"
             onClick={handleStop}
             disabled={session.state === "stopping"}
-            className="inline-flex items-center gap-2 rounded-md bg-severity-high text-white px-4 py-2 text-sm font-medium hover:opacity-90 disabled:opacity-60"
+            className="inline-flex shrink-0 items-center gap-2 rounded-md border border-severity-high bg-severity-high px-4 py-2 text-sm font-medium text-white shadow-sm hover:opacity-90 disabled:cursor-wait disabled:opacity-60"
           >
             <Square className="size-4" />
             {t.live_stop}

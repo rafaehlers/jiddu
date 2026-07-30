@@ -11,6 +11,7 @@ import {
 } from "@/lib/web-analysis-access";
 import { modelCreditRate } from "@/lib/jiddu-credit-rates";
 import {
+  recordIncludedJidduCreditUsage,
   settleJidduCreditReservationFromUsage,
 } from "@/lib/jiddu-credits";
 import {
@@ -155,7 +156,7 @@ export async function POST(req: NextRequest) {
   const settle = async () => {
     if (settled) return;
     settled = true;
-    await settleJidduCreditReservationFromUsage(
+    const settlement = await settleJidduCreditReservationFromUsage(
       reservation,
       {
         usages,
@@ -164,6 +165,22 @@ export async function POST(req: NextRequest) {
         metadata: { model: chosenModel.id },
       },
     );
+    if (
+      access.billing === "platform" &&
+      billableModelCall &&
+      access.userId &&
+      access.email
+    ) {
+      await recordIncludedJidduCreditUsage({
+        workosUserId: access.userId,
+        email: access.email,
+        feature: "live_analysis",
+        resourceId: row.id,
+        note: "Included platform access",
+        metadata: { model: chosenModel.id },
+        usage: settlement,
+      });
+    }
   };
 
   const stream = new ReadableStream<Uint8Array>({

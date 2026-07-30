@@ -36,6 +36,8 @@
   --color-rule: var(--rule);
   --color-accent: var(--accent);
   --color-accent-hi: var(--accent-hi);
+  --color-severity-low: var(--severity-low);
+  --color-severity-high: var(--severity-high);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-serif: var(--font-serif), Georgia, "Times New Roman", serif;

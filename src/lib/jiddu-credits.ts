@@ -228,6 +228,72 @@ export async function settleJidduCreditReservationFromUsage(
   return settlement;
 }
 
+export async function recordIncludedJidduCreditUsage(input: {
+  workosUserId: string;
+  email: string;
+  feature: JidduCreditFeature;
+  resourceId?: string;
+  note?: string;
+  metadata?: Record<string, unknown>;
+  usage?: JidduCreditSettlement;
+}): Promise<void> {
+  const email = input.email.trim().toLowerCase();
+  const usageAccounting = input.usage
+    ? {
+        provider: "openrouter",
+        promptTokens: input.usage.promptTokens,
+        completionTokens: input.usage.completionTokens,
+        totalTokens: input.usage.totalTokens,
+        reasoningTokens: input.usage.reasoningTokens,
+        cachedTokens: input.usage.cachedTokens,
+        providerCostMicros: input.usage.providerCostMicros,
+        billedCostMicros: input.usage.billedCostMicros,
+        marginMultiplier: input.usage.marginMultiplier,
+        usdPerCredit: input.usage.usdPerCredit,
+        fallbackCredits: input.usage.fallbackCredits,
+        fallbackModels: input.usage.fallbackModels,
+        calls: input.usage.calls,
+      }
+    : undefined;
+
+  await prisma.$transaction(async (tx) => {
+    const account = await tx.jidduCreditAccount.upsert({
+      where: { workosUserId: input.workosUserId },
+      create: {
+        workosUserId: input.workosUserId,
+        email,
+      },
+      update: { email },
+    });
+    await tx.jidduCreditTransaction.create({
+      data: {
+        workosUserId: input.workosUserId,
+        amount: 0,
+        balanceAfter: account.balance,
+        kind: "included_usage",
+        feature: input.feature,
+        resourceId: input.resourceId,
+        rateVersion: JIDDU_CREDIT_RATE_VERSION,
+        note: input.note,
+        metadata: JSON.stringify({
+          ...(input.metadata ?? {}),
+          billingMode: "platform",
+          ...(usageAccounting ? { usageAccounting } : {}),
+        }),
+        promptTokens: input.usage?.promptTokens,
+        completionTokens: input.usage?.completionTokens,
+        totalTokens: input.usage?.totalTokens,
+        reasoningTokens: input.usage?.reasoningTokens,
+        cachedTokens: input.usage?.cachedTokens,
+        providerCostMicros: input.usage?.providerCostMicros,
+        billedCostMicros: input.usage?.billedCostMicros,
+        marginMultiplier: input.usage?.marginMultiplier,
+        usdPerCredit: input.usage?.usdPerCredit,
+      },
+    });
+  });
+}
+
 export async function releaseJidduCreditReservation(
   handle: JidduCreditReservationHandle | null,
 ): Promise<void> {

@@ -202,7 +202,7 @@ export default async function AccountPage({
               <div>
                 <h2 className="font-serif text-2xl mb-2">Credit activity</h2>
                 <p className="text-sm text-muted">
-                  Grants, adjustments and usage charged to this account.
+                  Grants, adjustments and recorded usage for this account.
                 </p>
               </div>
               <div className="overflow-x-auto rounded-lg border border-rule">
@@ -250,11 +250,19 @@ export default async function AccountPage({
                             className={`px-4 py-3 text-right font-medium tabular-nums ${
                               transaction.amount > 0
                                 ? "text-emerald-600"
-                                : "text-[var(--severity-high)]"
+                                : transaction.amount < 0
+                                  ? "text-[var(--severity-high)]"
+                                  : "text-muted"
                             }`}
                           >
-                            {transaction.amount > 0 ? "+" : ""}
-                            {transaction.amount}
+                            {transaction.kind === "included_usage" ? (
+                              "Included"
+                            ) : (
+                              <>
+                                {transaction.amount > 0 ? "+" : ""}
+                                {transaction.amount}
+                              </>
+                            )}
                           </td>
                           <td className="whitespace-nowrap px-4 py-3 text-right text-xs text-muted">
                             {transaction.totalTokens !== null ? (

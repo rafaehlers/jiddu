@@ -183,11 +183,19 @@ export default async function AdminCreditsPage({
                         className={`px-4 py-3 text-right font-medium tabular-nums ${
                           transaction.amount > 0
                             ? "text-emerald-600"
-                            : "text-[var(--severity-high)]"
+                            : transaction.amount < 0
+                              ? "text-[var(--severity-high)]"
+                              : "text-muted"
                         }`}
                       >
-                        {transaction.amount > 0 ? "+" : ""}
-                        {transaction.amount}
+                        {transaction.kind === "included_usage" ? (
+                          "Included"
+                        ) : (
+                          <>
+                            {transaction.amount > 0 ? "+" : ""}
+                            {transaction.amount}
+                          </>
+                        )}
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 text-right text-xs text-muted">
                         {transaction.providerCostMicros !== null ||

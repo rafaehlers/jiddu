@@ -37,6 +37,8 @@ El harness corrió con concurrencia 6 (igual que producción). Wall-clock total:
 
 PolitiFact usa un Truth-O-Meter de 6 niveles (`pants_on_fire` / `false` / `mostly_false` / `half_true` / `mostly_true` / `true`); Jiddu usa 4 (`supported` / `contradicted` / `mixed` / `unverified`). Medimos solo los cuatro buckets polares y aplicamos este mapeo:
 
+`pants_on_fire` es [la calificación más baja del Truth-O-Meter de PolitiFact](https://www.politifact.com/article/2018/feb/12/principles-truth-o-meter-politifacts-methodology-i/). PolitiFact la aplica cuando una afirmación es inexacta y, en palabras de la organización, formula una afirmación ridícula. Es una etiqueta del dataset de origen, no un veredicto de Jiddu; Jiddu asigna tanto `false` como `pants_on_fire` a `contradicted`.
+
 | Etiqueta PolitiFact | Veredicto esperado en Jiddu |
 |---|---|
 | `true` | `supported` |

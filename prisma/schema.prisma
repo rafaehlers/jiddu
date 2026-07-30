@@ -99,7 +99,7 @@ model JidduCreditTransaction {
   workosUserId       String
   amount             Int
   balanceAfter       Int
-  kind               String // grant | adjustment | usage
+  kind               String // grant | adjustment | usage | included_usage
   feature            String?
   resourceId         String?
   rateVersion        String?
