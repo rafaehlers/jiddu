@@ -2,12 +2,14 @@ import type { Metadata } from "next";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { HomeComposer } from "@/components/home-composer";
+import { publicPageMetadata } from "@/lib/social-metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = publicPageMetadata({
   title: "Jiddu — AI-slop detector",
   description:
     "Flag the stock phrasing, manufactured drama and templated structures that make text read as machine-assembled — pattern by pattern, with quotes to check.",
-};
+  path: "/slop",
+});
 
 export default function SlopPage() {
   return (

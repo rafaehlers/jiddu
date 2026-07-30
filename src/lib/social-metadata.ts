@@ -1,21 +1,26 @@
 import type { Metadata } from "next";
 
-const SITE_URL = "https://jiddu.app";
+export const SITE_URL = "https://jiddu.app";
+export const SITE_DESCRIPTION =
+  "Jiddu detects logical fallacies in any text. Upload a PDF, paste text, or share a URL and read it like Microsoft Word with critical-thinking comments in the margin.";
 const SOCIAL_IMAGE_URL = `${SITE_URL}/og.png`;
 const SOCIAL_IMAGE_ALT =
   "Jiddu — truth is a pathless land — Read anything with a critical mind — https://jiddu.app";
 
-type AnalysisSocialMetadataOptions = {
+type SocialMetadataOptions = {
   title: string;
   description: string;
   path: string;
 };
 
-export function analysisSocialMetadata({
+function socialMetadata({
   title,
   description,
   path,
-}: AnalysisSocialMetadataOptions): Metadata {
+  type,
+}: SocialMetadataOptions & {
+  type: "article" | "website";
+}): Metadata {
   const canonicalUrl = new URL(path, SITE_URL).toString();
 
   return {
@@ -29,7 +34,7 @@ export function analysisSocialMetadata({
       description,
       url: canonicalUrl,
       siteName: "Jiddu",
-      type: "article",
+      type,
       images: [
         {
           url: SOCIAL_IMAGE_URL,
@@ -52,4 +57,18 @@ export function analysisSocialMetadata({
       ],
     },
   };
+}
+
+export function publicPageMetadata(
+  options: SocialMetadataOptions,
+): Metadata {
+  return socialMetadata({ ...options, type: "website" });
+}
+
+export function analysisSocialMetadata({
+  title,
+  description,
+  path,
+}: SocialMetadataOptions): Metadata {
+  return socialMetadata({ title, description, path, type: "article" });
 }

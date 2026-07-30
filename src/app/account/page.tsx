@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { withAuth } from "@workos-inc/authkit-nextjs";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -19,6 +20,11 @@ import { prisma } from "@/lib/db";
 import { loadSettings } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Account · Jiddu",
+  robots: { index: false, follow: false },
+};
 
 const USD = new Intl.NumberFormat("en-US", {
   style: "currency",

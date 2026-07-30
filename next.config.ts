@@ -2,6 +2,21 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  redirects() {
+    return [
+      {
+        source: "/:path*",
+        has: [
+          {
+            type: "host",
+            value: "www.jiddu.app",
+          },
+        ],
+        destination: "https://jiddu.app/:path*",
+        permanent: true,
+      },
+    ];
+  },
   serverExternalPackages: [
     "pdfjs-dist",
     "@mozilla/readability",

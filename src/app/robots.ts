@@ -10,7 +10,6 @@ export default function robots(): MetadataRoute.Robots {
       disallow: [
         "/admin", // WorkOS-authenticated operator console
         "/api/", // JSON endpoints, not pages — the public v1 API is documented at /api-access, not meant to be crawled
-        "/live", // intentionally unlinked while in beta (see how-it-works §12)
         "/a/*/print", // print view of an analysis — duplicate content of the main page
         "/f/*/print",
         "/n/*/print",

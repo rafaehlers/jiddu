@@ -9,6 +9,7 @@ import { AuthKitProvider } from "@workos-inc/authkit-nextjs/components";
 import { AuthControlsProvider } from "@/components/auth-controls";
 import { I18nProvider } from "@/lib/i18n/provider";
 import { isWorkOSConfigured } from "@/lib/auth-config";
+import { SITE_DESCRIPTION } from "@/lib/social-metadata";
 import type { Lang } from "@/lib/fallacies";
 import "@radix-ui/themes/styles.css";
 import "@workos-inc/widgets/styles.css";
@@ -35,20 +36,13 @@ const serif = Newsreader({
   subsets: ["latin"],
 });
 
-const SITE_DESCRIPTION =
-  "Jiddu detects logical fallacies in any text. Upload a PDF, paste text, or share a URL and read it like Microsoft Word with critical-thinking comments in the margin.";
-
 export const metadata: Metadata = {
   metadataBase: new URL("https://jiddu.app"),
   title: "Jiddu — truth is a pathless land",
   description: SITE_DESCRIPTION,
-  alternates: {
-    canonical: "https://jiddu.app",
-  },
   openGraph: {
     title: "Jiddu — truth is a pathless land",
     description: SITE_DESCRIPTION,
-    url: "https://jiddu.app",
     siteName: "Jiddu",
     type: "website",
     images: [

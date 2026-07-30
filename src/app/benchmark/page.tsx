@@ -4,6 +4,7 @@ import path from "node:path";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { BenchmarkBody } from "@/components/benchmark-body";
+import { publicPageMetadata } from "@/lib/social-metadata";
 
 // The benchmark report is the single source-of-truth artifact: a human
 // readable summary of the PolitiFact run that lives at the project root
@@ -19,11 +20,12 @@ import { BenchmarkBody } from "@/components/benchmark-body";
 // ~12KB) but lets us keep the markdown source as plain files that any
 // editor can update without touching i18n machinery, and avoids needing
 // a cookie or header to communicate the language to the server.
-export const metadata: Metadata = {
+export const metadata: Metadata = publicPageMetadata({
   title: "Jiddu — PolitiFact benchmark",
   description:
     "Quality measurement of the Jiddu fact-check pipeline against the PolitiFact human-labeled corpus. Full methodology, confusion matrix, and disagreement analysis.",
-};
+  path: "/benchmark",
+});
 
 async function loadMarkdown(slug: "en" | "pt" | "es"): Promise<string> {
   const suffix = slug === "en" ? "" : `.${slug}`;
