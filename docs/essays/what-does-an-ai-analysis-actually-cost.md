@@ -96,7 +96,7 @@ With the current defaults:
 credits = ceil(OpenRouter cost × 1.5 ÷ 0.01)
 ```
 
-One Jiddu Credit therefore represents one cent of internal billable value. It does not mean that one cent was paid to OpenRouter, and it is not yet a retail promise. Stripe is not connected to this system at the time of writing.
+One Jiddu Credit therefore represents one cent of internal billable value. It does not mean that one cent was paid to OpenRouter, and it is separate from the retail price of a credit pack.
 
 The multiplier creates room for expenses beyond inference: payment fees, taxes, failed requests, infrastructure, customer support, and price movement. It is configurable because those economics should not be buried in application code.
 
@@ -319,12 +319,12 @@ I have not implemented that calculation yet. It requires a trustworthy server-si
 
 Until that measurement exists, the fixed rate remains separate and visible instead of pretending to be usage-based.
 
-## What happens when Stripe arrives
+## Retail packs and Stripe
 
-Jiddu Credits currently form an internal accounting unit. One credit represents $0.01 of billable value during settlement, but users cannot buy a pack yet.
+Jiddu Credits remain an internal accounting unit during settlement, while users can buy one-time packs through Stripe Checkout.
 
-When payments are added, the sale price and the settlement value should remain separate concepts. A pack can include a volume discount, a promotion, tax, or a payment fee without changing how much provider usage one credit covers inside the ledger.
+The sale price and settlement value remain separate concepts. A pack can include a volume discount, a promotion, tax, or a payment fee without changing how much provider usage one credit covers inside the ledger.
 
-That separation also prevents a future pricing page from rewriting historical usage. The transaction records the multiplier, credit value, provider cost, and rate-card version that applied when it happened.
+That separation also prevents the pricing page from rewriting historical usage. The usage transaction records the multiplier, credit value, provider cost, and rate-card version that applied when it happened. The purchase transaction separately records the Stripe Checkout Session, Price, package, currency, amount, and credits granted.
 
-Before choosing retail packs, I want real distributions: cost per feature, cost per successful result, retry spend, reasoning-token share, reservation overruns, and the size of the rounding effect. The ledger now collects those numbers. Pricing can follow the evidence instead of a guess made when the first credit pack is designed.
+Jiddu never grants a balance from the browser redirect alone. It retrieves the completed Checkout Session from Stripe, verifies the signed webhook, user, Price, currency and amount, then writes the purchase and balance increase in one database transaction. The Checkout Session ID is unique in the ledger, so a retried webhook cannot grant the same pack twice.

@@ -18,6 +18,7 @@ import { listUserAnalyses } from "@/lib/user-analysis-history";
 import { getJidduCreditSnapshot } from "@/lib/jiddu-credits";
 import { prisma } from "@/lib/db";
 import { loadSettings } from "@/lib/settings";
+import { fulfillStripeCheckoutSession } from "@/lib/stripe-billing";
 
 export const dynamic = "force-dynamic";
 
@@ -62,6 +63,27 @@ export default async function AccountPage({
       : query.tab === "credits"
         ? "credits"
         : "profile";
+  const checkoutSessionId =
+    typeof query.session_id === "string" ? query.session_id : null;
+  let checkoutFulfilled = false;
+  let checkoutPending = false;
+  if (
+    activeTab === "credits" &&
+    query.checkout === "success" &&
+    checkoutSessionId
+  ) {
+    try {
+      const result = await fulfillStripeCheckoutSession(
+        checkoutSessionId,
+        user.id,
+      );
+      checkoutFulfilled = Boolean(result.purchase);
+      checkoutPending = !result.purchase;
+    } catch (error) {
+      console.error("Could not confirm Stripe Checkout return:", error);
+      checkoutPending = true;
+    }
+  }
   const accessMode = await effectiveAnalysisAccessMode(user);
   const jidduCredits =
     activeTab === "profile"
@@ -195,8 +217,8 @@ export default async function AccountPage({
                     : "Jiddu uses this balance for web, REST API and hosted MCP analyses made with its server-managed model credentials."}
                 </p>
                 <p className="mt-2 text-xs text-muted">
-                  Purchased credit packs are coming later. For now, credits are
-                  granted manually by Jiddu.
+                  Need more credits?{" "}
+                  <Link href="/pricing">Buy a one-time credit pack</Link>.
                 </p>
               </section>
 
@@ -205,10 +227,23 @@ export default async function AccountPage({
             <AccountAnalysisTable rows={analysisRows} />
           ) : (
             <section className="flex flex-col gap-4">
+              {query.checkout === "success" && (
+                <div
+                  role="status"
+                  className="rounded-md border border-emerald-600/40 bg-emerald-600/10 px-4 py-3 text-sm"
+                >
+                  {checkoutFulfilled
+                    ? "Payment confirmed. Your Jiddu Credits have been added."
+                    : checkoutPending
+                      ? "Your payment is still being confirmed. Stripe will add the credits automatically as soon as it completes."
+                      : "Payment received. Your credits are being confirmed by Stripe."}
+                </div>
+              )}
               <div>
                 <h2 className="font-serif text-2xl mb-2">Credit activity</h2>
                 <p className="text-sm text-muted">
-                  Grants, adjustments and recorded usage for this account.
+                  Purchases, grants, adjustments and recorded usage for this
+                  account.
                 </p>
               </div>
               <div className="overflow-x-auto rounded-lg border border-rule">

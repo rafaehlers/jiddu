@@ -103,7 +103,8 @@ Jiddu is not affiliated with the authors, institutions, datasets or venues cited
 - **Article extraction**: `@mozilla/readability` + `jsdom`
 - **Accounts and billing access**: WorkOS AuthKit sessions; allowlisted users
   receive included platform access and everyone else spends an independent
-  Jiddu credit balance across web, REST and hosted MCP analyses
+  Jiddu credit balance across web, REST and hosted MCP analyses; one-time
+  credit packs use signed Stripe Checkout fulfillment
 
 ## Local development
 
@@ -128,6 +129,12 @@ Open <http://localhost:3000>. Try `/a/demo-en`, `/e/demo-en`, or `/r/demo-en`
 |------------------------|----------------------------------------------------------------------|
 | `DATABASE_URL`         | SQLite path. Local dev: `file:./dev.db`. Docker: `file:/app/data/jiddu.db` |
 | `NEXT_PUBLIC_APP_URL`  | Canonical origin used for OAuth callbacks (`http://localhost:3000` locally) |
+| `STRIPE_SECRET_KEY`    | Server-only Stripe secret key for Checkout and payment verification |
+| `STRIPE_WEBHOOK_SECRET` | Signing secret for the `/api/stripe/webhook` endpoint in the same Stripe mode |
+| `STRIPE_PRICE_STARTER` | Stripe one-time Price ID for the Starter credit package |
+| `STRIPE_PRICE_PLUS`    | Stripe one-time Price ID for the Plus credit package |
+| `STRIPE_PRICE_PRO`     | Stripe one-time Price ID for the Pro credit package |
+| `STRIPE_PRICE_STUDIO`  | Stripe one-time Price ID for the Studio credit package |
 | `WORKOS_API_KEY`       | WorkOS AuthKit server key |
 | `WORKOS_CLIENT_ID`     | WorkOS AuthKit client id |
 | `WORKOS_COOKIE_PASSWORD` | 32+ character secret used by AuthKit to encrypt its session cookie |
@@ -159,7 +166,9 @@ from the provider's returned prompt/completion tokens and real cost plus a
 configurable margin; the rate card is a reservation estimate and fallback when
 usage accounting is unavailable. Balance, transactions, token/cost usage and
 the versioned rate card appear in `/account`; administrators can grant or remove credits at
-`/admin/credits`. Paid packs are intentionally not wired yet. Verified
+`/admin/credits`. Users can buy one-time packs at `/pricing`; signed Stripe
+webhooks and the authenticated return page share the same idempotent
+fulfillment path. Verified
 accounts granted access through `/admin/platform-access` instead receive
 included use of `OPENROUTER_API_KEY`; administrator emails configured in
 `ADMIN_EMAILS` always receive that access. Jiddu credits cover the web app,
@@ -212,6 +221,8 @@ src/
 │       ├── neutrality/route.ts                         POST: neutrality SSE stream
 │       ├── explain/route.ts                            POST: explain SSE stream (paragraph + level)
 │       ├── slop/route.ts                               POST: slop-pattern SSE stream
+│       ├── stripe/checkout/route.ts                    POST: authenticated Stripe Checkout Session
+│       ├── stripe/webhook/route.ts                     POST: signed, idempotent credit fulfillment
 │       └── review/
 │           ├── route.ts                                POST: nine-stage paper-review SSE stream
 │           ├── venues/route.ts                         GET: curated + DBLP venue autocomplete

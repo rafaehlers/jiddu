@@ -89,6 +89,7 @@ model JidduCreditAccount {
 
   transactions JidduCreditTransaction[]
   reservations JidduCreditReservation[]
+  purchases    StripeCreditPurchase[]
 
   @@index([email])
   @@index([updatedAt])
@@ -99,7 +100,7 @@ model JidduCreditTransaction {
   workosUserId       String
   amount             Int
   balanceAfter       Int
-  kind               String // grant | adjustment | usage | included_usage
+  kind               String // grant | adjustment | purchase | usage | included_usage
   feature            String?
   resourceId         String?
   rateVersion        String?
@@ -157,6 +158,29 @@ model JidduCreditPackage {
   updatedAt   DateTime @updatedAt
 
   @@index([active, sortOrder])
+}
+
+model StripeCreditPurchase {
+  id                      String   @id @default(cuid())
+  stripeCheckoutSessionId String   @unique
+  stripePaymentIntentId   String?  @unique
+  stripeCustomerId        String?
+  stripePriceId           String
+  workosUserId            String
+  email                   String
+  packageId               String?
+  packageName             String
+  credits                 Int
+  amountCents             Int
+  currency                String
+  livemode                Boolean
+  fulfilledAt             DateTime @default(now())
+  createdAt               DateTime @default(now())
+
+  account JidduCreditAccount @relation(fields: [workosUserId], references: [workosUserId], onDelete: Cascade)
+
+  @@index([workosUserId, createdAt])
+  @@index([fulfilledAt])
 }
 
 model SlopCheck {

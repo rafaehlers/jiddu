@@ -49,7 +49,7 @@ export default async function CreditPackagesPage({
   return (
     <AdminPage
       title="Credit packages"
-      description="Define the offers that Jiddu can sell later. These records are internal drafts until Stripe checkout is connected."
+      description="Manage the offers sold on the pricing page. Starter, Plus, Pro and Studio map to their server-side Stripe Price IDs."
       breadcrumbs={[{ label: "Credits", href: "/admin/credits" }]}
       actions={
         <Link

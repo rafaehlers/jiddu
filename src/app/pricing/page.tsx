@@ -17,7 +17,12 @@ export const metadata: Metadata = publicPageMetadata({
   path: "/pricing",
 });
 
-export default async function PricingPage() {
+export default async function PricingPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const query = await searchParams;
   const packages: PublicCreditPackage[] =
     await prisma.jidduCreditPackage.findMany({
       where: { active: true },
@@ -35,7 +40,10 @@ export default async function PricingPage() {
     <>
       <SiteHeader variant="guide" />
       <main className="flex-1">
-        <PricingBody packages={packages} />
+        <PricingBody
+          packages={packages}
+          checkoutCancelled={query.checkout === "cancelled"}
+        />
       </main>
       <SiteFooter />
     </>
