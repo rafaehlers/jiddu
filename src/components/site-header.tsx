@@ -25,7 +25,6 @@ export function SiteHeader({
         <div className="flex items-center gap-3 sm:gap-4 min-w-0">
           <Link
             href="/"
-            aria-label="Jiddu"
             className={`flex items-center gap-2 shrink-0 ${
               variant === "home"
                 ? "font-serif text-2xl sm:text-3xl tracking-tight"
@@ -36,8 +35,8 @@ export function SiteHeader({
               <span
                 className={
                   variant === "home"
-                    ? "relative h-8 w-11 sm:size-10"
-                    : "relative h-8 w-11 sm:size-9"
+                    ? "relative hidden size-10 sm:block"
+                    : "relative hidden size-9 sm:block"
                 }
                 aria-hidden="true"
               >
@@ -46,7 +45,7 @@ export function SiteHeader({
                   alt=""
                   fill
                   sizes="40px"
-                  className="jiddu-brand-logo jiddu-brand-logo-inverted rounded-[3px] object-cover sm:rounded-full"
+                  className="jiddu-brand-logo jiddu-brand-logo-inverted rounded-full object-cover"
                   priority
                 />
                 <Image
@@ -54,12 +53,12 @@ export function SiteHeader({
                   alt=""
                   fill
                   sizes="40px"
-                  className="jiddu-brand-logo jiddu-brand-logo-default rounded-[3px] object-cover sm:rounded-full"
+                  className="jiddu-brand-logo jiddu-brand-logo-default rounded-full object-cover"
                   priority
                 />
               </span>
             )}
-            <span className="hidden sm:inline">Jiddu</span>
+            <span>Jiddu</span>
           </Link>
           <span className="font-serif italic text-muted text-sm md:text-base hidden sm:inline">
             {t.tagline}
