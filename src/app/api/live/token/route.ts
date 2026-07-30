@@ -12,7 +12,13 @@ import {
   isCreditResponse,
   reserveWebAnalysisCredits,
 } from "@/lib/web-credit-billing";
-import { loadSettings, loadStringSettings } from "@/lib/settings";
+import { acquireConcurrency } from "@/lib/concurrency-limit";
+import { consume, rateLimitResponse } from "@/lib/rate-limit";
+import {
+  bucketFromSettings,
+  loadSettings,
+  loadStringSettings,
+} from "@/lib/settings";
 
 export const runtime = "nodejs";
 
@@ -43,6 +49,13 @@ export async function POST(req: NextRequest) {
     loadSettings(),
     loadStringSettings(),
   ]);
+  const identity = access.userId ?? access.email ?? "unknown";
+  const rate = consume(
+    `live:token:${identity}`,
+    bucketFromSettings(settings, "rate.liveToken"),
+  );
+  if (!rate.allowed) return rateLimitResponse(rate.retryAfterSec);
+
   const transcriptionDelay = normalizeDelay(
     routing["live.transcriptionDelay"],
   );
@@ -59,6 +72,12 @@ export async function POST(req: NextRequest) {
     },
   });
   if (isCreditResponse(reservation)) return reservation;
+
+  const permit = acquireConcurrency(`live:token:${identity}`, 1);
+  if (!permit) {
+    await releaseJidduCreditReservation(reservation);
+    return rateLimitResponse(1);
+  }
 
   // Coarse identifier for OpenAI's safety/rate-limit bucketing. Hashes the
   // client IP so we don't ship raw PII to OpenAI's logs.
@@ -101,6 +120,8 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     await releaseJidduCreditReservation(reservation);
     throw error;
+  } finally {
+    permit.release();
   }
 
   if (!upstream.ok) {

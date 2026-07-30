@@ -55,8 +55,11 @@ export function mapPaperReviewJob(row: PaperReview, origin: string) {
 
 export async function findPaperReviewJob(
   id: string,
+  ownerWorkosUserId: string,
 ): Promise<PaperReview | null> {
-  const row = await prisma.paperReview.findUnique({ where: { id } });
+  const row = await prisma.paperReview.findFirst({
+    where: { id, ownerWorkosUserId },
+  });
   if (
     !row ||
     row.status !== "running" ||

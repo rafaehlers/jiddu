@@ -522,7 +522,8 @@ const mcpHandler = createMcpHandler(
       },
       async ({ id }) => {
         try {
-          const row = await findPaperReviewJob(id);
+          const auth = currentMcpAuth();
+          const row = await findPaperReviewJob(id, auth.userId);
           if (!row) throw new Error("Review job not found.");
           return ok({
             ...mapPaperReviewJob(row, publicOrigin),

@@ -13,12 +13,16 @@ import { modelCreditRate } from "@/lib/jiddu-credit-rates";
 import {
   recordIncludedJidduCreditUsage,
   settleJidduCreditReservationFromUsage,
+  type JidduCreditReservationHandle,
 } from "@/lib/jiddu-credits";
 import {
   isCreditResponse,
   reserveWebAnalysisCredits,
 } from "@/lib/web-credit-billing";
 import type { OpenRouterUsage } from "@/lib/openrouter-usage";
+import { acquireConcurrency } from "@/lib/concurrency-limit";
+import { consume, rateLimitResponse } from "@/lib/rate-limit";
+import { bucketFromSettings, loadSettings } from "@/lib/settings";
 import { buildLiveAnalysisTitle } from "@/lib/live-title";
 
 export const runtime = "nodejs";
@@ -125,24 +129,57 @@ export async function POST(req: NextRequest) {
 
   const contextSentences = existingSentences.slice(-CONTEXT_SENTENCE_COUNT);
 
+  const identity = access.userId ?? access.email ?? "unknown";
+  const settings = shouldAnalyze ? await loadSettings() : null;
+  const rate = settings
+    ? consume(
+        `live:analyze:${identity}`,
+        bucketFromSettings(settings, "rate.liveAnalyze"),
+      )
+    : null;
+  if (rate && !rate.allowed) {
+    if (isNew) {
+      await prisma.analysis.delete({ where: { id: row.id } });
+    }
+    return rateLimitResponse(rate.retryAfterSec);
+  }
+
+  const permit = shouldAnalyze
+    ? acquireConcurrency(`live:analyze:${identity}`, 1)
+    : null;
+  if (shouldAnalyze && !permit) {
+    if (isNew) {
+      await prisma.analysis.delete({ where: { id: row.id } });
+    }
+    return rateLimitResponse(1);
+  }
+
   // ── Provider setup ───────────────────────────────────────────────────
   const chosenModel = resolveModel(body.model ?? row.model);
   let llm;
   try {
     llm = getProvider(chosenModel.id, access.apiKey);
   } catch (err) {
+    permit?.release();
     return jsonError(err instanceof Error ? err.message : "Provider error", 400);
   }
 
-  const reservation = shouldAnalyze
-    ? await reserveWebAnalysisCredits(access, {
-        amount: modelCreditRate(chosenModel.id),
-        feature: "live_analysis",
-        resourceId: row.id,
-        metadata: { model: chosenModel.id },
-      })
-    : null;
+  let reservation: JidduCreditReservationHandle | null | Response;
+  try {
+    reservation = shouldAnalyze
+      ? await reserveWebAnalysisCredits(access, {
+          amount: modelCreditRate(chosenModel.id),
+          feature: "live_analysis",
+          resourceId: row.id,
+          metadata: { model: chosenModel.id },
+        })
+      : null;
+  } catch (error) {
+    permit?.release();
+    throw error;
+  }
   if (reservation && isCreditResponse(reservation)) {
+    permit?.release();
     if (isNew) {
       await prisma.analysis.delete({ where: { id: row.id } });
     }
@@ -185,129 +222,149 @@ export async function POST(req: NextRequest) {
     }
   };
 
-  const stream = new ReadableStream<Uint8Array>({
-    async start(controller) {
-      const send = (event: string, data: unknown) => {
-        controller.enqueue(
-          encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`),
-        );
-      };
-
-      if (isNew) {
-        send("meta", { id: row.id, model: row.model, provider: row.provider });
-      }
-
-      const newFindings: Finding[] = [];
-      let windowScore = 0;
-      let windowSummary = "";
-      let windowLanguage: string | null = null;
-
-      if (shouldAnalyze) {
-        // Build a dedupe key set from existing findings.
-        const seen = new Set<string>(existingFindings.map(findingKey));
-
+  let stream: ReadableStream<Uint8Array>;
+  try {
+    stream = new ReadableStream<Uint8Array>({
+      async start(controller) {
         try {
-          for await (const event of llm.analyzeStream(
-            { sentences: toAnalyze, lang, contextSentences },
-            {
-              signal: abortController.signal,
-              onUsage: (usage) => usages.push(usage),
-            },
-          )) {
-            billableModelCall = true;
-            if (event.type === "finding") {
-              // Guard: drop findings the model wrongly anchored to context
-              // sentences or to ids we don't recognize.
-              const ok = event.finding.sentenceIds.every((id) =>
-                toAnalyze.some((s) => s.id === id),
-              );
-              if (!ok) continue;
-              const key = findingKey(event.finding);
-              if (seen.has(key)) continue;
-              seen.add(key);
-              const parsed = FindingSchema.safeParse(event.finding);
-              if (!parsed.success) continue;
-              newFindings.push(parsed.data);
-              send("finding", parsed.data);
-            } else if (event.type === "score") {
-              windowScore = event.score;
-            } else if (event.type === "summary") {
-              windowSummary = event.summary;
-            } else if (event.type === "language") {
-              windowLanguage = event.language;
+          const send = (event: string, data: unknown) => {
+            controller.enqueue(
+              encoder.encode(
+                `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`,
+              ),
+            );
+          };
+
+          if (isNew) {
+            send("meta", {
+              id: row.id,
+              model: row.model,
+              provider: row.provider,
+            });
+          }
+
+          const newFindings: Finding[] = [];
+          let windowScore = 0;
+          let windowSummary = "";
+          let windowLanguage: string | null = null;
+
+          if (shouldAnalyze) {
+            // Build a dedupe key set from existing findings.
+            const seen = new Set<string>(existingFindings.map(findingKey));
+
+            try {
+              for await (const event of llm.analyzeStream(
+                { sentences: toAnalyze, lang, contextSentences },
+                {
+                  signal: abortController.signal,
+                  onUsage: (usage) => usages.push(usage),
+                },
+              )) {
+                billableModelCall = true;
+                if (event.type === "finding") {
+                  // Guard: drop findings the model wrongly anchored to context
+                  // sentences or to ids we don't recognize.
+                  const ok = event.finding.sentenceIds.every((id) =>
+                    toAnalyze.some((s) => s.id === id),
+                  );
+                  if (!ok) continue;
+                  const key = findingKey(event.finding);
+                  if (seen.has(key)) continue;
+                  seen.add(key);
+                  const parsed = FindingSchema.safeParse(event.finding);
+                  if (!parsed.success) continue;
+                  newFindings.push(parsed.data);
+                  send("finding", parsed.data);
+                } else if (event.type === "score") {
+                  windowScore = event.score;
+                } else if (event.type === "summary") {
+                  windowSummary = event.summary;
+                } else if (event.type === "language") {
+                  windowLanguage = event.language;
+                }
+              }
+            } catch (err) {
+              if (!abortController.signal.aborted) {
+                const message =
+                  err instanceof Error ? err.message : String(err);
+                console.error("[live/analyze] LLM error", err);
+                send("error", { error: message });
+              }
             }
           }
-        } catch (err) {
-          if (!abortController.signal.aborted) {
-            const message = err instanceof Error ? err.message : String(err);
-            console.error("[live/analyze] LLM error", err);
-            send("error", { error: message });
-          }
+          await settle();
+
+          // ── Persist ────────────────────────────────────────────────────
+          // The committed sentence set grows by the count we analyzed (or by
+          // all new sentences on finalize). Persist exactly what we've seen so
+          // future calls can pick up from there.
+          const persistedSentences = finalize
+            ? allSentences
+            : shouldAnalyze
+              ? allSentences.slice(0, committedCount + toAnalyze.length)
+              : allSentences.slice(0, committedCount);
+          const allFindings = [...existingFindings, ...newFindings];
+
+          // On finalize, derive score from density and severity. Otherwise let
+          // the window score nudge the running score for stability.
+          const aggregateScore = finalize
+            ? computeFinalScore(allFindings, text.length)
+            : Math.round((row.score * 2 + windowScore) / 3);
+
+          const aggregateSummary = windowSummary || row.summary || "";
+          const title = finalize
+            ? buildLiveAnalysisTitle({
+                createdAt: row.createdAt,
+                summary: aggregateSummary,
+                transcript: text,
+                language: windowLanguage ?? row.language ?? lang,
+                timeZone: body.timeZone,
+              })
+            : row.title;
+
+          await prisma.analysis.update({
+            where: { id: row.id },
+            data: {
+              status: finalize ? "complete" : "running",
+              text,
+              transcript: text,
+              sentences: JSON.stringify(persistedSentences),
+              findings: JSON.stringify(allFindings),
+              score: aggregateScore,
+              title,
+              summary: aggregateSummary || null,
+              language: windowLanguage ?? row.language ?? lang,
+              finishedAt: finalize ? new Date() : null,
+            },
+          });
+
+          send("done", {
+            id: row.id,
+            analyzed: shouldAnalyze,
+            newFindings: newFindings.length,
+            totalFindings: allFindings.length,
+            score: aggregateScore,
+            title,
+            finalize,
+          });
+          controller.close();
+        } finally {
+          permit?.release();
         }
-      }
-      await settle();
-
-      // ── Persist ──────────────────────────────────────────────────────
-      // The committed sentence set grows by the count we actually analyzed
-      // (or by all new sentences on finalize). Either way, persist exactly
-      // what we've seen so future calls can pick up from there.
-      const persistedSentences = finalize
-        ? allSentences
-        : shouldAnalyze
-          ? allSentences.slice(0, committedCount + toAnalyze.length)
-          : allSentences.slice(0, committedCount);
-      const allFindings = [...existingFindings, ...newFindings];
-
-      // Recompute score: on finalize, derive from density + severity.
-      // Otherwise let windowScore nudge the running score (weighted toward
-      // existing for stability).
-      const aggregateScore = finalize
-        ? computeFinalScore(allFindings, text.length)
-        : Math.round((row.score * 2 + windowScore) / 3);
-
-      const aggregateSummary = windowSummary || row.summary || "";
-      const title = finalize
-        ? buildLiveAnalysisTitle({
-            createdAt: row.createdAt,
-            summary: aggregateSummary,
-            transcript: text,
-            language: windowLanguage ?? row.language ?? lang,
-            timeZone: body.timeZone,
-          })
-        : row.title;
-
-      await prisma.analysis.update({
-        where: { id: row.id },
-        data: {
-          status: finalize ? "complete" : "running",
-          text,
-          transcript: text,
-          sentences: JSON.stringify(persistedSentences),
-          findings: JSON.stringify(allFindings),
-          score: aggregateScore,
-          title,
-          summary: aggregateSummary || null,
-          language: windowLanguage ?? row.language ?? lang,
-          finishedAt: finalize ? new Date() : null,
-        },
-      });
-
-      send("done", {
-        id: row.id,
-        analyzed: shouldAnalyze,
-        newFindings: newFindings.length,
-        totalFindings: allFindings.length,
-        score: aggregateScore,
-        title,
-        finalize,
-      });
-      controller.close();
-    },
-    async cancel() {
-      abortController.abort();
-      await settle();
-    },
-  });
+      },
+      async cancel() {
+        abortController.abort();
+        try {
+          await settle();
+        } finally {
+          permit?.release();
+        }
+      },
+    });
+  } catch (error) {
+    permit?.release();
+    throw error;
+  }
 
   return new Response(stream, {
     headers: {

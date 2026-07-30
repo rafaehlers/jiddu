@@ -1,6 +1,11 @@
 import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
 import { MAX_PDF_BYTES, PaperReviewInputError } from "@/lib/paper-review-job";
+import {
+  fetchPinned,
+  type PinnedAddress,
+  type PinnedResponse,
+} from "@/lib/pinned-fetch";
 
 const MAX_REDIRECTS = 4;
 const FETCH_TIMEOUT_MS = 30_000;
@@ -11,8 +16,8 @@ export async function fetchPublicPdf(
   let current = parsePublicPdfUrl(rawUrl);
 
   for (let redirect = 0; redirect <= MAX_REDIRECTS; redirect += 1) {
-    await assertPublicHost(current);
-    const response = await fetch(current, {
+    const approvedAddress = await assertPublicHost(current);
+    const pinned = await fetchPinned(current, approvedAddress, {
       redirect: "manual",
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
       headers: {
@@ -20,53 +25,65 @@ export async function fetchPublicPdf(
         "user-agent": "Jiddu-Paper-Review/1.0 (+https://jiddu.app)",
       },
     });
+    const { response } = pinned;
+    let bodyConsumed = false;
 
-    if (response.status >= 300 && response.status < 400) {
-      const location = response.headers.get("location");
-      if (!location) {
+    try {
+      if (response.status >= 300 && response.status < 400) {
+        const location = response.headers.get("location");
+        if (!location) {
+          throw new PaperReviewInputError(
+            "The PDF URL returned a redirect without a destination.",
+            422,
+            "invalid_pdf_url",
+          );
+        }
+        if (redirect === MAX_REDIRECTS) {
+          throw new PaperReviewInputError(
+            "The PDF URL redirected too many times.",
+            422,
+            "too_many_redirects",
+          );
+        }
+        await response.body?.cancel();
+        bodyConsumed = true;
+        current = parsePublicPdfUrl(new URL(location, current).toString());
+        continue;
+      }
+
+      if (!response.ok) {
         throw new PaperReviewInputError(
-          "The PDF URL returned a redirect without a destination.",
+          `The PDF URL returned HTTP ${response.status}.`,
           422,
-          "invalid_pdf_url",
+          "pdf_fetch_failed",
         );
       }
-      if (redirect === MAX_REDIRECTS) {
+
+      const declaredLength = Number.parseInt(
+        response.headers.get("content-length") ?? "",
+        10,
+      );
+      if (Number.isFinite(declaredLength) && declaredLength > MAX_PDF_BYTES) {
         throw new PaperReviewInputError(
-          "The PDF URL redirected too many times.",
-          422,
-          "too_many_redirects",
+          `The remote PDF exceeds the ${MAX_PDF_BYTES / 1024 / 1024} MB limit.`,
+          413,
+          "pdf_too_large",
         );
       }
-      current = parsePublicPdfUrl(new URL(location, current).toString());
-      continue;
-    }
 
-    if (!response.ok) {
-      throw new PaperReviewInputError(
-        `The PDF URL returned HTTP ${response.status}.`,
-        422,
-        "pdf_fetch_failed",
-      );
+      const buffer = await readLimitedBody(response);
+      bodyConsumed = true;
+      return {
+        buffer,
+        filename: filenameFromResponse(response, current),
+        sourceRef: current.toString(),
+      };
+    } finally {
+      if (!bodyConsumed) {
+        await response.body?.cancel().catch(() => undefined);
+      }
+      await pinned.close();
     }
-
-    const declaredLength = Number.parseInt(
-      response.headers.get("content-length") ?? "",
-      10,
-    );
-    if (Number.isFinite(declaredLength) && declaredLength > MAX_PDF_BYTES) {
-      throw new PaperReviewInputError(
-        `The remote PDF exceeds the ${MAX_PDF_BYTES / 1024 / 1024} MB limit.`,
-        413,
-        "pdf_too_large",
-      );
-    }
-
-    const buffer = await readLimitedBody(response);
-    return {
-      buffer,
-      filename: filenameFromResponse(response, current),
-      sourceRef: current.toString(),
-    };
   }
 
   throw new PaperReviewInputError(
@@ -112,8 +129,11 @@ function parsePublicPdfUrl(rawUrl: string): URL {
   return url;
 }
 
-export async function assertPublicHost(url: URL): Promise<void> {
-  const hostname = url.hostname.toLowerCase().replace(/\.$/, "");
+export async function assertPublicHost(url: URL): Promise<PinnedAddress> {
+  const hostname = url.hostname
+    .toLowerCase()
+    .replace(/\.$/, "")
+    .replace(/^\[(.*)\]$/, "$1");
   if (
     hostname === "localhost" ||
     hostname.endsWith(".localhost") ||
@@ -125,7 +145,10 @@ export async function assertPublicHost(url: URL): Promise<void> {
 
   if (isIP(hostname)) {
     if (!isPublicIp(hostname)) throw privateUrlError();
-    return;
+    return {
+      address: hostname,
+      family: isIP(hostname) === 6 ? 6 : 4,
+    };
   }
 
   let addresses;
@@ -141,6 +164,11 @@ export async function assertPublicHost(url: URL): Promise<void> {
   if (addresses.length === 0 || addresses.some(({ address }) => !isPublicIp(address))) {
     throw privateUrlError();
   }
+  const approved = addresses[0];
+  return {
+    address: approved.address,
+    family: approved.family === 6 ? 6 : 4,
+  };
 }
 
 function isPublicIp(address: string): boolean {
@@ -182,7 +210,9 @@ function isPublicIp(address: string): boolean {
   );
 }
 
-async function readLimitedBody(response: Response): Promise<ArrayBuffer> {
+async function readLimitedBody(
+  response: PinnedResponse,
+): Promise<ArrayBuffer> {
   if (!response.body) {
     throw new PaperReviewInputError(
       "The PDF URL returned an empty response.",
@@ -216,7 +246,7 @@ async function readLimitedBody(response: Response): Promise<ArrayBuffer> {
   return joined.buffer;
 }
 
-function filenameFromResponse(response: Response, url: URL): string {
+function filenameFromResponse(response: PinnedResponse, url: URL): string {
   const disposition = response.headers.get("content-disposition") ?? "";
   const encoded = disposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
   const plain = disposition.match(/filename="?([^";]+)"?/i)?.[1];

@@ -52,6 +52,17 @@ export const DEFAULT_SETTINGS = {
   "rate.review.capacity": 2,
   "rate.review.perHour": 4,
 
+  // Live transcription token issuance. Applied per authenticated WorkOS user
+  // before Jiddu asks OpenAI for an ephemeral Realtime client secret.
+  "rate.liveToken.capacity": 2,
+  "rate.liveToken.perHour": 6,
+
+  // Live fallacy-analysis windows. The browser normally sends at most one
+  // request every 30 seconds; this leaves room for normal retries while
+  // bounding direct provider-funded calls.
+  "rate.liveAnalyze.capacity": 6,
+  "rate.liveAnalyze.perHour": 120,
+
   // Fact-check cost caps
   "factcheck.maxClaims": 50,
   "factcheck.maxRefreshPerClaim": 2,
@@ -266,6 +277,8 @@ export type RateBucketPrefix =
   | "rate.verify"
   | "rate.singleVerify"
   | "rate.review"
+  | "rate.liveToken"
+  | "rate.liveAnalyze"
   | "rate.api"
   | "rate.apiFactcheck"
   | "rate.apiReview";

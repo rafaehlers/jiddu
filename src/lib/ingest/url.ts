@@ -3,6 +3,11 @@ import { Readability } from "@mozilla/readability";
 import { lookup as dnsLookup } from "node:dns/promises";
 import { isIP } from "node:net";
 import { IngestError } from "./errors";
+import {
+  fetchPinned,
+  type PinnedAddress,
+  type PinnedResponse,
+} from "../pinned-fetch";
 
 export type IngestedDocument = {
   title: string | null;
@@ -40,43 +45,107 @@ export async function ingestUrl(url: string): Promise<IngestedDocument> {
   const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
 
   let currentUrl: URL = parseAndValidateUrl(url);
-  let res: Response | null = null;
 
   try {
     for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
-      await assertHostIsPublic(currentUrl.hostname);
-
-      const response = await fetch(currentUrl.toString(), {
+      const approvedAddress = await assertHostIsPublic(currentUrl.hostname);
+      const pinned = await fetchPinned(currentUrl, approvedAddress, {
         redirect: "manual",
         signal: ctrl.signal,
         headers: browserHeaders(),
       });
+      const { response } = pinned;
+      let bodyConsumed = false;
 
-      if (response.status >= 300 && response.status < 400) {
-        const location = response.headers.get("location");
-        if (!location) {
+      try {
+        if (response.status >= 300 && response.status < 400) {
+          const location = response.headers.get("location");
+          if (!location) {
+            throw new IngestError(
+              "fetch_failed",
+              `Redirect with no Location header (${response.status})`,
+              response.status,
+            );
+          }
+          if (hop === MAX_REDIRECTS) {
+            throw new IngestError(
+              "fetch_failed",
+              "Too many redirects",
+              response.status,
+            );
+          }
+          await response.body?.cancel();
+          bodyConsumed = true;
+          currentUrl = parseAndValidateUrl(
+            new URL(location, currentUrl).toString(),
+          );
+          continue;
+        }
+
+        if (!response.ok) {
+          if (response.status === 401 || response.status === 403) {
+            throw new IngestError(
+              "blocked",
+              `The site refused our request (${response.status})`,
+              response.status,
+            );
+          }
+          if (response.status === 404) {
+            throw new IngestError("not_found", "The page returned 404", 404);
+          }
+          if (response.status === 429) {
+            throw new IngestError(
+              "rate_limited",
+              "The site rate-limited us",
+              429,
+            );
+          }
           throw new IngestError(
             "fetch_failed",
-            `Redirect with no Location header (${response.status})`,
+            `Could not fetch the URL (${response.status} ${response.statusText})`,
             response.status,
           );
         }
-        if (hop === MAX_REDIRECTS) {
+
+        const html = await readCappedText(response, MAX_RESPONSE_BYTES);
+        bodyConsumed = true;
+        const dom = new JSDOM(html, { url: currentUrl.toString() });
+        const reader = new Readability(dom.window.document);
+        const article = reader.parse();
+
+        const title =
+          article?.title?.trim() || dom.window.document.title || null;
+        const text = (
+          article?.textContent ||
+          dom.window.document.body?.textContent ||
+          ""
+        )
+          .replace(/ /g, " ")
+          .replace(/[ \t]+/g, " ")
+          .replace(/\n{3,}/g, "\n\n")
+          .trim();
+
+        if (text.length < 40) {
           throw new IngestError(
-            "fetch_failed",
-            "Too many redirects",
-            response.status,
+            "extraction_failed",
+            "Could not extract readable content from the page",
           );
         }
-        currentUrl = parseAndValidateUrl(
-          new URL(location, currentUrl).toString(),
-        );
-        continue;
+
+        return {
+          title,
+          text,
+          source: "url",
+          sourceRef: currentUrl.toString(),
+        };
+      } finally {
+        if (!bodyConsumed) {
+          await response.body?.cancel().catch(() => undefined);
+        }
+        await pinned.close();
       }
-
-      res = response;
-      break;
     }
+    throw new IngestError("fetch_failed", "No response received");
   } catch (err) {
     if (err instanceof IngestError) throw err;
     if ((err as Error)?.name === "AbortError") {
@@ -89,52 +158,6 @@ export async function ingestUrl(url: string): Promise<IngestedDocument> {
   } finally {
     clearTimeout(timer);
   }
-
-  if (!res) {
-    throw new IngestError("fetch_failed", "No response received");
-  }
-
-  if (!res.ok) {
-    if (res.status === 401 || res.status === 403) {
-      throw new IngestError(
-        "blocked",
-        `The site refused our request (${res.status})`,
-        res.status,
-      );
-    }
-    if (res.status === 404) {
-      throw new IngestError("not_found", "The page returned 404", 404);
-    }
-    if (res.status === 429) {
-      throw new IngestError("rate_limited", "The site rate-limited us", 429);
-    }
-    throw new IngestError(
-      "fetch_failed",
-      `Could not fetch the URL (${res.status} ${res.statusText})`,
-      res.status,
-    );
-  }
-
-  const html = await readCappedText(res, MAX_RESPONSE_BYTES);
-  const dom = new JSDOM(html, { url: currentUrl.toString() });
-  const reader = new Readability(dom.window.document);
-  const article = reader.parse();
-
-  const title = article?.title?.trim() || dom.window.document.title || null;
-  const text = (article?.textContent || dom.window.document.body?.textContent || "")
-    .replace(/ /g, " ")
-    .replace(/[ \t]+/g, " ")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
-
-  if (text.length < 40) {
-    throw new IngestError(
-      "extraction_failed",
-      "Could not extract readable content from the page",
-    );
-  }
-
-  return { title, text, source: "url", sourceRef: currentUrl.toString() };
 }
 
 // Mimics a current Chrome on Windows. Most Brazilian outlets (Folha,
@@ -186,7 +209,7 @@ function parseAndValidateUrl(input: string): URL {
   return parsed;
 }
 
-async function assertHostIsPublic(hostname: string): Promise<void> {
+async function assertHostIsPublic(hostname: string): Promise<PinnedAddress> {
   // URL.hostname keeps brackets around IPv6 literals; strip before isIP.
   const bare = hostname.startsWith("[") && hostname.endsWith("]")
     ? hostname.slice(1, -1)
@@ -199,6 +222,9 @@ async function assertHostIsPublic(hostname: string): Promise<void> {
       ? [{ address: bare, family: ipVersion }]
       : await dnsLookup(bare, { all: true });
 
+  if (addresses.length === 0) {
+    throw new IngestError("unreachable", "The URL hostname did not resolve");
+  }
   for (const { address, family } of addresses) {
     if (isBlockedAddress(address, family)) {
       throw new IngestError(
@@ -207,6 +233,11 @@ async function assertHostIsPublic(hostname: string): Promise<void> {
       );
     }
   }
+  const approved = addresses[0];
+  return {
+    address: approved.address,
+    family: approved.family === 6 ? 6 : 4,
+  };
 }
 
 function isBlockedAddress(ip: string, family: number): boolean {
@@ -263,7 +294,10 @@ function isBlockedIPv6(ip: string): boolean {
   return false;
 }
 
-async function readCappedText(res: Response, maxBytes: number): Promise<string> {
+async function readCappedText(
+  res: PinnedResponse,
+  maxBytes: number,
+): Promise<string> {
   // Stream and stop reading after maxBytes so a malicious server can't make
   // us buffer gigabytes into memory.
   const reader = res.body?.getReader();

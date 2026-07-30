@@ -1,7 +1,6 @@
 import type { NextRequest } from "next/server";
 import { requireApiKey } from "@/lib/api/auth";
 import { jsonError } from "@/lib/api/http";
-import { prisma } from "@/lib/db";
 import {
   findPaperReviewJob,
   mapPaperReviewJob,
@@ -30,18 +29,7 @@ export async function GET(
     return jsonError("Review job not found.", 404, "not_found");
   }
 
-  // Check ownership before findPaperReviewJob(), which may perform stale-job
-  // maintenance. A caller must not be able to mutate another account's job by
-  // guessing its public id.
-  const ownedJob = await prisma.paperReview.findFirst({
-    where: { id, ownerWorkosUserId: auth.userId },
-    select: { id: true },
-  });
-  if (!ownedJob) {
-    return jsonError("Review job not found.", 404, "not_found");
-  }
-
-  const row = await findPaperReviewJob(id);
+  const row = await findPaperReviewJob(id, auth.userId);
   if (!row) {
     return jsonError("Review job not found.", 404, "not_found");
   }

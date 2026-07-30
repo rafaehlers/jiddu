@@ -109,6 +109,40 @@ const GROUPS: Group[] = [
     ],
   },
   {
+    title: "Rate limits — Live transcription sessions",
+    description:
+      "POST /api/live/token. Applied per signed-in WorkOS user before Jiddu mints an OpenAI Realtime client secret. Concurrent issuance is also limited to one request per user.",
+    keys: [
+      {
+        key: "rate.liveToken.capacity",
+        label: "Burst capacity",
+        help: "Max token requests in a short burst per user",
+      },
+      {
+        key: "rate.liveToken.perHour",
+        label: "Per hour",
+        help: "Sustained new Live sessions per user",
+      },
+    ],
+  },
+  {
+    title: "Rate limits — Live analysis windows",
+    description:
+      "POST /api/live/analyze. Applied per signed-in WorkOS user; only one provider-backed analysis window may run concurrently per user.",
+    keys: [
+      {
+        key: "rate.liveAnalyze.capacity",
+        label: "Burst capacity",
+        help: "Max analysis-window requests in a short burst per user",
+      },
+      {
+        key: "rate.liveAnalyze.perHour",
+        label: "Per hour",
+        help: "Sustained Live analysis windows per user",
+      },
+    ],
+  },
+  {
     title: "Rate limits — API/MCP adversarial review",
     description:
       "Public asynchronous review jobs started through /api/v1/adversarial-reviews or MCP. Applied per REST API key or WorkOS MCP user.",
