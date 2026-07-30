@@ -27,6 +27,7 @@ import {
 import { consume, rateLimitResponse } from "@/lib/rate-limit";
 import {
   loadSettings,
+  loadStringSettings,
   bucketFromSettings,
 } from "@/lib/settings";
 import { IngestError } from "@/lib/ingest/errors";
@@ -442,11 +443,12 @@ const mcpHandler = createMcpHandler(
               review_date ?? new Date().toISOString().slice(0, 10),
             reviewDepth: depth ?? "standard",
           });
+          const routing = await loadStringSettings();
           const maximumModels = paperReviewMaximumModels({
             depth: prepared.reviewDepth,
             selectedModel: prepared.modelId,
-            deepModel: process.env.PAPER_REVIEW_DEEP_MODEL,
-            criticModel: process.env.PAPER_REVIEW_CRITIC_MODEL,
+            deepModel: routing["paperReview.deepModel"],
+            criticModel: routing["paperReview.criticModel"],
           });
           const meterResult = await createApiCreditMeter(auth, {
             amount: creditsForModels(maximumModels),

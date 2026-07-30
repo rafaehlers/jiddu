@@ -11,7 +11,7 @@ import {
   isCreditResponse,
   reserveWebAnalysisCredits,
 } from "@/lib/web-credit-billing";
-import { loadSettings } from "@/lib/settings";
+import { loadSettings, loadStringSettings } from "@/lib/settings";
 
 export const runtime = "nodejs";
 
@@ -38,10 +38,13 @@ export async function POST(req: NextRequest) {
 
   const body = (await req.json().catch(() => ({}))) as Body;
   const language = normalizeLang(body.language);
+  const [settings, routing] = await Promise.all([
+    loadSettings(),
+    loadStringSettings(),
+  ]);
   const transcriptionDelay = normalizeDelay(
-    process.env.OPENAI_LIVE_TRANSCRIBE_DELAY,
+    routing["live.transcriptionDelay"],
   );
-  const settings = await loadSettings();
   const transcriptionCredits = Math.max(
     1,
     Math.ceil(settings["credits.liveTranscription"]),

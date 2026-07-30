@@ -1,7 +1,15 @@
 import Link from "next/link";
 import { AdminPage } from "@/components/admin/admin-page";
 import { CreditPricingSimulator } from "@/components/admin/credit-pricing-simulator";
-import { DEFAULT_SETTINGS, loadSettings, type SettingKey } from "@/lib/settings";
+import {
+  DEFAULT_SETTINGS,
+  DEFAULT_STRING_SETTINGS,
+  LIVE_TRANSCRIPTION_DELAY_OPTIONS,
+  PAPER_REVIEW_MODEL_OPTIONS,
+  loadSettings,
+  loadStringSettings,
+  type SettingKey,
+} from "@/lib/settings";
 import { resetSettingsAction, saveSettingsAction } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -136,13 +144,37 @@ const GROUPS: Group[] = [
   },
 ];
 
+const MODEL_LABELS: Record<
+  (typeof PAPER_REVIEW_MODEL_OPTIONS)[number],
+  string
+> = {
+  "gpt-5.5": "GPT-5.5",
+  "claude-opus-4.8": "Claude Opus 4.8",
+  "gpt-5.4-mini": "GPT-5.4 mini",
+  "minimax-m3": "MiniMax M3",
+};
+
+const DELAY_LABELS: Record<
+  (typeof LIVE_TRANSCRIPTION_DELAY_OPTIONS)[number],
+  string
+> = {
+  minimal: "Minimal — fastest",
+  low: "Low",
+  medium: "Medium — balanced",
+  high: "High",
+  xhigh: "Extra high — most context",
+};
+
 export default async function AdminSettingsPage({
   searchParams,
 }: {
   searchParams: Promise<{ saved?: string; reset?: string }>;
 }) {
   const { saved, reset } = await searchParams;
-  const current = await loadSettings();
+  const [current, currentStrings] = await Promise.all([
+    loadSettings(),
+    loadStringSettings(),
+  ]);
 
   return (
     <AdminPage
@@ -162,6 +194,79 @@ export default async function AdminSettingsPage({
         )}
 
         <form action={saveSettingsAction} className="flex flex-col gap-8">
+          <fieldset className="flex flex-col gap-4 rounded-lg border border-rule bg-paper p-5">
+            <legend className="flex flex-col gap-1">
+              <span className="font-medium">Paper review and Live routing</span>
+              <span className="text-xs text-muted">
+                Runtime routing for Deep reviews and the Live transcription
+                quality/latency trade-off. Environment variables remain the
+                installation defaults.
+              </span>
+            </legend>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label className="flex flex-col gap-1 text-sm">
+                <span className="font-medium">Deep reasoning model</span>
+                <select
+                  name="paperReview.deepModel"
+                  defaultValue={currentStrings["paperReview.deepModel"]}
+                  className="bg-background border border-rule rounded-md px-3 py-2 outline-none focus:border-accent"
+                >
+                  {PAPER_REVIEW_MODEL_OPTIONS.map((model) => (
+                    <option key={model} value={model}>
+                      {MODEL_LABELS[model]} ({model})
+                    </option>
+                  ))}
+                </select>
+                <span className="text-xs text-muted">
+                  Handles research, evaluation, synthesis and self-critique in
+                  Deep mode · default{" "}
+                  {DEFAULT_STRING_SETTINGS["paperReview.deepModel"]}
+                </span>
+              </label>
+
+              <label className="flex flex-col gap-1 text-sm">
+                <span className="font-medium">Independent critic model</span>
+                <select
+                  name="paperReview.criticModel"
+                  defaultValue={currentStrings["paperReview.criticModel"]}
+                  className="bg-background border border-rule rounded-md px-3 py-2 outline-none focus:border-accent"
+                >
+                  {PAPER_REVIEW_MODEL_OPTIONS.map((model) => (
+                    <option key={model} value={model}>
+                      {MODEL_LABELS[model]} ({model})
+                    </option>
+                  ))}
+                </select>
+                <span className="text-xs text-muted">
+                  Audits the draft using an independent model family · default{" "}
+                  {DEFAULT_STRING_SETTINGS["paperReview.criticModel"]}
+                </span>
+              </label>
+
+              <label className="flex flex-col gap-1 text-sm">
+                <span className="font-medium">
+                  Live transcription delay
+                </span>
+                <select
+                  name="live.transcriptionDelay"
+                  defaultValue={currentStrings["live.transcriptionDelay"]}
+                  className="bg-background border border-rule rounded-md px-3 py-2 outline-none focus:border-accent"
+                >
+                  {LIVE_TRANSCRIPTION_DELAY_OPTIONS.map((delay) => (
+                    <option key={delay} value={delay}>
+                      {DELAY_LABELS[delay]} ({delay})
+                    </option>
+                  ))}
+                </select>
+                <span className="text-xs text-muted">
+                  Higher values give the transcriber more context before
+                  emitting text; fallacy analysis begins after transcription ·
+                  default {DEFAULT_STRING_SETTINGS["live.transcriptionDelay"]}
+                </span>
+              </label>
+            </div>
+          </fieldset>
+
           {GROUPS.map((g) => (
             <fieldset
               key={g.title}

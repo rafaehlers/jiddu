@@ -29,6 +29,7 @@ import { validateReviewSources } from "@/lib/paper-review-source-validation";
 import type { Lang } from "@/lib/fallacies";
 import type { ResolvedVenueProfile } from "@/lib/venues";
 import type { OpenRouterUsage } from "@/lib/openrouter-usage";
+import { loadStringSettings } from "@/lib/settings";
 
 export const MAX_PAPER_TEXT_CHARS = 300_000;
 export const MAX_PDF_BYTES = 25 * 1024 * 1024;
@@ -242,13 +243,14 @@ export async function runPreparedPaperReview(
   const stageDone = async (index: number) => {
     await callbacks?.onStageDone?.({ index });
   };
+  const routing = await loadStringSettings();
   const deepModel =
     prepared.reviewDepth === "deep"
-      ? process.env.PAPER_REVIEW_DEEP_MODEL || "gpt-5.5"
+      ? routing["paperReview.deepModel"]
       : prepared.modelId;
   const criticModel =
     prepared.reviewDepth === "deep"
-      ? process.env.PAPER_REVIEW_CRITIC_MODEL || "claude-opus-4.8"
+      ? routing["paperReview.criticModel"]
       : prepared.modelId === "minimax-m3"
         ? "gpt-5.4-mini"
         : "minimax-m3";

@@ -6,7 +6,10 @@ import { prisma } from "@/lib/db";
 import {
   DEFAULT_SETTINGS,
   invalidateSettingsCache,
+  isLiveTranscriptionDelaySetting,
+  isPaperReviewModelSetting,
   setSetting,
+  setStringSetting,
   type SettingKey,
 } from "@/lib/settings";
 
@@ -34,6 +37,31 @@ export async function saveSettingsAction(formData: FormData): Promise<void> {
     }
     await setSetting(key, num);
   }
+
+  const deepModel = String(
+    formData.get("paperReview.deepModel") ?? "",
+  ).trim();
+  if (isPaperReviewModelSetting(deepModel)) {
+    await setStringSetting("paperReview.deepModel", deepModel);
+  }
+
+  const criticModel = String(
+    formData.get("paperReview.criticModel") ?? "",
+  ).trim();
+  if (isPaperReviewModelSetting(criticModel)) {
+    await setStringSetting("paperReview.criticModel", criticModel);
+  }
+
+  const transcriptionDelay = String(
+    formData.get("live.transcriptionDelay") ?? "",
+  ).trim();
+  if (isLiveTranscriptionDelaySetting(transcriptionDelay)) {
+    await setStringSetting(
+      "live.transcriptionDelay",
+      transcriptionDelay,
+    );
+  }
+
   redirect("/admin/settings?saved=1");
 }
 

@@ -73,10 +73,70 @@ export type SettingKey = keyof typeof DEFAULT_SETTINGS;
 
 const KEYS = Object.keys(DEFAULT_SETTINGS) as SettingKey[];
 
+export const PAPER_REVIEW_MODEL_OPTIONS = [
+  "gpt-5.5",
+  "claude-opus-4.8",
+  "gpt-5.4-mini",
+  "minimax-m3",
+] as const;
+
+export const LIVE_TRANSCRIPTION_DELAY_OPTIONS = [
+  "minimal",
+  "low",
+  "medium",
+  "high",
+  "xhigh",
+] as const;
+
+export type PaperReviewModelSetting =
+  (typeof PAPER_REVIEW_MODEL_OPTIONS)[number];
+export type LiveTranscriptionDelaySetting =
+  (typeof LIVE_TRANSCRIPTION_DELAY_OPTIONS)[number];
+
+function supportedStringDefault<T extends readonly string[]>(
+  value: string | undefined,
+  options: T,
+  fallback: T[number],
+): T[number] {
+  const normalized = value?.trim();
+  return normalized && options.includes(normalized) ? normalized : fallback;
+}
+
+export const DEFAULT_STRING_SETTINGS = {
+  "paperReview.deepModel": supportedStringDefault(
+    process.env.PAPER_REVIEW_DEEP_MODEL,
+    PAPER_REVIEW_MODEL_OPTIONS,
+    "gpt-5.5",
+  ),
+  "paperReview.criticModel": supportedStringDefault(
+    process.env.PAPER_REVIEW_CRITIC_MODEL,
+    PAPER_REVIEW_MODEL_OPTIONS,
+    "claude-opus-4.8",
+  ),
+  "live.transcriptionDelay": supportedStringDefault(
+    process.env.OPENAI_LIVE_TRANSCRIBE_DELAY,
+    LIVE_TRANSCRIPTION_DELAY_OPTIONS,
+    "medium",
+  ),
+} as const;
+
+export type StringSettingKey = keyof typeof DEFAULT_STRING_SETTINGS;
+export type StringSettings = {
+  "paperReview.deepModel": PaperReviewModelSetting;
+  "paperReview.criticModel": PaperReviewModelSetting;
+  "live.transcriptionDelay": LiveTranscriptionDelaySetting;
+};
+
+const STRING_KEYS = Object.keys(
+  DEFAULT_STRING_SETTINGS,
+) as StringSettingKey[];
+
 // In-process cache so we don't hit SQLite on every rate-limit check. The
 // admin write path invalidates by calling `invalidateSettingsCache()`.
 let cachedSnapshot: Record<SettingKey, number> | null = null;
+let cachedStringSnapshot: StringSettings | null = null;
 let cachedAt = 0;
+let cachedStringsAt = 0;
 const CACHE_TTL_MS = 30_000;
 
 export async function loadSettings(): Promise<Record<SettingKey, number>> {
@@ -107,9 +167,55 @@ export async function loadSettings(): Promise<Record<SettingKey, number>> {
   return snap;
 }
 
+export async function loadStringSettings(): Promise<StringSettings> {
+  const now = Date.now();
+  if (
+    cachedStringSnapshot &&
+    now - cachedStringsAt < CACHE_TTL_MS
+  ) {
+    return cachedStringSnapshot;
+  }
+  const rows = await prisma.appSetting.findMany({
+    where: { key: { in: STRING_KEYS } },
+  });
+  const overrides = new Map<string, string>();
+  for (const row of rows) {
+    try {
+      const value = JSON.parse(row.value);
+      if (typeof value === "string") {
+        overrides.set(row.key, value);
+      }
+    } catch {
+      // Ignore malformed rows and use the installation default.
+    }
+  }
+  const snap: StringSettings = {
+    "paperReview.deepModel": supportedStringDefault(
+      overrides.get("paperReview.deepModel"),
+      PAPER_REVIEW_MODEL_OPTIONS,
+      DEFAULT_STRING_SETTINGS["paperReview.deepModel"],
+    ),
+    "paperReview.criticModel": supportedStringDefault(
+      overrides.get("paperReview.criticModel"),
+      PAPER_REVIEW_MODEL_OPTIONS,
+      DEFAULT_STRING_SETTINGS["paperReview.criticModel"],
+    ),
+    "live.transcriptionDelay": supportedStringDefault(
+      overrides.get("live.transcriptionDelay"),
+      LIVE_TRANSCRIPTION_DELAY_OPTIONS,
+      DEFAULT_STRING_SETTINGS["live.transcriptionDelay"],
+    ),
+  };
+  cachedStringSnapshot = snap;
+  cachedStringsAt = now;
+  return snap;
+}
+
 export function invalidateSettingsCache(): void {
   cachedSnapshot = null;
   cachedAt = 0;
+  cachedStringSnapshot = null;
+  cachedStringsAt = 0;
 }
 
 export async function setSetting(key: SettingKey, value: number): Promise<void> {
@@ -123,6 +229,32 @@ export async function setSetting(key: SettingKey, value: number): Promise<void> 
 
 export async function deleteSetting(key: SettingKey): Promise<void> {
   await prisma.appSetting.delete({ where: { key } }).catch(() => null);
+  invalidateSettingsCache();
+}
+
+export function isPaperReviewModelSetting(
+  value: string,
+): value is PaperReviewModelSetting {
+  return PAPER_REVIEW_MODEL_OPTIONS.some((option) => option === value);
+}
+
+export function isLiveTranscriptionDelaySetting(
+  value: string,
+): value is LiveTranscriptionDelaySetting {
+  return LIVE_TRANSCRIPTION_DELAY_OPTIONS.some(
+    (option) => option === value,
+  );
+}
+
+export async function setStringSetting(
+  key: StringSettingKey,
+  value: StringSettings[StringSettingKey],
+): Promise<void> {
+  await prisma.appSetting.upsert({
+    where: { key },
+    create: { key, value: JSON.stringify(value) },
+    update: { value: JSON.stringify(value) },
+  });
   invalidateSettingsCache();
 }
 

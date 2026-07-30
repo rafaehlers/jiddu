@@ -6,7 +6,11 @@ import {
   runPreparedPaperReview,
 } from "@/lib/paper-review-job";
 import { consume, ipFromRequest, rateLimitResponse } from "@/lib/rate-limit";
-import { bucketFromSettings, loadSettings } from "@/lib/settings";
+import {
+  bucketFromSettings,
+  loadSettings,
+  loadStringSettings,
+} from "@/lib/settings";
 import type { Lang } from "@/lib/fallacies";
 import { resolveVenueProfile } from "@/lib/venues";
 import type { ReviewDepth } from "@/lib/paper-review-audit-schema";
@@ -35,7 +39,10 @@ export async function POST(req: NextRequest) {
   const access = await requireWebAnalysisAccess();
   if (isAccessResponse(access)) return access;
 
-  const settings = await loadSettings();
+  const [settings, routing] = await Promise.all([
+    loadSettings(),
+    loadStringSettings(),
+  ]);
   const rl = consume(
     `review:${ipFromRequest(req)}`,
     bucketFromSettings(settings, "rate.review"),
@@ -104,8 +111,8 @@ export async function POST(req: NextRequest) {
   const maximumModels = paperReviewMaximumModels({
     depth: prepared.reviewDepth,
     selectedModel: prepared.modelId,
-    deepModel: process.env.PAPER_REVIEW_DEEP_MODEL,
-    criticModel: process.env.PAPER_REVIEW_CRITIC_MODEL,
+    deepModel: routing["paperReview.deepModel"],
+    criticModel: routing["paperReview.criticModel"],
   });
   const reservation = await reserveWebAnalysisCredits(access, {
     amount: creditsForModels(maximumModels),

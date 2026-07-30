@@ -10,7 +10,11 @@ import {
   runPreparedPaperReview,
 } from "@/lib/paper-review-job";
 import { consume, rateLimitResponse } from "@/lib/rate-limit";
-import { bucketFor, loadSettings } from "@/lib/settings";
+import {
+  bucketFor,
+  loadSettings,
+  loadStringSettings,
+} from "@/lib/settings";
 import { resolveVenueProfile, type PaperType } from "@/lib/venues";
 import type { Lang } from "@/lib/fallacies";
 import type { ReviewDepth } from "@/lib/paper-review-audit-schema";
@@ -42,7 +46,10 @@ export async function POST(req: NextRequest) {
   const auth = await requireApiKey(req);
   if (auth instanceof Response) return auth;
 
-  const settings = await loadSettings();
+  const [settings, routing] = await Promise.all([
+    loadSettings(),
+    loadStringSettings(),
+  ]);
   const rl = consume(
     `v1:adversarial-review:${auth.id}`,
     bucketFor(settings, "rate.apiReview", auth),
@@ -114,8 +121,8 @@ export async function POST(req: NextRequest) {
     const maximumModels = paperReviewMaximumModels({
       depth: prepared.reviewDepth,
       selectedModel: prepared.modelId,
-      deepModel: process.env.PAPER_REVIEW_DEEP_MODEL,
-      criticModel: process.env.PAPER_REVIEW_CRITIC_MODEL,
+      deepModel: routing["paperReview.deepModel"],
+      criticModel: routing["paperReview.criticModel"],
     });
     const meter = await createApiCreditMeter(auth, {
       amount: creditsForModels(maximumModels),
