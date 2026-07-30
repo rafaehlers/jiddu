@@ -9,6 +9,7 @@ import { ScrollIndicator } from "@/components/scroll-indicator";
 import { SkeletonReveal } from "@/components/skeleton-reveal";
 import { AnalysisSkeleton } from "@/components/analysis-skeleton";
 import { analysisSocialMetadata } from "@/lib/social-metadata";
+import { resolveAnalysisTitle } from "@/lib/live-title";
 import type { Finding, Sentence } from "@/lib/schema";
 
 type Props = { params: Promise<{ id: string }> };
@@ -19,7 +20,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const a = await prisma.analysis.findUnique({ where: { id } });
   if (!a) return { title: "Jiddu" };
-  const title = a.title ?? "Untitled";
+  const title =
+    resolveAnalysisTitle({
+      title: a.title,
+      source: a.source,
+      createdAt: a.createdAt,
+      summary: a.summary,
+      transcript: a.transcript ?? a.text,
+      language: a.language,
+    }) ?? "Untitled";
   const score = a.score ?? 0;
   const label =
     score >= 81
@@ -46,6 +55,14 @@ export default async function AnalysisPage({ params }: Props) {
 
   const sentences = JSON.parse(a.sentences) as Sentence[];
   const findings = JSON.parse(a.findings) as Finding[];
+  const title = resolveAnalysisTitle({
+    title: a.title,
+    source: a.source,
+    createdAt: a.createdAt,
+    summary: a.summary,
+    transcript: a.transcript ?? a.text,
+    language: a.language,
+  });
 
   return (
     <main className="flex-1 flex flex-col">
@@ -57,7 +74,7 @@ export default async function AnalysisPage({ params }: Props) {
       <SkeletonReveal skeleton={<AnalysisSkeleton />}>
         <AnalysisView
           id={a.id}
-          title={a.title}
+          title={title}
           sourceRef={a.sourceRef}
           source={a.source}
           text={a.text}

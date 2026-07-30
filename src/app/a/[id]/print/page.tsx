@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { AnalysisPrintView } from "@/components/analysis-print-view";
+import { resolveAnalysisTitle } from "@/lib/live-title";
 import type { Finding, Sentence } from "@/lib/schema";
 
 type Props = { params: Promise<{ id: string }> };
@@ -18,11 +19,19 @@ export default async function AnalysisPrintPage({ params }: Props) {
 
   const sentences = JSON.parse(a.sentences) as Sentence[];
   const findings = JSON.parse(a.findings) as Finding[];
+  const title = resolveAnalysisTitle({
+    title: a.title,
+    source: a.source,
+    createdAt: a.createdAt,
+    summary: a.summary,
+    transcript: a.transcript ?? a.text,
+    language: a.language,
+  });
 
   return (
     <AnalysisPrintView
       id={a.id}
-      title={a.title}
+      title={title}
       sourceRef={a.sourceRef}
       source={a.source}
       text={a.text}

@@ -19,6 +19,7 @@ import {
   reserveWebAnalysisCredits,
 } from "@/lib/web-credit-billing";
 import type { OpenRouterUsage } from "@/lib/openrouter-usage";
+import { buildLiveAnalysisTitle } from "@/lib/live-title";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -32,6 +33,7 @@ type Body = {
   text?: string;
   lang?: string;
   model?: string;
+  timeZone?: string;
   finalize?: boolean;
 };
 
@@ -263,9 +265,16 @@ export async function POST(req: NextRequest) {
         ? computeFinalScore(allFindings, text.length)
         : Math.round((row.score * 2 + windowScore) / 3);
 
-      const aggregateSummary = finalize
-        ? windowSummary || row.summary || ""
-        : row.summary;
+      const aggregateSummary = windowSummary || row.summary || "";
+      const title = finalize
+        ? buildLiveAnalysisTitle({
+            createdAt: row.createdAt,
+            summary: aggregateSummary,
+            transcript: text,
+            language: windowLanguage ?? row.language ?? lang,
+            timeZone: body.timeZone,
+          })
+        : row.title;
 
       await prisma.analysis.update({
         where: { id: row.id },
@@ -276,6 +285,7 @@ export async function POST(req: NextRequest) {
           sentences: JSON.stringify(persistedSentences),
           findings: JSON.stringify(allFindings),
           score: aggregateScore,
+          title,
           summary: aggregateSummary || null,
           language: windowLanguage ?? row.language ?? lang,
           finishedAt: finalize ? new Date() : null,
@@ -288,6 +298,7 @@ export async function POST(req: NextRequest) {
         newFindings: newFindings.length,
         totalFindings: allFindings.length,
         score: aggregateScore,
+        title,
         finalize,
       });
       controller.close();

@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 
 export const SITE_URL = "https://jiddu.app";
+export const SITE_TITLE = "Jiddu — Read anything with a critical mind";
 export const SITE_DESCRIPTION =
-  "Jiddu detects logical fallacies in any text. Upload a PDF, paste text, or share a URL and read it like Microsoft Word with critical-thinking comments in the margin.";
+  "Read texts, PDFs, and links with a critical eye. Spot fallacies, check facts, uncover bias, and understand what deserves a closer look.";
 const SOCIAL_IMAGE_URL = `${SITE_URL}/og.png`;
 const SOCIAL_IMAGE_ALT =
   "Jiddu — truth is a pathless land — Read anything with a critical mind — https://jiddu.app";

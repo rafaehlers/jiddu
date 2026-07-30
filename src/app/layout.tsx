@@ -9,7 +9,7 @@ import { AuthKitProvider } from "@workos-inc/authkit-nextjs/components";
 import { AuthControlsProvider } from "@/components/auth-controls";
 import { I18nProvider } from "@/lib/i18n/provider";
 import { isWorkOSConfigured } from "@/lib/auth-config";
-import { SITE_DESCRIPTION } from "@/lib/social-metadata";
+import { SITE_DESCRIPTION, SITE_TITLE } from "@/lib/social-metadata";
 import type { Lang } from "@/lib/fallacies";
 import "@radix-ui/themes/styles.css";
 import "@workos-inc/widgets/styles.css";
@@ -38,10 +38,10 @@ const serif = Newsreader({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://jiddu.app"),
-  title: "Jiddu — truth is a pathless land",
+  title: SITE_TITLE,
   description: SITE_DESCRIPTION,
   openGraph: {
-    title: "Jiddu — truth is a pathless land",
+    title: SITE_TITLE,
     description: SITE_DESCRIPTION,
     siteName: "Jiddu",
     type: "website",
@@ -57,7 +57,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Jiddu — truth is a pathless land",
+    title: SITE_TITLE,
     description: SITE_DESCRIPTION,
     images: [
       {

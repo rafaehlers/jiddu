@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { resolveAnalysisTitle } from "@/lib/live-title";
 
 export const runtime = "nodejs";
 
@@ -12,7 +13,14 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     id: a.id,
     source: a.source,
     sourceRef: a.sourceRef,
-    title: a.title,
+    title: resolveAnalysisTitle({
+      title: a.title,
+      source: a.source,
+      createdAt: a.createdAt,
+      summary: a.summary,
+      transcript: a.transcript ?? a.text,
+      language: a.language,
+    }),
     text: a.text,
     language: a.language,
     provider: a.provider,

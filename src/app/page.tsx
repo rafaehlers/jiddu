@@ -5,10 +5,11 @@ import { SiteFooter } from "@/components/site-footer";
 import {
   publicPageMetadata,
   SITE_DESCRIPTION,
+  SITE_TITLE,
 } from "@/lib/social-metadata";
 
 export const metadata: Metadata = publicPageMetadata({
-  title: "Jiddu — truth is a pathless land",
+  title: SITE_TITLE,
   description: SITE_DESCRIPTION,
   path: "/",
 });

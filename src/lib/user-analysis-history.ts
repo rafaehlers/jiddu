@@ -1,6 +1,7 @@
 import "server-only";
 
 import { prisma } from "@/lib/db";
+import { resolveAnalysisTitle } from "@/lib/live-title";
 
 export type UserAnalysisKind =
   | "fallacy"
@@ -38,7 +39,6 @@ export async function listUserAnalyses(
   } as const;
   const query = {
     where,
-    select,
     orderBy: { createdAt: "desc" as const },
     take: MAX_HISTORY_ROWS,
   };
@@ -51,16 +51,40 @@ export async function listUserAnalyses(
     slopChecks,
     paperReviews,
   ] = await Promise.all([
-    prisma.analysis.findMany(query),
-    prisma.factCheck.findMany(query),
-    prisma.neutrality.findMany(query),
-    prisma.explanation.findMany(query),
-    prisma.slopCheck.findMany(query),
-    prisma.paperReview.findMany(query),
+    prisma.analysis.findMany({
+      ...query,
+      select: {
+        ...select,
+        summary: true,
+        transcript: true,
+        language: true,
+      },
+    }),
+    prisma.factCheck.findMany({ ...query, select }),
+    prisma.neutrality.findMany({ ...query, select }),
+    prisma.explanation.findMany({ ...query, select }),
+    prisma.slopCheck.findMany({ ...query, select }),
+    prisma.paperReview.findMany({ ...query, select }),
   ]);
 
   return [
-    ...analyses.map((row) => ({ ...row, kind: "fallacy" as const })),
+    ...analyses.map((row) => ({
+      kind: "fallacy" as const,
+      id: row.id,
+      title: resolveAnalysisTitle({
+        title: row.title,
+        source: row.source,
+        createdAt: row.createdAt,
+        summary: row.summary,
+        transcript: row.transcript,
+        language: row.language,
+      }),
+      source: row.source,
+      sourceRef: row.sourceRef,
+      model: row.model,
+      status: row.status,
+      createdAt: row.createdAt,
+    })),
     ...factChecks.map((row) => ({ ...row, kind: "factcheck" as const })),
     ...neutralities.map((row) => ({ ...row, kind: "neutrality" as const })),
     ...explanations.map((row) => ({ ...row, kind: "explain" as const })),

@@ -96,6 +96,7 @@ export function useLiveAnalysis({
             sessionId: sessionIdRef.current,
             text,
             lang: languageRef.current,
+            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
             finalize,
           }),
           signal: ctrl.signal,
