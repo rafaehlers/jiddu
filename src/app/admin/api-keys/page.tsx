@@ -3,15 +3,13 @@ import {
   AdminPage,
   AdminPanel,
   AdminSection,
-  AdminTableShell,
 } from "@/components/admin/admin-page";
-import { formatAppDateTime } from "@/lib/date-time";
-import { prisma } from "@/lib/db";
 import {
-  assignApiKeyOwnerAction,
-  createApiKeyAction,
-  revokeApiKeyAction,
-} from "./actions";
+  AdminApiKeysGrid,
+  type AdminApiKeyGridRow,
+} from "@/components/data-grid/admin-api-keys-grid";
+import { prisma } from "@/lib/db";
+import { createApiKeyAction } from "./actions";
 import { NEW_KEY_COOKIE } from "./cookie";
 
 export const dynamic = "force-dynamic";
@@ -35,6 +33,17 @@ export default async function AdminApiKeysPage({
   const newSecret = created ? jar.get(NEW_KEY_COOKIE)?.value : undefined;
 
   const keys = await prisma.apiKey.findMany({ orderBy: { createdAt: "desc" } });
+  const gridRows = keys.map<AdminApiKeyGridRow>((key) => ({
+    createdAt: key.createdAt.toISOString(),
+    id: key.id,
+    label: key.label,
+    lastUsedAt: key.lastUsedAt?.toISOString() ?? null,
+    ownerEmail: key.ownerEmail ?? "",
+    ownerWorkosUserId: key.ownerWorkosUserId,
+    prefix: key.prefix,
+    revokedAt: key.revokedAt?.toISOString() ?? null,
+    status: key.revokedAt ? "revoked" : "active",
+  }));
 
   return (
     <AdminPage
@@ -138,107 +147,8 @@ export default async function AdminApiKeysPage({
 
         {/* Existing keys */}
         <AdminSection title="Existing keys">
-          <AdminTableShell>
-          <table className="w-full text-sm">
-            <thead className="bg-paper">
-              <tr className="text-left text-muted">
-                <th className="px-3 py-2 font-medium">Label</th>
-                <th className="px-3 py-2 font-medium">Prefix</th>
-                <th className="px-3 py-2 font-medium">WorkOS owner</th>
-                <th className="px-3 py-2 font-medium">Created</th>
-                <th className="px-3 py-2 font-medium">Last used</th>
-                <th className="px-3 py-2 font-medium">Status</th>
-                <th className="px-3 py-2 font-medium"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {keys.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="px-3 py-8 text-center text-muted">
-                    No keys yet.
-                  </td>
-                </tr>
-              )}
-              {keys.map((k) => (
-                <tr key={k.id} className="border-t border-rule hover:bg-paper/50">
-                  <td className="px-3 py-2 font-medium">{k.label}</td>
-                  <td className="px-3 py-2 font-mono text-xs text-muted">
-                    {k.prefix}…
-                  </td>
-                  <td className="px-3 py-2 min-w-56">
-                    <form
-                      action={assignApiKeyOwnerAction}
-                      className="flex items-center gap-2"
-                    >
-                      <input type="hidden" name="id" value={k.id} />
-                      <input
-                        type="email"
-                        name="ownerEmail"
-                        required
-                        defaultValue={k.ownerEmail ?? ""}
-                        placeholder="Assign owner"
-                        aria-label={`WorkOS owner for ${k.label}`}
-                        className="min-w-0 w-44 rounded border border-rule bg-background px-2 py-1 text-xs"
-                      />
-                      <button
-                        type="submit"
-                        className="text-xs text-muted hover:text-foreground"
-                      >
-                        Save
-                      </button>
-                    </form>
-                    {!k.ownerWorkosUserId && (
-                      <span className="mt-1 block text-xs text-[var(--severity-high)]">
-                        Disabled until assigned
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-3 py-2 text-muted whitespace-nowrap">
-                    {formatDate(k.createdAt)}
-                  </td>
-                  <td className="px-3 py-2 text-muted whitespace-nowrap">
-                    {k.lastUsedAt ? formatDate(k.lastUsedAt) : "—"}
-                  </td>
-                  <td className="px-3 py-2">
-                    {k.revokedAt ? (
-                      <span className="inline-block text-xs px-2 py-0.5 rounded-full bg-[color-mix(in_oklab,var(--severity-high)_15%,transparent)] text-[var(--severity-high)]">
-                        revoked
-                      </span>
-                    ) : (
-                      <span className="inline-block text-xs px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-500">
-                        active
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-3 py-2 text-right">
-                    {!k.revokedAt && (
-                      <form action={revokeApiKeyAction}>
-                        <input type="hidden" name="id" value={k.id} />
-                        <button
-                          type="submit"
-                          className="text-xs text-muted hover:text-[var(--severity-high)] transition-colors"
-                        >
-                          Revoke
-                        </button>
-                      </form>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          </AdminTableShell>
+          <AdminApiKeysGrid rows={gridRows} />
         </AdminSection>
     </AdminPage>
   );
-}
-
-function formatDate(d: Date): string {
-  return formatAppDateTime(d, "en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }

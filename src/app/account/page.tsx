@@ -5,12 +5,15 @@ import { redirect } from "next/navigation";
 import { AccountAnalysisTable } from "@/components/account-analysis-table";
 import { AccountIdentity } from "@/components/account-identity";
 import { CopyCode } from "@/components/copy-code";
+import {
+  AccountCreditActivityGrid,
+  type AccountCreditActivityGridRow,
+} from "@/components/data-grid/account-credit-activity-grid";
 import { JidduCreditRateTable } from "@/components/jiddu-credit-rate-table";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { effectiveAnalysisAccessMode } from "@/lib/analysis-access";
 import { isWorkOSConfigured, mcpResourceUrl } from "@/lib/auth-config";
-import { formatAppDateTime } from "@/lib/date-time";
 import {
   getOpenRouterCredits,
   isCreditsSnapshot,
@@ -123,6 +126,25 @@ export default async function AccountPage({
       : null;
   const analysisRows =
     activeTab === "analyses" ? await listUserAnalyses(user.id) : [];
+  const creditActivityRows =
+    creditTransactions.map<AccountCreditActivityGridRow>((transaction) => ({
+      activity:
+        transaction.feature === "live_transcription" &&
+        transaction.note === "Live transcription and analysis usage"
+          ? "live session"
+          : transaction.feature
+            ? transaction.feature.replaceAll("_", " ")
+            : transaction.note || transaction.kind,
+      amount: transaction.amount,
+      balanceAfter: transaction.balanceAfter,
+      createdAt: transaction.createdAt.toISOString(),
+      id: transaction.id,
+      kind: transaction.kind,
+      providerUsage: formatProviderUsage(
+        transaction.totalTokens,
+        transaction.metadata,
+      ),
+    }));
 
   return (
     <>
@@ -260,84 +282,7 @@ export default async function AccountPage({
                   account.
                 </p>
               </div>
-              <div className="overflow-x-auto rounded-lg border border-rule">
-                <table className="w-full min-w-[36rem] text-sm">
-                  <thead className="bg-paper text-left text-muted">
-                    <tr>
-                      <th className="px-4 py-3 font-medium">When</th>
-                      <th className="px-4 py-3 font-medium">Activity</th>
-                      <th className="px-4 py-3 text-right font-medium">
-                        Change
-                      </th>
-                      <th className="px-4 py-3 text-right font-medium">
-                        Provider usage
-                      </th>
-                      <th className="px-4 py-3 text-right font-medium">
-                        Balance
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {creditTransactions.length === 0 ? (
-                      <tr>
-                        <td
-                          colSpan={5}
-                          className="px-4 py-10 text-center text-muted"
-                        >
-                          No credit activity yet.
-                        </td>
-                      </tr>
-                    ) : (
-                      creditTransactions.map((transaction) => (
-                        <tr
-                          key={transaction.id}
-                          className="border-t border-rule"
-                        >
-                          <td className="whitespace-nowrap px-4 py-3 text-muted">
-                            {formatAppDateTime(transaction.createdAt)}
-                          </td>
-                          <td className="px-4 py-3">
-                            {transaction.feature === "live_transcription" &&
-                            transaction.note ===
-                              "Live transcription and analysis usage"
-                              ? "live session"
-                              : transaction.feature
-                              ? transaction.feature.replaceAll("_", " ")
-                              : transaction.note || transaction.kind}
-                          </td>
-                          <td
-                            className={`px-4 py-3 text-right font-medium tabular-nums ${
-                              transaction.amount > 0
-                                ? "text-emerald-600"
-                                : transaction.amount < 0
-                                  ? "text-[var(--severity-high)]"
-                                  : "text-muted"
-                            }`}
-                          >
-                            {transaction.kind === "included_usage" ? (
-                              "Included"
-                            ) : (
-                              <>
-                                {transaction.amount > 0 ? "+" : ""}
-                                {transaction.amount}
-                              </>
-                            )}
-                          </td>
-                          <td className="whitespace-nowrap px-4 py-3 text-right text-xs text-muted">
-                            <ProviderUsage
-                              totalTokens={transaction.totalTokens}
-                              metadata={transaction.metadata}
-                            />
-                          </td>
-                          <td className="px-4 py-3 text-right tabular-nums">
-                            {transaction.balanceAfter}
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+              <AccountCreditActivityGrid rows={creditActivityRows} />
               <div className="mt-4">
                 <h2 className="font-serif text-2xl mb-3">
                   Credit reservation estimates
@@ -386,37 +331,29 @@ function AccountTab({
   );
 }
 
-function ProviderUsage({
-  totalTokens,
-  metadata,
-}: {
-  totalTokens: number | null;
-  metadata: string;
-}) {
+function formatProviderUsage(
+  totalTokens: number | null,
+  metadata: string,
+): string[] {
   const liveUsage = readLiveUsage(metadata);
   if (totalTokens === null && liveUsage === null) {
-    return "—";
+    return [];
   }
-  return (
-    <>
-      {liveUsage !== null && (
-        <span className="block tabular-nums">
-          {formatUsageDuration(liveUsage.durationMs)}
-        </span>
-      )}
-      {liveUsage !== null && liveUsage.analysisWindows > 0 && (
-        <span className="block tabular-nums">
-          {liveUsage.analysisWindows} analysis{" "}
-          {liveUsage.analysisWindows === 1 ? "window" : "windows"}
-        </span>
-      )}
-      {totalTokens !== null && totalTokens > 0 && (
-        <span className="block tabular-nums">
-          {totalTokens.toLocaleString("en-US")} tokens
-        </span>
-      )}
-    </>
-  );
+  const lines: string[] = [];
+  if (liveUsage !== null) {
+    lines.push(formatUsageDuration(liveUsage.durationMs));
+    if (liveUsage.analysisWindows > 0) {
+      lines.push(
+        `${liveUsage.analysisWindows} analysis ${
+          liveUsage.analysisWindows === 1 ? "window" : "windows"
+        }`,
+      );
+    }
+  }
+  if (totalTokens !== null && totalTokens > 0) {
+    lines.push(`${totalTokens.toLocaleString("en-US")} tokens`);
+  }
+  return lines;
 }
 
 function readLiveUsage(

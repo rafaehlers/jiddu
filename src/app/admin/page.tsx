@@ -1,11 +1,10 @@
-import Link from "next/link";
+import { AdminPage as AdminPageLayout } from "@/components/admin/admin-page";
 import {
-  AdminPage as AdminPageLayout,
-} from "@/components/admin/admin-page";
-import { AdminTableScrollShell } from "@/components/admin/admin-table-scroll-shell";
+  AdminAnalysesGrid,
+  type AdminAnalysisGridRow,
+} from "@/components/data-grid/admin-analyses-grid";
 import { formatAppDateTime } from "@/lib/date-time";
 import { prisma } from "@/lib/db";
-import { toggleReviewedAction } from "./review-actions";
 import { getOpenRouterCredits, isCreditsSnapshot } from "@/lib/openrouter-credits";
 import { getWorkOSUserEmails } from "@/lib/workos-users";
 
@@ -276,6 +275,23 @@ async function AdminList() {
   const userEmails = await getWorkOSUserEmails(
     rows.map((row) => row.ownerWorkosUserId),
   );
+  const gridRows = rows.map<AdminAnalysisGridRow>((row) => ({
+    createdAt: row.createdAt.toISOString(),
+    id: row.id,
+    kind: row.kind,
+    language: row.language?.toUpperCase() ?? "—",
+    model: row.model,
+    owner: row.ownerWorkosUserId
+      ? userEmails.get(row.ownerWorkosUserId) ?? "Unavailable"
+      : "—",
+    reviewedAt: row.reviewedAt?.toISOString() ?? null,
+    signal: row.signal,
+    source: row.source,
+    sourceRef: row.title ? row.sourceRef : null,
+    status: row.status,
+    title: row.title ?? row.sourceRef ?? "(untitled)",
+    viewerHref: viewerHref(row.kind, row.id),
+  }));
 
   return (
     <AdminPageLayout
@@ -298,116 +314,7 @@ async function AdminList() {
         <Stat label="Reviews" value={paperReviews.length} accent="red" />
       </div>
 
-      <AdminTableScrollShell>
-        <table className="w-full min-w-[72rem] text-sm">
-          <thead className="bg-paper">
-            <tr className="text-left text-muted">
-              <th className="px-3 py-2 font-medium">When</th>
-              <th className="px-3 py-2 font-medium">Type</th>
-              <th className="px-3 py-2 font-medium">Title</th>
-              <th className="px-3 py-2 font-medium">Source</th>
-              <th className="px-3 py-2 font-medium">Lang</th>
-              <th className="px-3 py-2 font-medium">Model</th>
-              <th className="px-3 py-2 font-medium text-right" title="Score for fallacy, claim count for fact-check">
-                Score / Claims
-              </th>
-              <th className="px-3 py-2 font-medium">Status</th>
-              <th className="px-3 py-2 font-medium" title="Mark as human-reviewed (removes the warning banner on the viewer)">
-                Rev.
-              </th>
-              <th className="px-3 py-2 font-medium">User</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 && (
-              <tr>
-                <td colSpan={10} className="px-3 py-8 text-center text-muted">
-                  No analyses yet.
-                </td>
-              </tr>
-            )}
-            {rows.map((r) => {
-              const viewerHref =
-                r.kind === "fallacy"
-                  ? `/a/${r.id}`
-                  : r.kind === "factcheck"
-                    ? `/f/${r.id}`
-                    : r.kind === "neutrality"
-                      ? `/n/${r.id}`
-                      : r.kind === "slop"
-                        ? `/s/${r.id}`
-                        : r.kind === "review"
-                          ? `/r/${r.id}`
-                          : `/e/${r.id}`;
-              return (
-                <tr key={`${r.kind}:${r.id}`} className="border-t border-rule hover:bg-paper/50">
-                  <td className="px-3 py-2 whitespace-nowrap text-muted">
-                    {formatDate(r.createdAt)}
-                  </td>
-                  <td className="px-3 py-2">
-                    <TypeBadge kind={r.kind} />
-                  </td>
-                  <td className="px-3 py-2 max-w-[28rem]">
-                    <Link
-                      href={viewerHref}
-                      className="font-medium hover:underline truncate block"
-                      title={r.title ?? r.sourceRef ?? r.id}
-                    >
-                      {r.title ?? r.sourceRef ?? "(untitled)"}
-                    </Link>
-                    {r.sourceRef && r.title && (
-                      <div className="text-xs text-muted truncate">{r.sourceRef}</div>
-                    )}
-                  </td>
-                  <td className="px-3 py-2 text-muted">{r.source}</td>
-                  <td className="px-3 py-2 text-muted uppercase">{r.language ?? "—"}</td>
-                  <td className="px-3 py-2 text-muted whitespace-nowrap">{r.model}</td>
-                  <td className="px-3 py-2 text-right tabular-nums">{r.signal}</td>
-                  <td className="px-3 py-2">
-                    <StatusBadge status={r.status} />
-                  </td>
-                  <td className="px-3 py-2">
-                    <form action={toggleReviewedAction}>
-                      <input type="hidden" name="kind" value={r.kind} />
-                      <input type="hidden" name="id" value={r.id} />
-                      <button
-                        type="submit"
-                        title={
-                          r.reviewedAt
-                            ? `Reviewed ${formatDate(r.reviewedAt)} — click to unmark`
-                            : "Mark as reviewed (removes warning banner)"
-                        }
-                        className={`text-xs w-6 h-6 inline-flex items-center justify-center rounded-full border transition-colors ${
-                          r.reviewedAt
-                            ? "border-emerald-500/40 text-emerald-500 hover:border-emerald-500"
-                            : "border-rule text-muted hover:text-foreground"
-                        }`}
-                      >
-                        {r.reviewedAt ? "✓" : "○"}
-                      </button>
-                    </form>
-                  </td>
-                  <td
-                    className="max-w-56 px-3 py-2 text-muted"
-                    title={
-                      r.ownerWorkosUserId
-                        ? userEmails.get(r.ownerWorkosUserId) ??
-                          r.ownerWorkosUserId
-                        : "Legacy analysis without an owner"
-                    }
-                  >
-                    <span className="block truncate">
-                      {r.ownerWorkosUserId
-                        ? userEmails.get(r.ownerWorkosUserId) ?? "Unavailable"
-                        : "—"}
-                    </span>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </AdminTableScrollShell>
+      <AdminAnalysesGrid rows={gridRows} />
     </AdminPageLayout>
   );
 }
@@ -498,50 +405,14 @@ function CreditsStat({
   );
 }
 
-function TypeBadge({ kind }: { kind: AdminRow["kind"] }) {
-  const cls = {
-    fallacy: "bg-amber-500/15 text-amber-500",
-    factcheck: "bg-blue-500/15 text-blue-500",
-    neutrality: "bg-purple-500/15 text-purple-500",
-    explain: "bg-teal-500/15 text-teal-500",
-    slop: "bg-rose-500/15 text-rose-500",
-    review: "bg-red-500/15 text-red-500",
+function viewerHref(kind: AdminRow["kind"], id: string): string {
+  const prefix = {
+    fallacy: "a",
+    factcheck: "f",
+    neutrality: "n",
+    explain: "e",
+    slop: "s",
+    review: "r",
   }[kind];
-  const label = {
-    fallacy: "Fallacy",
-    factcheck: "Fact-check",
-    neutrality: "Neutrality",
-    explain: "Explain",
-    slop: "Slop",
-    review: "Review",
-  }[kind];
-  return (
-    <span className={`inline-block text-xs px-2 py-0.5 rounded-full ${cls}`}>
-      {label}
-    </span>
-  );
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const cls =
-    status === "failed"
-      ? "bg-[color-mix(in_oklab,var(--severity-high)_15%,transparent)] text-[var(--severity-high)]"
-      : status === "complete"
-        ? "bg-paper text-foreground"
-        : "bg-paper text-muted";
-  return (
-    <span className={`inline-block text-xs px-2 py-0.5 rounded-full ${cls}`}>
-      {status}
-    </span>
-  );
-}
-
-function formatDate(d: Date): string {
-  return formatAppDateTime(d, "en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return `/${prefix}/${id}`;
 }

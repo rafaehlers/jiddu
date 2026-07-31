@@ -119,19 +119,3 @@ export function AdminPanel({
     </div>
   );
 }
-
-export function AdminTableShell({
-  children,
-  className = "",
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <div
-      className={`overflow-x-auto rounded-lg border border-rule ${className}`}
-    >
-      {children}
-    </div>
-  );
-}
