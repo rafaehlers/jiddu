@@ -97,7 +97,7 @@ Jiddu is not affiliated with the authors, institutions, datasets or venues cited
 ## Technical stack
 
 - **Next.js 16** (App Router, Turbopack) + **React 19** + **TypeScript** + **Tailwind 4**
-- **Prisma 7** with `@prisma/adapter-better-sqlite3` — SQLite file persisted in a Docker volume
+- **Prisma 7** with `@prisma/adapter-pg` — PostgreSQL 16 in a private Docker service with persistent storage
 - **Streaming**: server-side `ReadableStream` emitting SSE; `partial-json` for incremental finding extraction
 - **PDF parsing**: `@llamaindex/liteparse` (layout/OCR/screenshots) with `pdfjs-dist` fallback
 - **Article extraction**: `@mozilla/readability` + `jsdom`
@@ -112,11 +112,9 @@ Jiddu is not affiliated with the authors, institutions, datasets or venues cited
 # From an authorized local checkout:
 npm install
 cp .env.example .env
-# Set OPENROUTER_API_KEY and configure the WorkOS variables below.
+# Set POSTGRES_PASSWORD, OPENROUTER_API_KEY and the WorkOS variables below.
+docker compose up -d jiddu-db
 npx prisma migrate dev
-node scripts/seed-demo.mjs           # fallacy detector demos
-node scripts/seed-explain-demo.mjs   # paper-explainer demos
-node scripts/seed-review-demo.mjs    # adversarial-review demos
 npm run dev
 ```
 
@@ -127,7 +125,8 @@ Open <http://localhost:3000>. Try `/a/demo-en`, `/e/demo-en`, or `/r/demo-en`
 
 | Variable               | Purpose                                                              |
 |------------------------|----------------------------------------------------------------------|
-| `DATABASE_URL`         | SQLite path. Local dev: `file:./dev.db`. Docker: `file:/app/data/jiddu.db` |
+| `DATABASE_URL`         | PostgreSQL connection URL. Local dev connects through the loopback-only Compose port. |
+| `POSTGRES_PASSWORD`    | Password for the private `jiddu-db` service; use URL-safe characters. |
 | `NEXT_PUBLIC_APP_URL`  | Canonical origin used for OAuth callbacks (`http://localhost:3000` locally) |
 | `STRIPE_SECRET_KEY`    | Server-only Stripe secret key for Checkout and payment verification |
 | `STRIPE_WEBHOOK_SECRET` | Signing secret for the `/api/stripe/webhook` endpoint in the same Stripe mode |
@@ -463,9 +462,9 @@ Each individual finding has a binary severity (`low` / `high`). The 0–100 scor
 
 ## Deployment
 
-Jiddu ships with a multi-stage [`Dockerfile`](./Dockerfile) and [`docker-compose.yml`](./docker-compose.yml). Configure the production environment, provide persistent storage for `DATABASE_URL`, and start the service with your Docker host or orchestration platform.
+Jiddu ships with a multi-stage [`Dockerfile`](./Dockerfile) and [`docker-compose.yml`](./docker-compose.yml). Configure the production environment and start the app plus its private PostgreSQL service with Docker Compose. PostgreSQL is bound only to the host loopback interface and is not exposed publicly.
 
-The container entrypoint applies Prisma migrations and seeds the public demos idempotently on startup. If a reverse proxy sits in front of Jiddu, disable response buffering for the SSE analysis routes so findings reach the browser as they are generated.
+The container entrypoint applies Prisma migrations on startup. During the one-time SQLite cutover it also imports the legacy database transactionally before accepting traffic. If a reverse proxy sits in front of Jiddu, disable response buffering for the SSE analysis routes so findings reach the browser as they are generated.
 
 Production does not deploy automatically from GitHub. After committing all
 intended changes, publish with:

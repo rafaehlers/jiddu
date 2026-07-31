@@ -11,11 +11,11 @@ else
   echo "[jiddu] prisma CLI not found, skipping migrate deploy"
 fi
 
-echo "[jiddu] seeding demo analyses (idempotent)…"
-node scripts/seed-demo.mjs || echo "[jiddu] demo seed skipped"
-node scripts/seed-explain-demo.mjs || echo "[jiddu] explain demo seed skipped"
-node scripts/seed-slop-demo.mjs || echo "[jiddu] slop demo seed skipped"
-node scripts/seed-review-demo.mjs || echo "[jiddu] review demo seed skipped"
+if [ -f /app/sqlite-data/jiddu.db ]; then
+  echo "[jiddu] importing the legacy SQLite database if needed…"
+  SQLITE_DATABASE_PATH=/app/sqlite-data/jiddu.db \
+    node scripts/import-sqlite-to-postgres.mjs
+fi
 
 echo "[jiddu] starting server on :${PORT:-3000}"
 exec "$@"
