@@ -17,6 +17,9 @@ RUN npm ci --include=dev
 FROM node:22-slim AS builder
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
+# Next evaluates parts of the server module graph while collecting build-time
+# page metadata. Runtime receives the real private URL from Docker Compose.
+ENV DATABASE_URL=postgresql://build:build@127.0.0.1:5432/build
 RUN apt-get update && apt-get install -y --no-install-recommends openssl \
  && rm -rf /var/lib/apt/lists/*
 COPY --from=deps /app/node_modules ./node_modules
