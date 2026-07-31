@@ -36,15 +36,13 @@ services:
     depends_on:
       jiddu-db:
         condition: service_healthy
-    volumes:
-      # Temporary read-only mount used for the one-time SQLite import. The
-      # volume is retained for rollback after this mount is removed.
-      - jiddu_data:/app/sqlite-data:ro
     networks:
       - proxy-network
       - jiddu-internal
 
 volumes:
+  # Legacy SQLite data is intentionally retained for rollback, but is no
+  # longer mounted into the running application.
   jiddu_data:
   jiddu_postgres_data:
 

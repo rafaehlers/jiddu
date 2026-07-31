@@ -464,7 +464,7 @@ Each individual finding has a binary severity (`low` / `high`). The 0–100 scor
 
 Jiddu ships with a multi-stage [`Dockerfile`](./Dockerfile) and [`docker-compose.yml`](./docker-compose.yml). Configure the production environment and start the app plus its private PostgreSQL service with Docker Compose. PostgreSQL is bound only to the host loopback interface and is not exposed publicly.
 
-The container entrypoint applies Prisma migrations on startup. During the one-time SQLite cutover it also imports the legacy database transactionally before accepting traffic. If a reverse proxy sits in front of Jiddu, disable response buffering for the SSE analysis routes so findings reach the browser as they are generated.
+The container entrypoint applies Prisma migrations before accepting traffic. If a reverse proxy sits in front of Jiddu, disable response buffering for the SSE analysis routes so findings reach the browser as they are generated.
 
 Production does not deploy automatically from GitHub. After committing all
 intended changes, publish with:
