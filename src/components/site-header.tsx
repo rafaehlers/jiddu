@@ -45,7 +45,7 @@ export function SiteHeader({
                   alt=""
                   fill
                   sizes="40px"
-                  className="jiddu-brand-logo jiddu-brand-logo-inverted rounded-full object-cover"
+                  className="jiddu-brand-logo jiddu-brand-logo-inverted object-contain"
                   priority
                 />
                 <Image
@@ -53,7 +53,7 @@ export function SiteHeader({
                   alt=""
                   fill
                   sizes="40px"
-                  className="jiddu-brand-logo jiddu-brand-logo-default rounded-full object-cover"
+                  className="jiddu-brand-logo jiddu-brand-logo-default object-contain"
                   priority
                 />
               </span>
