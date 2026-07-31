@@ -3,8 +3,8 @@
 import { Fragment } from "react";
 import { useI18n } from "@/lib/i18n/provider";
 import {
+  DEFAULT_LIVE_MINIMUM_CREDITS,
   JIDDU_CREDIT_RATE_VERSION,
-  MODEL_CREDIT_RATES,
 } from "@/lib/jiddu-credit-rates";
 
 // Technical walkthrough of every Jiddu pipeline. Same content pattern as
@@ -16,8 +16,7 @@ export function HowItWorksBody() {
   const sections = HOW_IT_WORKS_SECTION_ORDER.map(
     (index) => t.how_it_works_sections[index],
   );
-  const liveTranscriptionCredits =
-    MODEL_CREDIT_RATES["gpt-live-transcribe"];
+  const liveMinimumCredits = DEFAULT_LIVE_MINIMUM_CREDITS;
   return (
     <article className="mx-auto max-w-5xl w-full px-4 sm:px-6 py-10 sm:py-16 flex flex-col gap-8">
       <header className="flex flex-col gap-2">
@@ -58,7 +57,7 @@ export function HowItWorksBody() {
                   j === 0 && s.creditTable ? (
                     <PublicCreditRateTable
                       table={s.creditTable}
-                      liveTranscriptionCredits={liveTranscriptionCredits}
+                      liveMinimumCredits={liveMinimumCredits}
                       locale={lang === "pt" ? "pt-BR" : lang === "es" ? "es" : "en-US"}
                     />
                   ) : null;
@@ -116,15 +115,15 @@ type CreditTable = NonNullable<
 
 function PublicCreditRateTable({
   table,
-  liveTranscriptionCredits,
+  liveMinimumCredits,
   locale,
 }: {
   table: CreditTable;
-  liveTranscriptionCredits: number;
+  liveMinimumCredits: number;
   locale: string;
 }) {
   const replacements = {
-    "{liveCredits}": Math.ceil(liveTranscriptionCredits).toLocaleString(locale),
+    "{liveCredits}": Math.ceil(liveMinimumCredits).toLocaleString(locale),
     "{rateVersion}": JIDDU_CREDIT_RATE_VERSION,
   };
   const interpolate = (text: string) =>

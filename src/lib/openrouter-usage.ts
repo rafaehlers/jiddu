@@ -15,6 +15,7 @@ export type OpenRouterUsage = {
 };
 
 export type JidduCreditSettlement = {
+  provider: "openrouter" | "openai" | "mixed";
   credits: number;
   promptTokens: number;
   completionTokens: number;
@@ -112,6 +113,7 @@ export function calculateJidduCreditSettlement(
   );
 
   return {
+    provider: "openrouter",
     credits: meteredCredits + fallbackCredits,
     promptTokens: calls.reduce((sum, call) => sum + call.promptTokens, 0),
     completionTokens: calls.reduce(

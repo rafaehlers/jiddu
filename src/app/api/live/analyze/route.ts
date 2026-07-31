@@ -24,6 +24,7 @@ import { acquireConcurrency } from "@/lib/concurrency-limit";
 import { consume, rateLimitResponse } from "@/lib/rate-limit";
 import { bucketFromSettings, loadSettings } from "@/lib/settings";
 import { buildLiveAnalysisTitle } from "@/lib/live-title";
+import { normalizeLiveDurationMs } from "@/lib/live-billing";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -33,12 +34,14 @@ const MIN_NEW_CHARS_TO_ANALYZE = 80;
 const CONTEXT_SENTENCE_COUNT = 4;
 
 type Body = {
+  billingReservationId?: string;
   sessionId?: string;
   text?: string;
   lang?: string;
   model?: string;
   timeZone?: string;
   finalize?: boolean;
+  audioDurationMs?: number;
 };
 
 export async function POST(req: NextRequest) {
@@ -51,6 +54,13 @@ export async function POST(req: NextRequest) {
   const text = typeof body.text === "string" ? body.text : "";
   const lang = normalizeLang(body.lang);
   const finalize = body.finalize === true;
+  const billingReservationId =
+    typeof body.billingReservationId === "string"
+      ? body.billingReservationId.trim()
+      : "";
+  const audioDurationMs = finalize
+    ? normalizeLiveDurationMs(body.audioDurationMs)
+    : undefined;
 
   if (text.length > MAX_TRANSCRIPT_CHARS) {
     return jsonError("Transcript too long", 413);
@@ -202,6 +212,15 @@ export async function POST(req: NextRequest) {
         fallbackModels: billableModelCall ? [chosenModel.id] : [],
         resourceId: row.id,
         metadata: { model: chosenModel.id },
+        aggregateIntoLive:
+          billingReservationId &&
+          access.billing === "jiddu" &&
+          access.userId
+            ? {
+                reservationId: billingReservationId,
+                workosUserId: access.userId,
+              }
+            : undefined,
       },
     );
     if (
@@ -335,6 +354,7 @@ export async function POST(req: NextRequest) {
               summary: aggregateSummary || null,
               language: windowLanguage ?? row.language ?? lang,
               finishedAt: finalize ? new Date() : null,
+              audioDurationMs,
             },
           });
 

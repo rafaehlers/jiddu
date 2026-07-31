@@ -146,7 +146,8 @@ Open <http://localhost:3000>. Try `/a/demo-en`, `/e/demo-en`, or `/r/demo-en`
 | `OPENROUTER_REFERER`   | Optional. Identifies the deployment in OpenRouter's analytics. Defaults to `https://jiddu.app` |
 | `JIDDU_CREDIT_USD_VALUE` | Installation default for the dollar value represented by one Jiddu credit. Defaults to `0.01`; the admin can override it at runtime. |
 | `JIDDU_CREDIT_MARGIN_MULTIPLIER` | Installation default for the multiplier applied to OpenRouter's reported cost. Defaults to `1.5`; the admin can override it at runtime. |
-| `JIDDU_LIVE_TRANSCRIPTION_CREDITS` | Default fixed Jiddu Credit charge for one GPT Live Transcribe session. Defaults to `20`; the admin can override it at runtime. |
+| `JIDDU_LIVE_MINIMUM_CREDITS` | Minimum available balance required to start GPT Live Transcribe. It is checked but not reserved or charged. Defaults to `20`; the admin can override it at runtime. The former `JIDDU_LIVE_TRANSCRIPTION_CREDITS` name remains supported for compatibility. |
+| `OPENAI_LIVE_TRANSCRIPTION_USD_PER_MINUTE` | Installation default for GPT Live Transcribe provider cost per audio minute. Defaults to `0.017`; the admin can override it at runtime. |
 | `PAPER_REVIEW_DEEP_MODEL` | Optional internal model id for Deep specialist/synthesis stages. Defaults to `gpt-5.5`. |
 | `PAPER_REVIEW_CRITIC_MODEL` | Optional independent Deep critic model id. Defaults to `claude-opus-4.8`. |
 | `OPENAI_LIVE_TRANSCRIBE_DELAY` | GPT Live Transcribe latency/accuracy profile: `minimal`, `low`, `medium`, `high`, or `xhigh`. Defaults to `medium`. |

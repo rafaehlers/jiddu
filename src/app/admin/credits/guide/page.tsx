@@ -18,6 +18,9 @@ export default async function CreditBillingGuidePage() {
   const settings = await loadSettings();
   const margin = settings["credits.marginMultiplier"];
   const usdPerCredit = settings["credits.usdPerCredit"];
+  const liveMinimum = Math.ceil(settings["credits.liveTranscription"]);
+  const liveUsdPerMinute =
+    settings["credits.liveTranscriptionUsdPerMinute"];
   const billed = example.providerCost * margin;
   const rawCredits = billed / usdPerCredit;
   const credits = Math.ceil(rawCredits);
@@ -48,13 +51,13 @@ export default async function CreditBillingGuidePage() {
         <GuideSection title="1. The current formula">
           <p>For each operation, Jiddu calculates:</p>
           <CodeBlock>
-            {`provider cost = sum of usage.cost from OpenRouter calls
+            {`provider cost = OpenRouter usage.cost or OpenAI audio duration × per-minute rate
 billable cost = provider cost × margin multiplier
 credits = ceil(billable cost ÷ USD value per credit)`}
           </CodeBlock>
           <p>With the values currently active in the admin:</p>
           <CodeBlock>
-            {`credits = ceil(OpenRouter cost × ${margin}
+            {`credits = ceil(provider cost × ${margin}
                ÷ $${usdPerCredit})`}
           </CodeBlock>
           <p>
@@ -115,6 +118,11 @@ ceil(${rawCredits.toFixed(3)}) = ${credits} credits`}
             Accounts with included platform access follow their own access rule
             and do not consume a personal Jiddu balance.
           </p>
+          <p>
+            Live transcription is the entry-check exception: the account needs
+            at least <strong>{liveMinimum} available credits</strong> to start,
+            but Jiddu neither reserves nor debits that amount.
+          </p>
         </GuideSection>
 
         <GuideSection title="5. Settlement and overruns">
@@ -141,9 +149,13 @@ ceil(${rawCredits.toFixed(3)}) = ${credits} credits`}
             fallback.
           </p>
           <p>
-            GPT Live Transcribe is currently the exception: OpenAI creates the
-            Realtime session directly, so Jiddu applies the fixed per-session
-            credit charge configured in Settings.
+            GPT Live Transcribe is measured by audio duration instead of
+            OpenRouter token usage. Jiddu multiplies the captured minutes by{" "}
+            <strong>${liveUsdPerMinute.toFixed(3)}/minute</strong>, then applies
+            the same margin and USD-per-credit conversion shown above. The raw
+            OpenRouter cost of completed Live analysis windows is accumulated
+            into that provider total, so the session is converted and rounded
+            only once.
           </p>
         </GuideSection>
 

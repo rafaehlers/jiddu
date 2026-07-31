@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { DEFAULT_LIVE_MINIMUM_CREDITS } from "@/lib/jiddu-credit-rates";
 
 function positiveEnvironmentNumber(
   value: string | undefined,
@@ -28,8 +29,13 @@ export const DEFAULT_SETTINGS = {
     0.01,
   ),
   "credits.liveTranscription": positiveEnvironmentNumber(
-    process.env.JIDDU_LIVE_TRANSCRIPTION_CREDITS,
-    20,
+    process.env.JIDDU_LIVE_MINIMUM_CREDITS ??
+      process.env.JIDDU_LIVE_TRANSCRIPTION_CREDITS,
+    DEFAULT_LIVE_MINIMUM_CREDITS,
+  ),
+  "credits.liveTranscriptionUsdPerMinute": positiveEnvironmentNumber(
+    process.env.OPENAI_LIVE_TRANSCRIPTION_USD_PER_MINUTE,
+    0.017,
   ),
 
   // Fallacy detector (POST /api/analyze)

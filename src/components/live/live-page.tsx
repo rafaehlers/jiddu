@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@workos-inc/authkit-nextjs/components";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Loader2, Play, Square, ExternalLink, RotateCcw } from "lucide-react";
@@ -30,14 +30,19 @@ export function LivePage() {
 
   const session = useLiveSession({ language: lang });
   const analysis = useLiveAnalysis({
+    billingReservationId: session.billingReservationId,
     transcript: session.transcript,
     active: session.state === "live",
     language: lang,
   });
 
-  const isRunning = session.state === "live" || session.state === "connecting";
+  const isRunning =
+    session.state === "live" ||
+    session.state === "connecting" ||
+    session.state === "stopping";
   const reachedHardLimit =
     session.state === "live" && session.elapsedMs >= MAX_SESSION_MS;
+  const autoStopTriggeredRef = useRef(false);
   // A session is "concluded" when we've stopped recording AND the LLM
   // finalized; the user can then view the persisted analysis or start over.
   const hasConcludedSession =
@@ -53,20 +58,27 @@ export function LivePage() {
     void session.start(source);
   };
 
-  const handleStop = async () => {
+  const handleStop = useCallback(async () => {
     // Stop capturing audio first so finalize gets the full transcript and
     // no more deltas arrive while we wait for the LLM. We intentionally
     // do NOT redirect on success — the user sees a "session saved" banner
     // here, can review findings, and chooses to view the full analysis or
     // start a new recording.
-    await session.stop();
-    await analysis.finalize();
-  };
+    const audioDurationMs = await session.stop();
+    const analysisId = await analysis.finalize(audioDurationMs);
+    await session.finish(analysisId);
+  }, [analysis, session]);
 
   // Auto-stop on hard limit.
-  if (reachedHardLimit) {
+  useEffect(() => {
+    if (!reachedHardLimit) {
+      autoStopTriggeredRef.current = false;
+      return;
+    }
+    if (autoStopTriggeredRef.current) return;
+    autoStopTriggeredRef.current = true;
     void handleStop();
-  }
+  }, [reachedHardLimit, handleStop]);
 
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-6 py-8 sm:py-12 flex-1 w-full">

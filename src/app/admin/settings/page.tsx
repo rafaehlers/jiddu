@@ -36,7 +36,7 @@ const GROUPS: Group[] = [
   {
     title: "Jiddu credit economics",
     description:
-      "Runtime values used for real-cost settlement and the fixed Live transcription charge. Environment variables supply only the installation defaults shown below.",
+      "Runtime values used for real-cost settlement, including duration-based Live transcription. Environment variables supply only the installation defaults shown below.",
     keys: [
       {
         key: "credits.marginMultiplier",
@@ -56,11 +56,19 @@ const GROUPS: Group[] = [
       },
       {
         key: "credits.liveTranscription",
-        label: "Live transcription session charge",
+        label: "Minimum credits to start Live",
         help:
-          "Fixed whole-credit charge reserved and debited when a GPT Live Transcribe session starts",
+          "Required available balance at session start. This amount is not reserved or automatically debited",
         min: 1,
         step: 1,
+      },
+      {
+        key: "credits.liveTranscriptionUsdPerMinute",
+        label: "OpenAI Live cost per minute",
+        help:
+          "Provider rate used to settle GPT Live Transcribe by actual session duration",
+        min: 0.000001,
+        step: 0.001,
       },
     ],
   },

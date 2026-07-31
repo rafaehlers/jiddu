@@ -6,7 +6,6 @@ import {
 import {
   recordIncludedJidduCreditUsage,
   releaseJidduCreditReservation,
-  settleJidduCreditReservation,
 } from "@/lib/jiddu-credits";
 import {
   isCreditResponse,
@@ -19,12 +18,12 @@ import {
   loadSettings,
   loadStringSettings,
 } from "@/lib/settings";
+import { LIVE_TRANSCRIPTION_MODEL } from "@/lib/live-billing";
 
 export const runtime = "nodejs";
 
 const OPENAI_REALTIME_CLIENT_SECRETS =
   "https://api.openai.com/v1/realtime/client_secrets";
-const OPENAI_LIVE_TRANSCRIPTION_MODEL = "gpt-live-transcribe";
 const DEFAULT_TRANSCRIPTION_DELAY = "medium";
 const TRANSCRIPTION_LANGUAGES = ["en", "pt", "es"] as const;
 
@@ -59,16 +58,21 @@ export async function POST(req: NextRequest) {
   const transcriptionDelay = normalizeDelay(
     routing["live.transcriptionDelay"],
   );
-  const transcriptionCredits = Math.max(
+  const minimumLiveCredits = Math.max(
     1,
     Math.ceil(settings["credits.liveTranscription"]),
   );
   const reservation = await reserveWebAnalysisCredits(access, {
-    amount: transcriptionCredits,
+    amount: 0,
+    minimumAvailable: minimumLiveCredits,
     feature: "live_transcription",
     metadata: {
       language: language ?? null,
       delay: transcriptionDelay,
+      entryMinimumCredits: minimumLiveCredits,
+      usdPerMinute: settings["credits.liveTranscriptionUsdPerMinute"],
+      marginMultiplier: settings["credits.marginMultiplier"],
+      usdPerCredit: settings["credits.usdPerCredit"],
     },
   });
   if (isCreditResponse(reservation)) return reservation;
@@ -97,7 +101,7 @@ export async function POST(req: NextRequest) {
       input: {
         format: { type: "audio/pcm", rate: 24000 },
         transcription: {
-          model: OPENAI_LIVE_TRANSCRIPTION_MODEL,
+          model: LIVE_TRANSCRIPTION_MODEL,
           delay: transcriptionDelay,
           languages: [...TRANSCRIPTION_LANGUAGES],
         },
@@ -139,16 +143,6 @@ export async function POST(req: NextRequest) {
     await releaseJidduCreditReservation(reservation);
     return json({ error: "Missing client_secret in OpenAI response" }, 502);
   }
-  await settleJidduCreditReservation(
-    reservation,
-    transcriptionCredits,
-    {
-      metadata: {
-        model: OPENAI_LIVE_TRANSCRIPTION_MODEL,
-        delay: transcriptionDelay,
-      },
-    },
-  );
   if (access.billing === "platform" && access.userId && access.email) {
     await recordIncludedJidduCreditUsage({
       workosUserId: access.userId,
@@ -156,9 +150,13 @@ export async function POST(req: NextRequest) {
       feature: "live_transcription",
       note: "Included platform access",
       metadata: {
-        model: OPENAI_LIVE_TRANSCRIPTION_MODEL,
+        model: LIVE_TRANSCRIPTION_MODEL,
         delay: transcriptionDelay,
         language: language ?? null,
+        billingBasis: "audio_duration",
+        usdPerMinute: settings["credits.liveTranscriptionUsdPerMinute"],
+        marginMultiplier: settings["credits.marginMultiplier"],
+        usdPerCredit: settings["credits.usdPerCredit"],
       },
     });
   }
@@ -166,7 +164,8 @@ export async function POST(req: NextRequest) {
   return json({
     clientSecret: data.value,
     expiresAt: data.expires_at ?? null,
-    model: OPENAI_LIVE_TRANSCRIPTION_MODEL,
+    model: LIVE_TRANSCRIPTION_MODEL,
+    billingReservationId: reservation?.id ?? null,
   });
 }
 

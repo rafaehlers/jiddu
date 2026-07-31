@@ -24,7 +24,8 @@ export async function saveSettingsAction(formData: FormData): Promise<void> {
     if (!Number.isFinite(num) || num < 0) continue;
     if (
       (key === "credits.marginMultiplier" ||
-        key === "credits.usdPerCredit") &&
+        key === "credits.usdPerCredit" ||
+        key === "credits.liveTranscriptionUsdPerMinute") &&
       num <= 0
     ) {
       continue;

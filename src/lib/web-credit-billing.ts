@@ -16,6 +16,7 @@ export async function reserveWebAnalysisCredits(
   access: CreditBillableAccess,
   input: {
     amount: number;
+    minimumAvailable?: number;
     feature: JidduCreditFeature;
     resourceId?: string;
     metadata?: Record<string, unknown>;

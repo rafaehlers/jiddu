@@ -226,7 +226,9 @@ available:  80 credits
 
 After the operation finishes, Jiddu settles against actual usage.
 
-If the reservation was 20 credits and the real charge is seven, Jiddu debits seven and releases the remaining 13. If the real charge is 24, it debits 24. The reservation is a solvency check, not a billing ceiling.
+If a regular analysis reserved 12 credits and the real charge is seven, Jiddu debits seven and releases the remaining five. If the real charge is 14, it debits 14. The reservation is a solvency check, not a billing ceiling.
+
+Live sessions are the exception. They require at least 20 available credits to start, but those credits are neither reserved nor charged. Jiddu keeps a zero-value billing ticket, then settles the transcription duration and all analysis windows together when the session ends.
 
 That second case can leave the account negative. Future reservations are blocked until the balance is topped up. Allowing an overrun is more accurate than silently discarding provider cost because the estimate was wrong.
 
@@ -301,23 +303,21 @@ This makes a charge reproducible. Given the recorded provider cost and conversio
 
 The ledger also separates manual grants from usage debits. When an administrator adds 500 credits, that is one transaction. When an analysis consumes eight, that is another. Adjusting the balance directly without recording both events would make reconciliation impossible.
 
-## Live transcription is the current exception
+## Live transcription uses duration instead of tokens
 
 Jiddu’s live mode sends audio from the browser directly to OpenAI’s Realtime API using `gpt-live-transcribe`. That traffic does not pass through OpenRouter, so there is no OpenRouter `usage.cost` to settle.
 
-The current implementation charges a fixed 20 credits for a transcription session capped at 60 minutes. Live analysis windows still use OpenRouter and settle from actual usage like other model calls.
-
-The fixed transcription price is intentionally conservative. OpenAI currently lists `gpt-live-transcribe` at [$0.017 per minute](https://developers.openai.com/api/docs/pricing), so a more proportional calculation could be:
+OpenAI lists `gpt-live-transcribe` at [$0.017 per minute](https://developers.openai.com/api/docs/pricing). Jiddu therefore measures the active audio duration, caps it at 60 minutes, and combines that cost with the real OpenRouter cost of every completed Live analysis window:
 
 ```text
 transcription cost = billable duration × $0.017 per minute
 
-credits = ceil(transcription cost × margin multiplier ÷ value per credit)
+provider cost = transcription cost + sum of Live analysis usage.cost
+
+credits = ceil(provider cost × margin multiplier ÷ value per credit)
 ```
 
-I have not implemented that calculation yet. It requires a trustworthy server-side record of session start, end, reconnection, and maximum duration. Billing from a browser timer would be easy to manipulate and hard to audit.
-
-Until that measurement exists, the fixed rate remains separate and visible instead of pretending to be usage-based.
+The account must have at least 20 available credits before Jiddu issues the ephemeral Realtime credential. That is an entry check, not a reservation or charge. When the session finishes, its owner-scoped, idempotent billing ticket settles the combined provider cost once, avoiding a separate upward rounding for every analysis window. The ledger stores audio duration, transcription cost, analysis cost, token totals, conversion settings, and the linked analysis resource.
 
 ## Retail packs and Stripe
 

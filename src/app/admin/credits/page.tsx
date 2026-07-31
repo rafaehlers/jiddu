@@ -137,7 +137,10 @@ export default async function AdminCreditsPage({
 
         <AdminSection title="Rate card">
           <JidduCreditRateTable
-            liveTranscriptionCredits={settings["credits.liveTranscription"]}
+            liveMinimumCredits={settings["credits.liveTranscription"]}
+            liveUsdPerMinute={
+              settings["credits.liveTranscriptionUsdPerMinute"]
+            }
           />
         </AdminSection>
 

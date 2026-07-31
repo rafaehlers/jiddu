@@ -5,6 +5,8 @@ import { readSse } from "@/lib/sse";
 import type { Finding } from "@/lib/schema";
 
 type Options = {
+  /** Billing ticket returned with the Realtime client secret. */
+  billingReservationId?: string | null;
   /** Cumulative transcript text from the live session. */
   transcript: string;
   /** Whether the live session is currently active (true → run the timer). */
@@ -34,10 +36,11 @@ type Result = {
    * Send the cumulative transcript with `finalize: true`. Resolves with the
    * session id (so the caller can redirect to the persisted analysis view).
    */
-  finalize: () => Promise<string | null>;
+  finalize: (audioDurationMs?: number) => Promise<string | null>;
 };
 
 export function useLiveAnalysis({
+  billingReservationId,
   transcript,
   active,
   language,
@@ -56,13 +59,16 @@ export function useLiveAnalysis({
   // synced via an effect (assigning during render trips React 19's lint).
   const transcriptRef = useRef(transcript);
   const languageRef = useRef(language);
+  const billingReservationIdRef = useRef(billingReservationId);
   useEffect(() => {
     transcriptRef.current = transcript;
     languageRef.current = language;
+    billingReservationIdRef.current = billingReservationId;
   });
   const sessionIdRef = useRef<string | null>(null);
   const lastAnalyzedLengthRef = useRef(0);
   const inFlightRef = useRef(false);
+  const inFlightDoneRef = useRef<Promise<void> | null>(null);
 
   // Reset state when a fresh session begins (active flips false→true).
   const wasActiveRef = useRef(false);
@@ -79,12 +85,25 @@ export function useLiveAnalysis({
   }, [active]);
 
   const runAnalyze = useCallback(
-    async (finalize: boolean): Promise<string | null> => {
-      if (inFlightRef.current) return sessionIdRef.current;
+    async (
+      finalize: boolean,
+      audioDurationMs?: number,
+    ): Promise<string | null> => {
+      if (inFlightRef.current) {
+        if (!finalize) return sessionIdRef.current;
+        // A stop can happen while a periodic analysis window is still
+        // streaming. Wait for it, then send the final transcript so the row
+        // is always completed and receives the final audio duration.
+        await inFlightDoneRef.current;
+      }
       const text = transcriptRef.current;
       if (!text && !finalize) return sessionIdRef.current;
 
       inFlightRef.current = true;
+      let resolveInFlight: () => void = () => {};
+      inFlightDoneRef.current = new Promise<void>((resolve) => {
+        resolveInFlight = resolve;
+      });
       setIsAnalyzing(true);
       const ctrl = new AbortController();
 
@@ -93,11 +112,13 @@ export function useLiveAnalysis({
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
+            billingReservationId: billingReservationIdRef.current,
             sessionId: sessionIdRef.current,
             text,
             lang: languageRef.current,
             timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
             finalize,
+            audioDurationMs: finalize ? audioDurationMs : undefined,
           }),
           signal: ctrl.signal,
         });
@@ -175,6 +196,8 @@ export function useLiveAnalysis({
         return sessionIdRef.current;
       } finally {
         inFlightRef.current = false;
+        resolveInFlight();
+        inFlightDoneRef.current = null;
         setIsAnalyzing(false);
       }
     },
@@ -207,8 +230,8 @@ export function useLiveAnalysis({
     }
   }, [active, transcript, minDeltaChars, runAnalyze]);
 
-  const finalize = useCallback(async () => {
-    return runAnalyze(true);
+  const finalize = useCallback(async (audioDurationMs?: number) => {
+    return runAnalyze(true, audioDurationMs);
   }, [runAnalyze]);
 
   return { findings, score, sessionId, isAnalyzing, error, finalize };

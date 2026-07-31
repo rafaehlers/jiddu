@@ -10,9 +10,18 @@ import {
   type JidduCreditSettlement,
   type OpenRouterUsage,
 } from "@/lib/openrouter-usage";
+import {
+  addLiveAnalysisUsage,
+  calculateLiveTranscriptionSettlement,
+  LIVE_TRANSCRIPTION_MODEL,
+  normalizeLiveDurationMs,
+  type LiveAnalysisUsageTotals,
+  type LiveTranscriptionSettlement,
+} from "@/lib/live-billing";
 import { loadSettings } from "@/lib/settings";
 
 const RESERVATION_TTL_MS = 2 * 60 * 60 * 1000;
+const LIVE_ANALYSIS_USAGE_KEY = "liveAnalysisUsage";
 
 export type JidduCreditSnapshot = {
   balance: number;
@@ -65,12 +74,17 @@ export async function reserveJidduCredits(input: {
   workosUserId: string;
   email: string;
   amount: number;
+  minimumAvailable?: number;
   feature: JidduCreditFeature;
   resourceId?: string;
   metadata?: Record<string, unknown>;
 }): Promise<JidduCreditReservationHandle> {
   const amount = Math.max(0, Math.floor(input.amount));
-  if (amount === 0) {
+  const minimumAvailable = Math.max(
+    amount,
+    Math.max(0, Math.floor(input.minimumAvailable ?? 0)),
+  );
+  if (amount === 0 && minimumAvailable === 0) {
     return { id: "", amount: 0, workosUserId: input.workosUserId };
   }
   await releaseExpiredReservations(input.workosUserId);
@@ -85,14 +99,16 @@ export async function reserveJidduCredits(input: {
       update: { email: input.email.trim().toLowerCase() },
     });
     const available = Math.max(0, account.balance - account.reserved);
-    if (available < amount) {
-      throw new InsufficientJidduCreditsError(amount, available);
+    if (available < minimumAvailable) {
+      throw new InsufficientJidduCreditsError(minimumAvailable, available);
     }
 
-    await tx.jidduCreditAccount.update({
-      where: { workosUserId: input.workosUserId },
-      data: { reserved: { increment: amount } },
-    });
+    if (amount > 0) {
+      await tx.jidduCreditAccount.update({
+        where: { workosUserId: input.workosUserId },
+        data: { reserved: { increment: amount } },
+      });
+    }
     const reservation = await tx.jidduCreditReservation.create({
       data: {
         workosUserId: input.workosUserId,
@@ -121,19 +137,19 @@ export async function settleJidduCreditReservation(
     metadata?: Record<string, unknown>;
     usage?: JidduCreditSettlement;
   },
-): Promise<void> {
-  if (!handle || !handle.id) return;
+): Promise<boolean> {
+  if (!handle || !handle.id) return false;
   // The reservation is an estimate, not a billing cap. Provider pricing,
   // retries and reasoning-token use can make the final cost exceed it. The
   // real debit is therefore allowed to overrun the reservation; a negative
   // balance blocks subsequent reservations until the account is topped up.
   const actual = Math.max(0, Math.floor(actualAmount));
 
-  await prisma.$transaction(async (tx) => {
+  return prisma.$transaction(async (tx) => {
     const reservation = await tx.jidduCreditReservation.findUnique({
       where: { id: handle.id },
     });
-    if (!reservation || reservation.status !== "pending") return;
+    if (!reservation || reservation.status !== "pending") return false;
 
     const account = await tx.jidduCreditAccount.update({
       where: { workosUserId: reservation.workosUserId },
@@ -175,6 +191,138 @@ export async function settleJidduCreditReservation(
         },
       });
     }
+    return true;
+  });
+}
+
+export async function settleLiveTranscriptionReservation(input: {
+  reservationId: string;
+  workosUserId: string;
+  durationMs: number;
+  resourceId?: string;
+}): Promise<{
+  settlement: LiveTranscriptionSettlement;
+  didSettle: boolean;
+} | null> {
+  const settings = await loadSettings();
+  const durationMs = normalizeLiveDurationMs(input.durationMs);
+
+  // Read accumulated analysis usage and close the ticket in the same
+  // transaction. If an analysis finishes first, it is included here. If this
+  // settlement wins the race, that analysis sees a closed ticket and falls
+  // back to its own normal credit transaction.
+  return prisma.$transaction(async (tx) => {
+    const reservation = await tx.jidduCreditReservation.findFirst({
+      where: {
+        id: input.reservationId,
+        workosUserId: input.workosUserId,
+        feature: "live_transcription",
+      },
+    });
+    if (!reservation) return null;
+
+    // Lock a session to the economics that were active when its client
+    // secret was issued. Older pending tickets fall back to current settings.
+    const reservationMetadata = parseMetadata(reservation.metadata);
+    const marginMultiplier = positiveNumber(
+      reservationMetadata.marginMultiplier,
+      settings["credits.marginMultiplier"],
+    );
+    const usdPerCredit = positiveNumber(
+      reservationMetadata.usdPerCredit,
+      settings["credits.usdPerCredit"],
+    );
+    const usdPerMinute = positiveNumber(
+      reservationMetadata.usdPerMinute,
+      settings["credits.liveTranscriptionUsdPerMinute"],
+    );
+    const entryMinimumCredits = nonNegativeInteger(
+      reservationMetadata.entryMinimumCredits,
+      Math.ceil(settings["credits.liveTranscription"]),
+    );
+    const settlement = calculateLiveTranscriptionSettlement(
+      durationMs,
+      {
+        marginMultiplier,
+        usdPerCredit,
+        usdPerMinute,
+      },
+      readLiveAnalysisUsage(reservation.metadata),
+    );
+    if (reservation.status !== "pending") {
+      return { settlement, didSettle: false };
+    }
+
+    const resourceId = input.resourceId ?? reservation.resourceId;
+    const account = await tx.jidduCreditAccount.update({
+      where: { workosUserId: reservation.workosUserId },
+      data: {
+        balance: { decrement: settlement.credits },
+        reserved: { decrement: reservation.amount },
+      },
+    });
+    await tx.jidduCreditReservation.update({
+      where: { id: reservation.id },
+      data: {
+        status: "settled",
+        actualAmount: settlement.credits,
+        resourceId,
+        settledAt: new Date(),
+      },
+    });
+    if (settlement.credits > 0) {
+      await tx.jidduCreditTransaction.create({
+        data: {
+          workosUserId: reservation.workosUserId,
+          amount: -settlement.credits,
+          balanceAfter: account.balance,
+          kind: "usage",
+          feature: reservation.feature,
+          resourceId,
+          rateVersion: reservation.rateVersion,
+          note:
+            settlement.analysisWindows > 0
+              ? "Live transcription and analysis usage"
+              : "OpenAI Live transcription usage",
+          metadata: JSON.stringify({
+            model: LIVE_TRANSCRIPTION_MODEL,
+            durationMs: settlement.durationMs,
+            usdPerMinute: settlement.usdPerMinute,
+            analysisWindows: settlement.analysisWindows,
+            usageAccounting: {
+              provider: settlement.provider,
+              providerCostMicros: settlement.providerCostMicros,
+              transcriptionProviderCostMicros:
+                settlement.transcriptionProviderCostMicros,
+              analysisProviderCostMicros:
+                settlement.analysisProviderCostMicros,
+              billedCostMicros: settlement.billedCostMicros,
+              marginMultiplier: settlement.marginMultiplier,
+              usdPerCredit: settlement.usdPerCredit,
+              promptTokens: settlement.promptTokens,
+              completionTokens: settlement.completionTokens,
+              totalTokens: settlement.totalTokens,
+              reasoningTokens: settlement.reasoningTokens,
+              cachedTokens: settlement.cachedTokens,
+              fallbackCredits: settlement.fallbackCredits,
+              fallbackModels: settlement.fallbackModels,
+              entryMinimumCredits,
+            },
+          }),
+          promptTokens: settlement.promptTokens,
+          completionTokens: settlement.completionTokens,
+          totalTokens: settlement.totalTokens,
+          reasoningTokens: settlement.reasoningTokens,
+          cachedTokens: settlement.cachedTokens,
+          providerCostMicros: settlement.providerCostMicros,
+          billedCostMicros: settlement.billedCostMicros,
+          marginMultiplier: settlement.marginMultiplier,
+          usdPerCredit: settlement.usdPerCredit,
+        },
+      });
+    }
+
+    return { settlement, didSettle: true };
   });
 }
 
@@ -186,6 +334,10 @@ export async function settleJidduCreditReservationFromUsage(
     resourceId?: string;
     note?: string;
     metadata?: Record<string, unknown>;
+    aggregateIntoLive?: {
+      reservationId: string;
+      workosUserId: string;
+    };
   },
 ): Promise<JidduCreditSettlement> {
   const settings = await loadSettings();
@@ -197,6 +349,17 @@ export async function settleJidduCreditReservationFromUsage(
       usdPerCredit: settings["credits.usdPerCredit"],
     },
   );
+  if (
+    input.aggregateIntoLive &&
+    (await appendLiveAnalysisUsage({
+      ...input.aggregateIntoLive,
+      settlement,
+      resourceId: input.resourceId,
+    }))
+  ) {
+    await releaseJidduCreditReservation(handle);
+    return settlement;
+  }
   await settleJidduCreditReservation(handle, settlement.credits, {
     resourceId: input.resourceId,
     note: input.note,
@@ -204,7 +367,7 @@ export async function settleJidduCreditReservationFromUsage(
     metadata: {
       ...(input.metadata ?? {}),
       usageAccounting: {
-        provider: "openrouter",
+        provider: settlement.provider,
         promptTokens: settlement.promptTokens,
         completionTokens: settlement.completionTokens,
         totalTokens: settlement.totalTokens,
@@ -228,6 +391,88 @@ export async function settleJidduCreditReservationFromUsage(
   return settlement;
 }
 
+async function appendLiveAnalysisUsage(input: {
+  reservationId: string;
+  workosUserId: string;
+  settlement: JidduCreditSettlement;
+  resourceId?: string;
+}): Promise<boolean> {
+  return prisma.$transaction(async (tx) => {
+    const reservation = await tx.jidduCreditReservation.findFirst({
+      where: {
+        id: input.reservationId,
+        workosUserId: input.workosUserId,
+        feature: "live_transcription",
+        status: "pending",
+      },
+      select: { id: true, metadata: true },
+    });
+    if (!reservation) return false;
+
+    const metadata = parseMetadata(reservation.metadata);
+    const current = readLiveAnalysisUsage(reservation.metadata);
+    const next = addLiveAnalysisUsage(current, input.settlement);
+
+    await tx.jidduCreditReservation.update({
+      where: { id: reservation.id },
+      data: {
+        resourceId: input.resourceId,
+        metadata: JSON.stringify({
+          ...metadata,
+          [LIVE_ANALYSIS_USAGE_KEY]: next,
+        }),
+      },
+    });
+    return true;
+  });
+}
+
+function readLiveAnalysisUsage(metadataJson: string): LiveAnalysisUsageTotals {
+  const value = parseMetadata(metadataJson)[LIVE_ANALYSIS_USAGE_KEY];
+  const usage =
+    value !== null && typeof value === "object"
+      ? (value as Record<string, unknown>)
+      : {};
+  return {
+    providerCostMicros: nonNegativeInteger(usage.providerCostMicros),
+    promptTokens: nonNegativeInteger(usage.promptTokens),
+    completionTokens: nonNegativeInteger(usage.completionTokens),
+    totalTokens: nonNegativeInteger(usage.totalTokens),
+    reasoningTokens: nonNegativeInteger(usage.reasoningTokens),
+    cachedTokens: nonNegativeInteger(usage.cachedTokens),
+    fallbackCredits: nonNegativeInteger(usage.fallbackCredits),
+    fallbackModels: Array.isArray(usage.fallbackModels)
+      ? usage.fallbackModels.filter(
+          (model): model is string => typeof model === "string",
+        )
+      : [],
+    analysisWindows: nonNegativeInteger(usage.analysisWindows),
+  };
+}
+
+function parseMetadata(value: string): Record<string, unknown> {
+  try {
+    const parsed = JSON.parse(value);
+    return parsed !== null && typeof parsed === "object"
+      ? (parsed as Record<string, unknown>)
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+function nonNegativeInteger(value: unknown, fallback = 0): number {
+  return typeof value === "number" && Number.isFinite(value)
+    ? Math.max(0, Math.floor(value))
+    : fallback;
+}
+
+function positiveNumber(value: unknown, fallback: number): number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0
+    ? value
+    : fallback;
+}
+
 export async function recordIncludedJidduCreditUsage(input: {
   workosUserId: string;
   email: string;
@@ -240,7 +485,7 @@ export async function recordIncludedJidduCreditUsage(input: {
   const email = input.email.trim().toLowerCase();
   const usageAccounting = input.usage
     ? {
-        provider: "openrouter",
+        provider: input.usage.provider,
         promptTokens: input.usage.promptTokens,
         completionTokens: input.usage.completionTokens,
         totalTokens: input.usage.totalTokens,

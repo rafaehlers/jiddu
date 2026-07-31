@@ -996,8 +996,8 @@ const en: Messages = {
     {
       title: "11. Credits, billing and abuse controls",
       paragraphs: [
-        "Jiddu Credits pay for analyses across the web app, account-owned REST API keys and hosted MCP. Before work begins, Jiddu temporarily reserves the estimate shown below so concurrent jobs cannot spend the same balance. Metered model calls settle against the work actually completed, and any unused reservation is returned to the account. Some verified accounts have included platform access and do not consume their personal credit balance.",
-        "A reservation is an estimate, not always the final debit. Long documents can contain multiple chunks, fact-check verification is charged per eligible claim, and Live analysis is charged per completed analysis window. Provider retries, reasoning usage or an unusually expensive completion can make the final debit exceed the reservation; if that leaves a negative balance, new analyses stay blocked until credits are added. Fixed services such as Live transcription use the listed session charge.",
+        "Jiddu Credits pay for analyses across the web app, account-owned REST API keys and hosted MCP. Before most work begins, Jiddu temporarily reserves the estimate shown below so concurrent jobs cannot spend the same balance. Live instead checks that the account has the required minimum balance without holding or charging it. Metered usage settles against the work actually completed, and any unused reservation is returned to the account. Some verified accounts have included platform access and do not consume their personal credit balance.",
+        "A reservation is an estimate, not always the final debit. Long documents can contain multiple chunks, fact-check verification is charged per eligible claim, and Live analysis is charged per completed analysis window. Live transcription is billed from actual audio duration at OpenAI's configured per-minute rate. Provider retries, reasoning usage or an unusually expensive completion can leave the account negative; new analyses then stay blocked until credits are added.",
         "Paid credit packs are sold as one-time purchases through Stripe Checkout. Credits are granted only after Jiddu verifies the completed payment with Stripe; the credit ledger and transaction history remain the source of truth for purchases and usage.",
         "Per-account and per-request safeguards limit abusive or accidentally unbounded use. Limits vary by feature and may evolve as model capacity and provider pricing change.",
       ],
@@ -1053,9 +1053,9 @@ const en: Messages = {
           },
           {
             feature: "Live transcription",
-            unit: "Per Realtime session",
+            unit: "Per audio duration",
             estimate:
-              "{liveCredits} fixed credits for one session, capped at 60 minutes",
+              "{liveCredits} available credits required to start; final debit based on actual duration",
           },
           {
             feature: "Live analysis",
@@ -1803,8 +1803,8 @@ const pt: Messages = {
     {
       title: "11. Créditos, cobrança e controles de abuso",
       paragraphs: [
-        "Os Créditos Jiddu pagam análises no app web, em chaves REST vinculadas à conta e no MCP hospedado. Antes do trabalho começar, o Jiddu reserva temporariamente a estimativa abaixo para impedir que jobs simultâneos gastem o mesmo saldo. Chamadas medidas de modelos são liquidadas pelo trabalho realmente concluído, e toda reserva não utilizada retorna à conta. Algumas contas verificadas possuem acesso incluído à plataforma e não consomem o saldo pessoal.",
-        "A reserva é uma estimativa, não necessariamente o débito final. Documentos longos podem gerar vários chunks, a verificação de fact-check é cobrada por afirmação elegível e a análise Live por janela concluída. Retentativas do provedor, tokens de raciocínio ou uma resposta excepcionalmente cara podem fazer o débito final superar a reserva; se o saldo ficar negativo, novas análises permanecem bloqueadas até a adição de créditos. Serviços fixos, como a transcrição Live, usam a tarifa de sessão indicada.",
+        "Os Créditos Jiddu pagam análises no app web, em chaves REST vinculadas à conta e no MCP hospedado. Antes da maioria dos trabalhos, o Jiddu reserva temporariamente a estimativa abaixo para impedir que jobs simultâneos gastem o mesmo saldo. No Live, apenas verifica o saldo mínimo exigido, sem bloquear nem cobrar esse valor. O uso medido é liquidado pelo trabalho realmente concluído, e toda reserva não utilizada retorna à conta. Algumas contas verificadas possuem acesso incluído à plataforma e não consomem o saldo pessoal.",
+        "A reserva é uma estimativa, não necessariamente o débito final. Documentos longos podem gerar vários chunks, a verificação de fact-check é cobrada por afirmação elegível e a análise Live por janela concluída. A transcrição Live é cobrada pela duração real do áudio, usando a tarifa por minuto configurada da OpenAI. Retentativas do provedor, tokens de raciocínio ou uma resposta excepcionalmente cara podem deixar o saldo negativo; novas análises ficam bloqueadas até a adição de créditos.",
         "Pacotes pagos são vendidos como compras únicas pelo Stripe Checkout. Os créditos só são concedidos depois que o Jiddu confirma com o Stripe que o pagamento foi concluído; o ledger e o histórico de transações continuam sendo a fonte de verdade para compras e consumo.",
         "Salvaguardas por conta e por requisição limitam uso abusivo ou acidentalmente ilimitado. Os limites variam por função e podem evoluir conforme a capacidade dos modelos e os preços dos provedores.",
       ],
@@ -1860,9 +1860,9 @@ const pt: Messages = {
           },
           {
             feature: "Transcrição Live",
-            unit: "Por sessão Realtime",
+            unit: "Por duração do áudio",
             estimate:
-              "{liveCredits} créditos fixos por sessão, limitada a 60 minutos",
+              "{liveCredits} créditos disponíveis para iniciar; débito final pela duração real",
           },
           {
             feature: "Análise Live",
@@ -2610,8 +2610,8 @@ const es: Messages = {
     {
       title: "11. Créditos, cobro y controles de abuso",
       paragraphs: [
-        "Los Créditos Jiddu pagan análisis en la app web, claves REST vinculadas a la cuenta y MCP alojado. Antes de comenzar, Jiddu reserva temporalmente la estimación mostrada abajo para impedir que jobs simultáneos gasten el mismo saldo. Las llamadas medidas de modelos se liquidan según el trabajo realmente completado, y toda reserva no utilizada vuelve a la cuenta. Algunas cuentas verificadas tienen acceso incluido a la plataforma y no consumen su saldo personal.",
-        "La reserva es una estimación, no siempre el débito final. Los documentos largos pueden generar varios chunks, la verificación de fact-check se cobra por afirmación elegible y el análisis Live por ventana completada. Reintentos del proveedor, tokens de razonamiento o una respuesta excepcionalmente costosa pueden hacer que el débito final supere la reserva; si el saldo queda negativo, nuevos análisis permanecen bloqueados hasta agregar créditos. Los servicios fijos, como la transcripción Live, usan la tarifa de sesión indicada.",
+        "Los Créditos Jiddu pagan análisis en la app web, claves REST vinculadas a la cuenta y MCP alojado. Antes de la mayoría de los trabajos, Jiddu reserva temporalmente la estimación mostrada abajo para impedir que jobs simultáneos gasten el mismo saldo. En Live solo comprueba el saldo mínimo requerido, sin bloquearlo ni cobrarlo. El uso medido se liquida según el trabajo realmente completado, y toda reserva no utilizada vuelve a la cuenta. Algunas cuentas verificadas tienen acceso incluido a la plataforma y no consumen su saldo personal.",
+        "La reserva es una estimación, no siempre el débito final. Los documentos largos pueden generar varios chunks, la verificación de fact-check se cobra por afirmación elegible y el análisis Live por ventana completada. La transcripción Live se cobra por la duración real del audio según la tarifa por minuto configurada de OpenAI. Reintentos del proveedor, tokens de razonamiento o una respuesta excepcionalmente costosa pueden dejar el saldo negativo; nuevos análisis quedan bloqueados hasta agregar créditos.",
         "Los paquetes pagados se venden como compras únicas mediante Stripe Checkout. Los créditos solo se conceden después de que Jiddu verifica con Stripe que el pago se completó; el ledger y el historial de transacciones siguen siendo la fuente de verdad para compras y consumo.",
         "Las salvaguardas por cuenta y por solicitud limitan el uso abusivo o accidentalmente ilimitado. Los límites varían según la función y pueden evolucionar con la capacidad de los modelos y los precios de los proveedores.",
       ],
@@ -2667,9 +2667,9 @@ const es: Messages = {
           },
           {
             feature: "Transcripción Live",
-            unit: "Por sesión Realtime",
+            unit: "Por duración del audio",
             estimate:
-              "{liveCredits} créditos fijos por sesión, limitada a 60 minutos",
+              "{liveCredits} créditos disponibles para comenzar; débito final por duración real",
           },
           {
             feature: "Análisis Live",

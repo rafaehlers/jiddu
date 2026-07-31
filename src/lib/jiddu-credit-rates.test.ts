@@ -2,17 +2,21 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   creditsForModels,
+  DEFAULT_LIVE_MINIMUM_CREDITS,
   maxCreditsForCalls,
   modelCreditRate,
   paperReviewMaximumModels,
 } from "./jiddu-credit-rates";
 
-test("prices economical, reasoning, critic and realtime models distinctly", () => {
+test("prices economical, reasoning and critic models distinctly", () => {
   assert.equal(modelCreditRate("minimax-m3"), 1);
   assert.equal(modelCreditRate("gpt-5.4-mini"), 2);
   assert.equal(modelCreditRate("gpt-5.5"), 10);
   assert.equal(modelCreditRate("claude-opus-4.8"), 18);
-  assert.equal(modelCreditRate("gpt-live-transcribe"), 20);
+});
+
+test("keeps the Live entry check separate from model fallback pricing", () => {
+  assert.equal(DEFAULT_LIVE_MINIMUM_CREDITS, 20);
 });
 
 test("reserves the worst possible fallback cost but settles actual models", () => {

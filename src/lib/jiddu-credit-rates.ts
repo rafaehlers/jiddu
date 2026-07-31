@@ -1,4 +1,5 @@
-export const JIDDU_CREDIT_RATE_VERSION = "2026-07-29.v5";
+export const JIDDU_CREDIT_RATE_VERSION = "2026-07-30.v6";
+export const DEFAULT_LIVE_MINIMUM_CREDITS = 20;
 
 export const MODEL_CREDIT_RATES = {
   "minimax-m3": 1,
@@ -6,7 +7,6 @@ export const MODEL_CREDIT_RATES = {
   "perplexity/sonar-reasoning-pro": 2,
   "gpt-5.5": 10,
   "claude-opus-4.8": 18,
-  "gpt-live-transcribe": 20,
 } as const;
 
 export type JidduCreditFeature =
@@ -79,15 +79,14 @@ export const JIDDU_CREDIT_RATE_TABLE: CreditRateRow[] = [
   },
   {
     feature: "Live transcription",
-    unit: "Per Realtime session",
-    detail:
-      "20 credits for one GPT Live Transcribe session, capped at 60 minutes.",
+    unit: "Per audio duration",
+    detail: `${DEFAULT_LIVE_MINIMUM_CREDITS} available credits required to start. The final debit uses actual audio duration, OpenAI's configured per-minute rate and the standard cost multiplier.`,
   },
   {
     feature: "Live analysis",
     unit: "Per completed analysis window",
     detail:
-      "1 credit reserved with MiniMax M3 or 2 with GPT-5.4 mini; the final debit normally uses actual provider cost.",
+      "1 credit reserved with MiniMax M3 or 2 with GPT-5.4 mini. Completed window costs are accumulated with transcription and the Live session is rounded once at settlement.",
   },
 ];
 

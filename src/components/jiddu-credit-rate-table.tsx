@@ -4,25 +4,31 @@ import {
 } from "@/lib/jiddu-credit-rates";
 
 export function JidduCreditRateTable({
-  liveTranscriptionCredits,
+  liveMinimumCredits,
+  liveUsdPerMinute,
 }: {
-  liveTranscriptionCredits?: number;
+  liveMinimumCredits?: number;
+  liveUsdPerMinute?: number;
 }) {
   const rows = JIDDU_CREDIT_RATE_TABLE.map((row) =>
     row.feature === "Live transcription" &&
-    liveTranscriptionCredits !== undefined
+    liveMinimumCredits !== undefined
       ? {
           ...row,
-          detail: `${Math.ceil(liveTranscriptionCredits)} fixed credits for one GPT Live Transcribe session, capped at 60 minutes.`,
+          detail: `${Math.ceil(liveMinimumCredits)} available credits required to start; no fixed charge or hold. Final usage is settled by audio duration${
+            liveUsdPerMinute !== undefined
+              ? ` at $${liveUsdPerMinute.toFixed(3)}/minute`
+              : ""
+          }, then the standard multiplier is applied.`,
         }
       : row,
   );
   return (
     <div className="space-y-3">
       <p className="text-sm text-muted">
-        Jiddu reserves the amount below before work begins. Except for the
-        fixed Live transcription charge, the final debit normally uses the
-        provider&apos;s actual cost plus the configured margin.
+        Jiddu normally reserves the estimate below before work begins. Live
+        only checks its minimum available balance; final debits use actual
+        provider cost plus the configured margin.
       </p>
       <div className="overflow-x-auto rounded-lg border border-rule">
         <table className="w-full min-w-[42rem] text-sm">

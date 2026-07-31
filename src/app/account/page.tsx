@@ -30,6 +30,8 @@ export const metadata: Metadata = {
 const USD = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "USD",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 6,
 });
 
 export default async function AccountPage({
@@ -256,7 +258,7 @@ export default async function AccountPage({
                         Change
                       </th>
                       <th className="px-4 py-3 text-right font-medium">
-                        Tokens used
+                        Provider usage
                       </th>
                       <th className="px-4 py-3 text-right font-medium">
                         Balance
@@ -283,7 +285,11 @@ export default async function AccountPage({
                             {transaction.createdAt.toLocaleString("en-US")}
                           </td>
                           <td className="px-4 py-3">
-                            {transaction.feature
+                            {transaction.feature === "live_transcription" &&
+                            transaction.note ===
+                              "Live transcription and analysis usage"
+                              ? "live session"
+                              : transaction.feature
                               ? transaction.feature.replaceAll("_", " ")
                               : transaction.note || transaction.kind}
                           </td>
@@ -306,16 +312,13 @@ export default async function AccountPage({
                             )}
                           </td>
                           <td className="whitespace-nowrap px-4 py-3 text-right text-xs text-muted">
-                            {transaction.totalTokens !== null ? (
-                              <span className="block tabular-nums">
-                                {transaction.totalTokens.toLocaleString(
-                                  "en-US",
-                                )}{" "}
-                                tokens
-                              </span>
-                            ) : (
-                              "—"
-                            )}
+                            <ProviderUsage
+                              providerCostMicros={
+                                transaction.providerCostMicros
+                              }
+                              totalTokens={transaction.totalTokens}
+                              metadata={transaction.metadata}
+                            />
                           </td>
                           <td className="px-4 py-3 text-right tabular-nums">
                             {transaction.balanceAfter}
@@ -331,8 +334,13 @@ export default async function AccountPage({
                   Credit reservation estimates
                 </h2>
                 <JidduCreditRateTable
-                  liveTranscriptionCredits={
+                  liveMinimumCredits={
                     creditSettings?.["credits.liveTranscription"]
+                  }
+                  liveUsdPerMinute={
+                    creditSettings?.[
+                      "credits.liveTranscriptionUsdPerMinute"
+                    ]
                   }
                 />
               </div>
@@ -367,4 +375,84 @@ function AccountTab({
       {children}
     </Link>
   );
+}
+
+function ProviderUsage({
+  providerCostMicros,
+  totalTokens,
+  metadata,
+}: {
+  providerCostMicros: number | null;
+  totalTokens: number | null;
+  metadata: string;
+}) {
+  const liveUsage = readLiveUsage(metadata);
+  if (
+    providerCostMicros === null &&
+    totalTokens === null &&
+    liveUsage === null
+  ) {
+    return "—";
+  }
+  return (
+    <>
+      {providerCostMicros !== null && (
+        <span className="block tabular-nums">
+          {USD.format(providerCostMicros / 1_000_000)}
+        </span>
+      )}
+      {liveUsage !== null && (
+        <span className="block tabular-nums">
+          {formatUsageDuration(liveUsage.durationMs)}
+        </span>
+      )}
+      {liveUsage !== null && liveUsage.analysisWindows > 0 && (
+        <span className="block tabular-nums">
+          {liveUsage.analysisWindows} analysis{" "}
+          {liveUsage.analysisWindows === 1 ? "window" : "windows"}
+        </span>
+      )}
+      {totalTokens !== null && totalTokens > 0 && (
+        <span className="block tabular-nums">
+          {totalTokens.toLocaleString("en-US")} tokens
+        </span>
+      )}
+    </>
+  );
+}
+
+function readLiveUsage(
+  metadata: string,
+): { durationMs: number; analysisWindows: number } | null {
+  try {
+    const parsed = JSON.parse(metadata) as {
+      durationMs?: unknown;
+      analysisWindows?: unknown;
+    };
+    if (
+      typeof parsed.durationMs !== "number" ||
+      !Number.isFinite(parsed.durationMs) ||
+      parsed.durationMs < 0
+    ) {
+      return null;
+    }
+    return {
+      durationMs: parsed.durationMs,
+      analysisWindows:
+        typeof parsed.analysisWindows === "number" &&
+        Number.isFinite(parsed.analysisWindows) &&
+        parsed.analysisWindows > 0
+          ? Math.floor(parsed.analysisWindows)
+          : 0,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function formatUsageDuration(durationMs: number): string {
+  const totalSeconds = Math.max(0, Math.round(durationMs / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}m ${seconds.toString().padStart(2, "0")}s audio`;
 }

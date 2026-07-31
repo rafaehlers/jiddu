@@ -46,10 +46,14 @@ export type LiveSessionHandle = {
   state: LiveSessionState;
   transcript: string;
   error: LiveSessionError | null;
+  billingReservationId: string | null;
   /** Milliseconds elapsed since the session went live. */
   elapsedMs: number;
   start: (source: LiveSource) => Promise<void>;
-  stop: () => Promise<void>;
+  /** Stops capture and returns the final audio duration. */
+  stop: () => Promise<number>;
+  /** Settles transcription plus all accumulated Live analysis usage. */
+  finish: (resourceId?: string | null) => Promise<void>;
 };
 
 type TokenErrorPayload = {
@@ -75,39 +79,88 @@ export function useLiveSession(opts: LiveSessionOptions = {}): LiveSessionHandle
   const [transcript, setTranscript] = useState<string>("");
   const [error, setError] = useState<LiveSessionError | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
+  const [billingReservationId, setBillingReservationId] = useState<
+    string | null
+  >(null);
 
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const dcRef = useRef<RTCDataChannel | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const startedAtRef = useRef<number | null>(null);
+  const finalDurationMsRef = useRef(0);
+  const billingReservationIdRef = useRef<string | null>(null);
   // Buffer partial deltas per item so a single `completed` event reflects
   // the final committed transcript even when deltas were never appended.
   const pendingItemsRef = useRef<Map<string, string>>(new Map());
   const completedItemsRef = useRef<Set<string>>(new Set());
 
-  const cleanup = useCallback(() => {
-    if (dcRef.current) {
+  const cleanupMedia = useCallback(() => {
+    const dc = dcRef.current;
+    dcRef.current = null;
+    if (dc) {
       try {
-        dcRef.current.close();
+        dc.close();
       } catch {
         /* noop */
       }
-      dcRef.current = null;
     }
-    if (pcRef.current) {
+    const pc = pcRef.current;
+    pcRef.current = null;
+    if (pc) {
       try {
-        pcRef.current.close();
+        pc.close();
       } catch {
         /* noop */
       }
-      pcRef.current = null;
     }
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
+    const stream = streamRef.current;
+    streamRef.current = null;
+    if (stream) {
+      stream.getTracks().forEach((t) => t.stop());
     }
-    startedAtRef.current = null;
   }, []);
+
+  const currentDurationMs = useCallback(() => {
+    if (startedAtRef.current == null) return finalDurationMsRef.current;
+    return Math.max(0, Date.now() - startedAtRef.current);
+  }, []);
+
+  const settleBilling = useCallback(
+    async (
+      durationMs: number,
+      options?: { keepalive?: boolean; resourceId?: string | null },
+    ): Promise<boolean> => {
+      const reservationId = billingReservationIdRef.current;
+      if (!reservationId) return true;
+      // Clear before sending so stop, connection errors and unmount cleanup
+      // cannot debit the same reservation twice. The server is idempotent too.
+      billingReservationIdRef.current = null;
+      try {
+        const res = await fetch("/api/live/settle", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            reservationId,
+            durationMs,
+            resourceId: options?.resourceId ?? undefined,
+          }),
+          keepalive: options?.keepalive ?? false,
+        });
+        if (!res.ok) {
+          throw new Error(`Live settlement failed (${res.status}).`);
+        }
+        return true;
+      } catch (err) {
+        console.error("[live] usage settlement failed", err);
+        // Preserve the ticket so a later stop/unmount can retry.
+        if (!billingReservationIdRef.current) {
+          billingReservationIdRef.current = reservationId;
+        }
+        return false;
+      }
+    },
+    [],
+  );
 
   // Tick a 1s timer while live so the UI can show duration + cost estimate.
   useEffect(() => {
@@ -120,8 +173,22 @@ export function useLiveSession(opts: LiveSessionOptions = {}): LiveSessionHandle
     return () => window.clearInterval(id);
   }, [state]);
 
-  // Cleanup on unmount.
-  useEffect(() => cleanup, [cleanup]);
+  // Best-effort settlement when the tab navigates away or the component
+  // unmounts unexpectedly. `keepalive` lets the request outlive the page.
+  useEffect(() => {
+    const finish = () => {
+      const durationMs = currentDurationMs();
+      finalDurationMsRef.current = durationMs;
+      cleanupMedia();
+      startedAtRef.current = null;
+      void settleBilling(durationMs, { keepalive: true });
+    };
+    window.addEventListener("pagehide", finish);
+    return () => {
+      window.removeEventListener("pagehide", finish);
+      finish();
+    };
+  }, [cleanupMedia, currentDurationMs, settleBilling]);
 
   const handleEvent = useCallback(
     (ev: RealtimeEvent) => {
@@ -153,20 +220,30 @@ export function useLiveSession(opts: LiveSessionOptions = {}): LiveSessionHandle
       }
       if (isErrorEvent(ev)) {
         console.error("[live] realtime error", ev.error);
+        const durationMs = currentDurationMs();
+        setElapsedMs(durationMs);
         setError({ code: "service_unavailable" });
         setState("error");
-        cleanup();
+        cleanupMedia();
+        startedAtRef.current = null;
+        finalDurationMsRef.current = durationMs;
+        void settleBilling(durationMs, { keepalive: true });
       }
     },
-    [opts, cleanup],
+    [opts, cleanupMedia, currentDurationMs, settleBilling],
   );
 
   const start = useCallback(
     async (source: LiveSource) => {
       if (state === "live" || state === "connecting") return;
+      if (billingReservationIdRef.current) {
+        await settleBilling(currentDurationMs(), { keepalive: true });
+      }
       setError(null);
       setTranscript("");
       setElapsedMs(0);
+      setBillingReservationId(null);
+      finalDurationMsRef.current = 0;
       pendingItemsRef.current.clear();
       completedItemsRef.current.clear();
       setState("connecting");
@@ -229,6 +306,7 @@ export function useLiveSession(opts: LiveSessionOptions = {}): LiveSessionHandle
         }
         const tokenJson = (await tokenRes.json()) as {
           clientSecret?: string;
+          billingReservationId?: string | null;
           error?: string;
         };
         if (!tokenJson.clientSecret) {
@@ -237,6 +315,10 @@ export function useLiveSession(opts: LiveSessionOptions = {}): LiveSessionHandle
             tokenJson.error ?? "Missing client secret.",
           );
         }
+        const nextBillingReservationId =
+          tokenJson.billingReservationId ?? null;
+        billingReservationIdRef.current = nextBillingReservationId;
+        setBillingReservationId(nextBillingReservationId);
 
         // 3. WebRTC handshake.
         const pc = new RTCPeerConnection();
@@ -266,9 +348,14 @@ export function useLiveSession(opts: LiveSessionOptions = {}): LiveSessionHandle
             // pcRef). Only surface a problem if THIS pc is still the active
             // one in the hook.
             if (pcRef.current === pc) {
+              const durationMs = currentDurationMs();
+              setElapsedMs(durationMs);
               setError({ code: "connection_lost" });
               setState("error");
-              cleanup();
+              cleanupMedia();
+              startedAtRef.current = null;
+              finalDurationMsRef.current = durationMs;
+              void settleBilling(durationMs, { keepalive: true });
             }
           }
         });
@@ -299,22 +386,56 @@ export function useLiveSession(opts: LiveSessionOptions = {}): LiveSessionHandle
         setState("live");
       } catch (err) {
         console.error("[live] session could not start", err);
+        const durationMs = currentDurationMs();
+        setElapsedMs(durationMs);
         setError(toLiveSessionError(err));
         setState("error");
-        cleanup();
+        cleanupMedia();
+        startedAtRef.current = null;
+        finalDurationMsRef.current = durationMs;
+        await settleBilling(durationMs);
       }
     },
-    [state, opts.language, cleanup, handleEvent],
+    [
+      state,
+      opts.language,
+      cleanupMedia,
+      currentDurationMs,
+      handleEvent,
+      settleBilling,
+    ],
   );
 
   const stop = useCallback(async () => {
-    if (state === "idle" || state === "stopped") return;
+    if (state === "idle" || state === "stopped") return elapsedMs;
+    if (state === "stopping") return finalDurationMsRef.current;
+    const durationMs = currentDurationMs();
+    finalDurationMsRef.current = durationMs;
+    setElapsedMs(durationMs);
     setState("stopping");
-    cleanup();
-    setState("stopped");
-  }, [state, cleanup]);
+    cleanupMedia();
+    startedAtRef.current = null;
+    return durationMs;
+  }, [state, elapsedMs, cleanupMedia, currentDurationMs]);
 
-  return { state, transcript, error, elapsedMs, start, stop };
+  const finish = useCallback(
+    async (resourceId?: string | null) => {
+      await settleBilling(finalDurationMsRef.current, { resourceId });
+      setState("stopped");
+    },
+    [settleBilling],
+  );
+
+  return {
+    state,
+    transcript,
+    error,
+    billingReservationId,
+    elapsedMs,
+    start,
+    stop,
+    finish,
+  };
 }
 
 function toLiveSessionError(error: unknown): LiveSessionError {
