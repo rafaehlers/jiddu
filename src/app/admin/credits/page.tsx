@@ -6,6 +6,7 @@ import {
   AdminTableShell,
 } from "@/components/admin/admin-page";
 import { JidduCreditRateTable } from "@/components/jiddu-credit-rate-table";
+import { formatAppDateTime } from "@/lib/date-time";
 import { prisma } from "@/lib/db";
 import { loadSettings } from "@/lib/settings";
 import { adjustCreditsAction } from "./actions";
@@ -172,7 +173,7 @@ export default async function AdminCreditsPage({
                   transactions.map((transaction) => (
                     <tr key={transaction.id} className="border-t border-rule">
                       <td className="whitespace-nowrap px-4 py-3 text-muted">
-                        {transaction.createdAt.toLocaleString("en-US")}
+                        {formatAppDateTime(transaction.createdAt)}
                       </td>
                       <td className="px-4 py-3">
                         {accountEmails.get(transaction.workosUserId) ??

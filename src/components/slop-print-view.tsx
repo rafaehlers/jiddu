@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { formatAppDateTime } from "@/lib/date-time";
 import { useI18n } from "@/lib/i18n/provider";
 import type { Messages } from "@/lib/i18n/messages";
 import type { SlopFinding } from "@/lib/slop-schema";
@@ -144,7 +145,7 @@ export function SlopPrintView({
 
 function fmt(d: Date, lang: Lang): string {
   const locale = lang === "pt" ? "pt-BR" : lang === "es" ? "es-ES" : "en-US";
-  return d.toLocaleString(locale, {
+  return formatAppDateTime(d, locale, {
     year: "numeric",
     month: "short",
     day: "numeric",

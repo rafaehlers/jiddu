@@ -11,6 +11,7 @@ services:
     environment:
       - DATABASE_URL=file:/app/data/jiddu.db
       - LLM_PROVIDER=${LLM_PROVIDER:-anthropic}
+      - TZ=America/Sao_Paulo
     volumes:
       - jiddu_data:/app/data
     networks:

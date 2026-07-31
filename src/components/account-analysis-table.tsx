@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { formatAppDateTime } from "@/lib/date-time";
 import type {
   UserAnalysisKind,
   UserAnalysisRow,
@@ -135,7 +136,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function formatDate(date: Date): string {
-  return date.toLocaleString("en-US", {
+  return formatAppDateTime(date, "en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",

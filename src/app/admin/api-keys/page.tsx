@@ -5,6 +5,7 @@ import {
   AdminSection,
   AdminTableShell,
 } from "@/components/admin/admin-page";
+import { formatAppDateTime } from "@/lib/date-time";
 import { prisma } from "@/lib/db";
 import {
   assignApiKeyOwnerAction,
@@ -233,7 +234,7 @@ export default async function AdminApiKeysPage({
 }
 
 function formatDate(d: Date): string {
-  return d.toLocaleString("en-US", {
+  return formatAppDateTime(d, "en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",

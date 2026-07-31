@@ -10,6 +10,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { effectiveAnalysisAccessMode } from "@/lib/analysis-access";
 import { isWorkOSConfigured, mcpResourceUrl } from "@/lib/auth-config";
+import { formatAppDateTime } from "@/lib/date-time";
 import {
   getOpenRouterCredits,
   isCreditsSnapshot,
@@ -282,7 +283,7 @@ export default async function AccountPage({
                           className="border-t border-rule"
                         >
                           <td className="whitespace-nowrap px-4 py-3 text-muted">
-                            {transaction.createdAt.toLocaleString("en-US")}
+                            {formatAppDateTime(transaction.createdAt)}
                           </td>
                           <td className="px-4 py-3">
                             {transaction.feature === "live_transcription" &&

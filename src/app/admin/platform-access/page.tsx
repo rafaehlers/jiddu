@@ -4,6 +4,7 @@ import {
   AdminSection,
 } from "@/components/admin/admin-page";
 import { configuredAdminEmails } from "@/lib/admin-auth";
+import { formatAppDateTime } from "@/lib/date-time";
 import { prisma } from "@/lib/db";
 import {
   createPlatformAccessAction,
@@ -115,7 +116,12 @@ export default async function PlatformAccessPage({
                   </form>
                   <div className="flex items-center justify-between gap-3 text-xs text-muted">
                     <span>
-                      Added {grant.createdAt.toLocaleDateString("en-US")}
+                      Added{" "}
+                      {formatAppDateTime(grant.createdAt, "en-US", {
+                        year: "numeric",
+                        month: "numeric",
+                        day: "numeric",
+                      })}
                     </span>
                     <form action={deletePlatformAccessAction}>
                       <input type="hidden" name="id" value={grant.id} />

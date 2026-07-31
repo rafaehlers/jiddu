@@ -3,6 +3,7 @@ import {
   AdminPage as AdminPageLayout,
   AdminTableShell,
 } from "@/components/admin/admin-page";
+import { formatAppDateTime } from "@/lib/date-time";
 import { prisma } from "@/lib/db";
 import { toggleReviewedAction } from "./review-actions";
 import { getOpenRouterCredits, isCreditsSnapshot } from "@/lib/openrouter-credits";
@@ -472,7 +473,7 @@ function CreditsStat({
       href="https://openrouter.ai/credits"
       target="_blank"
       rel="noopener noreferrer"
-      title={`Updated ${credits.fetchedAt.toLocaleString("en-US", {
+      title={`Updated ${formatAppDateTime(credits.fetchedAt, "en-US", {
         hour: "2-digit",
         minute: "2-digit",
       })}`}
@@ -536,7 +537,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function formatDate(d: Date): string {
-  return d.toLocaleString("en-US", {
+  return formatAppDateTime(d, "en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",

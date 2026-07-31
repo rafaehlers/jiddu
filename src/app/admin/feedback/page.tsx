@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AdminPage } from "@/components/admin/admin-page";
+import { formatAppDateTime } from "@/lib/date-time";
 import { prisma } from "@/lib/db";
 import { resolveFeedbackAction, deleteFeedbackAction } from "./actions";
 import type { Verdict } from "@/lib/verdict-schema";
@@ -210,7 +211,7 @@ function StatusPill({ status }: { status: string }) {
 }
 
 function fmt(d: Date): string {
-  return d.toLocaleString("en-US", {
+  return formatAppDateTime(d, "en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",
