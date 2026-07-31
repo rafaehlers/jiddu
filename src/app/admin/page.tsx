@@ -36,11 +36,16 @@ type AdminRow = {
   reviewedAt: Date | null;
 };
 
+const nonDemoWhere = {
+  NOT: { model: { startsWith: "demo" } },
+} as const;
+
 async function AdminList() {
   // Pull all six row types in parallel, normalize to a common shape, then
   // merge by createdAt desc so the admin sees one unified table.
   const [analyses, factchecks, neutralities, explanations, slopChecks, paperReviews] = await Promise.all([
     prisma.analysis.findMany({
+      where: nonDemoWhere,
       orderBy: { createdAt: "desc" },
       select: {
         id: true,
@@ -57,6 +62,7 @@ async function AdminList() {
       },
     }),
     prisma.factCheck.findMany({
+      where: nonDemoWhere,
       orderBy: { createdAt: "desc" },
       select: {
         id: true,
@@ -73,6 +79,7 @@ async function AdminList() {
       },
     }),
     prisma.neutrality.findMany({
+      where: nonDemoWhere,
       orderBy: { createdAt: "desc" },
       select: {
         id: true,
@@ -90,6 +97,7 @@ async function AdminList() {
       },
     }),
     prisma.explanation.findMany({
+      where: nonDemoWhere,
       orderBy: { createdAt: "desc" },
       select: {
         id: true,
@@ -107,6 +115,7 @@ async function AdminList() {
       },
     }),
     prisma.slopCheck.findMany({
+      where: nonDemoWhere,
       orderBy: { createdAt: "desc" },
       select: {
         id: true,
@@ -123,6 +132,7 @@ async function AdminList() {
       },
     }),
     prisma.paperReview.findMany({
+      where: nonDemoWhere,
       orderBy: { createdAt: "desc" },
       select: {
         id: true,
