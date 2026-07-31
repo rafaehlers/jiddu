@@ -135,6 +135,30 @@ a:not(.font-serif):not([class*="rounded"]):not([class*="bg-accent"]):hover {
   outline-offset: 2px;
   border-radius: 2px;
 }
+
+/* The analyses table is wider than the admin viewport on smaller screens.
+   Mirror its horizontal scrollbar above the header so users can reach the
+   right-hand columns without first scrolling to the bottom of the table. */
+.admin-table-top-scrollbar {
+  scrollbar-color: color-mix(in oklab, var(--muted) 75%, transparent)
+    var(--paper);
+  scrollbar-width: auto;
+}
+.admin-table-top-scrollbar::-webkit-scrollbar {
+  height: 11px;
+}
+.admin-table-top-scrollbar::-webkit-scrollbar-track {
+  background: var(--paper);
+}
+.admin-table-top-scrollbar::-webkit-scrollbar-thumb {
+  background: color-mix(in oklab, var(--muted) 75%, transparent);
+  border: 2px solid var(--paper);
+  border-radius: 999px;
+}
+.admin-table-top-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
 /* Inline <mark> highlights wrap across lines; a tight offset keeps the ring
    hugging the text rather than ballooning around the line box. */
 mark.fallacy:focus-visible,

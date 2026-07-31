@@ -1,8 +1,8 @@
 import Link from "next/link";
 import {
   AdminPage as AdminPageLayout,
-  AdminTableShell,
 } from "@/components/admin/admin-page";
+import { AdminTableScrollShell } from "@/components/admin/admin-table-scroll-shell";
 import { formatAppDateTime } from "@/lib/date-time";
 import { prisma } from "@/lib/db";
 import { toggleReviewedAction } from "./review-actions";
@@ -298,8 +298,8 @@ async function AdminList() {
         <Stat label="Reviews" value={paperReviews.length} accent="red" />
       </div>
 
-      <AdminTableShell>
-        <table className="w-full text-sm">
+      <AdminTableScrollShell>
+        <table className="w-full min-w-[72rem] text-sm">
           <thead className="bg-paper">
             <tr className="text-left text-muted">
               <th className="px-3 py-2 font-medium">When</th>
@@ -407,7 +407,7 @@ async function AdminList() {
             })}
           </tbody>
         </table>
-      </AdminTableShell>
+      </AdminTableScrollShell>
     </AdminPageLayout>
   );
 }

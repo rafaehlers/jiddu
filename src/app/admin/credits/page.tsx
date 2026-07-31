@@ -5,6 +5,7 @@ import {
   AdminSection,
   AdminTableShell,
 } from "@/components/admin/admin-page";
+import { AdminTableScrollShell } from "@/components/admin/admin-table-scroll-shell";
 import { JidduCreditRateTable } from "@/components/jiddu-credit-rate-table";
 import { formatAppDateTime } from "@/lib/date-time";
 import { prisma } from "@/lib/db";
@@ -146,7 +147,7 @@ export default async function AdminCreditsPage({
         </AdminSection>
 
         <AdminSection title="Recent transactions">
-          <AdminTableShell>
+          <AdminTableScrollShell>
             <table className="w-full min-w-[64rem] text-sm">
               <thead className="bg-paper text-left text-muted">
                 <tr>
@@ -236,7 +237,7 @@ export default async function AdminCreditsPage({
                 )}
               </tbody>
             </table>
-          </AdminTableShell>
+          </AdminTableScrollShell>
         </AdminSection>
     </AdminPage>
   );
