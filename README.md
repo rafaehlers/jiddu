@@ -467,6 +467,17 @@ Jiddu ships with a multi-stage [`Dockerfile`](./Dockerfile) and [`docker-compose
 
 The container entrypoint applies Prisma migrations and seeds the public demos idempotently on startup. If a reverse proxy sits in front of Jiddu, disable response buffering for the SSE analysis routes so findings reach the browser as they are generated.
 
+Production does not deploy automatically from GitHub. After committing all
+intended changes, publish with:
+
+```bash
+npm run deploy
+```
+
+The script pushes `main`, updates and rebuilds the `jiddu-vps` container, then
+verifies the deployed commit SHA, container state and public health check. A
+plain `git push` alone is not a production deployment.
+
 ## Proprietary software
 
 Copyright © 2026 Rafael M. Ehlers. All rights reserved.

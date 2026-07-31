@@ -2,6 +2,10 @@
 #
 # Deploy Jiddu to the VPS.
 #
+# IMPORTANT: this is the required production publishing path. A plain
+# `git push` updates GitHub but does not update jiddu.app. Whenever a change
+# must be "pushed", "published", "deployed" or "subida", run this script.
+#
 # Replaces the GitHub Actions workflow. The Actions runner is blocked from
 # reaching the VPS on port 22 (firewall / fail2ban), but SSH from a local
 # machine works fine — so we push to GitHub and trigger the deploy over our
@@ -24,6 +28,12 @@ set -euo pipefail
 REMOTE_HOST="${JIDDU_SSH_HOST:-jiddu-vps}"
 BRANCH="main"
 HEALTH_URL="${JIDDU_HEALTH_URL:-https://jiddu.app/}"
+CURRENT_BRANCH="$(git branch --show-current)"
+
+if [[ "${CURRENT_BRANCH}" != "${BRANCH}" ]]; then
+  echo "✗ Production deploys must run from ${BRANCH}; current branch is ${CURRENT_BRANCH}." >&2
+  exit 1
+fi
 
 # The VPS pulls from GitHub, so the working tree must be fully committed —
 # otherwise the deploy would silently ship an older state than what you see.
@@ -33,11 +43,29 @@ if [[ -n "$(git status --porcelain)" ]]; then
   exit 1
 fi
 
+EXPECTED_SHA="$(git rev-parse HEAD)"
+
 echo "→ Pushing ${BRANCH} to GitHub…"
 git push origin "${BRANCH}"
 
 echo "→ Deploying on VPS (${REMOTE_HOST})… (docker build can take a few minutes)"
 ssh -o ConnectTimeout=15 "${REMOTE_HOST}" 'bash /opt/deploy-jiddu.sh'
+
+REMOTE_STATE="$(
+  ssh -o ConnectTimeout=15 "${REMOTE_HOST}" \
+    'cd /opt/jiddu && printf "%s %s" "$(git rev-parse HEAD)" "$(docker inspect -f "{{.State.Status}}" jiddu-app)"'
+)"
+REMOTE_SHA="${REMOTE_STATE%% *}"
+CONTAINER_STATUS="${REMOTE_STATE#* }"
+
+if [[ "${REMOTE_SHA}" != "${EXPECTED_SHA}" ]]; then
+  echo "✗ VPS SHA mismatch: expected ${EXPECTED_SHA}, found ${REMOTE_SHA}." >&2
+  exit 1
+fi
+if [[ "${CONTAINER_STATUS}" != "running" ]]; then
+  echo "✗ VPS container is ${CONTAINER_STATUS}, not running." >&2
+  exit 1
+fi
 
 echo "→ Health check: ${HEALTH_URL}"
 # The container restarts and runs migrations + reseed on boot, so the proxy
@@ -49,7 +77,7 @@ for _ in $(seq 1 12); do
   sleep 5
 done
 if [[ "${code}" == "200" ]]; then
-  echo "✓ Deploy complete — ${HEALTH_URL} → ${code}"
+  echo "✓ Deploy complete — ${REMOTE_SHA} — ${HEALTH_URL} → ${code}"
 else
   echo "✗ Site still returning HTTP ${code} after retries — check the VPS." >&2
   exit 1

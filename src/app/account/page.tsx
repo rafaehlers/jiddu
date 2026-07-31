@@ -98,6 +98,17 @@ export default async function AccountPage({
           where: { workosUserId: user.id },
           orderBy: { createdAt: "desc" },
           take: 100,
+          select: {
+            id: true,
+            createdAt: true,
+            feature: true,
+            note: true,
+            kind: true,
+            amount: true,
+            totalTokens: true,
+            metadata: true,
+            balanceAfter: true,
+          },
         })
       : [];
   const creditSettings =
@@ -314,9 +325,6 @@ export default async function AccountPage({
                           </td>
                           <td className="whitespace-nowrap px-4 py-3 text-right text-xs text-muted">
                             <ProviderUsage
-                              providerCostMicros={
-                                transaction.providerCostMicros
-                              }
                               totalTokens={transaction.totalTokens}
                               metadata={transaction.metadata}
                             />
@@ -379,29 +387,18 @@ function AccountTab({
 }
 
 function ProviderUsage({
-  providerCostMicros,
   totalTokens,
   metadata,
 }: {
-  providerCostMicros: number | null;
   totalTokens: number | null;
   metadata: string;
 }) {
   const liveUsage = readLiveUsage(metadata);
-  if (
-    providerCostMicros === null &&
-    totalTokens === null &&
-    liveUsage === null
-  ) {
+  if (totalTokens === null && liveUsage === null) {
     return "—";
   }
   return (
     <>
-      {providerCostMicros !== null && (
-        <span className="block tabular-nums">
-          {USD.format(providerCostMicros / 1_000_000)}
-        </span>
-      )}
       {liveUsage !== null && (
         <span className="block tabular-nums">
           {formatUsageDuration(liveUsage.durationMs)}

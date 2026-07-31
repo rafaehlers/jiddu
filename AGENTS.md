@@ -3,3 +3,14 @@
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
+
+## Production publishing — mandatory
+
+- A plain `git push` updates GitHub but does **not** update the VPS.
+- Whenever Rafael asks to “push”, “subir”, “publicar”, “colocar no ar” or
+  “deploy”, commit the intended changes and run `npm run deploy`.
+- `npm run deploy` pushes `main`, connects through the `jiddu-vps` SSH alias,
+  runs `/opt/deploy-jiddu.sh`, verifies the VPS commit SHA and container state,
+  and checks `https://jiddu.app/`.
+- Do not report a production push as complete until that script finishes with
+  a successful health check.
