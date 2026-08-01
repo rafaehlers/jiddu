@@ -1,23 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  AlertTriangle,
-  CheckCircle,
-  XCircle,
-  Megaphone,
-  Quote,
-  ArrowRightLeft,
-  GitBranch,
-  EyeOff,
-  Scale,
-  Compass,
-  Fingerprint,
-} from "lucide-react";
 import type { Sentence } from "@/lib/schema";
 import type {
   NeutralityFinding,
-  NeutralityIssue,
   NeutralityVerdictValue,
   TextType,
 } from "@/lib/neutrality-schema";
@@ -27,6 +13,11 @@ import { ShareLinkBar } from "@/components/share-link-bar";
 import { ExportPdfButton } from "@/components/export-pdf-button";
 import { useI18n } from "@/lib/i18n/provider";
 import type { Messages } from "@/lib/i18n/messages";
+import {
+  NEUTRALITY_ISSUE_COLOR as ISSUE_COLOR,
+  NEUTRALITY_ISSUE_META as ISSUE_META,
+  NEUTRALITY_VERDICT_META as VERDICT_META,
+} from "@/components/neutrality-visuals";
 
 type Props = {
   id: string;
@@ -42,99 +33,6 @@ type Props = {
   textType: TextType;
   status: string;
   model: string;
-};
-
-// Per-issue visual identity. Icons are chosen to hint at the failure mode
-// (loaded language → megaphone, omission → eye-off, etc.). Colors pick a
-// distinct hue so eight findings in one document don't collapse into one
-// undifferentiated wall.
-const ISSUE_META: Record<
-  NeutralityIssue,
-  { icon: typeof Quote; labelKey: keyof Messages; cls: string }
-> = {
-  loaded_language: {
-    icon: Megaphone,
-    labelKey: "ni_loaded_language",
-    cls: "border-red-500/40 text-red-500",
-  },
-  asymmetric_attribution: {
-    icon: ArrowRightLeft,
-    labelKey: "ni_asymmetric_attribution",
-    cls: "border-amber-500/40 text-amber-500",
-  },
-  false_equivalence: {
-    icon: Scale,
-    labelKey: "ni_false_equivalence",
-    cls: "border-purple-500/40 text-purple-500",
-  },
-  selective_omission: {
-    icon: EyeOff,
-    labelKey: "ni_selective_omission",
-    cls: "border-blue-500/40 text-blue-500",
-  },
-  source_asymmetry: {
-    icon: Quote,
-    labelKey: "ni_source_asymmetry",
-    cls: "border-pink-500/40 text-pink-500",
-  },
-  both_sidesing: {
-    icon: GitBranch,
-    labelKey: "ni_both_sidesing",
-    cls: "border-emerald-500/40 text-emerald-500",
-  },
-  steering: {
-    icon: Compass,
-    labelKey: "ni_steering",
-    cls: "border-cyan-500/40 text-cyan-500",
-  },
-  genetic_framing: {
-    icon: Fingerprint,
-    labelKey: "ni_genetic_framing",
-    cls: "border-orange-500/40 text-orange-500",
-  },
-};
-
-// Explicit RGB values that mirror the Tailwind palette used in
-// ISSUE_META.cls above. Needed because mark.highlight reads its tint
-// from a CSS custom property, and Tailwind class names don't carry a
-// directly-readable color value. Keep these in sync with ISSUE_META —
-// changing one without the other will break the visual match between
-// the sentence highlight and the finding-card dot.
-const ISSUE_COLOR: Record<NeutralityIssue, string> = {
-  loaded_language: "rgb(239, 68, 68)", // red-500
-  asymmetric_attribution: "rgb(245, 158, 11)", // amber-500
-  false_equivalence: "rgb(168, 85, 247)", // purple-500
-  selective_omission: "rgb(59, 130, 246)", // blue-500
-  source_asymmetry: "rgb(236, 72, 153)", // pink-500
-  both_sidesing: "rgb(16, 185, 129)", // emerald-500
-  steering: "rgb(6, 182, 212)", // cyan-500
-  genetic_framing: "rgb(249, 115, 22)", // orange-500
-};
-
-const VERDICT_META: Record<
-  NeutralityVerdictValue,
-  { icon: typeof CheckCircle; labelKey: keyof Messages; cls: string }
-> = {
-  neutral: {
-    icon: CheckCircle,
-    labelKey: "nv_neutral",
-    cls: "border-emerald-500/50 text-emerald-500 bg-emerald-500/5",
-  },
-  partisan_lean: {
-    icon: AlertTriangle,
-    labelKey: "nv_partisan_lean",
-    cls: "border-amber-500/50 text-amber-500 bg-amber-500/5",
-  },
-  explicitly_partisan: {
-    icon: AlertTriangle,
-    labelKey: "nv_explicitly_partisan",
-    cls: "border-orange-500/50 text-orange-500 bg-orange-500/5",
-  },
-  manipulation: {
-    icon: XCircle,
-    labelKey: "nv_manipulation",
-    cls: "border-red-500/50 text-red-500 bg-red-500/5",
-  },
 };
 
 function textTypeLabelKey(tt: TextType): keyof Messages {
