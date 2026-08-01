@@ -1,7 +1,10 @@
 import type { IngestedDocument } from "./url";
 import { IngestError } from "./errors";
 
-export function ingestText(text: string, opts?: { title?: string; sourceRef?: string }): IngestedDocument {
+export function ingestText(
+  text: string,
+  opts?: { title?: string; sourceRef?: string; source?: string },
+): IngestedDocument {
   const cleaned = text.replace(/\r\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
   if (cleaned.length < 40) {
     throw new IngestError(
@@ -12,7 +15,7 @@ export function ingestText(text: string, opts?: { title?: string; sourceRef?: st
   return {
     title: opts?.title ?? null,
     text: cleaned,
-    source: opts?.sourceRef ? "txt" : "paste",
+    source: opts?.source ?? (opts?.sourceRef ? "txt" : "paste"),
     sourceRef: opts?.sourceRef ?? "paste",
   };
 }

@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { nanoid } from "nanoid";
 import { prisma } from "@/lib/db";
 import { ingestUrl } from "@/lib/ingest/url";
-import { ingestPdf } from "@/lib/ingest/pdf";
+import { ingestAnalysisFile } from "@/lib/ingest/file";
 import { ingestText } from "@/lib/ingest/text";
 import { splitSentences } from "@/lib/sentences";
 import { chunkSentences } from "@/lib/chunker";
@@ -55,6 +55,7 @@ export async function POST(req: NextRequest) {
   let doc: IngestedDocument;
   let modelId: string | undefined;
   let lang: Lang = "en";
+  const id = nanoid(10);
 
   try {
     const ct = req.headers.get("content-type") ?? "";
@@ -64,19 +65,16 @@ export async function POST(req: NextRequest) {
       lang = normalizeLang(form.get("lang"));
       const file = form.get("file");
       if (!(file instanceof File)) return jsonError("Missing 'file' field", 400);
-      const buf = await file.arrayBuffer();
-      const name = file.name || "upload";
-      const lower = name.toLowerCase();
-      if (lower.endsWith(".pdf") || file.type === "application/pdf") {
-        doc = await ingestPdf(buf, name);
-      } else if (lower.endsWith(".txt") || file.type.startsWith("text/")) {
-        doc = ingestText(new TextDecoder().decode(buf), {
-          title: name,
-          sourceRef: name,
-        });
-      } else {
-        return jsonError("Unsupported file type. Use PDF or TXT.", 415);
-      }
+      const ingested = await ingestAnalysisFile(file, {
+        access,
+        feature: "factcheck_extract",
+        resourceId: id,
+        modelId,
+        lang,
+        signal: req.signal,
+      });
+      if (ingested instanceof Response) return ingested;
+      doc = ingested;
     } else {
       const body = (await req.json().catch(() => null)) as
         | { type?: string; url?: string; text?: string; model?: string; title?: string; lang?: string }
@@ -123,7 +121,6 @@ export async function POST(req: NextRequest) {
     return jsonError(err instanceof Error ? err.message : "Provider error", 400);
   }
 
-  const id = nanoid(10);
   const chunks = chunkSentences(sentences);
   const creditReservation = await reserveWebAnalysisCredits(access, {
     amount: maxCreditsForCalls(modelChain, chunks.length),

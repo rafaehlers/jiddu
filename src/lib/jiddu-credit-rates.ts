@@ -1,4 +1,4 @@
-export const JIDDU_CREDIT_RATE_VERSION = "2026-07-31.v7";
+export const JIDDU_CREDIT_RATE_VERSION = "2026-08-01.v8";
 export const DEFAULT_LIVE_MINIMUM_CREDITS = 20;
 
 export const MODEL_CREDIT_RATES = {
@@ -67,6 +67,12 @@ export const JIDDU_CREDIT_RATE_TABLE: CreditRateRow[] = [
     unit: "Per completed text chunk",
     detail:
       "1 credit reserved per call. If cost data is missing, a completed GPT-5.6 Luna or MiniMax M3 call falls back to 1 credit.",
+  },
+  {
+    feature: "Screenshot transcription",
+    unit: "Per pasted or uploaded image",
+    detail:
+      "One vision call is billed before the selected text-analysis pipeline. The original image is not retained.",
   },
   {
     feature: "Adversarial review — Standard",

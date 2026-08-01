@@ -43,8 +43,15 @@ import {
 } from "../slop-schema";
 import { SLOP_JSON_SCHEMA } from "./slopJsonSchema";
 import { buildSlopSystemPrompt, buildSlopUserPrompt } from "../slop-prompt";
-import type { AnalyzeInput, AnalyzeOutput, LlmProvider, ProviderId } from "./types";
-import type { LlmStreamOptions } from "./types";
+import type {
+  AnalyzeInput,
+  AnalyzeOutput,
+  ImageTranscriptionInput,
+  ImageTranscriptionOutput,
+  LlmProvider,
+  LlmStreamOptions,
+  ProviderId,
+} from "./types";
 import { readOpenRouterUsage } from "../openrouter-usage";
 import type {
   ClaimStreamEvent,
@@ -222,6 +229,59 @@ export class OpenRouterProvider implements LlmProvider {
       ...(choice.reasoningEffort
         ? { reasoning: { effort: choice.reasoningEffort } }
         : {}),
+    };
+  }
+
+  async transcribeImage(
+    input: ImageTranscriptionInput,
+    opts?: LlmStreamOptions,
+  ): Promise<ImageTranscriptionOutput> {
+    const modelId = opts?.model ?? this.defaultModel;
+    const choice = resolveModel(modelId);
+    const prompt = [
+      "Transcribe all meaningful text visible in this image.",
+      "Preserve the exact wording, spelling, punctuation, capitalization, paragraph breaks, speaker labels, usernames, and reading order.",
+      "Do not correct, translate, summarize, analyze, or add commentary.",
+      "Exclude only obvious operating-system or app chrome that is unrelated to the authored content.",
+      "Return only the transcription as plain text, without Markdown fences.",
+    ].join(" ");
+
+    const response = await this.client.chat.completions.create(
+      {
+        model: this.slug(modelId),
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: prompt },
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:${input.mimeType};base64,${input.base64}`,
+                  detail: choice.family === "openai" ? "original" : "high",
+                },
+              },
+            ],
+          },
+        ],
+        max_tokens: 20_000,
+        ...this.openRouterExtras(modelId),
+        reasoning: { effort: "low" },
+      } as OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming,
+      opts?.signal ? { signal: opts.signal } : undefined,
+    );
+    const usage = readOpenRouterUsage(response, modelId);
+    if (usage) opts?.onUsage?.(usage);
+
+    const text = cleanImageTranscription(response.choices[0]?.message?.content);
+    if (!text) {
+      throw new Error("The model could not find readable text in the image.");
+    }
+    if (usage) usage.completed = true;
+    return {
+      text,
+      model: modelId,
+      ...(usage ? { usage } : {}),
     };
   }
 
@@ -958,4 +1018,10 @@ export class OpenRouterProvider implements LlmProvider {
     if (requestUsage) requestUsage.completed = true;
     return { model: opts.model ?? this.defaultModel };
   }
+}
+
+export function cleanImageTranscription(value: string | null | undefined): string {
+  const text = value?.trim() ?? "";
+  const fenced = text.match(/^```(?:text)?\s*\n([\s\S]*?)\n```$/i);
+  return (fenced?.[1] ?? text).trim();
 }

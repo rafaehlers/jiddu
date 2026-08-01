@@ -4,19 +4,20 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import { UploadForm } from "@/components/upload-form";
+import {
+  UploadForm,
+  type UploadSourceType,
+} from "@/components/upload-form";
 import { PipelineSidebar } from "@/components/pipeline-sidebar";
 import { readSse } from "@/lib/sse";
 import { useI18n } from "@/lib/i18n/provider";
-
-type SourceType = "url" | "text" | "file";
 
 type StreamingState = {
   id: string | null;
   chunkCount: number;
   chunksDone: number;
   findingsCount: number;
-  sourceType: SourceType;
+  sourceType: UploadSourceType;
 };
 
 type LiveState =
@@ -37,7 +38,7 @@ export function JidduComposer() {
   }, []);
 
   async function startStream(
-    sourceType: SourceType,
+    sourceType: UploadSourceType,
     body: BodyInit,
     contentType: string | null,
   ) {
@@ -201,7 +202,9 @@ function LoadingPanel({ state }: { state: StreamingState }) {
   }, []);
 
   const preMetaPool =
-    sourceType === "url"
+    sourceType === "image"
+      ? t.loader_image
+      : sourceType === "url"
       ? t.loader_url
       : sourceType === "file"
         ? t.loader_file

@@ -1,7 +1,8 @@
 "use client";
 
 import { useAuth } from "@workos-inc/authkit-nextjs/components";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowRight } from "lucide-react";
@@ -15,6 +16,7 @@ import type { PaperType, VenueSearchResult } from "@/lib/venues";
 import type { ReviewDepth } from "@/lib/paper-review-audit-schema";
 
 type Tab = "url" | "text" | "file";
+export type UploadSourceType = Tab | "image";
 
 type ErrorState = {
   message: string;
@@ -31,7 +33,7 @@ type Mode =
 
 type Props = {
   onSubmit: (
-    sourceType: Tab,
+    sourceType: UploadSourceType,
     body: BodyInit,
     contentType: string | null,
   ) => Promise<void>;
@@ -73,6 +75,8 @@ export function UploadForm({
   const [url, setUrl] = useState("");
   const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const imagePreviewUrlRef = useRef<string | null>(null);
   const [localError, setLocalError] = useState<ErrorState | null>(null);
   const [model, setModel] = useState<string>(MODEL_CATALOG[0].id);
   // Explanation audience level. Only sent (and only shown) in explain mode;
@@ -115,6 +119,14 @@ export function UploadForm({
   }, []);
 
   useEffect(() => {
+    return () => {
+      if (imagePreviewUrlRef.current) {
+        URL.revokeObjectURL(imagePreviewUrlRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     const query = venue.trim();
     if (mode !== "review" || venueProfileId || query.length < 2) return;
     const controller = new AbortController();
@@ -142,28 +154,60 @@ export function UploadForm({
     };
   }, [mode, venue, venueProfileId]);
 
-  function acceptFile(f: File | undefined) {
+  const acceptFile = useCallback((f: File | undefined) => {
     if (!f) return;
     const lower = f.name.toLowerCase();
     const isPdf = lower.endsWith(".pdf") || f.type === "application/pdf";
+    const isImage = isImageFile(f);
     const ok =
       isPdf ||
       (mode !== "review" &&
-        (lower.endsWith(".txt") || f.type.startsWith("text/")));
+        (lower.endsWith(".txt") || f.type.startsWith("text/") || isImage));
     if (!ok) {
       setLocalError({
         message:
           mode === "review"
             ? "Adversarial review accepts exactly one PDF."
-            : "Unsupported file type. Use PDF or TXT.",
+            : "Unsupported file type. Use PDF, TXT, PNG, JPEG, or WebP.",
       });
       return;
     }
+    if (isImage && f.size > 10 * 1024 * 1024) {
+      setLocalError({ message: "The image exceeds the 10 MB upload limit." });
+      return;
+    }
+    if (imagePreviewUrlRef.current) {
+      URL.revokeObjectURL(imagePreviewUrlRef.current);
+      imagePreviewUrlRef.current = null;
+    }
+    const previewUrl = isImage ? URL.createObjectURL(f) : null;
+    imagePreviewUrlRef.current = previewUrl;
+    setImagePreviewUrl(previewUrl);
     setFile(f);
     setTab("file");
     setLocalError(null);
     onClearError?.();
-  }
+  }, [mode, onClearError]);
+
+  useEffect(() => {
+    if (mode === "review") return;
+    const handlePaste = (event: ClipboardEvent) => {
+      const item = Array.from(event.clipboardData?.items ?? []).find((entry) =>
+        isSupportedImageMime(entry.type),
+      );
+      const pasted = item?.getAsFile();
+      if (!pasted) return;
+      event.preventDefault();
+      acceptFile(
+        new File([pasted], clipboardImageName(pasted.type), {
+          type: pasted.type,
+          lastModified: Date.now(),
+        }),
+      );
+    };
+    window.addEventListener("paste", handlePaste);
+    return () => window.removeEventListener("paste", handlePaste);
+  }, [acceptFile, mode]);
 
   function handleDrop(e: React.DragEvent) {
     e.preventDefault();
@@ -197,8 +241,16 @@ export function UploadForm({
       if (tab === "file") {
         if (!file) {
           throw new Error(
-            mode === "review" ? "Choose one PDF file" : "Choose a PDF or TXT file",
+            mode === "review"
+              ? "Choose one PDF file"
+              : "Choose a PDF, TXT, or image file",
           );
+        }
+        if (
+          mode === "review" &&
+          !(file.name.toLowerCase().endsWith(".pdf") || file.type === "application/pdf")
+        ) {
+          throw new Error("Adversarial review accepts exactly one PDF.");
         }
         const fd = new FormData();
         fd.set("file", file);
@@ -214,7 +266,7 @@ export function UploadForm({
           fd.set("reviewDepth", reviewDepth);
           if (reviewDate) fd.set("reviewDate", reviewDate);
         }
-        await onSubmit("file", fd, null);
+        await onSubmit(isImageFile(file) ? "image" : "file", fd, null);
       } else {
         const base =
           tab === "url"
@@ -278,8 +330,10 @@ export function UploadForm({
         </div>
       )}
 
-      <div role="group" aria-label={t.tab_file} className="flex flex-wrap items-center gap-x-5 sm:gap-x-6 border-b border-rule">
-        <TabButton active={tab === "file"} onClick={() => setTab("file")}>{t.tab_file}</TabButton>
+      <div role="group" aria-label={mode === "review" ? "PDF" : t.tab_file} className="flex flex-wrap items-center gap-x-5 sm:gap-x-6 border-b border-rule">
+        <TabButton active={tab === "file"} onClick={() => setTab("file")}>
+          {mode === "review" ? "PDF" : t.tab_file}
+        </TabButton>
         {mode !== "review" && (
           <>
             <TabButton active={tab === "url"} onClick={() => setTab("url")}>{t.tab_url}</TabButton>
@@ -330,18 +384,32 @@ export function UploadForm({
             accept={
               mode === "review"
                 ? ".pdf,application/pdf"
-                : ".pdf,application/pdf,.txt,text/plain"
+                : ".pdf,application/pdf,.txt,text/plain,.png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
             }
             className="sr-only"
             onChange={(e) => acceptFile(e.target.files?.[0])}
           />
-          <span className="font-serif text-lg">
-            {file
-              ? file.name
-              : mode === "review"
-                ? t.review_pdf_hint
-                : t.file_drop_hint}
-          </span>
+          {imagePreviewUrl && file ? (
+            <span className="flex w-full flex-col items-center gap-3 px-4">
+              <Image
+                src={imagePreviewUrl}
+                alt={file.name}
+                width={960}
+                height={540}
+                unoptimized
+                className="max-h-52 w-auto max-w-full rounded-md border border-rule object-contain"
+              />
+              <span className="font-serif text-base break-all">{file.name}</span>
+            </span>
+          ) : (
+            <span className="font-serif text-lg">
+              {file
+                ? file.name
+                : mode === "review"
+                  ? t.review_pdf_hint
+                  : t.file_drop_hint}
+            </span>
+          )}
           {!file && (
             <span className="text-sm text-muted mt-1">
               {mode === "review"
@@ -818,6 +886,27 @@ function RadioDot({ checked }: { checked: boolean }) {
       />
     </span>
   );
+}
+
+function isImageFile(file: File): boolean {
+  return (
+    isSupportedImageMime(file.type) ||
+    /\.(?:png|jpe?g|webp)$/i.test(file.name)
+  );
+}
+
+function isSupportedImageMime(mimeType: string): boolean {
+  return ["image/png", "image/jpeg", "image/webp"].includes(mimeType);
+}
+
+function clipboardImageName(mimeType: string): string {
+  const extension =
+    mimeType === "image/jpeg"
+      ? "jpg"
+      : mimeType === "image/webp"
+        ? "webp"
+        : "png";
+  return `screenshot-${new Date().toISOString().replace(/[:.]/g, "-")}.${extension}`;
 }
 
 function TabButton({

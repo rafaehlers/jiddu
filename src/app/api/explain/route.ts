@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { nanoid } from "nanoid";
 import { prisma } from "@/lib/db";
 import { ingestUrl } from "@/lib/ingest/url";
-import { ingestPdf } from "@/lib/ingest/pdf";
+import { ingestAnalysisFile } from "@/lib/ingest/file";
 import { ingestText } from "@/lib/ingest/text";
 import { splitBlocks } from "@/lib/paragraphs";
 import { chunkSentences } from "@/lib/chunker";
@@ -54,6 +54,7 @@ export async function POST(req: NextRequest) {
   let modelId: string | undefined;
   let lang: Lang = "en";
   let level = normalizeLevel(undefined);
+  const id = nanoid(10);
 
   try {
     const ct = req.headers.get("content-type") ?? "";
@@ -64,19 +65,16 @@ export async function POST(req: NextRequest) {
       level = normalizeLevel(form.get("level"));
       const file = form.get("file");
       if (!(file instanceof File)) return jsonError("Missing 'file' field", 400);
-      const buf = await file.arrayBuffer();
-      const name = file.name || "upload";
-      const lower = name.toLowerCase();
-      if (lower.endsWith(".pdf") || file.type === "application/pdf") {
-        doc = await ingestPdf(buf, name);
-      } else if (lower.endsWith(".txt") || file.type.startsWith("text/")) {
-        doc = ingestText(new TextDecoder().decode(buf), {
-          title: name,
-          sourceRef: name,
-        });
-      } else {
-        return jsonError("Unsupported file type. Use PDF or TXT.", 415);
-      }
+      const ingested = await ingestAnalysisFile(file, {
+        access,
+        feature: "explain",
+        resourceId: id,
+        modelId,
+        lang,
+        signal: req.signal,
+      });
+      if (ingested instanceof Response) return ingested;
+      doc = ingested;
     } else {
       const body = (await req.json().catch(() => null)) as
         | {
@@ -129,7 +127,6 @@ export async function POST(req: NextRequest) {
     return jsonError(err instanceof Error ? err.message : "Provider error", 400);
   }
 
-  const id = nanoid(10);
   // Blocks reuse the Sentence shape, so the sentence chunker groups them by
   // accumulated char budget exactly as it does for the other pipelines.
   const chunks = chunkSentences(blocks);

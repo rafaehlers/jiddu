@@ -5,7 +5,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import { UploadForm } from "@/components/upload-form";
+import {
+  UploadForm,
+  type UploadSourceType,
+} from "@/components/upload-form";
 import { ModeCards } from "@/components/mode-cards";
 import { AnalysisSkeleton } from "@/components/analysis-skeleton";
 import { readSse } from "@/lib/sse";
@@ -19,14 +22,13 @@ type Mode =
   | "explain"
   | "slop"
   | "review";
-type SourceType = "url" | "text" | "file";
 
 type StreamingState = {
   id: string | null;
   chunkCount: number;
   chunksDone: number;
   itemsCount: number;
-  sourceType: SourceType;
+  sourceType: UploadSourceType;
   stageName: string | null;
 };
 
@@ -55,7 +57,7 @@ const MODE_CONFIG: Record<
     countLabels: ((t: Messages) => [string, string]) | null;
     pools: (
       t: Messages,
-      sourceType: SourceType,
+      sourceType: UploadSourceType,
     ) => { preMeta: string[]; analysis: string[] };
   }
 > = {
@@ -69,7 +71,9 @@ const MODE_CONFIG: Record<
     countLabels: null,
     pools: (t, sourceType) => ({
       preMeta:
-        sourceType === "url"
+        sourceType === "image"
+          ? t.loader_image
+          : sourceType === "url"
           ? t.loader_url
           : sourceType === "file"
             ? t.loader_file
@@ -85,7 +89,10 @@ const MODE_CONFIG: Record<
     submitLabel: (t) => t.extract_claims,
     failedTitle: (t) => t.factcheck_failed,
     countLabels: (t) => [t.claims_found_one, t.claims_found_many],
-    pools: (t) => ({ preMeta: [t.loader_factcheck[0]], analysis: t.loader_factcheck }),
+    pools: (t, sourceType) => ({
+      preMeta: sourceType === "image" ? t.loader_image : [t.loader_factcheck[0]],
+      analysis: t.loader_factcheck,
+    }),
   },
   neutrality: {
     path: "/neutrality",
@@ -95,7 +102,10 @@ const MODE_CONFIG: Record<
     submitLabel: (t) => t.assess_neutrality,
     failedTitle: (t) => t.neutrality_failed,
     countLabels: (t) => [t.findings_found_one, t.findings_found_many],
-    pools: (t) => ({ preMeta: [t.loader_neutrality[0]], analysis: t.loader_neutrality }),
+    pools: (t, sourceType) => ({
+      preMeta: sourceType === "image" ? t.loader_image : [t.loader_neutrality[0]],
+      analysis: t.loader_neutrality,
+    }),
   },
   explain: {
     path: "/explain",
@@ -105,7 +115,10 @@ const MODE_CONFIG: Record<
     submitLabel: (t) => t.explain_cta,
     failedTitle: (t) => t.explain_failed,
     countLabels: (t) => [t.explanations_count_one, t.explanations_count_many],
-    pools: (t) => ({ preMeta: [t.loader_explain[0]], analysis: t.loader_explain }),
+    pools: (t, sourceType) => ({
+      preMeta: sourceType === "image" ? t.loader_image : [t.loader_explain[0]],
+      analysis: t.loader_explain,
+    }),
   },
   slop: {
     path: "/slop",
@@ -115,7 +128,10 @@ const MODE_CONFIG: Record<
     submitLabel: (t) => t.check_slop,
     failedTitle: (t) => t.slop_failed,
     countLabels: (t) => [t.slop_found_one, t.slop_found_many],
-    pools: (t) => ({ preMeta: [t.loader_slop[0]], analysis: t.loader_slop }),
+    pools: (t, sourceType) => ({
+      preMeta: sourceType === "image" ? t.loader_image : [t.loader_slop[0]],
+      analysis: t.loader_slop,
+    }),
   },
   review: {
     path: "/review",
@@ -171,7 +187,7 @@ export function HomeComposer({ initialMode = "detector" }: { initialMode?: Mode 
   }
 
   async function startStream(
-    sourceType: SourceType,
+    sourceType: UploadSourceType,
     body: BodyInit,
     contentType: string | null,
   ) {
@@ -319,6 +335,7 @@ export function HomeComposer({ initialMode = "detector" }: { initialMode?: Mode 
         </div>
 
         <UploadForm
+          key={mode}
           onSubmit={startStream}
           error={submitError}
           onClearError={() => setSubmitError(null)}

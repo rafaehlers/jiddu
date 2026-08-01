@@ -64,6 +64,7 @@ export type Messages = {
   loader_url: string[];
   loader_paste: string[];
   loader_file: string[];
+  loader_image: string[];
   loader_analysis: string[];
   loader_factcheck: string[];
 
@@ -435,12 +436,12 @@ const en: Messages = {
 
   hero_title: "Read anything with a critical mind.",
   hero_subtitle:
-    "Upload a PDF, paste text, or drop a URL. Jiddu highlights the passages that contain logical fallacies and explains each one in a comment — just like a reviewer in Word — and gives the whole piece a fallacy score from 0 to 100.",
+    "Upload a PDF or screenshot, paste text or an image, or drop a URL. Jiddu highlights the passages that contain logical fallacies and explains each one in a comment — just like a reviewer in Word — and gives the whole piece a fallacy score from 0 to 100.",
   home_hero_subtitle:
-    "Drop a PDF, paste text, or add a URL — then pick a lens: fallacies, fact-checking, neutrality, explanation, AI-slop detection, or a full adversarial paper review.",
+    "Drop a PDF or screenshot, paste text or an image, or add a URL — then pick a lens: fallacies, fact-checking, neutrality, explanation, AI-slop detection, or a full adversarial paper review.",
   privacy: "Privacy:",
   privacy_body:
-    "your content — including selected PDF page images when visual inspection is needed — is sent to the chosen model via OpenRouter and stored locally under a shareable id.",
+    "your content — including pasted screenshots and selected PDF page images when visual inspection is needed — is sent to the chosen model via OpenRouter. Jiddu does not retain screenshot files; their extracted text is stored locally under a shareable id.",
   see_demo: "See a demo",
   see_demo_for: (feature) => {
     const normalized = feature.toLocaleLowerCase("en-US");
@@ -470,13 +471,13 @@ const en: Messages = {
 
   tab_url: "URL",
   tab_paste: "Paste text",
-  tab_file: "PDF / TXT",
+  tab_file: "PDF / TXT / Image",
   tab_live: "Live",
   tab_factcheck: "Fact-check",
   url_placeholder: "https://example.com/article",
   paste_placeholder: "Paste the text you want to analyze…",
-  file_drop_hint: "Drop a PDF or TXT, or click to choose",
-  file_size_hint: "Up to ~200k characters",
+  file_drop_hint: "Drop a PDF, TXT, or image — or paste a screenshot",
+  file_size_hint: "⌘V / Ctrl+V · images up to 10 MB · text up to ~200k characters",
   model: "Model",
   model_anthropic: "Claude (Anthropic)",
   model_openai: "GPT (OpenAI)",
@@ -522,6 +523,12 @@ const en: Messages = {
     "Cleaning page breaks",
     "Detecting language",
     "Splitting into sentences",
+  ],
+  loader_image: [
+    "Reading the screenshot",
+    "Transcribing visible text",
+    "Preserving paragraphs and speakers",
+    "Preparing the extracted text",
   ],
   loader_analysis: [
     "Looking for biased framing",
@@ -915,6 +922,7 @@ const en: Messages = {
       paragraphs: [
         "**URL.** Jiddu securely fetches public pages, blocks private or reserved network destinations and uses [Mozilla Readability](https://github.com/mozilla/readability) to isolate the article body.",
         "**PDF.** Parsed locally with [LiteParse](https://github.com/run-llama/liteparse), with a secondary parser available when needed. Academic review preserves page references and can inspect selected rendered pages when visual evidence matters.",
+        "**Image.** PNG, JPEG and WebP screenshots up to 10 MB can be pasted, dropped or selected. The chosen vision model transcribes the visible text before the selected analysis runs. Jiddu does not retain the image file.",
         "**Paste.** Used as-is, only whitespace-normalized.",
         "**Segmentation.** Long inputs are divided on sentence-aware boundaries so they fit model context windows without cutting ordinary abbreviations, initials or numbers apart.",
       ],
@@ -989,7 +997,7 @@ const en: Messages = {
       paragraphs: [
         "WorkOS AuthKit provides user accounts and sessions. Completed results remain available through unlisted share URLs, and signed-in users can also see their associated analyses in the account area. Anyone with a share URL can still view its final result. Paper-review ledgers, research and draft judgements are internal intermediate artifacts and are not exposed in the public result.",
         "Jiddu Credits are an application balance for web, account-owned REST and hosted MCP analyses that use Jiddu's server-managed provider credentials. Verified accounts on the operator-managed platform allowlist receive included access instead.",
-        "Submitted content goes through OpenRouter to the upstream serving the chosen model. Paper review includes selected rendered page images, not only extracted text. Its literature stage searches public scholarly sources using technical claims while prompts prohibit queries by paper title, author name or other manuscripts by the same authors. Venue autocomplete sends only the typed venue query to DBLP. We log the request IP for rate-limiting and abuse signalling and do not sell it.",
+        "Submitted content goes through OpenRouter to the upstream serving the chosen model. Pasted screenshots are sent for transcription, but Jiddu does not retain the image file; its extracted text is stored with the analysis. Paper review includes selected rendered page images, not only extracted text. Its literature stage searches public scholarly sources using technical claims while prompts prohibit queries by paper title, author name or other manuscripts by the same authors. Venue autocomplete sends only the typed venue query to DBLP. We log the request IP for rate-limiting and abuse signalling and do not sell it.",
         "Results are automated and unreviewed by default. A result explicitly marked as reviewed has been spot-checked by the operator; that status is an additional human check, not a guarantee that every finding is correct.",
       ],
     },
@@ -1243,12 +1251,12 @@ const pt: Messages = {
 
   hero_title: "Leia qualquer coisa com senso crítico.",
   hero_subtitle:
-    "Envie um PDF, cole um texto ou solte uma URL. O Jiddu destaca os trechos com falácias lógicas e explica cada um em um comentário — como um revisor no Word — e dá uma nota de 0 a 100 para o texto inteiro.",
+    "Envie um PDF ou screenshot, cole texto ou uma imagem, ou solte uma URL. O Jiddu destaca os trechos com falácias lógicas e explica cada um em um comentário — como um revisor no Word — e dá uma nota de 0 a 100 para o texto inteiro.",
   home_hero_subtitle:
-    "Solte um PDF, cole um texto ou adicione uma URL — e escolha a lente: falácias, checagem de fatos, imparcialidade, explicação, detecção de slop ou revisão adversarial completa de um paper.",
+    "Solte um PDF ou screenshot, cole texto ou uma imagem, ou adicione uma URL — e escolha a lente: falácias, checagem de fatos, imparcialidade, explicação, detecção de slop ou revisão adversarial completa de um paper.",
   privacy: "Privacidade:",
   privacy_body:
-    "seu conteúdo — incluindo imagens de páginas selecionadas do PDF quando a inspeção visual é necessária — é enviado ao modelo escolhido via OpenRouter e armazenado localmente sob um id compartilhável.",
+    "seu conteúdo — incluindo screenshots colados e imagens de páginas selecionadas do PDF quando necessário — é enviado ao modelo escolhido via OpenRouter. O Jiddu não retém o arquivo do screenshot; o texto extraído é armazenado localmente sob um id compartilhável.",
   see_demo: "Ver demonstração",
   see_demo_for: (feature) =>
     `Ver uma demonstração de ${feature.toLocaleLowerCase("pt-BR")}`,
@@ -1276,13 +1284,13 @@ const pt: Messages = {
 
   tab_url: "URL",
   tab_paste: "Colar texto",
-  tab_file: "PDF / TXT",
+  tab_file: "PDF / TXT / Imagem",
   tab_live: "Ao vivo",
   tab_factcheck: "Checar fatos",
   url_placeholder: "https://exemplo.com/artigo",
   paste_placeholder: "Cole o texto que você quer analisar…",
-  file_drop_hint: "Solte um PDF ou TXT, ou clique para escolher",
-  file_size_hint: "Até ~200 mil caracteres",
+  file_drop_hint: "Solte PDF, TXT ou imagem — ou cole um screenshot",
+  file_size_hint: "⌘V / Ctrl+V · imagens até 10 MB · texto até ~200 mil caracteres",
   model: "Modelo",
   model_anthropic: "Claude (Anthropic)",
   model_openai: "GPT (OpenAI)",
@@ -1328,6 +1336,12 @@ const pt: Messages = {
     "Limpando quebras de página",
     "Detectando o idioma",
     "Dividindo em sentenças",
+  ],
+  loader_image: [
+    "Lendo o screenshot",
+    "Transcrevendo o texto visível",
+    "Preservando parágrafos e autores",
+    "Preparando o texto extraído",
   ],
   loader_analysis: [
     "Procurando enquadramento tendencioso",
@@ -1722,6 +1736,7 @@ const pt: Messages = {
       paragraphs: [
         "**URL.** O Jiddu busca páginas públicas com segurança, bloqueia destinos de rede privados ou reservados e usa o [Mozilla Readability](https://github.com/mozilla/readability) para isolar o corpo do artigo.",
         "**PDF.** Processado localmente com [LiteParse](https://github.com/run-llama/liteparse), com um parser secundário disponível quando necessário. A revisão acadêmica preserva referências de página e pode inspecionar páginas renderizadas selecionadas quando a evidência visual importa.",
+        "**Imagem.** Screenshots PNG, JPEG e WebP de até 10 MB podem ser colados, arrastados ou selecionados. O modelo visual escolhido transcreve o texto visível antes da análise selecionada. O Jiddu não retém o arquivo da imagem.",
         "**Paste.** Usado como está, apenas com whitespace normalizado.",
         "**Segmentação.** Entradas longas são divididas em limites conscientes de sentenças para caber no contexto dos modelos sem cortar abreviações, siglas ou números comuns.",
       ],
@@ -1796,7 +1811,7 @@ const pt: Messages = {
       paragraphs: [
         "O WorkOS AuthKit fornece contas e sessões. Resultados concluídos continuam disponíveis por URLs não listadas, e usuários logados também veem suas análises associadas na área da conta. Qualquer pessoa com a URL compartilhável ainda consegue ver o resultado final. Ledgers, pesquisa e juízos preliminares da revisão de papers são artefatos intermediários internos e não aparecem no resultado público.",
         "Créditos Jiddu são um saldo para análises web, REST vinculadas à conta e MCP hospedadas que usam as credenciais de provedores administradas pelo Jiddu. Contas verificadas na allowlist administrada pelo operador recebem acesso incluído.",
-        "O conteúdo submetido passa pelo OpenRouter para o upstream do modelo escolhido. Na revisão de paper, isso inclui imagens renderizadas de páginas selecionadas, não só o texto extraído. A etapa de literatura pesquisa fontes acadêmicas públicas por afirmações técnicas, enquanto os prompts proíbem consultas pelo título, nome dos autores ou outros manuscritos dos mesmos autores. O autocomplete envia apenas a consulta da venue ao DBLP. Registramos o IP para rate-limit e sinais de abuso e não o vendemos.",
+        "O conteúdo submetido passa pelo OpenRouter para o upstream do modelo escolhido. Screenshots colados são enviados para transcrição, mas o Jiddu não retém o arquivo da imagem; o texto extraído é armazenado com a análise. Na revisão de paper, o conteúdo enviado inclui imagens renderizadas de páginas selecionadas, não só o texto extraído. A etapa de literatura pesquisa fontes acadêmicas públicas por afirmações técnicas, enquanto os prompts proíbem consultas pelo título, nome dos autores ou outros manuscritos dos mesmos autores. O autocomplete envia apenas a consulta da venue ao DBLP. Registramos o IP para rate-limit e sinais de abuso e não o vendemos.",
         "Os resultados são automatizados e não revisados por padrão. Um resultado explicitamente marcado como revisado foi conferido pontualmente pelo operador; esse status representa uma verificação humana adicional, não uma garantia de que todos os achados estejam corretos.",
       ],
     },
@@ -2050,12 +2065,12 @@ const es: Messages = {
 
   hero_title: "Lee cualquier cosa con espíritu crítico.",
   hero_subtitle:
-    "Sube un PDF, pega un texto o suelta una URL. Jiddu resalta los pasajes con falacias lógicas y explica cada uno en un comentario — como un revisor en Word — y le da al texto entero una puntuación de falacia de 0 a 100.",
+    "Sube un PDF o screenshot, pega texto o una imagen, o suelta una URL. Jiddu resalta los pasajes con falacias lógicas y explica cada uno en un comentario — como un revisor en Word — y le da al texto entero una puntuación de falacia de 0 a 100.",
   home_hero_subtitle:
-    "Suelta un PDF, pega un texto o añade una URL — y elige la lente: falacias, verificación de hechos, neutralidad, explicación, detección de slop o revisión adversarial completa de un paper.",
+    "Suelta un PDF o screenshot, pega texto o una imagen, o añade una URL — y elige la lente: falacias, verificación de hechos, neutralidad, explicación, detección de slop o revisión adversarial completa de un paper.",
   privacy: "Privacidad:",
   privacy_body:
-    "tu contenido — incluidas imágenes de páginas seleccionadas del PDF cuando se necesita inspección visual — se envía al modelo elegido vía OpenRouter y se almacena localmente bajo un id compartible.",
+    "tu contenido — incluidos screenshots pegados e imágenes de páginas seleccionadas del PDF cuando sea necesario — se envía al modelo elegido vía OpenRouter. Jiddu no conserva el archivo del screenshot; el texto extraído se almacena localmente bajo un id compartible.",
   see_demo: "Ver demostración",
   see_demo_for: (feature) =>
     `Ver una demostración de ${feature.toLocaleLowerCase("es")}`,
@@ -2083,13 +2098,13 @@ const es: Messages = {
 
   tab_url: "URL",
   tab_paste: "Pegar texto",
-  tab_file: "PDF / TXT",
+  tab_file: "PDF / TXT / Imagen",
   tab_live: "En vivo",
   tab_factcheck: "Verificar",
   url_placeholder: "https://ejemplo.com/articulo",
   paste_placeholder: "Pega el texto que quieres analizar…",
-  file_drop_hint: "Suelta un PDF o TXT, o haz clic para elegir",
-  file_size_hint: "Hasta ~200 mil caracteres",
+  file_drop_hint: "Suelta PDF, TXT o imagen — o pega un screenshot",
+  file_size_hint: "⌘V / Ctrl+V · imágenes hasta 10 MB · texto hasta ~200 mil caracteres",
   model: "Modelo",
   model_anthropic: "Claude (Anthropic)",
   model_openai: "GPT (OpenAI)",
@@ -2135,6 +2150,12 @@ const es: Messages = {
     "Limpiando saltos de página",
     "Detectando el idioma",
     "Dividiendo en oraciones",
+  ],
+  loader_image: [
+    "Leyendo el screenshot",
+    "Transcribiendo el texto visible",
+    "Conservando párrafos y autores",
+    "Preparando el texto extraído",
   ],
   loader_analysis: [
     "Buscando encuadres tendenciosos",
@@ -2529,6 +2550,7 @@ const es: Messages = {
       paragraphs: [
         "**URL.** Jiddu recupera páginas públicas de forma segura, bloquea destinos de red privados o reservados y utiliza [Mozilla Readability](https://github.com/mozilla/readability) para aislar el cuerpo del artículo.",
         "**PDF.** Procesado localmente con [LiteParse](https://github.com/run-llama/liteparse), con un parser secundario disponible cuando es necesario. La revisión académica conserva referencias de página y puede inspeccionar páginas renderizadas seleccionadas cuando la evidencia visual es relevante.",
+        "**Imagen.** Los screenshots PNG, JPEG y WebP de hasta 10 MB pueden pegarse, soltarse o seleccionarse. El modelo visual elegido transcribe el texto visible antes del análisis seleccionado. Jiddu no conserva el archivo de imagen.",
         "**Paste.** Usado tal cual, solo con espacios en blanco normalizados.",
         "**Segmentación.** Las entradas largas se dividen respetando los límites de las frases para caber en el contexto de los modelos sin cortar abreviaturas, siglas o números comunes.",
       ],
@@ -2603,7 +2625,7 @@ const es: Messages = {
       paragraphs: [
         "WorkOS AuthKit proporciona cuentas y sesiones. Los resultados completados siguen disponibles mediante URLs no listadas, y los usuarios que iniciaron sesión también ven sus análisis asociados en el área de cuenta. Cualquiera que tenga la URL compartible todavía puede ver el resultado final. Los ledgers, la investigación y los juicios preliminares de la revisión de papers son artefactos intermedios internos y no se muestran en el resultado público.",
         "Los créditos Jiddu son un saldo para análisis web, REST asociados a la cuenta y MCP alojados que usan credenciales de proveedores administradas por Jiddu. Las cuentas verificadas en la allowlist administrada por el operador reciben acceso incluido.",
-        "El contenido enviado pasa por OpenRouter al upstream del modelo elegido. En revisión de papers incluye imágenes renderizadas de páginas seleccionadas, no solo texto extraído. La etapa de literatura busca fuentes académicas públicas por afirmaciones técnicas, mientras los prompts prohíben consultas por título, autor u otros manuscritos de los mismos autores. El autocompletado envía solo la consulta del venue a DBLP. Registramos el IP para rate-limit y señales de abuso y no lo vendemos.",
+        "El contenido enviado pasa por OpenRouter al upstream del modelo elegido. Los screenshots pegados se envían para transcripción, pero Jiddu no conserva el archivo de imagen; el texto extraído se almacena con el análisis. En revisión de papers se incluyen imágenes renderizadas de páginas seleccionadas, no solo texto extraído. La etapa de literatura busca fuentes académicas públicas por afirmaciones técnicas, mientras los prompts prohíben consultas por título, autor u otros manuscritos de los mismos autores. El autocompletado envía solo la consulta del venue a DBLP. Registramos el IP para rate-limit y señales de abuso y no lo vendemos.",
         "Los resultados son automatizados y no revisados por defecto. Un resultado marcado explícitamente como revisado fue inspeccionado puntualmente por el operador; ese estado es una comprobación humana adicional, no una garantía de que todos los hallazgos sean correctos.",
       ],
     },

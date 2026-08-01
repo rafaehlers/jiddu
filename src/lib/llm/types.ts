@@ -38,6 +38,18 @@ export type LlmStreamOptions = {
   onUsage?: (usage: OpenRouterUsage) => void;
 };
 
+export type ImageTranscriptionInput = {
+  base64: string;
+  mimeType: "image/png" | "image/jpeg" | "image/webp";
+  lang?: Lang;
+};
+
+export type ImageTranscriptionOutput = {
+  text: string;
+  model: string;
+  usage?: OpenRouterUsage;
+};
+
 export interface LlmProvider {
   readonly id: ProviderId;
   readonly defaultModel: string;
@@ -62,4 +74,8 @@ export interface LlmProvider {
     input: AnalyzeInput,
     opts?: LlmStreamOptions,
   ): AsyncGenerator<SlopStreamEvent, { model: string }, void>;
+  transcribeImage(
+    input: ImageTranscriptionInput,
+    opts?: LlmStreamOptions,
+  ): Promise<ImageTranscriptionOutput>;
 }

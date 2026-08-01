@@ -7,6 +7,8 @@ export type IngestCode =
   | "unreachable"      // dns/network error before HTTP
   | "extraction_failed" // got HTML but couldn't extract a body
   | "invalid_url"      // bad URL format
+  | "unsupported_file" // file type is not accepted by the selected workflow
+  | "file_too_large"   // uploaded file exceeds its ingestion limit
   | "too_short";       // text below the minimum threshold
 
 export class IngestError extends Error {

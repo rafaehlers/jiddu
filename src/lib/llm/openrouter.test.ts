@@ -2,10 +2,19 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { DEFAULT_MODEL_CHAIN } from "./fallback";
 import {
+  cleanImageTranscription,
   MODEL_CATALOG,
   resolveModel,
   resolvePaperReviewModel,
 } from "./openrouter";
+
+test("normalizes a fenced image transcription without changing its text", () => {
+  assert.equal(
+    cleanImageTranscription("```text\nSpeaker: Exact words.\nSecond line.\n```"),
+    "Speaker: Exact words.\nSecond line.",
+  );
+  assert.equal(cleanImageTranscription("  Exact words.  "), "Exact words.");
+});
 
 test("uses GPT-5.6 Luna as the public default with high reasoning", () => {
   assert.equal(MODEL_CATALOG[0]?.id, "gpt-5.6-luna");
