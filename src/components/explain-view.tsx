@@ -12,8 +12,17 @@ import {
   Flag,
   GraduationCap,
   Compass,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ListTree,
 } from "lucide-react";
 import type { Block } from "@/lib/paragraphs";
+import {
+  getExplainableFindings,
+  groupExplainSections,
+  type ExplainSection,
+} from "@/lib/explain-sections";
 import type {
   ExplainFinding,
   ExplainLevel,
@@ -89,12 +98,49 @@ export function ExplainView({
 }: Props) {
   const { t } = useI18n();
 
+  const sections = useMemo(() => groupExplainSections(blocks), [blocks]);
+  const contentSections = useMemo(
+    () => sections.filter((section) => !section.isReferences),
+    [sections],
+  );
+  const referenceSections = useMemo(
+    () => sections.filter((section) => section.isReferences),
+    [sections],
+  );
+  const explainableFindings = useMemo(
+    () => getExplainableFindings(findings, blocks),
+    [findings, blocks],
+  );
+  const [selectedSectionId, setSelectedSectionId] = useState(
+    () => contentSections[0]?.id ?? sections[0]?.id ?? "",
+  );
+  const selectedSection =
+    sections.find((section) => section.id === selectedSectionId) ??
+    contentSections[0] ??
+    sections[0] ??
+    null;
+  const selectedBlocks = useMemo(
+    () => selectedSection?.blocks ?? [],
+    [selectedSection],
+  );
+  const selectedBlockIds = useMemo(
+    () => new Set(selectedBlocks.map((block) => block.id)),
+    [selectedBlocks],
+  );
+  const sectionIdByBlock = useMemo(() => {
+    const result = new Map<string, string>();
+    for (const section of sections) {
+      for (const block of section.blocks) result.set(block.id, section.id);
+    }
+    return result;
+  }, [sections]);
+
   // Map each block id to the explanation that covers it, and remember the
   // card index so a click on the paragraph scrolls to the right card.
   const { findingByBlock, ordered } = useMemo(() => {
     const blockPos = new Map(blocks.map((b, i) => [b.id, i]));
     // Display cards in document order (by the first block each covers).
-    const orderedList = findings
+    const orderedList = explainableFindings
       .map((f) => ({
         f,
         pos: Math.min(
@@ -111,7 +157,19 @@ export function ExplainView({
       }
     }
     return { findingByBlock: byBlock, ordered: orderedList };
-  }, [blocks, findings]);
+  }, [blocks, explainableFindings]);
+  const visibleOrdered = useMemo(
+    () => ordered.filter(({ f }) => f.blockIds.some((id) => selectedBlockIds.has(id))),
+    [ordered, selectedBlockIds],
+  );
+  const findingCountBySection = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const { f } of ordered) {
+      const sectionId = f.blockIds.map((id) => sectionIdByBlock.get(id)).find(Boolean);
+      if (sectionId) counts.set(sectionId, (counts.get(sectionId) ?? 0) + 1);
+    }
+    return counts;
+  }, [ordered, sectionIdByBlock]);
 
   const [active, setActive] = useState<number | null>(null);
 
@@ -121,7 +179,9 @@ export function ExplainView({
   // This keeps every card beside its text — clicking a paragraph no longer
   // sends the reader on a multi-thousand-pixel scroll to a card piled at the
   // top. Mirrors the fallacy detector's comment layout (analysis-view.tsx).
-  const articleRef = useRef<HTMLDivElement>(null);
+  const readerRef = useRef<HTMLElement>(null);
+  const articleRef = useRef<HTMLElement>(null);
+  const pendingBlockRef = useRef<string | null>(null);
   const cardRefs = useRef<Map<number, HTMLDivElement | null>>(new Map());
   const [cardOffsets, setCardOffsets] = useState<Map<number, number>>(new Map());
   const [asideMinHeight, setAsideMinHeight] = useState<number>(0);
@@ -132,7 +192,7 @@ export function ExplainView({
     const containerTop = container.getBoundingClientRect().top;
 
     const items: { cardIdx: number; top: number; height: number }[] = [];
-    for (const { f, cardIdx } of ordered) {
+    for (const { f, cardIdx } of visibleOrdered) {
       const anchorId = f.blockIds[0];
       const node = container.querySelector<HTMLElement>(`[data-bid="${anchorId}"]`);
       if (!node) continue;
@@ -161,14 +221,26 @@ export function ExplainView({
       document.fonts.ready.then(() => measure()).catch(() => {});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ordered, blocks]);
+  }, [visibleOrdered, selectedBlocks]);
 
   useEffect(() => {
     const handler = () => measure();
     window.addEventListener("resize", handler);
     return () => window.removeEventListener("resize", handler);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ordered, blocks]);
+  }, [visibleOrdered, selectedBlocks]);
+
+  useLayoutEffect(() => {
+    const blockId = pendingBlockRef.current;
+    if (!blockId) return;
+    const frame = window.requestAnimationFrame(() => {
+      const el = articleRef.current?.querySelector<HTMLElement>(`[data-bid="${blockId}"]`);
+      if (!el) return;
+      pendingBlockRef.current = null;
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [selectedSectionId, selectedBlocks]);
 
   function focusCard(cardIdx: number) {
     setActive(cardIdx);
@@ -179,8 +251,23 @@ export function ExplainView({
   function focusBlock(blockId: string, cardIdx?: number) {
     const resolvedCard = cardIdx ?? findingByBlock.get(blockId)?.cardIdx ?? null;
     setActive(resolvedCard);
+    const targetSectionId = sectionIdByBlock.get(blockId);
+    if (targetSectionId && targetSectionId !== selectedSectionId) {
+      pendingBlockRef.current = blockId;
+      setSelectedSectionId(targetSectionId);
+      return;
+    }
     const el = articleRef.current?.querySelector<HTMLElement>(`[data-bid="${blockId}"]`);
     el?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  function selectSection(sectionId: string) {
+    pendingBlockRef.current = null;
+    setActive(null);
+    setSelectedSectionId(sectionId);
+    window.requestAnimationFrame(() => {
+      readerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   }
 
   function focusRole(role: SectionRole) {
@@ -199,9 +286,26 @@ export function ExplainView({
       "limitation",
       "conclusion",
     ];
-    const present = new Set(findings.map((f) => f.role));
+    const present = new Set(explainableFindings.map((f) => f.role));
     return order.filter((r) => present.has(r));
-  }, [findings]);
+  }, [explainableFindings]);
+
+  const selectedContentIndex = selectedSection
+    ? contentSections.findIndex((section) => section.id === selectedSection.id)
+    : -1;
+  const previousSection =
+    selectedContentIndex > 0 ? contentSections[selectedContentIndex - 1] : null;
+  const nextSection =
+    selectedContentIndex >= 0 && selectedContentIndex < contentSections.length - 1
+      ? contentSections[selectedContentIndex + 1]
+      : null;
+
+  function sectionTitle(section: ExplainSection, index: number): string {
+    if (section.title) return section.title;
+    if (sections.length === 1) return t.explain_document_section;
+    if (index === 0) return t.explain_opening_section;
+    return `${t.explain_section_fallback} ${index + 1}`;
+  }
 
   const paperMapRows = paperMap
     ? [
@@ -220,7 +324,7 @@ export function ExplainView({
       paperMapRows.length > 0);
 
   return (
-    <div className="mx-auto max-w-5xl w-full px-4 sm:px-6 py-6 sm:py-8 flex flex-col gap-6">
+    <div className="mx-auto max-w-7xl w-full px-4 sm:px-6 py-6 sm:py-8 flex flex-col gap-6">
       {/* Header */}
       <header className="flex flex-col gap-2">
         <h1 className="font-serif text-2xl sm:text-3xl leading-tight">
@@ -240,8 +344,8 @@ export function ExplainView({
           <span>{t[levelLabelKey(level)] as string}</span>
           <span>·</span>
           <span>
-            {findings.length}{" "}
-            {findings.length === 1
+            {explainableFindings.length}{" "}
+            {explainableFindings.length === 1
               ? t.explanations_count_one
               : t.explanations_count_many}
           </span>
@@ -375,132 +479,289 @@ export function ExplainView({
         </nav>
       )}
 
-      {/* Two-column layout: paper left, explanations right (anchored). */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_28rem] gap-6">
-        {/* Left: the paper, each paragraph tinted by its role. */}
-        <article
-          ref={articleRef}
-          className="font-serif text-lg leading-relaxed bg-paper border border-rule rounded-lg p-6"
-        >
-          {blocks.map((b, i) => {
-            // Render the paper's own section heading as a divider whenever the
-            // section changes (hybrid view: paragraph-level cards, but the
-            // real 1 / 1.1 / 2 structure shown inline on the left).
-            const showHeading =
-              !!b.section && (i === 0 || blocks[i - 1].section !== b.section);
-            const heading = showHeading ? (
-              <h3
-                className={cn(
-                  "font-sans text-xs font-medium uppercase tracking-wider text-muted border-t border-rule pt-3 mb-2",
-                  i > 0 ? "mt-6" : undefined,
-                )}
-              >
-                {b.section}
+      <section
+        ref={readerRef}
+        aria-labelledby="paper-reader-heading"
+        className="scroll-mt-20 flex flex-col gap-4"
+      >
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <ListTree className="h-4 w-4 text-muted" />
+            <h2
+              id="paper-reader-heading"
+              className="text-xs uppercase tracking-wide text-muted"
+            >
+              {t.explain_reader_label}
+            </h2>
+          </div>
+          {selectedContentIndex >= 0 && (
+            <span className="text-xs text-muted">
+              {t.explain_section_progress(
+                selectedContentIndex + 1,
+                contentSections.length,
+              )}
+            </span>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_24rem] xl:grid-cols-[13rem_minmax(0,1fr)_24rem] gap-6 items-start">
+          <nav
+            aria-label={t.explain_sections_label}
+            className="lg:col-span-2 xl:col-span-1 xl:sticky xl:top-20 min-w-0"
+          >
+            <label className="sr-only" htmlFor="explain-section-picker">
+              {t.explain_sections_label}
+            </label>
+            <select
+              id="explain-section-picker"
+              value={selectedSection?.id ?? ""}
+              onChange={(event) => selectSection(event.target.value)}
+              className="xl:hidden w-full rounded-lg border border-rule bg-paper px-3 py-2.5 text-sm text-foreground"
+            >
+              {sections.map((section, index) => (
+                <option key={section.id} value={section.id}>
+                  {section.isReferences
+                    ? `${t.explain_references_label} · ${sectionTitle(section, index)}`
+                    : sectionTitle(section, index)}
+                </option>
+              ))}
+            </select>
+
+            <div className="hidden xl:flex max-h-[calc(100vh-6rem)] flex-col gap-1 overflow-y-auto rounded-lg border border-rule bg-paper p-2">
+              <h3 className="px-2 pb-2 pt-1 text-[11px] uppercase tracking-wide text-muted">
+                {t.explain_sections_label}
               </h3>
-            ) : null;
-            const pClass = i > 0 && !showHeading ? "mt-4" : undefined;
-
-            const hit = findingByBlock.get(b.id);
-            if (!hit) {
-              return (
-                <div key={b.id}>
-                  {heading}
-                  <p id={`b-${b.id}`} data-bid={b.id} className={pClass}>
-                    {b.text}
-                  </p>
-                </div>
-              );
-            }
-            const color = ROLE_COLOR[hit.f.role] ?? "currentColor";
-            const isActive = active === hit.cardIdx;
-            return (
-              <div key={b.id}>
-                {heading}
-                <p id={`b-${b.id}`} data-bid={b.id} className={pClass}>
-                  <mark
-                    className="highlight"
-                    data-active={isActive ? "true" : undefined}
-                    role="button"
-                    tabIndex={0}
-                    aria-label={t.a11y_show_explanation}
-                    style={{ "--highlight-color": color } as React.CSSProperties}
-                    onClick={() => focusCard(hit.cardIdx)}
-                    onKeyDown={onActivate(() => focusCard(hit.cardIdx))}
+              {contentSections.map((section) => {
+                const index = sections.findIndex((item) => item.id === section.id);
+                const selected = selectedSection?.id === section.id;
+                return (
+                  <button
+                    key={section.id}
+                    type="button"
+                    aria-current={selected ? "true" : undefined}
+                    onClick={() => selectSection(section.id)}
+                    className={cn(
+                      "flex items-start justify-between gap-2 rounded-md border px-2.5 py-2 text-left text-sm leading-snug transition-colors",
+                      selected
+                        ? "border-foreground bg-foreground text-background"
+                        : "border-transparent text-muted hover:border-rule hover:text-foreground",
+                    )}
                   >
-                    {b.text}
-                  </mark>
-                </p>
-              </div>
-            );
-          })}
-        </article>
-
-        {/* Right: one explanation card per paragraph, anchored to its text. */}
-        <aside
-          className="relative flex flex-col gap-3 lg:gap-0 lg:block lg:min-h-[var(--aside-min-h)]"
-          style={{ "--aside-min-h": `${asideMinHeight}px` } as React.CSSProperties}
-        >
-          {ordered.length === 0 ? (
-            <div className="text-sm text-muted bg-paper border border-rule rounded-lg p-6">
-              {t.explain_empty}
-            </div>
-          ) : (
-            ordered.map(({ f, cardIdx }) => {
-              const meta = ROLE_META[f.role] ?? ROLE_META.background;
-              const Icon = meta.icon;
-              const isActive = active === cardIdx;
-              const color = ROLE_COLOR[f.role] ?? "currentColor";
-              const offset = cardOffsets.get(cardIdx) ?? 0;
-              return (
-                <div
-                  key={cardIdx}
-                  id={`card-${cardIdx}`}
-                  ref={(el) => {
-                    cardRefs.current.set(cardIdx, el);
-                  }}
-                  onClick={() => focusBlock(f.blockIds[0], cardIdx)}
-                  className={cn(
-                    "lg:absolute lg:left-0 lg:right-0 cursor-pointer",
-                    "bg-paper border rounded-lg p-4 flex flex-col gap-2 transition-colors",
-                    isActive ? "card-active" : "border-rule hover:border-foreground",
-                  )}
-                  style={
-                    {
-                      top: `${offset}px`,
-                      ...(isActive
-                        ? { borderColor: color, "--card-color": color }
-                        : {}),
-                    } as React.CSSProperties
-                  }
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs text-muted font-mono inline-flex items-center gap-1.5">
-                      <span
-                        aria-hidden
-                        className="inline-block h-2 w-2 rounded-full shrink-0"
-                        style={{ backgroundColor: color }}
-                      />
-                      #{cardIdx + 1}
+                    <span className="min-w-0 break-words">
+                      {sectionTitle(section, index)}
                     </span>
                     <span
                       className={cn(
-                        "inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border",
-                        meta.cls,
+                        "shrink-0 font-mono text-[10px]",
+                        selected ? "text-background/70" : "text-muted",
                       )}
                     >
-                      <Icon className="h-3 w-3" />
-                      {t[meta.labelKey] as string}
+                      {findingCountBySection.get(section.id) ?? 0}
                     </span>
+                  </button>
+                );
+              })}
+
+              {referenceSections.length > 0 && (
+                <details
+                  className="group mt-1 border-t border-rule pt-2"
+                  open={selectedSection?.isReferences || undefined}
+                >
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-md px-2.5 py-2 text-sm text-muted hover:text-foreground">
+                    <span>{t.explain_references_label}</span>
+                    <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
+                  </summary>
+                  <div className="mt-1 flex flex-col gap-1">
+                    {referenceSections.map((section) => {
+                      const index = sections.findIndex((item) => item.id === section.id);
+                      const selected = selectedSection?.id === section.id;
+                      return (
+                        <button
+                          key={section.id}
+                          type="button"
+                          aria-current={selected ? "true" : undefined}
+                          onClick={() => selectSection(section.id)}
+                          className={cn(
+                            "rounded-md border px-2.5 py-2 text-left text-xs leading-snug transition-colors",
+                            selected
+                              ? "border-foreground bg-foreground text-background"
+                              : "border-transparent text-muted hover:border-rule hover:text-foreground",
+                          )}
+                        >
+                          {sectionTitle(section, index)}
+                        </button>
+                      );
+                    })}
                   </div>
-                  <p className="text-sm leading-relaxed text-foreground">
-                    {f.explanation}
+                </details>
+              )}
+            </div>
+          </nav>
+
+          <div className="min-w-0 flex flex-col gap-3">
+            <header className="flex items-start justify-between gap-4 rounded-lg border border-rule bg-paper p-4">
+              <div className="min-w-0">
+                <span className="text-[11px] uppercase tracking-wide text-muted">
+                  {selectedSection?.isReferences
+                    ? t.explain_references_label
+                    : t.explain_reader_label}
+                </span>
+                <h3 className="mt-1 font-serif text-xl leading-tight">
+                  {selectedSection
+                    ? sectionTitle(
+                        selectedSection,
+                        sections.findIndex((section) => section.id === selectedSection.id),
+                      )
+                    : t.explain_document_section}
+                </h3>
+              </div>
+              <div className="flex shrink-0 items-center gap-1">
+                <button
+                  type="button"
+                  disabled={!previousSection}
+                  onClick={() => previousSection && selectSection(previousSection.id)}
+                  aria-label={t.explain_previous_section}
+                  title={t.explain_previous_section}
+                  className="rounded-md border border-rule p-2 text-muted transition-colors hover:border-foreground hover:text-foreground disabled:cursor-not-allowed disabled:opacity-30"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  disabled={!nextSection}
+                  onClick={() => nextSection && selectSection(nextSection.id)}
+                  aria-label={t.explain_next_section}
+                  title={t.explain_next_section}
+                  className="rounded-md border border-rule p-2 text-muted transition-colors hover:border-foreground hover:text-foreground disabled:cursor-not-allowed disabled:opacity-30"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            </header>
+
+            {selectedSection?.isReferences && (
+              <p className="rounded-lg border border-rule bg-paper px-4 py-3 text-sm leading-relaxed text-muted">
+                {t.explain_references_note}
+              </p>
+            )}
+
+            <article
+              ref={articleRef}
+              className="font-serif text-lg leading-relaxed bg-paper border border-rule rounded-lg p-5 sm:p-6"
+            >
+              {selectedBlocks.map((block, index) => {
+                const hit = findingByBlock.get(block.id);
+                const paragraphClass = index > 0 ? "mt-4" : undefined;
+                if (!hit) {
+                  return (
+                    <p
+                      key={block.id}
+                      id={`b-${block.id}`}
+                      data-bid={block.id}
+                      className={paragraphClass}
+                    >
+                      {block.text}
+                    </p>
+                  );
+                }
+
+                const color = ROLE_COLOR[hit.f.role] ?? "currentColor";
+                const isActive = active === hit.cardIdx;
+                return (
+                  <p
+                    key={block.id}
+                    id={`b-${block.id}`}
+                    data-bid={block.id}
+                    className={paragraphClass}
+                  >
+                    <mark
+                      className="highlight"
+                      data-active={isActive ? "true" : undefined}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={t.a11y_show_explanation}
+                      style={{ "--highlight-color": color } as React.CSSProperties}
+                      onClick={() => focusCard(hit.cardIdx)}
+                      onKeyDown={onActivate(() => focusCard(hit.cardIdx))}
+                    >
+                      {block.text}
+                    </mark>
                   </p>
-                </div>
-              );
-            })
-          )}
-        </aside>
-      </div>
+                );
+              })}
+            </article>
+          </div>
+
+          <aside
+            className="relative flex flex-col gap-3 lg:gap-0 lg:block lg:min-h-[var(--aside-min-h)]"
+            style={{ "--aside-min-h": `${asideMinHeight}px` } as React.CSSProperties}
+          >
+            {selectedSection?.isReferences ? (
+              <div className="text-sm leading-relaxed text-muted bg-paper border border-rule rounded-lg p-5">
+                {t.explain_references_note}
+              </div>
+            ) : visibleOrdered.length === 0 ? (
+              <div className="text-sm text-muted bg-paper border border-rule rounded-lg p-6">
+                {t.explain_empty}
+              </div>
+            ) : (
+              visibleOrdered.map(({ f, cardIdx }) => {
+                const meta = ROLE_META[f.role] ?? ROLE_META.background;
+                const Icon = meta.icon;
+                const isActive = active === cardIdx;
+                const color = ROLE_COLOR[f.role] ?? "currentColor";
+                const offset = cardOffsets.get(cardIdx) ?? 0;
+                return (
+                  <div
+                    key={cardIdx}
+                    id={`card-${cardIdx}`}
+                    ref={(el) => {
+                      cardRefs.current.set(cardIdx, el);
+                    }}
+                    onClick={() => focusBlock(f.blockIds[0], cardIdx)}
+                    className={cn(
+                      "lg:absolute lg:left-0 lg:right-0 cursor-pointer",
+                      "bg-paper border rounded-lg p-4 flex flex-col gap-2 transition-colors",
+                      isActive ? "card-active" : "border-rule hover:border-foreground",
+                    )}
+                    style={
+                      {
+                        top: `${offset}px`,
+                        ...(isActive
+                          ? { borderColor: color, "--card-color": color }
+                          : {}),
+                      } as React.CSSProperties
+                    }
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs text-muted font-mono inline-flex items-center gap-1.5">
+                        <span
+                          aria-hidden
+                          className="inline-block h-2 w-2 rounded-full shrink-0"
+                          style={{ backgroundColor: color }}
+                        />
+                        #{cardIdx + 1}
+                      </span>
+                      <span
+                        className={cn(
+                          "inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border",
+                          meta.cls,
+                        )}
+                      >
+                        <Icon className="h-3 w-3" />
+                        {t[meta.labelKey] as string}
+                      </span>
+                    </div>
+                    <p className="text-sm leading-relaxed text-foreground">
+                      {f.explanation}
+                    </p>
+                  </div>
+                );
+              })
+            )}
+          </aside>
+        </div>
+      </section>
 
       <p className="text-xs text-muted mt-2">{t.explain_footer(model)}</p>
     </div>

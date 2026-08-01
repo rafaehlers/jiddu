@@ -36,6 +36,13 @@ export async function saveSettingsAction(formData: FormData): Promise<void> {
     ) {
       continue;
     }
+    if (
+      (key === "rate.liveToken.capacity" ||
+        key === "rate.liveToken.perHour") &&
+      (!Number.isSafeInteger(num) || num < 1)
+    ) {
+      continue;
+    }
     await setSetting(key, num);
   }
 

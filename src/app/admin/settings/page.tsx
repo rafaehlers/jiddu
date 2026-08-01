@@ -119,17 +119,21 @@ const GROUPS: Group[] = [
   {
     title: "Rate limits — Live transcription sessions",
     description:
-      "POST /api/live/token. Applied per signed-in WorkOS user before Jiddu mints an OpenAI Realtime client secret. Concurrent issuance is also limited to one request per user.",
+      "Controls how often each signed-in WorkOS user can start Jiddu Live. When the bucket is empty, the user sees a specific message with the remaining wait time.",
     keys: [
       {
         key: "rate.liveToken.capacity",
-        label: "Burst capacity",
-        help: "Max token requests in a short burst per user",
+        label: "Immediate Live starts",
+        help: "Sessions a user can start in a short burst before waiting for refill",
+        min: 1,
+        step: 1,
       },
       {
         key: "rate.liveToken.perHour",
-        label: "Per hour",
-        help: "Sustained new Live sessions per user",
+        label: "New Live starts per hour",
+        help: "Refill rate for that user’s start allowance",
+        min: 1,
+        step: 1,
       },
     ],
   },
@@ -335,6 +339,25 @@ export default async function AdminSettingsPage({
                     </span>
                   </label>
                 ))}
+                {g.keys.some(
+                  ({ key }) => key === "rate.liveToken.capacity",
+                ) && (
+                  <div className="rounded-md border border-accent/25 bg-accent/5 p-3 text-xs sm:col-span-2">
+                    <p className="font-medium text-foreground">
+                      Current Live start behavior
+                    </p>
+                    <p className="mt-1 text-foreground/85">
+                      Up to {Math.max(1, Math.floor(current["rate.liveToken.capacity"]))}{" "}
+                      sessions can start immediately per user. One allowance
+                      refills about every{" "}
+                      {formatRateInterval(current["rate.liveToken.perHour"])}.
+                    </p>
+                    <p className="mt-1 text-muted">
+                      Recommended baseline: 5 immediate starts and 30 new
+                      starts per hour.
+                    </p>
+                  </div>
+                )}
               </div>
             </fieldset>
           ))}
@@ -369,4 +392,11 @@ export default async function AdminSettingsPage({
         </div>
     </AdminPage>
   );
+}
+
+function formatRateInterval(perHour: number): string {
+  const seconds = Math.ceil(3600 / Math.max(1, perHour));
+  if (seconds < 60) return `${seconds} second${seconds === 1 ? "" : "s"}`;
+  const minutes = Math.ceil(seconds / 60);
+  return `${minutes} minute${minutes === 1 ? "" : "s"}`;
 }

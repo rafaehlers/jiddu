@@ -9,7 +9,12 @@ import type { Sentence } from "./schema";
 // headings as section dividers in the text column; the model receives them
 // as context. When a document has no detectable headings, every block's
 // `section` is null and the view is a plain paragraph list.
-export type Block = Sentence & { section?: string | null };
+export type BlockKind = "content" | "references";
+
+export type Block = Sentence & {
+  section?: string | null;
+  kind?: BlockKind;
+};
 
 // When a document has no blank-line paragraph structure at all (some PDF
 // extractions, pasted prose), we fall back to slicing the sentence run into
@@ -20,13 +25,36 @@ const SENTENCES_PER_PSEUDO_PARAGRAPH = 4;
 const NAMED_HEADING =
   /^(abstract|introduction|background|related works?|prior works?|literature review|motivations?|methods?|methodology|materials and methods|experimental (setup|design)|data|datasets?|results?|findings|discussions?|analysis|evaluation|conclusions?|concluding remarks|future work|limitations?|references|bibliography|acknowledge?ments?|appendix|appendices|supplementary)\b/i;
 
+const REFERENCES_HEADING =
+  /^(references|bibliography|works cited|literature cited|refer[eê]ncias|referencias|bibliograf[ií]a|bibliographie)$/i;
+
+export function isReferencesHeading(line: string | null | undefined): boolean {
+  if (!line) return false;
+  const normalized = normalizeHeading(line)
+    .replace(/^(?:(?:\d+(?:\.\d+){0,3}\.?|[IVXLC]+\.)\s+)/i, "")
+    .replace(/[.:]\s*$/, "")
+    .trim();
+  return REFERENCES_HEADING.test(normalized);
+}
+
+function normalizeHeading(line: string): string {
+  return line
+    .trim()
+    .replace(/^#{1,6}\s+/, "")
+    .replace(/\s+#+$/, "")
+    .trim();
+}
+
 // Heuristic: is this single line a section heading rather than body prose?
 // Conservative on purpose — a false negative just means a missing divider,
 // while the `headingCount < 2` gate below stops a stray false positive from
 // switching the whole document into section mode.
 function isHeading(line: string): boolean {
-  const s = line.trim();
+  const trimmed = line.trim();
+  const markdownHeading = /^#{1,6}\s+\S/.test(trimmed);
+  const s = normalizeHeading(trimmed);
   if (s.length === 0 || s.length > 100) return false;
+  if (markdownHeading) return true;
   const words = s.split(/\s+/).length;
   if (words > 14) return false;
   // Numbered: "1 Introduction" / "1. Introduction" / "2.1 Related Work" /
@@ -53,6 +81,7 @@ export function splitBlocks(text: string): Block[] {
   let para: string[] = [];
   let paraStart = 0;
   let currentSection: string | null = null;
+  let currentKind: BlockKind = "content";
   let headingCount = 0;
   let offset = 0;
   let id = 0;
@@ -66,6 +95,7 @@ export function splitBlocks(text: string): Block[] {
         end: endOffset,
         text: raw,
         section: currentSection,
+        kind: currentKind,
       });
     }
     para = [];
@@ -82,7 +112,8 @@ export function splitBlocks(text: string): Block[] {
     }
     if (isHeading(trimmed)) {
       flushPara(lineStart);
-      currentSection = trimmed;
+      currentSection = normalizeHeading(trimmed);
+      currentKind = isReferencesHeading(currentSection) ? "references" : "content";
       headingCount++;
       continue;
     }
@@ -145,6 +176,7 @@ export function splitParagraphs(text: string): Block[] {
       end,
       text: normalized.slice(start, end).trim(),
       section: null,
+      kind: "content" as const,
     };
   });
 }

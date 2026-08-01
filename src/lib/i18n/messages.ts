@@ -199,6 +199,16 @@ export type Messages = {
   explain_map_limitation: string;
   explain_map_open_evidence: string;
   explain_jump_to: string;
+  explain_reader_label: string;
+  explain_sections_label: string;
+  explain_document_section: string;
+  explain_opening_section: string;
+  explain_section_fallback: string;
+  explain_references_label: string;
+  explain_references_note: string;
+  explain_previous_section: string;
+  explain_next_section: string;
+  explain_section_progress: (current: number, total: number) => string;
   explanations_count_one: string;
   explanations_count_many: string;
   explain_empty: string;
@@ -718,6 +728,17 @@ const en: Messages = {
   explain_map_limitation: "Stated caveat",
   explain_map_open_evidence: "Open the supporting paragraph",
   explain_jump_to: "Jump to",
+  explain_reader_label: "Paper reader",
+  explain_sections_label: "Sections",
+  explain_document_section: "Document",
+  explain_opening_section: "Opening",
+  explain_section_fallback: "Section",
+  explain_references_label: "References",
+  explain_references_note:
+    "References remain available for consultation, but Jiddu does not analyze them as paper content.",
+  explain_previous_section: "Previous section",
+  explain_next_section: "Next section",
+  explain_section_progress: (current, total) => `Section ${current} of ${total}`,
   explanations_count_one: "explanation",
   explanations_count_many: "explanations",
   explain_empty: "No explanations were produced for this document.",
@@ -1568,6 +1589,17 @@ const pt: Messages = {
   explain_map_limitation: "Ressalva declarada",
   explain_map_open_evidence: "Abrir o parágrafo que sustenta este item",
   explain_jump_to: "Ir para",
+  explain_reader_label: "Leitor do paper",
+  explain_sections_label: "Seções",
+  explain_document_section: "Documento",
+  explain_opening_section: "Abertura",
+  explain_section_fallback: "Seção",
+  explain_references_label: "Referências",
+  explain_references_note:
+    "As referências continuam disponíveis para consulta, mas o Jiddu não as analisa como conteúdo do paper.",
+  explain_previous_section: "Seção anterior",
+  explain_next_section: "Próxima seção",
+  explain_section_progress: (current, total) => `Seção ${current} de ${total}`,
   explanations_count_one: "explicação",
   explanations_count_many: "explicações",
   explain_empty: "Nenhuma explicação foi gerada para este documento.",
@@ -2419,6 +2451,17 @@ const es: Messages = {
   explain_map_limitation: "Salvedad declarada",
   explain_map_open_evidence: "Abrir el párrafo que sustenta este punto",
   explain_jump_to: "Ir a",
+  explain_reader_label: "Lector del paper",
+  explain_sections_label: "Secciones",
+  explain_document_section: "Documento",
+  explain_opening_section: "Apertura",
+  explain_section_fallback: "Sección",
+  explain_references_label: "Referencias",
+  explain_references_note:
+    "Las referencias siguen disponibles para consulta, pero Jiddu no las analiza como contenido del paper.",
+  explain_previous_section: "Sección anterior",
+  explain_next_section: "Siguiente sección",
+  explain_section_progress: (current, total) => `Sección ${current} de ${total}`,
   explanations_count_one: "explicación",
   explanations_count_many: "explicaciones",
   explain_empty: "No se generaron explicaciones para este documento.",

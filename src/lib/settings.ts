@@ -60,8 +60,8 @@ export const DEFAULT_SETTINGS = {
 
   // Live transcription token issuance. Applied per authenticated WorkOS user
   // before Jiddu asks OpenAI for an ephemeral Realtime client secret.
-  "rate.liveToken.capacity": 2,
-  "rate.liveToken.perHour": 6,
+  "rate.liveToken.capacity": 5,
+  "rate.liveToken.perHour": 30,
 
   // Live fallacy-analysis windows. The browser normally sends at most one
   // request every 30 seconds; this leaves room for normal retries while

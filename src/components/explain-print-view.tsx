@@ -6,6 +6,7 @@ import { useI18n } from "@/lib/i18n/provider";
 import type { Messages } from "@/lib/i18n/messages";
 import type { Lang } from "@/lib/fallacies";
 import type { Block } from "@/lib/paragraphs";
+import { getExplainableFindings } from "@/lib/explain-sections";
 import type {
   ExplainFinding,
   ExplainLevel,
@@ -62,7 +63,7 @@ export function ExplainPrintView({
   const sectionByBlock = new Map(
     blocks.filter((b) => b.section).map((b) => [b.id, b.section as string]),
   );
-  const ordered = [...findings].sort((a, b) => {
+  const ordered = getExplainableFindings(findings, blocks).sort((a, b) => {
     const pa = Math.min(
       ...a.blockIds.map((bid) => blockPos.get(bid) ?? Number.POSITIVE_INFINITY),
     );

@@ -5,6 +5,7 @@ import { ingestUrl } from "@/lib/ingest/url";
 import { ingestAnalysisFile } from "@/lib/ingest/file";
 import { ingestText } from "@/lib/ingest/text";
 import { splitBlocks } from "@/lib/paragraphs";
+import { getExplainableBlocks } from "@/lib/explain-sections";
 import { chunkSentences } from "@/lib/chunker";
 import { getProvider, resolveModel } from "@/lib/llm";
 import { DEFAULT_MODEL_CHAIN, withModelFallback } from "@/lib/llm/fallback";
@@ -119,7 +120,10 @@ export async function POST(req: NextRequest) {
   }
 
   const blocks = splitBlocks(doc.text);
-  if (blocks.length === 0) return jsonError("No paragraphs detected", 422);
+  const explainableBlocks = getExplainableBlocks(blocks);
+  if (explainableBlocks.length === 0) {
+    return jsonError("No substantive paragraphs detected", 422);
+  }
 
   const modelChain: string[] = modelId
     ? Array.from(new Set([resolveModel(modelId).id, ...DEFAULT_MODEL_CHAIN]))
@@ -134,7 +138,7 @@ export async function POST(req: NextRequest) {
 
   // Blocks reuse the Sentence shape, so the sentence chunker groups them by
   // accumulated char budget exactly as it does for the other pipelines.
-  const chunks = chunkSentences(blocks);
+  const chunks = chunkSentences(explainableBlocks);
   const creditReservation = await reserveWebAnalysisCredits(access, {
     // One call per paragraph chunk, plus one bounded whole-document synthesis
     // for the overview and evidence-linked Paper Map.
@@ -269,8 +273,15 @@ export async function POST(req: NextRequest) {
         return;
       }
 
+      const explainableIds = new Set(explainableBlocks.map((block) => block.id));
       const blockPos = new Map(blocks.map((block, index) => [block.id, index]));
-      const orderedFindings = [...allFindings].sort((a, b) => {
+      const orderedFindings = allFindings
+        .map((finding) => ({
+          ...finding,
+          blockIds: finding.blockIds.filter((id) => explainableIds.has(id)),
+        }))
+        .filter((finding) => finding.blockIds.length > 0)
+        .sort((a, b) => {
         const aPos = blockPos.get(a.blockIds[0]) ?? Number.POSITIVE_INFINITY;
         const bPos = blockPos.get(b.blockIds[0]) ?? Number.POSITIVE_INFINITY;
         return aPos - bPos;
@@ -291,7 +302,7 @@ export async function POST(req: NextRequest) {
             llm.synthesizePaperMap(
               {
                 title: doc.title,
-                blocks,
+                blocks: explainableBlocks,
                 findings: orderedFindings,
                 chunkOverviews: [...overviews.entries()]
                   .sort((a, b) => a[0] - b[0])
@@ -310,7 +321,7 @@ export async function POST(req: NextRequest) {
         );
         const synthesis = sanitizePaperSynthesis(
           synthesisOutput.result,
-          new Set(blocks.map((block) => block.id)),
+          explainableIds,
         );
         if (synthesis.overview) finalOverview = synthesis.overview;
         paperMap = synthesis.paperMap;

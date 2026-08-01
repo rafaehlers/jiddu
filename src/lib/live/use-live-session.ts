@@ -36,10 +36,12 @@ export type LiveSessionError = {
     | "tab_unsupported"
     | "tab_audio_missing"
     | "capture_cancelled"
+    | "rate_limited"
     | "connection_lost"
     | "service_unavailable";
   required?: number;
   available?: number;
+  retryAfterSeconds?: number;
 };
 
 export type LiveSessionHandle = {
@@ -61,6 +63,7 @@ type TokenErrorPayload = {
   error?: string;
   required?: number;
   available?: number;
+  retry_after_seconds?: number;
 };
 
 class LiveSessionStartError extends Error {
@@ -297,6 +300,23 @@ export function useLiveSession(opts: LiveSessionOptions = {}): LiveSessionHandle
                 available: payload.available,
               },
               "The account does not have enough Jiddu Credits.",
+            );
+          }
+          if (payload.code === "rate_limited" || tokenRes.status === 429) {
+            const headerRetryAfter = Number.parseInt(
+              tokenRes.headers.get("retry-after") ?? "",
+              10,
+            );
+            const retryAfterSeconds = Number.isFinite(
+              payload.retry_after_seconds,
+            )
+              ? Math.max(1, Math.ceil(payload.retry_after_seconds!))
+              : Number.isFinite(headerRetryAfter)
+                ? Math.max(1, headerRetryAfter)
+                : undefined;
+            throw new LiveSessionStartError(
+              { code: "rate_limited", retryAfterSeconds },
+              "Too many Live sessions were started in a short period.",
             );
           }
           throw new LiveSessionStartError(

@@ -42,7 +42,11 @@ export async function ingestAnalysisFile(
   const lower = name.toLowerCase();
 
   if (lower.endsWith(".pdf") || file.type === "application/pdf") {
-    return ingestPdf(bytes.buffer, name);
+    return ingestPdf(bytes.buffer, name, {
+      // Explain benefits from LiteParse's Markdown/heading structure. Other
+      // fast pipelines keep the lighter prose-only extraction path.
+      mode: opts.feature === "explain" ? "academic" : "fast",
+    });
   }
   if (lower.endsWith(".txt") || file.type.startsWith("text/")) {
     return ingestText(new TextDecoder().decode(bytes), {

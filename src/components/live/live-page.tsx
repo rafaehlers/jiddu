@@ -412,6 +412,11 @@ const LIVE_ERROR_COPY = {
       "Choose the tab again and make sure “Share audio” is turned on.",
     cancelledTitle: "Sharing was cancelled",
     cancelledBody: "Choose a source and start again when you’re ready.",
+    rateLimitTitle: "Live start limit reached",
+    rateLimitBody: (retryAfterSeconds?: number) =>
+      retryAfterSeconds
+        ? `Too many Live sessions were started in a short period. Try again in about ${formatRetryDelay(retryAfterSeconds, "en")}.`
+        : "Too many Live sessions were started in a short period. Please wait a moment and try again.",
     connectionTitle: "The connection was interrupted",
     connectionBody: "Check your internet connection and try again.",
     genericTitle: "Jiddu Live couldn’t start",
@@ -436,6 +441,11 @@ const LIVE_ERROR_COPY = {
       "Escolha a aba novamente e ative a opção “Compartilhar áudio”.",
     cancelledTitle: "O compartilhamento foi cancelado",
     cancelledBody: "Escolha uma fonte e inicie novamente quando quiser.",
+    rateLimitTitle: "Limite de inicializações do Live atingido",
+    rateLimitBody: (retryAfterSeconds?: number) =>
+      retryAfterSeconds
+        ? `Muitas sessões do Live foram iniciadas em pouco tempo. Tente novamente em cerca de ${formatRetryDelay(retryAfterSeconds, "pt")}.`
+        : "Muitas sessões do Live foram iniciadas em pouco tempo. Aguarde um momento e tente novamente.",
     connectionTitle: "A conexão foi interrompida",
     connectionBody: "Confira sua internet e tente novamente.",
     genericTitle: "Não foi possível iniciar o Jiddu Live",
@@ -460,6 +470,11 @@ const LIVE_ERROR_COPY = {
       "Elige la pestaña de nuevo y activa la opción “Compartir audio”.",
     cancelledTitle: "Se canceló el uso compartido",
     cancelledBody: "Elige una fuente y vuelve a empezar cuando quieras.",
+    rateLimitTitle: "Se alcanzó el límite de inicios de Live",
+    rateLimitBody: (retryAfterSeconds?: number) =>
+      retryAfterSeconds
+        ? `Se iniciaron demasiadas sesiones de Live en poco tiempo. Inténtalo de nuevo en aproximadamente ${formatRetryDelay(retryAfterSeconds, "es")}.`
+        : "Se iniciaron demasiadas sesiones de Live en poco tiempo. Espera un momento e inténtalo de nuevo.",
     connectionTitle: "Se interrumpió la conexión",
     connectionBody: "Comprueba tu conexión a internet e inténtalo de nuevo.",
     genericTitle: "No se pudo iniciar Jiddu Live",
@@ -500,6 +515,9 @@ function LiveErrorNotice({
   } else if (error?.code === "capture_cancelled") {
     title = copy.cancelledTitle;
     body = copy.cancelledBody;
+  } else if (error?.code === "rate_limited") {
+    title = copy.rateLimitTitle;
+    body = copy.rateLimitBody(error.retryAfterSeconds);
   } else if (error?.code === "connection_lost") {
     title = copy.connectionTitle;
     body = copy.connectionBody;
@@ -522,6 +540,23 @@ function LiveErrorNotice({
       )}
     </div>
   );
+}
+
+function formatRetryDelay(
+  retryAfterSeconds: number,
+  lang: "en" | "pt" | "es",
+): string {
+  if (retryAfterSeconds < 60) {
+    const seconds = Math.max(1, Math.ceil(retryAfterSeconds));
+    if (lang === "pt") return `${seconds} segundo${seconds === 1 ? "" : "s"}`;
+    if (lang === "es") return `${seconds} segundo${seconds === 1 ? "" : "s"}`;
+    return `${seconds} second${seconds === 1 ? "" : "s"}`;
+  }
+
+  const minutes = Math.ceil(retryAfterSeconds / 60);
+  if (lang === "pt") return `${minutes} minuto${minutes === 1 ? "" : "s"}`;
+  if (lang === "es") return `${minutes} minuto${minutes === 1 ? "" : "s"}`;
+  return `${minutes} minute${minutes === 1 ? "" : "s"}`;
 }
 
 function StatusBadge({
