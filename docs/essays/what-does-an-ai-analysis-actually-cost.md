@@ -245,10 +245,12 @@ The current rate card assigns a fixed estimate to each known model:
 | Model | Fallback credits per call |
 | --- | ---: |
 | MiniMax M3 | 1 |
-| GPT-5.4 mini | 2 |
+| GPT-5.6 Luna | 1 |
+| GPT-5.6 Luna Pro | 3 |
 | Perplexity Sonar Reasoning Pro | 2 |
-| GPT-5.5 | 10 |
 | Claude Opus 4.8 | 18 |
+| GPT-5.4 mini (legacy) | 2 |
+| GPT-5.5 (legacy) | 10 |
 | GPT Live Transcribe | 20 per session |
 | Unknown model | 20 |
 
@@ -257,15 +259,15 @@ These numbers are versioned. A ledger row can therefore say which rate card was 
 The fallback is applied only to calls that cannot be matched to reported cost. Consider an operation with two calls:
 
 ```text
-GPT-5.4 mini
-reported cost: $0.012
-converted charge: ceil($0.012 × 1.5 ÷ $0.01) = 2 credits
+GPT-5.6 Luna
+reported cost: $0.006
+converted charge: ceil($0.006 × 1.5 ÷ $0.01) = 1 credit
 
 MiniMax M3
 reported cost: missing
 fallback charge: 1 credit
 
-total: 3 credits
+total: 2 credits
 ```
 
 An explicit `cost: 0` is different from a missing cost. Zero means OpenRouter reported that the generation was free, so Jiddu charges no fallback credit for it. Missing means the price is unknown, so the rate card applies.

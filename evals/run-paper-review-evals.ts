@@ -21,7 +21,7 @@ if (!process.env.OPENROUTER_API_KEY) {
 const modelIds = (
   process.env.PAPER_REVIEW_EVAL_MODELS ||
   process.env.PAPER_REVIEW_EVAL_MODEL ||
-  "gpt-5.4-mini"
+  "gpt-5.6-luna"
 )
   .split(",")
   .map((model) => model.trim())

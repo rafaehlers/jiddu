@@ -52,14 +52,14 @@ test("aggregates transcription and analysis cost before rounding once", () => {
 
 test("adds fallback credits after metered session cost", () => {
   const settlement = calculateLiveTranscriptionSettlement(60_000, config, {
-    fallbackCredits: 2,
-    fallbackModels: ["gpt-5.4-mini"],
+    fallbackCredits: 1,
+    fallbackModels: ["gpt-5.6-luna"],
     analysisWindows: 1,
   });
 
-  assert.equal(settlement.credits, 5);
-  assert.equal(settlement.fallbackCredits, 2);
-  assert.deepEqual(settlement.fallbackModels, ["gpt-5.4-mini"]);
+  assert.equal(settlement.credits, 4);
+  assert.equal(settlement.fallbackCredits, 1);
+  assert.deepEqual(settlement.fallbackModels, ["gpt-5.6-luna"]);
 });
 
 test("accumulates completed analysis windows without rounding them", () => {

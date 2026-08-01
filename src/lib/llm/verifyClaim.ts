@@ -98,6 +98,10 @@ export async function verifyClaim(
         { role: "system", content: buildVerifySystemPrompt(opts.lang) },
         { role: "user", content: buildVerifyUserPrompt(claim.statement, claim.type) },
       ],
+      // Sonar's provider default can reserve its full 65K output window.
+      // Verdict JSON is compact; cap it so OpenRouter does not reject a
+      // routine verification based on an unrealistic maximum-cost exposure.
+      max_tokens: 4_000,
     },
     opts.signal ? { signal: opts.signal } : undefined,
   );

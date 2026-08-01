@@ -62,6 +62,6 @@ export async function* withModelFallback<E, R>(
 // The default chain used everywhere when the caller doesn't pick a model
 // explicitly. Order is: cheapest/fastest first, robust fallback second.
 export const DEFAULT_MODEL_CHAIN: readonly string[] = [
-  "gpt-5.4-mini",
+  "gpt-5.6-luna",
   "minimax-m3",
 ];

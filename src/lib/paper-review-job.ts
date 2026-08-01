@@ -252,7 +252,7 @@ export async function runPreparedPaperReview(
     prepared.reviewDepth === "deep"
       ? routing["paperReview.criticModel"]
       : prepared.modelId === "minimax-m3"
-        ? "gpt-5.4-mini"
+        ? "gpt-5.6-luna"
         : "minimax-m3";
   const stageModels: Record<string, string> = {};
 

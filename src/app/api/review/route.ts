@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
   const reviewDate =
     normalizeDate(normalizeString(form.get("reviewDate"))) ??
     new Date().toISOString().slice(0, 10);
-  const selectedModel = normalizeString(form.get("model")) ?? "gpt-5.4-mini";
+  const selectedModel = normalizeString(form.get("model")) ?? "gpt-5.6-luna";
   const reviewDepth = normalizeReviewDepth(form.get("reviewDepth"));
 
   let prepared;

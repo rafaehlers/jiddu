@@ -1,6 +1,6 @@
 # Adversarial paper-review specialist benchmark
 
-Run on 2026-07-27 against 30 synthetic, page-tagged manuscript excerpts:
+Run through 2026-07-31 against 30 synthetic, page-tagged manuscript excerpts:
 six injected flaws for each SPECS criterion (Story, Presentation, Evaluations,
 Correctness and Significance). Each case is sent only to its assigned
 specialist. A case passes when at least one returned finding contains one of
@@ -13,11 +13,14 @@ row records the actual model returned by the provider.
 | --- | ---: | ---: | ---: | ---: |
 | GPT-5.4 mini | 30 / 30 | 100.0% | 49 | 1.63 |
 | GPT-5.5 (high reasoning) | 30 / 30 | 100.0% | 34 | 1.13 |
+| GPT-5.6 Luna (low reasoning) | 30 / 30 | 100.0% | 50 | 1.67 |
+| GPT-5.6 Luna Pro (medium reasoning) | 30 / 30 | 100.0% | 46 | 1.53 |
 
-Both models detected all injected defects. GPT-5.5 reached the same ceiling
-with 30.6% fewer findings and longer, more consolidated explanations on
-average (516 vs 414 body characters), which is consistent with lower
-fragmentation rather than lower recall on this set.
+All four models detected every injected defect. GPT-5.6 Luna Pro returned 8%
+fewer findings than standard Luna and slightly longer explanations on average
+(477 vs 455 body characters), which is consistent with modestly lower
+fragmentation rather than lower recall on this set. The older GPT-5.5 run
+remains the most consolidated result (34 findings, 1.13 per case).
 
 This is a targeted prompt regression benchmark, not evidence that the models
 are equally capable on complete real papers. The cases are intentionally
@@ -30,4 +33,6 @@ Artifacts:
 
 - [`results-gpt-5.4-mini.json`](./results-gpt-5.4-mini.json)
 - [`results-gpt-5.5.json`](./results-gpt-5.5.json)
+- [`results-gpt-5.6-luna.json`](./results-gpt-5.6-luna.json)
+- [`results-gpt-5.6-luna-pro.json`](./results-gpt-5.6-luna-pro.json)
 - [`summary.json`](./summary.json)

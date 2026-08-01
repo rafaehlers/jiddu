@@ -335,7 +335,7 @@ model FactCheck {
   text              String // full normalized text
   language          String? // "pt" | "en" | "es"
   provider          String // "openai" (mapped from MODEL_CATALOG family)
-  model             String // catalog id, e.g. "gpt-5.4-mini"
+  model             String // catalog id, e.g. "gpt-5.6-luna"
   sentences         String    @default("[]") // JSON array of {id,start,end,text}
   claims            String    @default("[]") // JSON array of {id, sentenceIds, statement, type, rationale}
   verdicts          String    @default("[]") // JSON array of {claimId, verdict, confidence, rationale, sources, model}

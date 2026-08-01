@@ -2,6 +2,11 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  experimental: {
+    // Avoid pathological Turbopack cache growth and memory-mapped cache churn
+    // during local development. Re-enable after upgrading to a fixed release.
+    turbopackFileSystemCacheForDev: false,
+  },
   redirects() {
     return [
       {

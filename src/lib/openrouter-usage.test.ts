@@ -20,12 +20,12 @@ test("reads tokens and real OpenRouter cost from a completion", () => {
         cost_details: { upstream_inference_cost: 0.01 },
       },
     },
-    "gpt-5.4-mini",
+    "gpt-5.6-luna",
   );
 
   assert.deepEqual(usage, {
     provider: "openrouter",
-    model: "gpt-5.4-mini",
+    model: "gpt-5.6-luna",
     generationId: "gen-1",
     completed: false,
     promptTokens: 120,
@@ -41,7 +41,7 @@ test("reads tokens and real OpenRouter cost from a completion", () => {
 test("converts real cost to credits with margin and only falls back when cost is missing", () => {
   const priced: OpenRouterUsage = {
     provider: "openrouter",
-    model: "gpt-5.4-mini",
+    model: "gpt-5.6-luna",
     generationId: "gen-1",
     completed: true,
     promptTokens: 100,
@@ -55,7 +55,7 @@ test("converts real cost to credits with margin and only falls back when cost is
 
   const settlement = calculateJidduCreditSettlement(
     [priced],
-    ["gpt-5.4-mini", "minimax-m3"],
+    ["gpt-5.6-luna", "minimax-m3"],
     { marginMultiplier: 1.5, usdPerCredit: 0.01 },
   );
 
@@ -71,7 +71,7 @@ test("does not charge a cached zero-cost call", () => {
     [
       {
         provider: "openrouter",
-        model: "gpt-5.4-mini",
+        model: "gpt-5.6-luna",
         generationId: "cached",
         completed: true,
         promptTokens: 0,
@@ -83,7 +83,7 @@ test("does not charge a cached zero-cost call", () => {
         upstreamCostUsd: 0,
       },
     ],
-    ["gpt-5.4-mini"],
+    ["gpt-5.6-luna"],
     { marginMultiplier: 2, usdPerCredit: 0.01 },
   );
 

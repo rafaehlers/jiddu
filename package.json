@@ -12,6 +12,7 @@
     "lint": "eslint",
     "test": "DATABASE_URL=postgresql://jiddu:test@localhost:5432/jiddu node --import tsx --test",
     "eval:paper-review": "node --import tsx evals/run-paper-review-evals.ts",
+    "smoke:openrouter-postgres": "node --import tsx scripts/smoke-openrouter-postgres.mts",
     "deploy": "bash scripts/deploy.sh"
   },
   "dependencies": {

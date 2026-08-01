@@ -176,9 +176,13 @@ export async function researchPaperNovelty(
       };
     } catch (err) {
       if (opts.signal?.aborted) throw err;
-      errors.push(
-        `${modelId}: ${err instanceof Error ? err.message : String(err)}`,
-      );
+      const message = err instanceof Error ? err.message : String(err);
+      errors.push(`${modelId}: ${message}`);
+      if (!opts.strictModel) {
+        console.warn(
+          `[paper-review] research model="${modelId}" failed; trying fallback: ${message}`,
+        );
+      }
     }
   }
   throw new Error(`Literature research failed: ${errors.join(" / ")}`);
@@ -384,9 +388,13 @@ async function runStructuredWithFallback<T>(
       };
     } catch (err) {
       if (opts.signal?.aborted) throw err;
-      errors.push(
-        `${modelId}: ${err instanceof Error ? err.message : String(err)}`,
-      );
+      const message = err instanceof Error ? err.message : String(err);
+      errors.push(`${modelId}: ${message}`);
+      if (!opts.strictModel) {
+        console.warn(
+          `[paper-review] structured model="${modelId}" failed; trying fallback: ${message}`,
+        );
+      }
     }
   }
   throw new Error(`Structured review stage failed: ${errors.join(" / ")}`);

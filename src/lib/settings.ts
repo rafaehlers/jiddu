@@ -91,9 +91,9 @@ export type SettingKey = keyof typeof DEFAULT_SETTINGS;
 const KEYS = Object.keys(DEFAULT_SETTINGS) as SettingKey[];
 
 export const PAPER_REVIEW_MODEL_OPTIONS = [
-  "gpt-5.5",
+  "gpt-5.6-luna-pro",
   "claude-opus-4.8",
-  "gpt-5.4-mini",
+  "gpt-5.6-luna",
   "minimax-m3",
 ] as const;
 
@@ -123,7 +123,7 @@ export const DEFAULT_STRING_SETTINGS = {
   "paperReview.deepModel": supportedStringDefault(
     process.env.PAPER_REVIEW_DEEP_MODEL,
     PAPER_REVIEW_MODEL_OPTIONS,
-    "gpt-5.5",
+    "gpt-5.6-luna-pro",
   ),
   "paperReview.criticModel": supportedStringDefault(
     process.env.PAPER_REVIEW_CRITIC_MODEL,

@@ -1,0 +1,1230 @@
+[
+  {
+    "id": "S01",
+    "criterion": "story",
+    "title": "Undefined central construct",
+    "pass": true,
+    "requestedModel": "gpt-5.6-luna",
+    "actualModel": "gpt-5.6-luna",
+    "matchedTerms": [
+      "construct",
+      "define",
+      "operational"
+    ],
+    "findings": [
+      {
+        "id": "S1",
+        "criterion": "story",
+        "title": "Central construct is undefined and untestable",
+        "body": "The paper identifies “alignment density” as its central construct and claims that it explains reliability, but provides no conceptual definition, measurement/operationalization, unit of analysis, scope, or falsifiable relationship. Consequently, the motivation and chain of argument stop at assertion: it is impossible to determine what phenomenon the construct denotes, how it differs from related concepts, or what evidence could support or refute the explanatory claim. This also prevents the stated contribution from being assessed for significance or non-triviality. Ledger claim C1.",
+        "locations": [
+          "p. 1"
+        ],
+        "severity": "MAJOR",
+        "confidence": 1,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "S02",
+    "criterion": "story",
+    "title": "Scope changes mid-paper",
+    "pass": true,
+    "requestedModel": "gpt-5.6-luna",
+    "actualModel": "gpt-5.6-luna",
+    "matchedTerms": [
+      "scope",
+      "general",
+      "system"
+    ],
+    "findings": [
+      {
+        "id": "S1",
+        "criterion": "story",
+        "title": "The conclusion vastly exceeds the evaluated population",
+        "body": "The manuscript explicitly states that its claim covers “all clinical language models” (p. 1), but reports evaluating only one English summarizer and then concludes that “all clinical AI systems are safe” (p. 4). This is an unsupported population-level generalization: the evaluated system, task, language, and safety properties do not establish claims about all clinical language models, much less all clinical AI systems. The paper therefore lacks a coherent chain from problem framing and operationalization to conclusion. Ledger claim C1.",
+        "locations": [
+          "p. 1",
+          "p. 4"
+        ],
+        "severity": "MAJOR",
+        "confidence": 1,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      },
+      {
+        "id": "S2",
+        "criterion": "story",
+        "title": "The central constructs and scope are undefined",
+        "body": "The manuscript provides no definitions of “clinical language models,” “clinical AI systems,” or “safe,” and does not specify the safety dimensions, inclusion criteria, deployment contexts, languages, model types, or tasks covered by the claimed population. Without these construct and boundary definitions, the central claim cannot be evaluated or falsified, and the apparent shift from language models to AI systems is not justified. Ledger claim C1.",
+        "locations": [
+          "p. 1",
+          "p. 4"
+        ],
+        "severity": "MAJOR",
+        "confidence": 0.99,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      },
+      {
+        "id": "S3",
+        "criterion": "story",
+        "title": "The manuscript does not state a testable hypothesis or falsification condition",
+        "body": "The supplied manuscript contains no hypotheses, predicted outcomes, or conditions under which the safety claim would be rejected. Evaluating a single English summarizer is consequently presented as sufficient by assertion rather than as a design tied to a bounded, testable question. This prevents assessment of whether the experiment addresses the stated motivation or contribution. Ledger claim C1.",
+        "locations": [
+          "p. 1",
+          "p. 4"
+        ],
+        "severity": "MAJOR",
+        "confidence": 0.98,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      },
+      {
+        "id": "S4",
+        "criterion": "story",
+        "title": "The stated contribution is not autonomous or precisely delimited",
+        "body": "The paper offers no independently specified contribution beyond the overbroad safety assertion. Because the only evidence described is one English summarizer, the manuscript does not establish whether it contributes a benchmark result, a method, a theory, or a bounded empirical finding. Its stated contribution therefore cannot be distinguished from an unsupported universal claim, and the paper is not scientifically autonomous enough to assess on its own terms. Ledger claim C1.",
+        "locations": [
+          "p. 1",
+          "p. 4"
+        ],
+        "severity": "MODERATE",
+        "confidence": 0.97,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "S03",
+    "criterion": "story",
+    "title": "Motivation does not imply contribution",
+    "pass": true,
+    "requestedModel": "gpt-5.6-luna",
+    "actualModel": "gpt-5.6-luna",
+    "matchedTerms": [
+      "motivation",
+      "argument"
+    ],
+    "findings": [
+      {
+        "id": "S1",
+        "criterion": "story",
+        "title": "The motivation does not entail the proposed contribution",
+        "body": "The manuscript moves directly from the generic observation that data centers use energy to the conclusion that a new tokenization algorithm is necessary. It provides no mechanism linking tokenization to energy consumption, no identified problem in existing tokenizers, and no argument that the proposed intervention would affect the stated problem. This is a failure of the central chain of argument and directly concerns ledger claim C1.",
+        "locations": [
+          "p. 1"
+        ],
+        "severity": "MAJOR",
+        "confidence": 1,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      },
+      {
+        "id": "S2",
+        "criterion": "story",
+        "title": "Core constructs and scope are undefined",
+        "body": "The manuscript does not define what it means by “data centers,” “energy,” “tokenization algorithm,” “new,” or “necessary,” nor does it specify the workload, system boundary, optimization objective, or relevant comparison. Without these definitions, the claimed problem and proposed contribution cannot be evaluated for soundness, significance, or applicability.",
+        "locations": [
+          "p. 1"
+        ],
+        "severity": "MAJOR",
+        "confidence": 1,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      },
+      {
+        "id": "S3",
+        "criterion": "story",
+        "title": "No research question, hypothesis, or falsifiable evaluation target is stated",
+        "body": "The excerpt contains no research question, hypotheses, operational predictions, success criteria, or conditions under which the proposed necessity claim could be falsified. Consequently, it is not clear what the paper would test or what evidence could support or refute its central claim.",
+        "locations": [
+          "p. 1"
+        ],
+        "severity": "MAJOR",
+        "confidence": 1,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      },
+      {
+        "id": "S4",
+        "criterion": "story",
+        "title": "The stated contribution is neither specified nor established as non-trivial",
+        "body": "Although the manuscript asserts that a new tokenization algorithm is necessary, it gives no algorithmic specification, stated contribution beyond novelty, comparison to prior approaches, or evidence of benefit. The claim therefore remains an unsupported proposal rather than an established research contribution, and its significance cannot be assessed.",
+        "locations": [
+          "p. 1"
+        ],
+        "severity": "MAJOR",
+        "confidence": 1,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      },
+      {
+        "id": "S5",
+        "criterion": "story",
+        "title": "The manuscript is not autonomous as a scientific argument",
+        "body": "The entire justification for the proposed work is contained in a single unsupported inference, with no account of prior work, assumptions, scope, methods, results, or limitations. As supplied, a reader cannot determine what problem is being solved, why tokenization is the relevant intervention, or how the claim would be evaluated.",
+        "locations": [
+          "p. 1"
+        ],
+        "severity": "MAJOR",
+        "confidence": 1,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "S04",
+    "criterion": "story",
+    "title": "Non-autonomous submission",
+    "pass": true,
+    "requestedModel": "gpt-5.6-luna",
+    "actualModel": "gpt-5.6-luna",
+    "matchedTerms": [
+      "companion"
+    ],
+    "findings": [
+      {
+        "id": "S1",
+        "criterion": "story",
+        "title": "Central theorem and method are explicitly delegated to an unavailable companion paper",
+        "body": "The manuscript states that the proof of its central theorem and the full method specification appear only in a companion paper and are omitted here. This prevents an independent reader from checking the central argument, understanding the method sufficiently to evaluate its claims, or determining the scope and conditions under which the theorem and method apply. The submission therefore fails the autonomy requirement for a research paper; the issue is substantive rather than merely expository because the omitted material is explicitly central. This finding is tied to ledger claim C1.",
+        "locations": [
+          "p. 2"
+        ],
+        "severity": "MAJOR",
+        "confidence": 1,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "S05",
+    "criterion": "story",
+    "title": "Hypothesis added after results",
+    "pass": true,
+    "requestedModel": "gpt-5.6-luna",
+    "actualModel": "gpt-5.6-luna",
+    "matchedTerms": [
+      "hypothesis",
+      "post hoc",
+      "result"
+    ],
+    "findings": [
+      {
+        "id": "S1",
+        "criterion": "story",
+        "title": "Post hoc hypothesis formulation invalidates the stated hypothesis test",
+        "body": "The manuscript explicitly says that the hypothesis was defined only after observing Table 2 and was chosen to match the winning condition. This makes the hypothesis outcome-conditioned and prevents the reported result from serving as an unbiased test of a pre-existing scientific claim. It is a major failure of the paper's problem framing and chain of argument, not merely a missing methodological detail. The ledger identifies the same central claim as C1.",
+        "locations": [
+          "p. 3"
+        ],
+        "severity": "MAJOR",
+        "confidence": 1,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      },
+      {
+        "id": "S2",
+        "criterion": "story",
+        "title": "No autonomous scientific story is specified beyond the post hoc statement",
+        "body": "The supplied manuscript provides no independently motivated research problem, construct definitions, scope, contribution statement, or falsifiable hypothesis apart from the post hoc selection described in C1. Consequently, an expert cannot determine what scientific question the work addresses or what result would have counted against its claim. This is a substantive autonomy and coherence failure in the manuscript as supplied.",
+        "locations": [
+          "p. 3"
+        ],
+        "severity": "MAJOR",
+        "confidence": 1,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "S06",
+    "criterion": "story",
+    "title": "Contribution contradicts limitation",
+    "pass": true,
+    "requestedModel": "gpt-5.6-luna",
+    "actualModel": "gpt-5.6-luna",
+    "matchedTerms": [
+      "contradict",
+      "label",
+      "qualifier"
+    ],
+    "findings": [
+      {
+        "id": "S1",
+        "criterion": "story",
+        "title": "Central contribution contradicts the stated deployment limitation",
+        "body": "The manuscript claims on p. 1 that the method requires no labels, but on p. 6 states that every deployment requires 5,000 expert labels. No explicit qualifier reconciles these statements (for example, distinguishing training labels from deployment calibration labels, or optional from mandatory labeling). Because this contradiction concerns the method's principal resource requirement, it undermines the problem framing, scope, and stated contribution, and prevents a coherent interpretation of what the method contributes. Ledger claim C1.",
+        "locations": [
+          "p. 1",
+          "p. 6"
+        ],
+        "severity": "MAJOR",
+        "confidence": 1,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "P01",
+    "criterion": "presentation",
+    "title": "Missing architecture",
+    "pass": true,
+    "requestedModel": "gpt-5.6-luna",
+    "actualModel": "gpt-5.6-luna",
+    "matchedTerms": [
+      "architecture",
+      "diagram",
+      "specification"
+    ],
+    "findings": [
+      {
+        "id": "P1",
+        "criterion": "presentation",
+        "title": "Central architecture is not presented as an evaluable specification",
+        "body": "The manuscript identifies a novel multi-stage architecture as its main contribution but supplies none of the basic presentation artifacts needed to understand or inspect it: there is no architecture diagram, algorithm, component inventory, or interface specification. Consequently, the stages, data flow, responsibilities, and inter-component contracts are not recoverable from the manuscript, and the central claim cannot be evaluated or reproduced from the presentation.",
+        "locations": [
+          "p. 3"
+        ],
+        "severity": "MAJOR",
+        "confidence": 1,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "P02",
+    "criterion": "presentation",
+    "title": "Unreadable table",
+    "pass": true,
+    "requestedModel": "gpt-5.6-luna",
+    "actualModel": "gpt-5.6-luna",
+    "matchedTerms": [
+      "table",
+      "unit",
+      "abbreviation"
+    ],
+    "findings": [
+      {
+        "id": "P1",
+        "criterion": "presentation",
+        "title": "Table 2 is not self-interpretable",
+        "body": "Table 2 reportedly presents the principal results, but its columns lack units, abbreviations are undefined, and the boldface convention is unexplained. These omissions prevent readers from determining what quantities are being compared, how to interpret the reported values, and why particular entries are emphasized. Because the table is the stated principal evidence, this is a substantive clarity and accessibility problem rather than a cosmetic issue. Ledger claim C1 is directly implicated.",
+        "locations": [
+          "p. 5"
+        ],
+        "severity": "MAJOR",
+        "confidence": 1,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "P03",
+    "criterion": "presentation",
+    "title": "Figure contradicts caption",
+    "pass": true,
+    "requestedModel": "gpt-5.6-luna",
+    "actualModel": "gpt-5.6-luna",
+    "matchedTerms": [
+      "figure",
+      "caption",
+      "contradict"
+    ],
+    "findings": [
+      {
+        "id": "P1",
+        "criterion": "presentation",
+        "title": "Figure 1 contradicts its caption",
+        "body": "On manuscript p. 4, the figure reportedly rises from 20 to 40, whereas the caption states that performance decreases from 40 to 20. This reverses the stated direction of the result and makes the visual evidence ambiguous or misleading; the figure and caption must be reconciled before the claim can be evaluated reliably. This finding concerns ledger claim C1.",
+        "locations": [
+          "p. 4"
+        ],
+        "severity": "MAJOR",
+        "confidence": 1,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "P04",
+    "criterion": "presentation",
+    "title": "Irreproducible method prose",
+    "pass": true,
+    "requestedModel": "gpt-5.6-luna",
+    "actualModel": "gpt-5.6-luna",
+    "matchedTerms": [
+      "reproduc",
+      "parameter",
+      "method"
+    ],
+    "findings": [
+      {
+        "id": "P1",
+        "criterion": "presentation",
+        "title": "Method description is non-operational and omits reproducibility-critical details",
+        "body": "The manuscript uses vague evaluative terms—“appropriately” and “carefully”—without defining the data-cleaning rules, tuning procedure, parameter values, model or software versions, or execution protocol. The explicit absence of rules, parameters, versions, and pseudocode prevents a reader from determining what was actually done or reproducing the claimed method. This directly affects presentation precision and reproducibility; it also leaves the central methodological claim (ledger claim C1) unsupported as presented.",
+        "locations": [
+          "p. 3"
+        ],
+        "severity": "MAJOR",
+        "confidence": 1,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      },
+      {
+        "id": "P2",
+        "criterion": "presentation",
+        "title": "No visual, algorithmic, or schema evidence is provided",
+        "body": "The supplied manuscript contains no figures, tables, algorithms, or schemas to make the data flow, preprocessing decisions, model-tuning procedure, or experimental setup inspectable. For this excerpt, there is consequently no visual evidence supporting the prose and no accessibility information (such as captions, labels, or alternative descriptions) to assess. This is a presentation deficiency insofar as the claimed method is left entirely as an unstructured assertion.",
+        "locations": [
+          "p. 3"
+        ],
+        "severity": "MODERATE",
+        "confidence": 0.99,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "P05",
+    "criterion": "presentation",
+    "title": "Terminology collision",
+    "pass": true,
+    "requestedModel": "gpt-5.6-luna",
+    "actualModel": "gpt-5.6-luna",
+    "matchedTerms": [
+      "termin",
+      "accuracy"
+    ],
+    "findings": [
+      {
+        "id": "P1",
+        "criterion": "presentation",
+        "title": "The central metric is defined inconsistently",
+        "body": "The manuscript uses the same term, “accuracy,” for exact-match rate on page 2 and average human preference score on page 5. No explicit qualifier, notation, or contextual distinction reconciles these meanings. This makes the paper’s terminology and any prose, tables, or comparisons using the metric ambiguous and prevents reliable interpretation of the reported construct. Ledger claim C1.",
+        "locations": [
+          "p. 2",
+          "p. 5"
+        ],
+        "severity": "MAJOR",
+        "confidence": 1,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "P06",
+    "criterion": "presentation",
+    "title": "Results only in prose",
+    "pass": true,
+    "requestedModel": "gpt-5.6-luna",
+    "actualModel": "gpt-5.6-luna",
+    "matchedTerms": [
+      "table",
+      "uncertainty",
+      "result"
+    ],
+    "findings": [
+      {
+        "id": "P1",
+        "criterion": "presentation",
+        "title": "Dozens of comparisons are presented only as an unreadable dense paragraph",
+        "body": "Page 6 states that dozens of model-by-dataset comparisons are reported in a dense paragraph, but provides no table or other structured display. This makes it difficult to map each model to each dataset, compare outcomes systematically, detect patterns or exceptions, and verify the prose claim. The presentation is therefore inadequate for a central comparative result; a structured table or equivalent figure is necessary to support the reported evidence. Ledger claim C1.",
+        "locations": [
+          "p. 6"
+        ],
+        "severity": "MAJOR",
+        "confidence": 1,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      },
+      {
+        "id": "P2",
+        "criterion": "presentation",
+        "title": "Comparative results omit uncertainty and sample counts",
+        "body": "The page explicitly reports the comparisons without uncertainty information or sample counts. Without these quantities, readers cannot assess the precision, variability, statistical or practical reliability, or evidential basis of the model-by-dataset differences. This is a reproducibility and interpretability deficiency in the presentation of the reported results. Ledger claim C1.",
+        "locations": [
+          "p. 6"
+        ],
+        "severity": "MAJOR",
+        "confidence": 1,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "E01",
+    "criterion": "evaluations",
+    "title": "No competitive baseline",
+    "pass": true,
+    "requestedModel": "gpt-5.6-luna",
+    "actualModel": "gpt-5.6-luna",
+    "matchedTerms": [
+      "baseline",
+      "competitive",
+      "comparison"
+    ],
+    "findings": [
+      {
+        "id": "E1",
+        "criterion": "evaluations",
+        "title": "Evaluation omits established competitive baselines",
+        "body": "The only stated comparator is a random classifier, while the manuscript explicitly acknowledges that the task has established competitive baselines. A random control can provide a minimal sanity check but cannot establish that the proposed model improves on the relevant state of the art or is competitive with credible alternatives. Because no other arms, baseline results, metrics, uncertainty, or statistical comparisons are reported, the central comparative claim is not falsifiable against the alternatives that matter. This is a major evaluation-design deficiency, not merely a missing implementation detail.",
+        "locations": [
+          "p. 5"
+        ],
+        "severity": "MAJOR",
+        "confidence": 0.99,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "E02",
+    "criterion": "evaluations",
+    "title": "Train-test leakage",
+    "pass": true,
+    "requestedModel": "gpt-5.6-luna",
+    "actualModel": "gpt-5.6-luna",
+    "matchedTerms": [
+      "leak",
+      "test",
+      "tune"
+    ],
+    "findings": [
+      {
+        "id": "E1",
+        "criterion": "evaluations",
+        "title": "Test-answer tuning contaminates the reported evaluation",
+        "body": "The manuscript states that prompts are tuned using the test answers and that accuracy is then reported on the same test set. The test labels therefore influence model or prompt selection, so the resulting accuracy is optimistically biased and cannot substantiate an out-of-sample performance claim. The excerpt provides no untouched validation/test split, nested evaluation, preregistered selection rule, or independent holdout that could falsify or quantify this leakage.",
+        "locations": [
+          "p. 4"
+        ],
+        "severity": "MAJOR",
+        "confidence": 1,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "E03",
+    "criterion": "evaluations",
+    "title": "No ablation",
+    "pass": true,
+    "requestedModel": "gpt-5.6-luna",
+    "actualModel": "gpt-5.6-luna",
+    "matchedTerms": [
+      "ablation",
+      "module",
+      "attribut"
+    ],
+    "findings": [
+      {
+        "id": "E1",
+        "criterion": "evaluations",
+        "title": "The claimed contribution of three modules is not isolated by ablation",
+        "body": "The manuscript attributes the reported gain to three new modules, but evaluates only the full system. Without runs removing each module (and, where interactions are claimed, relevant combinations), the evidence cannot identify which module or interaction causes the gain, and the attribution is not falsifiable from the reported experiment. This directly concerns ledger claim C1.",
+        "locations": [
+          "p. 5"
+        ],
+        "severity": "MAJOR",
+        "confidence": 1,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "E04",
+    "criterion": "evaluations",
+    "title": "No uncertainty",
+    "pass": true,
+    "requestedModel": "gpt-5.6-luna",
+    "actualModel": "gpt-5.6-luna",
+    "matchedTerms": [
+      "uncertainty",
+      "variance",
+      "seed"
+    ],
+    "findings": [
+      {
+        "id": "E1",
+        "criterion": "evaluations",
+        "title": "Averages over five seeds are reported without uncertainty or per-seed results",
+        "body": "The manuscript states that results are averaged over five seeds but provides no variance measure, confidence interval, per-seed values, or statistical test. Consequently, readers cannot assess run-to-run variability, determine whether apparent differences are larger than stochastic noise, or evaluate the statistical reliability of the reported averages. This directly limits the evidential support for any empirical claim based on these results. The issue is linked to ledger claim C1.",
+        "locations": [
+          "p. 6"
+        ],
+        "severity": "MAJOR",
+        "confidence": 1,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "E05",
+    "criterion": "evaluations",
+    "title": "Metric misses the claim",
+    "pass": true,
+    "requestedModel": "gpt-5.6-luna",
+    "actualModel": "gpt-5.6-luna",
+    "matchedTerms": [
+      "metric",
+      "hallucination",
+      "valid"
+    ],
+    "findings": [
+      {
+        "id": "E1",
+        "criterion": "evaluations",
+        "title": "The sole metric does not measure the claimed hallucination outcome",
+        "body": "The central claim is reduced hallucination, but the manuscript states that response length is the only metric. Response length is not an operationalization of hallucination and cannot establish whether factual errors, unsupported claims, or other hallucination events decreased. No hallucination annotation protocol, outcome definition, or validity justification is provided. This makes the central empirical claim effectively untestable by the reported evaluation. Ledger claim C1 applies.",
+        "locations": [
+          "p. 1",
+          "p. 6"
+        ],
+        "severity": "MAJOR",
+        "confidence": 1,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      },
+      {
+        "id": "E2",
+        "criterion": "evaluations",
+        "title": "No comparative evaluation design is reported",
+        "body": "The excerpt reports neither experimental arms nor a control/baseline, and gives no dataset, task distribution, prompts, sampling procedure, or comparison protocol. Consequently, even if response length were relevant, the manuscript does not establish what system or condition is being compared, under what conditions, or whether any observed difference could be attributed to the proposed intervention. Ledger claim C1 applies.",
+        "locations": [
+          "p. 1",
+          "p. 6"
+        ],
+        "severity": "MAJOR",
+        "confidence": 0.99,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      },
+      {
+        "id": "E3",
+        "criterion": "evaluations",
+        "title": "No uncertainty or statistical analysis supports the claim",
+        "body": "The manuscript reports no sample size, repeated trials, variability, confidence intervals, statistical tests, effect sizes, or power considerations. Thus it cannot show that an alleged change is reliable rather than sampling noise, nor can it quantify the magnitude of the claimed hallucination reduction. Ledger claim C1 applies.",
+        "locations": [
+          "p. 1",
+          "p. 6"
+        ],
+        "severity": "MAJOR",
+        "confidence": 0.99,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "E06",
+    "criterion": "evaluations",
+    "title": "Single-domain overgeneralization",
+    "pass": true,
+    "requestedModel": "gpt-5.6-luna",
+    "actualModel": "gpt-5.6-luna",
+    "matchedTerms": [
+      "domain",
+      "language"
+    ],
+    "findings": [
+      {
+        "id": "E1",
+        "criterion": "evaluations",
+        "title": "Single-dataset evaluation cannot test universal cross-language and cross-domain robustness",
+        "body": "The manuscript evaluates only one English news dataset, while its conclusion claims robustness across languages and domains. No multilingual or cross-domain test sets, held-out distribution shifts, or other comparative arms are reported, so the experiment cannot falsify—or substantiate—the universal scope of the claim. This directly undermines ledger claim C1.",
+        "locations": [
+          "p. 5"
+        ],
+        "severity": "MAJOR",
+        "confidence": 1,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      },
+      {
+        "id": "E2",
+        "criterion": "evaluations",
+        "title": "Essential evaluation design and uncertainty information is absent",
+        "body": "The supplied manuscript provides no identifiable factors, arms, controls, baselines, ablations, metrics, sample sizes, repeated runs, uncertainty estimates, statistical tests, or robustness analyses. Consequently, even the reported performance on the single dataset cannot be independently assessed for reliability or compared against meaningful alternatives. This is a reproducibility and evaluation deficiency evidenced by the entire supplied manuscript excerpt.",
+        "locations": [
+          "p. 5"
+        ],
+        "severity": "MAJOR",
+        "confidence": 0.99,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "C01",
+    "criterion": "correctness",
+    "title": "Incorrect percentage",
+    "pass": true,
+    "requestedModel": "gpt-5.6-luna",
+    "actualModel": "gpt-5.6-luna",
+    "matchedTerms": [
+      "80"
+    ],
+    "findings": [
+      {
+        "id": "C1",
+        "criterion": "correctness",
+        "title": "Reported accuracy does not match the stated numerator and denominator",
+        "body": "On manuscript p. 5, the manuscript states that 80 of 100 items were answered correctly but reports 72% accuracy. Accuracy is 80/100 = 0.80, or 80%, so the quantitative claim is internally inconsistent. The reported result therefore cannot follow from the printed operands; ledger claim C1 is affected.",
+        "locations": [
+          "p. 5"
+        ],
+        "severity": "MAJOR",
+        "confidence": 1,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "C02",
+    "criterion": "correctness",
+    "title": "Causation from correlation",
+    "pass": true,
+    "requestedModel": "gpt-5.6-luna",
+    "actualModel": "gpt-5.6-luna",
+    "matchedTerms": [
+      "caus",
+      "correl",
+      "observ"
+    ],
+    "findings": [
+      {
+        "id": "C1",
+        "criterion": "correctness",
+        "title": "Correlation in an observational log does not prove causation",
+        "body": "The manuscript states that latency and user satisfaction correlate at r=.31 in an observational log and concludes that latency causes satisfaction. That inference is logically invalid: an observational association of this magnitude is compatible with confounding, reverse or reciprocal causation, selection effects, and measurement artifacts. No causal identification strategy, covariate adjustment, temporal ordering, instrument, natural experiment, randomization, or explicit assumptions are reported. The correlation itself may support an association claim, but it does not establish the claimed causal conclusion.",
+        "locations": [
+          "p. 6"
+        ],
+        "severity": "MAJOR",
+        "confidence": 1,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "C03",
+    "criterion": "correctness",
+    "title": "Denominator changes",
+    "pass": true,
+    "requestedModel": "gpt-5.6-luna",
+    "actualModel": "gpt-5.6-luna",
+    "matchedTerms": [
+      "rate",
+      "80"
+    ],
+    "findings": [
+      {
+        "id": "C1",
+        "criterion": "correctness",
+        "title": "Table 2 reverses the two success rates",
+        "body": "On manuscript p. 5, Table 2 compares 40 successes out of 50 (40/50 = 0.80, or 80%) with 60 successes out of 100 (60/100 = 0.60, or 60%), but states that the latter rate is higher. The reported comparison is therefore mathematically false, and any conclusion relying on it does not follow from the printed counts. This corresponds to ledger claim C1.",
+        "locations": [
+          "p. 5, Table 2"
+        ],
+        "severity": "MAJOR",
+        "confidence": 1,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "C04",
+    "criterion": "correctness",
+    "title": "Conclusion reverses result",
+    "pass": true,
+    "requestedModel": "gpt-5.6-luna",
+    "actualModel": "gpt-5.6-luna",
+    "matchedTerms": [
+      "contradict",
+      "increase",
+      "conclusion"
+    ],
+    "findings": [
+      {
+        "id": "C1",
+        "criterion": "correctness",
+        "title": "Conclusion contradicts the reported error direction",
+        "body": "The manuscript states that error increases from 10% to 18% (p. 5), but concludes that the method reduces error (p. 7). With the printed values, the change is an 8-percentage-point increase (an 80% relative increase), not a reduction. No qualifier or alternative denominator is provided to reconcile the statements. This invalidates the conclusion as written and directly affects ledger claim C1.",
+        "locations": [
+          "p. 5",
+          "p. 7"
+        ],
+        "severity": "MAJOR",
+        "confidence": 1,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "C05",
+    "criterion": "correctness",
+    "title": "Necessary treated as sufficient",
+    "pass": true,
+    "requestedModel": "gpt-5.6-luna",
+    "actualModel": "gpt-5.6-luna",
+    "matchedTerms": [
+      "necessary",
+      "sufficient"
+    ],
+    "findings": [
+      {
+        "id": "C1",
+        "criterion": "correctness",
+        "title": "Necessity is incorrectly inferred to establish sufficiency",
+        "body": "The manuscript states that encryption is necessary for the guarantee and then concludes that adding encryption alone is sufficient to guarantee privacy. This is an invalid implication: a necessary condition must be present for the guarantee but may not be sufficient, and the excerpt provides no theorem, assumptions, threat model, construction, or empirical evidence establishing that encryption alone rules out all other privacy failures. The central claim therefore does not follow from the stated premise. Ledger claim C1 is directly implicated.",
+        "locations": [
+          "p. 2"
+        ],
+        "severity": "MAJOR",
+        "confidence": 1,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "C06",
+    "criterion": "correctness",
+    "title": "Unsupported theorem step",
+    "pass": true,
+    "requestedModel": "gpt-5.6-luna",
+    "actualModel": "gpt-5.6-luna",
+    "matchedTerms": [
+      "proof",
+      "assumption",
+      "guarantee"
+    ],
+    "findings": [
+      {
+        "id": "C1",
+        "criterion": "correctness",
+        "title": "Unsupported transition from bounded expectation to almost-sure guarantee",
+        "body": "On manuscript page 4, the proof is reported to move from a bounded expectation to an almost-sure guarantee without stating an assumption or invoking a theorem that supports this implication. In general, an expectation bound alone does not establish an almost-sure bound; additional conditions and a valid probabilistic argument are required. Because this step underlies the stated guarantee, the central correctness claim is not established by the supplied proof. This corresponds to ledger claim C1.",
+        "locations": [
+          "p. 4"
+        ],
+        "severity": "MAJOR",
+        "confidence": 0.98,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "G01",
+    "criterion": "significance",
+    "title": "Novelty by renaming",
+    "pass": true,
+    "requestedModel": "gpt-5.6-luna",
+    "actualModel": "gpt-5.6-luna",
+    "matchedTerms": [
+      "novel",
+      "rename",
+      "prior"
+    ],
+    "findings": [
+      {
+        "id": "G1",
+        "criterion": "significance",
+        "title": "The claimed contribution is an explicit relabeling rather than a substantive advance",
+        "body": "The manuscript states that it renames standard retrieval-augmented generation as “contextual memory injection” and that the procedure is otherwise unchanged (p. 1). A relabeling does not establish novelty, scientific or practical importance, or advancement beyond the established RAG paradigm. The excerpt provides no new mechanism, theory, task formulation, evidence, or demonstrated benefit that could make the terminology itself significant. Because the manuscript also does not identify or engage precise published prior work, the claimed contribution is not differentiated from the closest prior art. On the supplied record, it does not meet a general research-paper standard for originality or significance and is not a plausible fit as a research contribution.",
+        "locations": [
+          "p. 1"
+        ],
+        "severity": "MAJOR",
+        "confidence": 1,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "G02",
+    "criterion": "significance",
+    "title": "No closest-work comparison",
+    "pass": true,
+    "requestedModel": "gpt-5.6-luna",
+    "actualModel": "gpt-5.6-luna",
+    "matchedTerms": [
+      "closest",
+      "prior"
+    ],
+    "findings": [
+      {
+        "id": "G1",
+        "criterion": "significance",
+        "title": "No defensible differentiation from closest published prior work",
+        "body": "The manuscript does not identify the closest published method, state the precise point of departure, or provide a comparison against that method. Broad surveys cannot establish that the contribution is novel or materially advances research or practice. On the supplied evidence, the central novelty/significance claim is therefore unsubstantiated, and venue fit as a research paper cannot be established.",
+        "locations": [
+          "p. 2"
+        ],
+        "severity": "MAJOR",
+        "confidence": 0.99,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "G03",
+    "criterion": "significance",
+    "title": "Trivial improvement",
+    "pass": true,
+    "requestedModel": "gpt-5.6-luna",
+    "actualModel": "gpt-5.6-luna",
+    "matchedTerms": [
+      "significance",
+      "compute"
+    ],
+    "findings": [
+      {
+        "id": "G1",
+        "criterion": "significance",
+        "title": "The reported improvement is too small and too costly to establish meaningful impact",
+        "body": "The sole reported result is an increase from 91.20% to 91.21% accuracy while using triple the compute. The manuscript gives no uncertainty estimate, statistical test, effect-size interpretation, or analysis showing that this change is practically consequential. On the supplied evidence, the result does not demonstrate a scientifically or operationally meaningful advance beyond a narrow numerical improvement, and the compute trade-off makes the claimed benefit especially difficult to justify. This directly concerns ledger claim C1.",
+        "locations": [
+          "p. 6"
+        ],
+        "severity": "MAJOR",
+        "confidence": 0.99,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      },
+      {
+        "id": "G2",
+        "criterion": "significance",
+        "title": "Novelty and differentiation from published prior work are not established",
+        "body": "The excerpt contains no comparison with the closest published methods or results, no precise statement of what is new beyond the accuracy figure, and no evidence that the 0.01 percentage-point change exceeds known variation or prior benchmarks. Because an originality and significance judgment requires positioning against precise published prior work, the manuscript as supplied cannot establish that this result advances research or practice. This is supported by the absence of any such comparison in the excerpt and concerns ledger claim C1.",
+        "locations": [
+          "p. 6"
+        ],
+        "severity": "MAJOR",
+        "confidence": 0.97,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      },
+      {
+        "id": "G3",
+        "criterion": "significance",
+        "title": "Venue-level contribution is not supported by a broader impact case",
+        "body": "No scientific question, practical use case, affected task or population, deployment constraint, or downstream consequence is specified. The excerpt therefore offers no basis for concluding that the result matters beyond an isolated benchmark accuracy number. Under a general scholarly research-paper standard, a small metric change without a demonstrated consequence is insufficient to support a significant contribution or venue fit. This concerns ledger claim C1.",
+        "locations": [
+          "p. 6"
+        ],
+        "severity": "MODERATE",
+        "confidence": 0.98,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "G04",
+    "criterion": "significance",
+    "title": "Combination novelty unsupported",
+    "pass": true,
+    "requestedModel": "gpt-5.6-luna",
+    "actualModel": "gpt-5.6-luna",
+    "matchedTerms": [
+      "combination",
+      "non-obvious",
+      "novel"
+    ],
+    "findings": [
+      {
+        "id": "G1",
+        "criterion": "significance",
+        "title": "Novelty is asserted as a component combination without a non-obvious contribution",
+        "body": "The manuscript identifies its sole novelty as combining two standard components, yet gives no mechanism-level argument, hypothesis, or evidence showing that the combination creates a non-obvious interaction or advances the state of the art. A routine composition of known components is not, by itself, a significant research contribution. The paper therefore does not establish a contribution beyond implementation-level assembly.",
+        "locations": [
+          "p. 1"
+        ],
+        "severity": "MAJOR",
+        "confidence": 0.99,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      },
+      {
+        "id": "G2",
+        "criterion": "significance",
+        "title": "No precise differentiation from published prior work",
+        "body": "The manuscript provides no citations or comparison against the closest published prior work, so it cannot establish whether the proposed combination is already known, obvious from prior methods, or materially different in scope or behavior. Because novelty and significance are judged relative to published work, this omission prevents a defensible originality claim.",
+        "locations": [
+          "p. 1"
+        ],
+        "severity": "MAJOR",
+        "confidence": 0.99,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      },
+      {
+        "id": "G3",
+        "criterion": "significance",
+        "title": "Importance and practical or scientific impact are unsupported",
+        "body": "Beyond the asserted combination, the manuscript states no research question, target problem, affected users or scientific community, expected benefit, or empirical consequence. It consequently gives no basis for concluding that the contribution matters beyond a narrow implementation detail or plausibly advances research or practice. On the supplied page, fit to a general research-paper standard is therefore not established.",
+        "locations": [
+          "p. 1"
+        ],
+        "severity": "MAJOR",
+        "confidence": 0.98,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "G05",
+    "criterion": "significance",
+    "title": "Venue fit unsubstantiated",
+    "pass": true,
+    "requestedModel": "gpt-5.6-luna",
+    "actualModel": "gpt-5.6-luna",
+    "matchedTerms": [
+      "venue",
+      "fit"
+    ],
+    "findings": [
+      {
+        "id": "G1",
+        "criterion": "significance",
+        "title": "No identifiable systems contribution or research question",
+        "body": "The manuscript's sole substantive statement is that the venue should accept the paper because AI is popular, while explicitly stating that no systems research question or artifact is presented. Popularity is not evidence of originality, scientific or practical importance, or fit with a systems research venue. With no defined contribution, the paper cannot be differentiated from published prior work or assessed as advancing research or practice. This is a failure of venue fit and significance, not merely an underdeveloped motivation.",
+        "locations": [
+          "p. 1"
+        ],
+        "severity": "MAJOR",
+        "confidence": 1,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  },
+  {
+    "id": "G06",
+    "criterion": "significance",
+    "title": "Impact claim lacks pathway",
+    "pass": true,
+    "requestedModel": "gpt-5.6-luna",
+    "actualModel": "gpt-5.6-luna",
+    "matchedTerms": [
+      "impact",
+      "clinical",
+      "pathway"
+    ],
+    "findings": [
+      {
+        "id": "G1",
+        "criterion": "significance",
+        "title": "The claimed hospital impact is unsupported by a pathway from the toy simulation to practice",
+        "body": "The manuscript makes a transformative hospital-practice claim but explicitly provides neither clinical evidence, deployment analysis, nor an argument establishing transfer from the toy simulation to the hospital setting. Consequently, the claimed practical significance is not demonstrated, and the work does not meet a general research-paper standard for an impact claim of this magnitude. The issue is tied to ledger claim C1.",
+        "locations": [
+          "p. 7"
+        ],
+        "severity": "MAJOR",
+        "confidence": 1,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      },
+      {
+        "id": "G2",
+        "criterion": "significance",
+        "title": "The manuscript does not establish importance beyond a toy simulation",
+        "body": "Because the supplied manuscript contains only a toy simulation claim and no evidence of clinical relevance, operational applicability, or scientifically consequential insight, it does not establish that the contribution matters beyond a narrow illustrative exercise. The asserted transformation of hospital practice is therefore disproportionate to the reported scope and evidence. Ledger claim C1 is the relevant claim.",
+        "locations": [
+          "p. 7"
+        ],
+        "severity": "MAJOR",
+        "confidence": 1,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      },
+      {
+        "id": "G3",
+        "criterion": "significance",
+        "title": "Novelty and differentiation from published prior work are not assessable",
+        "body": "The supplied manuscript provides no precise contribution statement beyond the impact assertion and no comparison with closest published prior work. Accordingly, it does not establish originality or explain what is substantively new relative to existing simulation, healthcare, or hospital-practice research. This is an evidentiary failure in the manuscript as supplied, not a claim that a particular prior work defeats novelty.",
+        "locations": [
+          "p. 7"
+        ],
+        "severity": "MAJOR",
+        "confidence": 1,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      },
+      {
+        "id": "G4",
+        "criterion": "significance",
+        "title": "The work is not venue-ready as a general research paper on the supplied evidence",
+        "body": "Under the general scholarly standard specified for this review, a toy simulation without clinical data, deployment analysis, transfer reasoning, or a precise prior-work differentiation cannot substantiate a practice-transforming conclusion. The manuscript may describe a proposal or illustrative simulation, but the supplied text does not support its stated level of significance or a credible research impact claim. Ledger claim C1 is implicated.",
+        "locations": [
+          "p. 7"
+        ],
+        "severity": "MAJOR",
+        "confidence": 1,
+        "retainInFinal": true,
+        "claimIds": [
+          "C1"
+        ]
+      }
+    ],
+    "error": null
+  }
+]

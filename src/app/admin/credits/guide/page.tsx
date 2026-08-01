@@ -100,8 +100,8 @@ ceil(${rawCredits.toFixed(3)}) = ${credits} credits`}
             OpenRouter returns <code>usage.cost</code>. That value already
             reflects the model, different input and output prices, reasoning
             and cached tokens, the selected upstream, and provider-specific
-            pricing. Ten thousand GPT-5.5 tokens are therefore not treated like
-            ten thousand MiniMax M3 tokens.
+            pricing. Ten thousand GPT-5.6 Luna Pro tokens are therefore not
+            treated like ten thousand MiniMax M3 tokens.
           </p>
         </GuideSection>
 

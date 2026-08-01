@@ -63,14 +63,14 @@ Choose the lens that fits the reading: logical fallacies, factual claims, neutra
 - **Safe quantitative verification** — Evaluation and Correctness specialists can propose whitelisted arithmetic checks (rates, means, percentage changes, precision/recall/F1). Jiddu recalculates them deterministically and never executes code from the manuscript.
 - **Source + quality audit** — cited URLs are SSRF-checked, fetched with bounded redirects/bytes, compared with observed title metadata and classified as published work, preprint, documentation or unknown. An independent critic then audits support, severity, recommendation, citation reliability and bias.
 - **Retention gate** — every retained MAJOR/MODERATE specialist finding must be represented in a final weakness or explicitly dismissed by the critic; a repair pass and deterministic fallback prevent synthesis loss.
-- **Standard and Deep modes** — Standard uses the selected economical model throughout and another catalog model as critic. Deep routes evaluation, correctness, significance, synthesis and repair to GPT-5.5 (high reasoning by default) and uses Claude Opus 4.8 as the independent critic. Both internal model ids can be changed through environment variables.
+- **Standard and Deep modes** — Standard uses the selected economical model throughout and another catalog model as critic. Deep routes evaluation, correctness, significance, synthesis and repair to GPT-5.6 Luna Pro and uses Claude Opus 4.8 as the independent critic. Both internal model ids can be changed through environment variables.
 - **Localized evidence** — every substantive weakness carries manuscript page/section references and a `MAJOR` / `MODERATE` / `MINOR` severity.
 - **Markdown + PDF export** — deterministic Markdown follows the required `AI Paper Review` format and the print route supports browser “Save as PDF”.
 - **Curated synthetic demos** in 3 languages (`/r/demo-en`, `/r/demo-pt`, `/r/demo-es`) exercise the full results viewer without uploading a paper or spending API credits.
 
 ### Across the product
 - **One reading interface** — the first five modes accept URL, pasted text, PDF or TXT; adversarial review accepts one complete PDF so the manuscript can be assessed as a self-contained submission.
-- **Model choice and fallback** — GPT-5.4 mini is the default, MiniMax M3 is available for comparison, and requests fall back only when the first model fails before emitting output. Sonar Reasoning Pro is reserved for evidence-backed fact-check verdicts.
+- **Model choice and fallback** — GPT-5.6 Luna with low reasoning is the default, MiniMax M3 is available for comparison, and requests fall back only when the first model fails before emitting output. Sonar Reasoning Pro is reserved for evidence-backed fact-check verdicts.
 - **Inspectable output** — findings quote the source and stay anchored to the relevant sentence, paragraph or paper page. Automated results are marked as unreviewed unless they receive an operator spot-check.
 - **Share and export** — every completed analysis gets an unlisted share URL and a print-ready PDF view. Adversarial reviews also export deterministic Markdown.
 - **English, Portuguese and Spanish** — the interface and model output follow the selected language.
@@ -88,7 +88,7 @@ Jiddu adapts published methods where they fit, then implements its own prompts, 
 
 The fact-check pipeline has been measured against 200 human-labeled claims from [PolitiFact](https://www.politifact.com)'s polar buckets, sourced through the [LIAR2 dataset](https://github.com/chengxuphd/liar2). Jiddu matched the human verdict in **67.5%** of cases overall and **81.3%** on the unambiguous true / false / pants-on-fire buckets; strict polar disagreement was **4.5%**. See the [full methodology, confusion matrix and disagreement analysis](./docs/benchmark-politifact.md).
 
-Paper review has a separate [30-case synthetic SPECS benchmark](./evals/paper-review/report.md). GPT-5.4 mini and GPT-5.5 detected all 30 injected defects; GPT-5.5 returned 30.6% fewer, more consolidated findings. The set reached a ceiling and does not establish accuracy on complete real-world papers.
+Paper review has a separate [30-case synthetic SPECS benchmark](./evals/paper-review/report.md). GPT-5.4 mini, GPT-5.5, GPT-5.6 Luna and GPT-5.6 Luna Pro all detected the 30 injected defects. Luna Pro returned 8% fewer findings than standard Luna, but the set reached a ceiling and does not establish accuracy on complete real-world papers.
 
 Jiddu is not affiliated with the authors, institutions, datasets or venues cited above.
 
@@ -147,7 +147,7 @@ Open <http://localhost:3000>. Try `/a/demo-en`, `/e/demo-en`, or `/r/demo-en`
 | `JIDDU_CREDIT_MARGIN_MULTIPLIER` | Installation default for the multiplier applied to OpenRouter's reported cost. Defaults to `1.5`; the admin can override it at runtime. |
 | `JIDDU_LIVE_MINIMUM_CREDITS` | Minimum available balance required to start GPT Live Transcribe. It is checked but not reserved or charged. Defaults to `20`; the admin can override it at runtime. The former `JIDDU_LIVE_TRANSCRIPTION_CREDITS` name remains supported for compatibility. |
 | `OPENAI_LIVE_TRANSCRIPTION_USD_PER_MINUTE` | Installation default for GPT Live Transcribe provider cost per audio minute. Defaults to `0.017`; the admin can override it at runtime. |
-| `PAPER_REVIEW_DEEP_MODEL` | Optional internal model id for Deep specialist/synthesis stages. Defaults to `gpt-5.5`. |
+| `PAPER_REVIEW_DEEP_MODEL` | Optional internal model id for Deep specialist/synthesis stages. Defaults to `gpt-5.6-luna-pro`. |
 | `PAPER_REVIEW_CRITIC_MODEL` | Optional independent Deep critic model id. Defaults to `claude-opus-4.8`. |
 | `OPENAI_LIVE_TRANSCRIBE_DELAY` | GPT Live Transcribe latency/accuracy profile: `minimal`, `low`, `medium`, `high`, or `xhigh`. Defaults to `medium`. |
 
@@ -312,7 +312,8 @@ Body is `{ "text": "…" }` (40–2000 chars) plus optional `lang` (`en`/`pt`/`e
 - **Adversarial review API:** start a job with one multipart `file`, or JSON `{ "pdf_url": "https://…", "depth": "standard" }`. `depth` is `standard` or `deep`. The `202` response includes the id and status URL. Poll `GET /api/v1/adversarial-reviews/{id}` until `status` is `complete` or `failed`. Complete jobs include the structured review, public audit summary, source-verification metadata, and viewer/Markdown/print URLs.
 - **MCP server (remote, recommended):** the hosted endpoint at `https://jiddu.app/api/mcp` exposes five synchronous text tools plus `start_adversarial_review` and `get_adversarial_review`. Compatible MCP clients discover [WorkOS AuthKit MCP](https://workos.com/docs/authkit/mcp) automatically, open Jiddu sign-in and receive a resource-scoped bearer token. Tool calls use included platform access for allowlisted users and reserve, settle and debit Jiddu Credits for everyone else, so no manually issued `X-Jiddu-Key` is required.
 - **MCP server (local):** the same tools also ship as a standalone package, [`packages/jiddu-mcp`](./packages/jiddu-mcp), for offline/dev use — run from source (`node dist/index.js`), not published to npm. Machine-oriented docs: [`packages/jiddu-mcp/AGENT.md`](./packages/jiddu-mcp/AGENT.md).
-- **Evals:** fixed test sets in [`evals/`](./evals), plus a 30-case balanced synthetic SPECS benchmark under [`evals/paper-review`](./evals/paper-review). GPT-5.4 mini and GPT-5.5 both detected 30/30 injected defects; GPT-5.5 returned 30.6% fewer, more consolidated findings. See the [benchmark report](./evals/paper-review/report.md). Run deterministic tests with `npm test`; the paid specialist benchmark is opt-in via `OPENROUTER_API_KEY=<key> npm run eval:paper-review`.
+- **Evals:** fixed test sets in [`evals/`](./evals), plus a 30-case balanced synthetic SPECS benchmark under [`evals/paper-review`](./evals/paper-review). GPT-5.4 mini, GPT-5.5, GPT-5.6 Luna and GPT-5.6 Luna Pro all detected 30/30 injected defects; Luna Pro returned 8% fewer findings than standard Luna. See the [benchmark report](./evals/paper-review/report.md). Run deterministic tests with `npm test`; the paid specialist benchmark is opt-in via `OPENROUTER_API_KEY=<key> npm run eval:paper-review`.
+- **Paid smoke test:** `DATABASE_URL=postgresql://... npm run smoke:openrouter-postgres` exercises every OpenRouter-backed mode, persists and rereads each result in a disposable PostgreSQL database, reports latency/token/cost data, and removes its temporary rows. Use `SMOKE_ONLY=economical`, `paper-review-standard`, or `paper-review-deep` to narrow the run; `SMOKE_OPENROUTER_PROVIDER=OpenAI` can pin the Luna upstream while diagnosing provider-specific failures.
 
 ## API (internal SSE endpoints)
 
@@ -339,7 +340,7 @@ Request bodies:
 { "type": "text", "text": "…",         "lang": "en" }
 ```
 
-…or multipart with `file=<PDF or TXT>` + `lang`. The optional `model` field accepts `gpt-5.4-mini` or `minimax-m3` and is prepended to the default fallback chain — usually you can omit it.
+…or multipart with `file=<PDF or TXT>` + `lang`. The optional `model` field accepts `gpt-5.6-luna` or `minimax-m3` and is prepended to the default fallback chain — usually you can omit it.
 
 ### `GET /api/analysis/[id]`
 
@@ -440,7 +441,7 @@ The persisted final result is shown at `/r/[id]`; `GET /api/review/[id]/markdown
 A separate page at `/live` listens to live audio (microphone or browser-tab capture) via the OpenAI Realtime API (`gpt-live-transcribe`) and surfaces fallacies as the speaker talks. The transcription session uses the balanced `medium` delay profile by default and passes English, Portuguese and Spanish together as language hints so the interface locale does not constrain multilingual speech. Two endpoints back it:
 
 - `POST /api/live/token` — mints a short-lived ephemeral client secret so the browser can open a WebRTC connection directly to OpenAI for **transcription** (`gpt-live-transcribe`). Requires `OPENAI_API_KEY`. This call never touches OpenRouter.
-- `POST /api/live/analyze` — a separate, later call: SSE stream that ingests the cumulative transcript in sliding windows (eagerly after ~800 new characters, or every 30s once at least ~120 characters are available) and emits `finding` events. Each window receives the preceding four sentences as context. **This is the analysis step**, running the same fallacy prompt routed via OpenRouter (same GPT-5.4 mini / MiniMax M3 picker as the other pipelines) — a different model and provider from the OpenAI transcription above. Send `{ finalize: true }` on Stop to process the remaining text, compute the final score and commit the session.
+- `POST /api/live/analyze` — a separate, later call: SSE stream that ingests the cumulative transcript in sliding windows (eagerly after ~800 new characters, or every 30s once at least ~120 characters are available) and emits `finding` events. Each window receives the preceding four sentences as context. **This is the analysis step**, running the same fallacy prompt routed via OpenRouter (same GPT-5.6 Luna / MiniMax M3 picker as the other pipelines) — a different model and provider from the OpenAI transcription above. Send `{ finalize: true }` on Stop to process the remaining text, compute the final score and commit the session.
 
 Notes:
 - Tab capture requires Chrome or Edge — Safari/Firefox don't expose tab audio via `getDisplayMedia`. The Microphone source works everywhere.

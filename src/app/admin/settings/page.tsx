@@ -190,9 +190,9 @@ const MODEL_LABELS: Record<
   (typeof PAPER_REVIEW_MODEL_OPTIONS)[number],
   string
 > = {
-  "gpt-5.5": "GPT-5.5",
+  "gpt-5.6-luna-pro": "GPT-5.6 Luna Pro",
   "claude-opus-4.8": "Claude Opus 4.8",
-  "gpt-5.4-mini": "GPT-5.4 mini",
+  "gpt-5.6-luna": "GPT-5.6 Luna",
   "minimax-m3": "MiniMax M3",
 };
 

@@ -10,8 +10,8 @@ import {
 
 test("prices economical, reasoning and critic models distinctly", () => {
   assert.equal(modelCreditRate("minimax-m3"), 1);
-  assert.equal(modelCreditRate("gpt-5.4-mini"), 2);
-  assert.equal(modelCreditRate("gpt-5.5"), 10);
+  assert.equal(modelCreditRate("gpt-5.6-luna"), 1);
+  assert.equal(modelCreditRate("gpt-5.6-luna-pro"), 3);
   assert.equal(modelCreditRate("claude-opus-4.8"), 18);
 });
 
@@ -21,43 +21,43 @@ test("keeps the Live entry check separate from model fallback pricing", () => {
 
 test("reserves the worst possible fallback cost but settles actual models", () => {
   assert.equal(
-    maxCreditsForCalls(["gpt-5.4-mini", "minimax-m3"], 3),
-    6,
+    maxCreditsForCalls(["gpt-5.6-luna", "minimax-m3"], 3),
+    3,
   );
   assert.equal(
-    creditsForModels(["gpt-5.4-mini", "minimax-m3", "minimax-m3"]),
-    4,
+    creditsForModels(["gpt-5.6-luna", "minimax-m3", "minimax-m3"]),
+    3,
   );
 });
 
 test("standard paper review includes ten required calls and optional repair", () => {
   const gptModels = paperReviewMaximumModels({
     depth: "standard",
-    selectedModel: "gpt-5.4-mini",
+    selectedModel: "gpt-5.6-luna",
   });
   assert.equal(gptModels.length, 11);
-  assert.equal(creditsForModels(gptModels), 21);
+  assert.equal(creditsForModels(gptModels), 11);
 
   const minimaxModels = paperReviewMaximumModels({
     depth: "standard",
     selectedModel: "minimax-m3",
   });
   assert.equal(minimaxModels.length, 11);
-  assert.equal(creditsForModels(minimaxModels), 12);
+  assert.equal(creditsForModels(minimaxModels), 11);
 });
 
 test("deep paper review reserves selected, reasoning, critic and repair calls", () => {
   const gptModels = paperReviewMaximumModels({
     depth: "deep",
-    selectedModel: "gpt-5.4-mini",
+    selectedModel: "gpt-5.6-luna",
   });
   assert.equal(gptModels.length, 11);
-  assert.equal(creditsForModels(gptModels), 94);
+  assert.equal(creditsForModels(gptModels), 42);
 
   const minimaxModels = paperReviewMaximumModels({
     depth: "deep",
     selectedModel: "minimax-m3",
   });
   assert.equal(minimaxModels.length, 11);
-  assert.equal(creditsForModels(minimaxModels), 91);
+  assert.equal(creditsForModels(minimaxModels), 42);
 });

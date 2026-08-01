@@ -88,11 +88,12 @@ export type ModelChoice = {
 
 export const MODEL_CATALOG: ModelChoice[] = [
   {
-    id: "gpt-5.4-mini",
-    label: "GPT-5.4 mini",
+    id: "gpt-5.6-luna",
+    label: "GPT-5.6 Luna",
     flag: "🇺🇸",
     family: "openai",
-    openrouter: "openai/gpt-5.4-mini",
+    openrouter: "openai/gpt-5.6-luna",
+    reasoningEffort: "low",
   },
   {
     id: "minimax-m3",
@@ -113,6 +114,23 @@ const MODEL_BY_ID: Record<string, ModelChoice> = Object.fromEntries(
   MODEL_CATALOG.map((m) => [m.id, m]),
 );
 const PAPER_REVIEW_INTERNAL_MODELS: Record<string, ModelChoice> = {
+  "gpt-5.6-luna-pro": {
+    id: "gpt-5.6-luna-pro",
+    label: "GPT-5.6 Luna Pro",
+    flag: "🇺🇸",
+    family: "openai",
+    openrouter: "openai/gpt-5.6-luna-pro",
+    reasoningEffort: "medium",
+  },
+  // Kept internally so historical evals remain reproducible. These models
+  // are no longer exposed in the product picker or used by default.
+  "gpt-5.4-mini": {
+    id: "gpt-5.4-mini",
+    label: "GPT-5.4 mini",
+    flag: "🇺🇸",
+    family: "openai",
+    openrouter: "openai/gpt-5.4-mini",
+  },
   "gpt-5.5": {
     id: "gpt-5.5",
     label: "GPT-5.5",
@@ -131,7 +149,7 @@ const PAPER_REVIEW_INTERNAL_MODELS: Record<string, ModelChoice> = {
   },
 };
 
-const DEFAULT_MODEL_ID = "gpt-5.4-mini";
+const DEFAULT_MODEL_ID = "gpt-5.6-luna";
 
 export function resolveModel(id?: string | null): ModelChoice {
   if (id && MODEL_BY_ID[id]) return MODEL_BY_ID[id];
@@ -179,27 +197,32 @@ export class OpenRouterProvider implements LlmProvider {
     return this.modelSlug;
   }
 
-  private toolChoiceFor(modelOverride?: string):
+  private toolChoiceFor(functionName: string, modelOverride?: string):
     | "auto"
     | { type: "function"; function: { name: string } } {
     const choice = resolveModel(modelOverride ?? this.defaultModel);
     if (choice.toolMode === "auto") return "auto";
-    return { type: "function", function: { name: "report_analysis" } };
+    return { type: "function", function: { name: functionName } };
   }
 
-  // OpenRouter-specific extras (provider routing). Not part of the OpenAI
-  // schema, so we widen the type to pass them through as request body.
+  // OpenRouter-specific provider routing and reasoning controls. Not all of
+  // these fields are present in the OpenAI SDK's Chat Completions types, so
+  // we widen the request body below.
   private openRouterExtras(modelOverride?: string): Record<string, unknown> {
     const choice = resolveModel(modelOverride ?? this.defaultModel);
-    if (choice.providerOrder && choice.providerOrder.length > 0) {
-      return {
-        provider: {
-          order: choice.providerOrder,
-          allow_fallbacks: false,
-        },
-      };
-    }
-    return {};
+    return {
+      ...(choice.providerOrder && choice.providerOrder.length > 0
+        ? {
+            provider: {
+              order: choice.providerOrder,
+              allow_fallbacks: false,
+            },
+          }
+        : {}),
+      ...(choice.reasoningEffort
+        ? { reasoning: { effort: choice.reasoningEffort } }
+        : {}),
+    };
   }
 
   async analyze(
@@ -225,7 +248,7 @@ export class OpenRouterProvider implements LlmProvider {
           },
         },
       ],
-      tool_choice: this.toolChoiceFor(opts?.model),
+      tool_choice: this.toolChoiceFor("report_analysis", opts?.model),
       ...this.openRouterExtras(opts?.model),
     } as OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming);
     const usage = readOpenRouterUsage(
@@ -273,7 +296,7 @@ export class OpenRouterProvider implements LlmProvider {
             },
           },
         ],
-        tool_choice: this.toolChoiceFor(opts?.model),
+        tool_choice: this.toolChoiceFor("report_analysis", opts?.model),
         stream: true,
         ...this.openRouterExtras(opts?.model),
       } as OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming,
@@ -417,7 +440,7 @@ export class OpenRouterProvider implements LlmProvider {
             },
           },
         ],
-        tool_choice: this.toolChoiceFor(opts?.model),
+        tool_choice: this.toolChoiceFor("report_claims", opts?.model),
         stream: true,
         ...this.openRouterExtras(opts?.model),
       } as OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming,
@@ -544,7 +567,7 @@ export class OpenRouterProvider implements LlmProvider {
             },
           },
         ],
-        tool_choice: this.toolChoiceFor(opts?.model),
+        tool_choice: this.toolChoiceFor("report_neutrality", opts?.model),
         stream: true,
         ...this.openRouterExtras(opts?.model),
       } as OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming,
@@ -690,7 +713,7 @@ export class OpenRouterProvider implements LlmProvider {
             },
           },
         ],
-        tool_choice: this.toolChoiceFor(opts?.model),
+        tool_choice: this.toolChoiceFor("report_analysis", opts?.model),
         stream: true,
         ...this.openRouterExtras(opts?.model),
       } as OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming,
@@ -836,7 +859,7 @@ export class OpenRouterProvider implements LlmProvider {
             },
           },
         ],
-        tool_choice: this.toolChoiceFor(opts.model),
+        tool_choice: this.toolChoiceFor("report_explanation", opts.model),
         stream: true,
         ...this.openRouterExtras(opts.model),
       } as OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming,

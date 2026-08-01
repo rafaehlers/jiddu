@@ -1,8 +1,11 @@
-export const JIDDU_CREDIT_RATE_VERSION = "2026-07-30.v6";
+export const JIDDU_CREDIT_RATE_VERSION = "2026-07-31.v7";
 export const DEFAULT_LIVE_MINIMUM_CREDITS = 20;
 
 export const MODEL_CREDIT_RATES = {
   "minimax-m3": 1,
+  "gpt-5.6-luna": 1,
+  "gpt-5.6-luna-pro": 3,
+  // Legacy rates remain available for historical jobs and usage records.
   "gpt-5.4-mini": 2,
   "perplexity/sonar-reasoning-pro": 2,
   "gpt-5.5": 10,
@@ -33,13 +36,13 @@ export const JIDDU_CREDIT_RATE_TABLE: CreditRateRow[] = [
     feature: "Fallacy detector",
     unit: "Per completed text chunk",
     detail:
-      "2 credits reserved to cover the fallback chain. If cost data is missing, a completed call falls back to 1 with MiniMax M3 or 2 with GPT-5.4 mini.",
+      "1 credit reserved per call. If cost data is missing, a completed GPT-5.6 Luna or MiniMax M3 call falls back to 1 credit.",
   },
   {
     feature: "Fact-check — extraction",
     unit: "Per completed text chunk",
     detail:
-      "2 credits reserved to cover the fallback chain. If cost data is missing, a completed call falls back to 1 with MiniMax M3 or 2 with GPT-5.4 mini.",
+      "1 credit reserved per call. If cost data is missing, a completed GPT-5.6 Luna or MiniMax M3 call falls back to 1 credit.",
   },
   {
     feature: "Fact-check — verification",
@@ -51,31 +54,31 @@ export const JIDDU_CREDIT_RATE_TABLE: CreditRateRow[] = [
     feature: "Neutrality",
     unit: "Per completed text chunk",
     detail:
-      "2 credits reserved to cover the fallback chain. If cost data is missing, a completed call falls back to 1 with MiniMax M3 or 2 with GPT-5.4 mini.",
+      "1 credit reserved per call. If cost data is missing, a completed GPT-5.6 Luna or MiniMax M3 call falls back to 1 credit.",
   },
   {
     feature: "Paper explainer",
     unit: "Per completed text chunk",
     detail:
-      "2 credits reserved to cover the fallback chain. If cost data is missing, a completed call falls back to 1 with MiniMax M3 or 2 with GPT-5.4 mini.",
+      "1 credit reserved per call. If cost data is missing, a completed GPT-5.6 Luna or MiniMax M3 call falls back to 1 credit.",
   },
   {
     feature: "Slop detector",
     unit: "Per completed text chunk",
     detail:
-      "2 credits reserved to cover the fallback chain. If cost data is missing, a completed call falls back to 1 with MiniMax M3 or 2 with GPT-5.4 mini.",
+      "1 credit reserved per call. If cost data is missing, a completed GPT-5.6 Luna or MiniMax M3 call falls back to 1 credit.",
   },
   {
     feature: "Adversarial review — Standard",
     unit: "Per review run",
     detail:
-      "Up to 21 credits with GPT-5.4 mini (19 without repair) or 12 with MiniMax M3 (11 without repair).",
+      "Up to 11 credits with GPT-5.6 Luna or MiniMax M3 (10 without repair).",
   },
   {
     feature: "Adversarial review — Deep",
     unit: "Per review run",
     detail:
-      "With default routing, up to 94 credits with GPT-5.4 mini selected (84 without repair) or 91 with MiniMax M3 (81 without repair).",
+      "With default GPT-5.6 Luna Pro and Claude Opus 4.8 routing, up to 42 credits (39 without repair).",
   },
   {
     feature: "Live transcription",
@@ -86,7 +89,7 @@ export const JIDDU_CREDIT_RATE_TABLE: CreditRateRow[] = [
     feature: "Live analysis",
     unit: "Per completed analysis window",
     detail:
-      "1 credit reserved with MiniMax M3 or 2 with GPT-5.4 mini. Completed window costs are accumulated with transcription and the Live session is rounded once at settlement.",
+      "1 credit reserved with GPT-5.6 Luna or MiniMax M3. Completed window costs are accumulated with transcription and the Live session is rounded once at settlement.",
   },
 ];
 
@@ -121,7 +124,7 @@ export function paperReviewMaximumModels(input: {
   if (input.depth === "standard") {
     const critic =
       input.criticModel ??
-      (selected === "minimax-m3" ? "gpt-5.4-mini" : "minimax-m3");
+      (selected === "minimax-m3" ? "gpt-5.6-luna" : "minimax-m3");
     return [
       ...Array.from({ length: 9 }, () => selected),
       critic,
@@ -129,7 +132,7 @@ export function paperReviewMaximumModels(input: {
     ];
   }
 
-  const deep = input.deepModel || "gpt-5.5";
+  const deep = input.deepModel || "gpt-5.6-luna-pro";
   const critic = input.criticModel || "claude-opus-4.8";
   return [
     ...Array.from({ length: 3 }, () => selected),

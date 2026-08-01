@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
 
   // Build the fallback chain. If the caller explicitly picked a model we
   // honour it as the first try and tack the default chain on for resiliency.
-  // Otherwise we use the default chain (gpt-5.4-mini → minimax-m3).
+  // Otherwise we use the default chain (gpt-5.6-luna → minimax-m3).
   const modelChain: string[] = modelId
     ? Array.from(new Set([resolveModel(modelId).id, ...DEFAULT_MODEL_CHAIN]))
     : [...DEFAULT_MODEL_CHAIN];
