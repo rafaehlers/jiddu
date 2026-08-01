@@ -17,6 +17,7 @@ type StreamingState = {
   chunkCount: number;
   chunksDone: number;
   findingsCount: number;
+  synthesizing: boolean;
 };
 
 type LiveState =
@@ -46,7 +47,13 @@ export function ExplainComposer() {
     setSubmitError(null);
     setLive({
       status: "streaming",
-      data: { id: null, chunkCount: 0, chunksDone: 0, findingsCount: 0 },
+      data: {
+        id: null,
+        chunkCount: 0,
+        chunksDone: 0,
+        findingsCount: 0,
+        synthesizing: false,
+      },
     });
 
     let res: Response;
@@ -103,6 +110,15 @@ export function ExplainComposer() {
             ? {
                 status: "streaming",
                 data: { ...prev.data, chunksDone: prev.data.chunksDone + 1 },
+              }
+            : prev,
+        );
+      } else if (ev.event === "synthesisStart") {
+        setLive((prev) =>
+          prev?.status === "streaming"
+            ? {
+                status: "streaming",
+                data: { ...prev.data, synthesizing: true },
               }
             : prev,
         );
@@ -185,7 +201,7 @@ export function ExplainComposer() {
 
 function LoadingPanel({ state }: { state: StreamingState }) {
   const { t } = useI18n();
-  const { chunkCount, chunksDone, findingsCount } = state;
+  const { chunkCount, chunksDone, findingsCount, synthesizing } = state;
   const known = chunkCount > 0;
   const [tick, setTick] = useState(0);
   useEffect(() => {
@@ -199,6 +215,8 @@ function LoadingPanel({ state }: { state: StreamingState }) {
     stage = pool[0];
   } else if (chunksDone < chunkCount) {
     stage = pool[tick % pool.length];
+  } else if (synthesizing) {
+    stage = t.loader_explain_map;
   } else {
     stage = t.loading_finalizing;
   }

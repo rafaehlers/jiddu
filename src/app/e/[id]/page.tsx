@@ -8,7 +8,11 @@ import { AnalysisSkeleton } from "@/components/analysis-skeleton";
 import { ScrollIndicator } from "@/components/scroll-indicator";
 import { ExplainView } from "@/components/explain-view";
 import type { Block } from "@/lib/paragraphs";
-import type { ExplainFinding, ExplainLevel } from "@/lib/explain-schema";
+import {
+  parsePaperMap,
+  type ExplainFinding,
+  type ExplainLevel,
+} from "@/lib/explain-schema";
 import { analysisSocialMetadata } from "@/lib/social-metadata";
 
 type Props = { params: Promise<{ id: string }> };
@@ -51,6 +55,7 @@ export default async function ExplainViewerPage({ params }: Props) {
           blocks={blocks}
           findings={findings}
           overview={e.overview ?? ""}
+          paperMap={parsePaperMap(e.paperMap)}
           level={(e.level ?? "undergrad") as ExplainLevel}
           status={e.status}
           model={e.model}

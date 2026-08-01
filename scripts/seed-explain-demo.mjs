@@ -21,6 +21,34 @@ const PROFILES = {
     level: "undergrad",
     overview:
       "This short review explains how sleep helps the brain turn fresh, fragile memories into stable long-term ones. It walks through the evidence from sleep-deprivation experiments, the “replay” theory of what the sleeping brain is doing, and what researchers still don't know.",
+    paperMap: {
+      paperTypes: ["Literature review", "Empirical synthesis"],
+      contributionTypes: ["Synthesis", "Mechanism"],
+      researchQuestion: {
+        text: "How does sleep help consolidate consciously recalled facts and events into long-term memory?",
+        blockIds: ["p0", "p1"],
+      },
+      contribution: {
+        text: "It brings behavioural, neural and animal evidence together around sleep's role in declarative-memory consolidation.",
+        blockIds: ["p1", "p4", "p6"],
+      },
+      approach: {
+        text: "It reviews sleep-deprivation comparisons and neural recordings, then connects the findings through the replay hypothesis.",
+        blockIds: ["p2", "p4"],
+      },
+      mainAnswer: {
+        text: "Sleep appears to be an active stage of memory formation, with deep slow-wave sleep playing a particularly important role.",
+        blockIds: ["p3", "p6"],
+      },
+      evidence: {
+        text: "The case combines next-day recall experiments, brain imaging and animal recordings of neurons replaying maze activity during sleep.",
+        blockIds: ["p2", "p3", "p4", "p6"],
+      },
+      statedLimitation: {
+        text: "The selection mechanism is unknown, generalisation beyond declarative memory is uncertain, and much human evidence remains correlational.",
+        blockIds: ["p5"],
+      },
+    },
     sections: [
       {
         heading: "1 Introduction",
@@ -93,6 +121,34 @@ const PROFILES = {
     level: "undergrad",
     overview:
       "Esta breve revisão explica como o sono ajuda o cérebro a transformar memórias novas e frágeis em memórias estáveis de longo prazo. Ela percorre as evidências de experimentos de privação de sono, a teoria do “replay” sobre o que o cérebro adormecido faz, e o que os pesquisadores ainda não sabem.",
+    paperMap: {
+      paperTypes: ["Revisão de literatura", "Síntese empírica"],
+      contributionTypes: ["Síntese", "Mecanismo"],
+      researchQuestion: {
+        text: "Como o sono ajuda a consolidar fatos e eventos conscientemente recordados na memória de longo prazo?",
+        blockIds: ["p0", "p1"],
+      },
+      contribution: {
+        text: "Reúne evidências comportamentais, neurais e animais sobre o papel do sono na consolidação da memória declarativa.",
+        blockIds: ["p1", "p4", "p6"],
+      },
+      approach: {
+        text: "Revê comparações com privação de sono e registros neurais, conectando os achados pela hipótese do replay.",
+        blockIds: ["p2", "p4"],
+      },
+      mainAnswer: {
+        text: "O sono parece ser uma etapa ativa da formação da memória, com papel especialmente importante do sono profundo de ondas lentas.",
+        blockIds: ["p3", "p6"],
+      },
+      evidence: {
+        text: "O argumento combina testes de recordação no dia seguinte, neuroimagem e registros de neurônios reproduzindo trajetos durante o sono.",
+        blockIds: ["p2", "p3", "p4", "p6"],
+      },
+      statedLimitation: {
+        text: "O mecanismo de seleção é desconhecido, a generalização além da memória declarativa é incerta e boa parte da evidência humana é correlacional.",
+        blockIds: ["p5"],
+      },
+    },
     sections: [
       {
         heading: "1 Introdução",
@@ -165,6 +221,34 @@ const PROFILES = {
     level: "undergrad",
     overview:
       "Esta breve revisión explica cómo el sueño ayuda al cerebro a convertir memorias nuevas y frágiles en memorias estables a largo plazo. Recorre la evidencia de experimentos de privación de sueño, la teoría del “replay” sobre qué hace el cerebro dormido, y lo que los investigadores aún no saben.",
+    paperMap: {
+      paperTypes: ["Revisión de literatura", "Síntesis empírica"],
+      contributionTypes: ["Síntesis", "Mecanismo"],
+      researchQuestion: {
+        text: "¿Cómo ayuda el sueño a consolidar hechos y eventos recordados conscientemente en la memoria a largo plazo?",
+        blockIds: ["p0", "p1"],
+      },
+      contribution: {
+        text: "Reúne evidencia conductual, neural y animal sobre el papel del sueño en la consolidación de la memoria declarativa.",
+        blockIds: ["p1", "p4", "p6"],
+      },
+      approach: {
+        text: "Revisa comparaciones con privación de sueño y registros neuronales, conectando los hallazgos mediante la hipótesis del replay.",
+        blockIds: ["p2", "p4"],
+      },
+      mainAnswer: {
+        text: "El sueño parece ser una etapa activa de la formación de memoria, con un papel especialmente importante del sueño profundo de ondas lentas.",
+        blockIds: ["p3", "p6"],
+      },
+      evidence: {
+        text: "El argumento combina pruebas de recuerdo al día siguiente, neuroimagen y registros de neuronas que reproducen recorridos durante el sueño.",
+        blockIds: ["p2", "p3", "p4", "p6"],
+      },
+      statedLimitation: {
+        text: "El mecanismo de selección se desconoce, la generalización más allá de la memoria declarativa es incierta y gran parte de la evidencia humana es correlacional.",
+        blockIds: ["p5"],
+      },
+    },
     sections: [
       {
         heading: "1 Introducción",
@@ -268,8 +352,8 @@ function build(profile) {
 const insert = db.prepare(`
   INSERT OR REPLACE INTO Explanation (
     id, status, source, sourceRef, title, text, language, provider, model,
-    level, overview, blocks, findings, createdAt, finishedAt, reviewedAt
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    level, overview, paperMap, blocks, findings, createdAt, finishedAt, reviewedAt
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `);
 
 const now = new Date().toISOString();
@@ -288,6 +372,7 @@ function seed(lang, profile) {
     "demo",
     profile.level,
     profile.overview,
+    JSON.stringify(profile.paperMap),
     JSON.stringify(blocks),
     JSON.stringify(findings),
     now,

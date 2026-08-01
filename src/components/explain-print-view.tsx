@@ -6,7 +6,12 @@ import { useI18n } from "@/lib/i18n/provider";
 import type { Messages } from "@/lib/i18n/messages";
 import type { Lang } from "@/lib/fallacies";
 import type { Block } from "@/lib/paragraphs";
-import type { ExplainFinding, ExplainLevel } from "@/lib/explain-schema";
+import type {
+  ExplainFinding,
+  ExplainLevel,
+  PaperMap,
+  PaperMapStatement,
+} from "@/lib/explain-schema";
 
 type Props = {
   id: string;
@@ -17,6 +22,7 @@ type Props = {
   blocks: Block[];
   findings: ExplainFinding[];
   overview: string;
+  paperMap: PaperMap | null;
   level: ExplainLevel;
   model: string;
   createdAt: Date;
@@ -35,6 +41,7 @@ export function ExplainPrintView({
   blocks,
   findings,
   overview,
+  paperMap,
   level,
   model,
   createdAt,
@@ -64,6 +71,24 @@ export function ExplainPrintView({
     );
     return pa - pb;
   });
+  const paperMapRows = paperMap
+    ? [
+        { label: t.explain_map_question, statement: paperMap.researchQuestion },
+        { label: t.explain_map_contribution, statement: paperMap.contribution },
+        { label: t.explain_map_approach, statement: paperMap.approach },
+        { label: t.explain_map_answer, statement: paperMap.mainAnswer },
+        { label: t.explain_map_evidence, statement: paperMap.evidence },
+        { label: t.explain_map_limitation, statement: paperMap.statedLimitation },
+      ].filter(
+        (row): row is { label: string; statement: PaperMapStatement } =>
+          row.statement !== null,
+      )
+    : [];
+  const hasPaperMap =
+    paperMap !== null &&
+    (paperMap.paperTypes.length > 0 ||
+      paperMap.contributionTypes.length > 0 ||
+      paperMapRows.length > 0);
 
   return (
     <div className="print-root">
@@ -108,6 +133,38 @@ export function ExplainPrintView({
           <dd>https://jiddu.app/e/{id}</dd>
         </dl>
       </header>
+
+      {hasPaperMap && paperMap && (
+        <section className="print-section print-paper-map">
+          <h2>{t.explain_map_label}</h2>
+          <div className="print-map-tags">
+            {paperMap.paperTypes.length > 0 && (
+              <p>
+                <strong>{t.explain_map_paper_type}:</strong>{" "}
+                {paperMap.paperTypes.join(" · ")}
+              </p>
+            )}
+            {paperMap.contributionTypes.length > 0 && (
+              <p>
+                <strong>{t.explain_map_contribution_type}:</strong>{" "}
+                {paperMap.contributionTypes.join(" · ")}
+              </p>
+            )}
+          </div>
+          {paperMapRows.length > 0 && (
+            <dl className="print-map-grid">
+              {paperMapRows.map(({ label, statement }) => {
+                return (
+                  <div key={label}>
+                    <dt>{label}</dt>
+                    <dd>{statement.text}</dd>
+                  </div>
+                );
+              })}
+            </dl>
+          )}
+        </section>
+      )}
 
       <section className="print-section print-source-text">
         <h2>{t.print_section_source_text}</h2>
@@ -206,6 +263,24 @@ const PRINT_CSS = `
   }
   .print-level-label { font-weight: 700; font-size: 14px; letter-spacing: 0.05em; }
   .print-summary { font-size: 14px; margin: 8px 0 16px; font-style: italic; color: #333; }
+  .print-map-tags { font-family: ui-sans-serif, system-ui, sans-serif; font-size: 11px; color: #444; }
+  .print-map-tags p { margin: 3px 0; }
+  .print-map-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-top: 1px solid #bbb;
+    border-left: 1px solid #bbb;
+    margin: 10px 0 0;
+  }
+  .print-map-grid > div { border-right: 1px solid #bbb; border-bottom: 1px solid #bbb; padding: 9px; }
+  .print-map-grid dt {
+    font: 600 9px/1.3 ui-sans-serif, system-ui, sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #555;
+    margin-bottom: 3px;
+  }
+  .print-map-grid dd { margin: 0; font-size: 12px; }
   .print-meta {
     display: grid;
     grid-template-columns: max-content 1fr;

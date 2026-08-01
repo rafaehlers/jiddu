@@ -2,7 +2,11 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { ExplainPrintView } from "@/components/explain-print-view";
 import type { Block } from "@/lib/paragraphs";
-import type { ExplainFinding, ExplainLevel } from "@/lib/explain-schema";
+import {
+  parsePaperMap,
+  type ExplainFinding,
+  type ExplainLevel,
+} from "@/lib/explain-schema";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -30,6 +34,7 @@ export default async function ExplainPrintPage({ params }: Props) {
       blocks={blocks}
       findings={findings}
       overview={e.overview ?? ""}
+      paperMap={parsePaperMap(e.paperMap)}
       level={(e.level ?? "undergrad") as ExplainLevel}
       model={e.model}
       createdAt={e.createdAt}

@@ -174,6 +174,7 @@ export type Messages = {
   explain_cta: string;
   explain_failed: string;
   loader_explain: string[];
+  loader_explain_map: string;
   explain_level: string;
   level_eli5: string;
   level_high_school: string;
@@ -187,6 +188,17 @@ export type Messages = {
   role_limitation: string;
   role_conclusion: string;
   explain_overview_label: string;
+  explain_map_label: string;
+  explain_map_paper_type: string;
+  explain_map_contribution_type: string;
+  explain_map_question: string;
+  explain_map_contribution: string;
+  explain_map_approach: string;
+  explain_map_answer: string;
+  explain_map_evidence: string;
+  explain_map_limitation: string;
+  explain_map_open_evidence: string;
+  explain_jump_to: string;
   explanations_count_one: string;
   explanations_count_many: string;
   explain_empty: string;
@@ -671,7 +683,7 @@ const en: Messages = {
   mode_explain: "Paper Explainer",
   explain_hero_title: "Understand any paper, paragraph by paragraph.",
   explain_hero_subtitle:
-    "Upload a paper or paste its text, pick a level, and Jiddu explains every paragraph in the margin — decoding the jargon and showing how each part fits the argument.",
+    "Upload a paper or paste its text, pick a level, and Jiddu maps its question, approach and evidence before explaining every paragraph in the margin.",
   explain_cta: "Explain",
   explain_failed: "Explanation failed",
   loader_explain: [
@@ -681,6 +693,7 @@ const en: Messages = {
     "Translating the jargon",
     "Connecting the argument",
   ],
+  loader_explain_map: "Building the paper map",
   explain_level: "Explanation level",
   level_eli5: "Child",
   level_high_school: "High school",
@@ -694,13 +707,24 @@ const en: Messages = {
   role_limitation: "Limitations",
   role_conclusion: "Conclusion",
   explain_overview_label: "In plain words",
+  explain_map_label: "Paper map",
+  explain_map_paper_type: "Paper type",
+  explain_map_contribution_type: "Contribution",
+  explain_map_question: "Central question",
+  explain_map_contribution: "What it contributes",
+  explain_map_approach: "How it investigates",
+  explain_map_answer: "Main answer",
+  explain_map_evidence: "Evidence and data",
+  explain_map_limitation: "Stated caveat",
+  explain_map_open_evidence: "Open the supporting paragraph",
+  explain_jump_to: "Jump to",
   explanations_count_one: "explanation",
   explanations_count_many: "explanations",
   explain_empty: "No explanations were produced for this document.",
   explain_footer: (model) =>
     `Explained by ${model} via Jiddu. Automated explanations can misread a paper — always check against the source.`,
   pipeline_explain_desc:
-    "Upload a paper and get a plain-language explanation of every paragraph, at the level you choose — from child to expert.",
+    "Get a map of the paper's question, approach and evidence, plus a plain-language explanation of every paragraph — from child to expert.",
 
   mode_slop: "Slop detector",
   pipeline_slop_desc:
@@ -879,7 +903,7 @@ const en: Messages = {
       paragraphs: [
         "The verdicts (\"supported\", \"contradicted\", \"mixed\", \"unverified\") and the fallacy labels are best-effort automated judgements. They can be wrong — sometimes confidently wrong.",
         "Jiddu does not assert that any statement, person, or document is true, false, lying, or deceitful. The labels are signals to prompt your own verification. Always read the cited sources and form your own conclusion.",
-        "Neutrality scores and the paragraph-by-paragraph explanations are likewise automated interpretations, not statements of fact — the explanations describe what a text says and how it is structured, never whether its claims are correct. Audience level changes only the prose; section-role tags are best-effort guesses.",
+        "Neutrality scores, Paper Maps and paragraph-by-paragraph explanations are likewise automated interpretations, not statements of fact — the explainer describes what a text says and how it is structured, never whether its claims are correct. Audience level changes only the prose; document classifications, map statements and section-role tags are best-effort readings.",
         "Paper-review findings, novelty comparisons, severity labels, venue fit and the final recommendation are also automated judgements. They are not an official peer review, an acceptance prediction, or a substitute for a qualified human reviewer.",
       ],
     },
@@ -1115,9 +1139,9 @@ const en: Messages = {
     {
       title: "14. Explain — paper explainer",
       paragraphs: [
-        "Explain takes an academic paper or technical document and produces a paragraph-by-paragraph plain-language explanation. Each paragraph gets a role tag (Background / Objective / Method / Result / Interpretation / Limitation / Conclusion) and an explanation written at the chosen audience level, plus a document overview.",
+        "Explain takes an academic paper or technical document and produces a Paper Map plus a paragraph-by-paragraph plain-language explanation. The map identifies the paper type, contribution type, central question, contribution, approach, main answer, evidence and any limitation explicitly stated by the authors. Each map statement links back to supporting paragraphs. Each paragraph also gets a role tag (Background / Objective / Method / Result / Interpretation / Limitation / Conclusion) and an explanation written at the chosen audience level.",
         "Audience levels: **Child** (ELI5, everyday analogies, no jargon), **High school** (clear language, a few technical terms explained), **Undergraduate** (standard academic register, assumes field familiarity), **Expert** (concise, peer-level, full terminology retained). The level controls prose complexity only — it does not filter or validate content.",
-        "Role tagging is algorithmic. The model reads each paragraph in context and assigns the role that best describes its function in the argument. Interdisciplinary papers or documents with non-standard structure may receive incorrect tags.",
+        "Role tagging and the Paper Map are algorithmic. Paragraphs are explained in chunks, then a bounded final synthesis samples all semantic roles and uses every chunk summary to build the document-level map. Interdisciplinary papers or documents with non-standard structure may receive incorrect tags or map entries.",
         "Unlike the general-text pipelines, Explain is optimised for structured academic papers. Results on blog posts, legal filings, or unstructured prose will be lower quality.",
         "**Models and why.** GPT-5.6 Luna or MiniMax M3 transforms the supplied text rather than researching literature or independently validating it. Explain does not perform web search or citation verification.",
         "The current evals check role coverage, audience calibration and schema reliability, not factual faithfulness against expert annotations. Explain can simplify a caveat away or confidently misread a method; it should make the source easier to enter, never substitute for reading it.",
@@ -1509,7 +1533,7 @@ const pt: Messages = {
   mode_explain: "Explicador de Papers",
   explain_hero_title: "Entenda qualquer paper, parágrafo por parágrafo.",
   explain_hero_subtitle:
-    "Suba um paper ou cole o texto, escolha um nível, e o Jiddu explica cada parágrafo na margem — traduzindo o jargão e mostrando como cada parte se encaixa no argumento.",
+    "Suba um paper ou cole o texto, escolha um nível, e o Jiddu mapeia pergunta, abordagem e evidências antes de explicar cada parágrafo na margem.",
   explain_cta: "Explicar",
   explain_failed: "Falha na explicação",
   loader_explain: [
@@ -1519,6 +1543,7 @@ const pt: Messages = {
     "Traduzindo o jargão",
     "Conectando o argumento",
   ],
+  loader_explain_map: "Montando o mapa do paper",
   explain_level: "Nível de explicação",
   level_eli5: "Criança",
   level_high_school: "Ensino médio",
@@ -1532,13 +1557,24 @@ const pt: Messages = {
   role_limitation: "Limitações",
   role_conclusion: "Conclusão",
   explain_overview_label: "Em poucas palavras",
+  explain_map_label: "Mapa do paper",
+  explain_map_paper_type: "Tipo de paper",
+  explain_map_contribution_type: "Contribuição",
+  explain_map_question: "Pergunta central",
+  explain_map_contribution: "O que ele contribui",
+  explain_map_approach: "Como investiga",
+  explain_map_answer: "Resposta principal",
+  explain_map_evidence: "Evidências e dados",
+  explain_map_limitation: "Ressalva declarada",
+  explain_map_open_evidence: "Abrir o parágrafo que sustenta este item",
+  explain_jump_to: "Ir para",
   explanations_count_one: "explicação",
   explanations_count_many: "explicações",
   explain_empty: "Nenhuma explicação foi gerada para este documento.",
   explain_footer: (model) =>
     `Explicado por ${model} via Jiddu. Explicações automáticas podem interpretar mal um paper — sempre confira no original.`,
   pipeline_explain_desc:
-    "Suba um paper e receba uma explicação em linguagem simples de cada parágrafo, no nível que você escolher — de criança a especialista.",
+    "Receba um mapa da pergunta, abordagem e evidências do paper, além da explicação de cada parágrafo — de criança a especialista.",
 
   mode_slop: "Detector de Slop",
   pipeline_slop_desc:
@@ -1718,7 +1754,7 @@ const pt: Messages = {
       paragraphs: [
         'Os vereditos ("sustentado", "contradito", "misto", "não verificado") e os rótulos de falácia são juízos automatizados de melhor esforço. Podem estar errados — às vezes com alta confiança.',
         "O Jiddu não afirma que qualquer declaração, pessoa ou documento seja verdadeiro, falso, mentiroso ou enganoso. Os rótulos são sinais para acionar a sua própria verificação. Sempre leia as fontes citadas e tire sua própria conclusão.",
-        "As pontuações de imparcialidade e as explicações parágrafo a parágrafo também são interpretações automatizadas, não afirmações de fato — as explicações descrevem o que um texto diz e como ele está estruturado, nunca se as suas afirmações estão corretas. O nível de audiência muda apenas o texto; as tags de papel das seções são apenas suposições de melhor esforço.",
+        "As pontuações de imparcialidade, os Mapas do Paper e as explicações parágrafo a parágrafo também são interpretações automatizadas, não afirmações de fato — o explicador descreve o que um texto diz e como ele se estrutura, nunca se suas afirmações estão corretas. O nível de audiência muda apenas a prosa; classificações, itens do mapa e tags de papel são aproximações algorítmicas.",
         "Os achados da revisão de paper, comparações de novidade, severidades, aderência à venue e recomendação final também são juízos automatizados. Não são uma revisão oficial por pares, previsão de aceitação ou substituto para um revisor humano qualificado.",
       ],
     },
@@ -1954,9 +1990,9 @@ const pt: Messages = {
     {
       title: "14. Explain — explicador de artigos",
       paragraphs: [
-        "Explain recebe um artigo acadêmico ou documento técnico e produz uma explicação parágrafo a parágrafo em linguagem simples. Cada parágrafo recebe uma tag de papel (Background / Objetivo / Método / Resultado / Interpretação / Limitação / Conclusão) e uma explicação no nível escolhido, além de uma visão geral.",
+        "Explain recebe um artigo acadêmico ou documento técnico e produz um Mapa do Paper junto da explicação parágrafo a parágrafo em linguagem simples. O mapa identifica tipo de paper, tipo de contribuição, pergunta central, contribuição, abordagem, resposta principal, evidências e qualquer limitação declarada pelos autores. Cada item aponta para os parágrafos que o sustentam. Cada parágrafo também recebe uma tag de papel (Contexto / Objetivo / Método / Resultado / Interpretação / Limitação / Conclusão) e uma explicação no nível escolhido.",
         "Níveis de audiência: **Criança** (ELI5, analogias do cotidiano, sem jargão), **Ensino médio** (linguagem clara, poucos termos técnicos explicados), **Graduação** (registro acadêmico padrão, pressupõe familiaridade com a área), **Expert** (conciso, nível de pares, terminologia completa mantida). O nível controla apenas a complexidade do texto — não filtra nem valida o conteúdo.",
-        "A tag de papel é algorítmica. O modelo lê cada parágrafo em contexto e atribui o papel que melhor descreve sua função no argumento. Artigos interdisciplinares ou documentos com estrutura não padrão podem receber tags incorretas.",
+        "As tags de papel e o Mapa do Paper são algorítmicos. Os parágrafos são explicados em chunks; depois, uma síntese final limitada amostra todos os papéis semânticos e usa o resumo de cada chunk para montar o mapa global. Artigos interdisciplinares ou documentos com estrutura não padrão podem receber tags ou itens de mapa incorretos.",
         "Ao contrário dos pipelines de texto geral, o Explain é otimizado para artigos acadêmicos estruturados. Resultados em posts de blog, petições jurídicas ou textos não estruturados serão de menor qualidade.",
         "**Modelos e por quê.** GPT-5.6 Luna ou MiniMax M3 transforma o texto fornecido em vez de pesquisar literatura ou validá-lo de forma independente. Explain não faz busca web nem checagem de citações.",
         "Os evals atuais verificam cobertura de papéis, calibração da audiência e confiabilidade do schema, não fidelidade factual contra anotações de especialistas. O Explain pode simplificar demais uma ressalva ou interpretar um método com confiança indevida; deve facilitar a entrada no texto-fonte, nunca substituí-lo.",
@@ -2348,7 +2384,7 @@ const es: Messages = {
   mode_explain: "Explicador de Papers",
   explain_hero_title: "Entiende cualquier paper, párrafo por párrafo.",
   explain_hero_subtitle:
-    "Sube un paper o pega el texto, elige un nivel, y Jiddu explica cada párrafo en el margen — descifrando la jerga y mostrando cómo cada parte encaja en el argumento.",
+    "Sube un paper o pega el texto, elige un nivel, y Jiddu mapea su pregunta, enfoque y evidencia antes de explicar cada párrafo en el margen.",
   explain_cta: "Explicar",
   explain_failed: "Falló la explicación",
   loader_explain: [
@@ -2358,6 +2394,7 @@ const es: Messages = {
     "Traduciendo la jerga",
     "Conectando el argumento",
   ],
+  loader_explain_map: "Construyendo el mapa del paper",
   explain_level: "Nivel de explicación",
   level_eli5: "Niño",
   level_high_school: "Secundaria",
@@ -2371,13 +2408,24 @@ const es: Messages = {
   role_limitation: "Limitaciones",
   role_conclusion: "Conclusión",
   explain_overview_label: "En palabras simples",
+  explain_map_label: "Mapa del paper",
+  explain_map_paper_type: "Tipo de paper",
+  explain_map_contribution_type: "Contribución",
+  explain_map_question: "Pregunta central",
+  explain_map_contribution: "Qué aporta",
+  explain_map_approach: "Cómo investiga",
+  explain_map_answer: "Respuesta principal",
+  explain_map_evidence: "Evidencia y datos",
+  explain_map_limitation: "Salvedad declarada",
+  explain_map_open_evidence: "Abrir el párrafo que sustenta este punto",
+  explain_jump_to: "Ir a",
   explanations_count_one: "explicación",
   explanations_count_many: "explicaciones",
   explain_empty: "No se generaron explicaciones para este documento.",
   explain_footer: (model) =>
     `Explicado por ${model} vía Jiddu. Las explicaciones automáticas pueden malinterpretar un paper — verifica siempre con el original.`,
   pipeline_explain_desc:
-    "Sube un paper y obtén una explicación en lenguaje claro de cada párrafo, al nivel que elijas — de niño a experto.",
+    "Obtén un mapa de la pregunta, el enfoque y la evidencia del paper, además de una explicación de cada párrafo — de niño a experto.",
 
   mode_slop: "Detector de slop",
   pipeline_slop_desc:
@@ -2557,7 +2605,7 @@ const es: Messages = {
       paragraphs: [
         'Los veredictos ("respaldado", "contradicho", "mixto", "no verificado") y las etiquetas de falacia son juicios automatizados de mejor esfuerzo. Pueden estar equivocados — a veces con alta confianza.',
         "Jiddu no afirma que ninguna declaración, persona o documento sea verdadero, falso, mentiroso o engañoso. Las etiquetas son señales para activar tu propia verificación. Siempre lee las fuentes citadas y forma tu propia conclusión.",
-        "Las puntuaciones de imparcialidad y las explicaciones párrafo por párrafo también son interpretaciones automatizadas, no afirmaciones de hecho — las explicaciones describen qué dice un texto y cómo está estructurado, nunca si sus afirmaciones son correctas. El nivel de audiencia cambia solo la prosa; las etiquetas de rol de las secciones son solo conjeturas de mejor esfuerzo.",
+        "Las puntuaciones de imparcialidad, los Mapas del Paper y las explicaciones párrafo por párrafo también son interpretaciones automatizadas, no afirmaciones de hecho — el explicador describe qué dice un texto y cómo está estructurado, nunca si sus afirmaciones son correctas. El nivel de audiencia cambia solo la prosa; las clasificaciones, los puntos del mapa y las etiquetas de función son aproximaciones algorítmicas.",
         "Los hallazgos de la revisión de papers, las comparaciones de novedad, las severidades, el encaje con el venue y la recomendación final también son juicios automatizados. No son una revisión oficial por pares, una predicción de aceptación ni un sustituto de un revisor humano cualificado.",
       ],
     },
@@ -2793,9 +2841,9 @@ const es: Messages = {
     {
       title: "14. Explain — explicador de artículos",
       paragraphs: [
-        "Explain recibe un artículo académico o documento técnico y produce una explicación párrafo por párrafo en lenguaje sencillo. Cada párrafo recibe una etiqueta de función (Background / Objetivo / Método / Resultado / Interpretación / Limitación / Conclusión) y una explicación en el nivel elegido, además de una visión general.",
+        "Explain recibe un artículo académico o documento técnico y produce un Mapa del Paper junto con una explicación párrafo por párrafo en lenguaje sencillo. El mapa identifica tipo de paper, tipo de contribución, pregunta central, aporte, enfoque, respuesta principal, evidencia y cualquier limitación declarada por los autores. Cada punto enlaza con los párrafos que lo sustentan. Cada párrafo también recibe una etiqueta de función (Contexto / Objetivo / Método / Resultado / Interpretación / Limitación / Conclusión) y una explicación en el nivel elegido.",
         "Niveles de audiencia: **Niño** (ELI5, analogías cotidianas, sin jerga), **Secundaria** (lenguaje claro, pocos términos técnicos explicados), **Universitario** (registro académico estándar, asume familiaridad con el campo), **Experto** (conciso, nivel de pares, terminología completa conservada). El nivel controla solo la complejidad del texto — no filtra ni valida el contenido.",
-        "La etiqueta de rol es algorítmica. El modelo lee cada párrafo en contexto y asigna el rol que mejor describe su función en el argumento. Los artículos interdisciplinarios o los documentos con estructura no estándar pueden recibir etiquetas incorrectas.",
+        "Las etiquetas de función y el Mapa del Paper son algorítmicos. Los párrafos se explican en chunks; después, una síntesis final acotada toma muestras de todos los roles semánticos y usa el resumen de cada chunk para construir el mapa global. Los artículos interdisciplinarios o los documentos con estructura no estándar pueden recibir etiquetas o puntos de mapa incorrectos.",
         "A diferencia de los pipelines de texto general, Explain está optimizado para artículos académicos estructurados. Los resultados en posts de blog, escritos legales o textos no estructurados serán de menor calidad.",
         "**Modelos y por qué.** GPT-5.6 Luna o MiniMax M3 transforma el texto suministrado en lugar de investigar literatura o validarlo de forma independiente. Explain no realiza búsqueda web ni comprobación de citas.",
         "Las evaluaciones actuales comprueban la cobertura de funciones, la calibración de la audiencia y la fiabilidad de la estructura, no la fidelidad factual frente a anotaciones de expertos. Explain puede simplificar demasiado una salvedad o interpretar un método con una confianza indebida; debe facilitar la entrada al texto fuente, nunca sustituirlo.",

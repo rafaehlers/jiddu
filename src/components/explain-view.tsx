@@ -11,9 +11,15 @@ import {
   AlertTriangle,
   Flag,
   GraduationCap,
+  Compass,
 } from "lucide-react";
 import type { Block } from "@/lib/paragraphs";
-import type { ExplainFinding, ExplainLevel, SectionRole } from "@/lib/explain-schema";
+import type {
+  ExplainFinding,
+  ExplainLevel,
+  PaperMap,
+  SectionRole,
+} from "@/lib/explain-schema";
 import { cn } from "@/lib/utils";
 import { onActivate } from "@/lib/a11y";
 import { ShareLinkBar } from "@/components/share-link-bar";
@@ -29,6 +35,7 @@ type Props = {
   blocks: Block[];
   findings: ExplainFinding[];
   overview: string;
+  paperMap: PaperMap | null;
   level: ExplainLevel;
   status: string;
   model: string;
@@ -75,6 +82,7 @@ export function ExplainView({
   blocks,
   findings,
   overview,
+  paperMap,
   level,
   status,
   model,
@@ -168,10 +176,16 @@ export function ExplainView({
     el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
 
-  function focusBlock(blockId: string, cardIdx: number) {
-    setActive(cardIdx);
+  function focusBlock(blockId: string, cardIdx?: number) {
+    const resolvedCard = cardIdx ?? findingByBlock.get(blockId)?.cardIdx ?? null;
+    setActive(resolvedCard);
     const el = articleRef.current?.querySelector<HTMLElement>(`[data-bid="${blockId}"]`);
     el?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  function focusRole(role: SectionRole) {
+    const match = ordered.find(({ f }) => f.role === role);
+    if (match) focusBlock(match.f.blockIds[0], match.cardIdx);
   }
 
   // Roles actually present, in canonical order, for the legend.
@@ -188,6 +202,22 @@ export function ExplainView({
     const present = new Set(findings.map((f) => f.role));
     return order.filter((r) => present.has(r));
   }, [findings]);
+
+  const paperMapRows = paperMap
+    ? [
+        { label: t.explain_map_question, statement: paperMap.researchQuestion },
+        { label: t.explain_map_contribution, statement: paperMap.contribution },
+        { label: t.explain_map_approach, statement: paperMap.approach },
+        { label: t.explain_map_answer, statement: paperMap.mainAnswer },
+        { label: t.explain_map_evidence, statement: paperMap.evidence },
+        { label: t.explain_map_limitation, statement: paperMap.statedLimitation },
+      ].filter((row) => row.statement !== null)
+    : [];
+  const hasPaperMap =
+    paperMap !== null &&
+    (paperMap.paperTypes.length > 0 ||
+      paperMap.contributionTypes.length > 0 ||
+      paperMapRows.length > 0);
 
   return (
     <div className="mx-auto max-w-5xl w-full px-4 sm:px-6 py-6 sm:py-8 flex flex-col gap-6">
@@ -237,13 +267,102 @@ export function ExplainView({
         </div>
       )}
 
-      {/* Legend of section roles present in this paper. */}
+      {/* Whole-document reading map, synthesized after every chunk finishes. */}
+      {hasPaperMap && paperMap && (
+        <section className="border border-rule rounded-lg p-5 sm:p-6 bg-paper flex flex-col gap-5">
+          <div className="flex items-start gap-4">
+            <Compass className="h-7 w-7 shrink-0 text-muted" />
+            <div className="flex-1 min-w-0 flex flex-col gap-3">
+              <h2 className="text-xs uppercase tracking-wide text-muted">
+                {t.explain_map_label}
+              </h2>
+              <div className="flex flex-col gap-2">
+                {paperMap.paperTypes.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs text-muted">
+                      {t.explain_map_paper_type}
+                    </span>
+                    {paperMap.paperTypes.map((type) => (
+                      <span
+                        key={`paper-${type}`}
+                        className="text-xs px-2 py-1 rounded-full border border-teal-500/35 text-teal-600 dark:text-teal-400"
+                      >
+                        {type}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {paperMap.contributionTypes.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs text-muted">
+                      {t.explain_map_contribution_type}
+                    </span>
+                    {paperMap.contributionTypes.map((type) => (
+                      <span
+                        key={`contribution-${type}`}
+                        className="text-xs px-2 py-1 rounded-full border border-purple-500/35 text-purple-600 dark:text-purple-400"
+                      >
+                        {type}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {paperMapRows.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 border-t border-l border-rule rounded-md overflow-hidden">
+              {paperMapRows.map(({ label, statement }) => {
+                if (!statement) return null;
+                const blockId = statement.blockIds[0];
+                const content = (
+                  <>
+                    <span className="text-[11px] uppercase tracking-wide text-muted">
+                      {label}
+                    </span>
+                    <span className="text-sm leading-relaxed text-foreground">
+                      {statement.text}
+                    </span>
+                  </>
+                );
+                return blockId ? (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => focusBlock(blockId)}
+                    className="min-w-0 text-left p-4 border-r border-b border-rule hover:bg-foreground/[0.035] transition-colors flex flex-col gap-1.5"
+                    title={t.explain_map_open_evidence}
+                  >
+                    {content}
+                  </button>
+                ) : (
+                  <div
+                    key={label}
+                    className="min-w-0 p-4 border-r border-b border-rule flex flex-col gap-1.5"
+                  >
+                    {content}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* Clickable legend doubles as a reading shortcut into the paper. */}
       {rolesPresent.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
+        <nav
+          aria-label={t.explain_jump_to}
+          className="flex flex-wrap items-center gap-2"
+        >
+          <span className="text-xs text-muted mr-1">{t.explain_jump_to}</span>
           {rolesPresent.map((r) => (
-            <span
+            <button
               key={r}
-              className="inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full border border-rule text-muted"
+              type="button"
+              onClick={() => focusRole(r)}
+              className="inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full border border-rule text-muted hover:text-foreground hover:border-foreground transition-colors"
             >
               <span
                 aria-hidden
@@ -251,9 +370,9 @@ export function ExplainView({
                 style={{ backgroundColor: ROLE_COLOR[r] }}
               />
               {t[ROLE_META[r].labelKey] as string}
-            </span>
+            </button>
           ))}
-        </div>
+        </nav>
       )}
 
       {/* Two-column layout: paper left, explanations right (anchored). */}
