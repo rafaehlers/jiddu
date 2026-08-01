@@ -24,6 +24,7 @@ export type AdminAnalysisGridRow = {
   language: string;
   model: string;
   owner: string;
+  providerUsage: string[];
   reviewedAt: string | null;
   signal: string;
   source: string;
@@ -69,6 +70,19 @@ export function AdminAnalysesGrid({
         maxWidth: 100,
       },
       { field: "model", headerName: "Model", minWidth: 150 },
+      {
+        field: "providerUsage",
+        headerName: "Provider usage",
+        minWidth: 180,
+        valueGetter: ({ data }) =>
+          data?.providerUsage.length
+            ? data.providerUsage.join(" · ")
+            : "—",
+        tooltipValueGetter: ({ data }) =>
+          data?.providerUsage.length
+            ? data.providerUsage.join("\n")
+            : "—",
+      },
       {
         field: "signal",
         headerName: "Score / Claims",

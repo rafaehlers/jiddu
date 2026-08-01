@@ -65,14 +65,6 @@ export function SiteHeader({
           </span>
         </div>
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          {/* Single nav link — the guides, benchmark and API docs moved to
-              the footer to keep the header quiet. */}
-          <Link
-            href="/how-it-works"
-            className="text-sm text-muted hover:text-accent-hi transition-colors hidden md:inline"
-          >
-            {t.nav_how_it_works}
-          </Link>
           {rightSlot}
           <AuthControls />
           <LangSelector />

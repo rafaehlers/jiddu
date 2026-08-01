@@ -11,6 +11,13 @@ import { getWorkOSUserEmails } from "@/lib/workos-users";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Admin · Jiddu", robots: { index: false, follow: false } };
 
+const PROVIDER_USD = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 6,
+});
+
 export default async function AdminPage() {
   return <AdminList />;
 }
@@ -282,9 +289,43 @@ async function AdminList() {
       };
     }),
   ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-  const userEmails = await getWorkOSUserEmails(
-    rows.map((row) => row.ownerWorkosUserId),
-  );
+  const [userEmails, usageTransactions] = await Promise.all([
+    getWorkOSUserEmails(rows.map((row) => row.ownerWorkosUserId)),
+    prisma.jidduCreditTransaction.findMany({
+      where: {
+        resourceId: { in: rows.map((row) => row.id) },
+        OR: [
+          { providerCostMicros: { not: null } },
+          { totalTokens: { not: null } },
+        ],
+      },
+      select: {
+        providerCostMicros: true,
+        resourceId: true,
+        totalTokens: true,
+      },
+    }),
+  ]);
+  const usageByResource = new Map<
+    string,
+    { providerCostMicros: number | null; totalTokens: number | null }
+  >();
+  for (const transaction of usageTransactions) {
+    if (!transaction.resourceId) continue;
+    const current = usageByResource.get(transaction.resourceId) ?? {
+      providerCostMicros: null,
+      totalTokens: null,
+    };
+    if (transaction.providerCostMicros !== null) {
+      current.providerCostMicros =
+        (current.providerCostMicros ?? 0) + transaction.providerCostMicros;
+    }
+    if (transaction.totalTokens !== null) {
+      current.totalTokens =
+        (current.totalTokens ?? 0) + transaction.totalTokens;
+    }
+    usageByResource.set(transaction.resourceId, current);
+  }
   const gridRows = rows.map<AdminAnalysisGridRow>((row) => ({
     createdAt: row.createdAt.toISOString(),
     id: row.id,
@@ -294,6 +335,7 @@ async function AdminList() {
     owner: row.ownerWorkosUserId
       ? userEmails.get(row.ownerWorkosUserId) ?? "Unavailable"
       : "—",
+    providerUsage: formatProviderUsage(usageByResource.get(row.id)),
     reviewedAt: row.reviewedAt?.toISOString() ?? null,
     signal: row.signal,
     source: row.source,
@@ -327,6 +369,22 @@ async function AdminList() {
       <AdminAnalysesGrid rows={gridRows} />
     </AdminPageLayout>
   );
+}
+
+function formatProviderUsage(
+  usage:
+    | { providerCostMicros: number | null; totalTokens: number | null }
+    | undefined,
+): string[] {
+  if (!usage) return [];
+  return [
+    usage.providerCostMicros !== null
+      ? PROVIDER_USD.format(usage.providerCostMicros / 1_000_000)
+      : null,
+    usage.totalTokens !== null
+      ? `${usage.totalTokens.toLocaleString("en-US")} tokens`
+      : null,
+  ].filter((value): value is string => value !== null);
 }
 
 function Stat({
