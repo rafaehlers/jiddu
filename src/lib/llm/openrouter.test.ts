@@ -7,18 +7,18 @@ import {
   resolvePaperReviewModel,
 } from "./openrouter";
 
-test("uses GPT-5.6 Luna as the public default with low reasoning", () => {
+test("uses GPT-5.6 Luna as the public default with high reasoning", () => {
   assert.equal(MODEL_CATALOG[0]?.id, "gpt-5.6-luna");
   assert.equal(resolveModel().openrouter, "openai/gpt-5.6-luna");
-  assert.equal(resolveModel().reasoningEffort, "low");
+  assert.equal(resolveModel().reasoningEffort, "high");
   assert.deepEqual(DEFAULT_MODEL_CHAIN, ["gpt-5.6-luna", "minimax-m3"]);
 });
 
-test("uses Luna Pro at medium reasoning for Deep review", () => {
+test("uses Luna Pro at xhigh reasoning for Deep review", () => {
   const model = resolvePaperReviewModel("gpt-5.6-luna-pro");
 
   assert.equal(model.openrouter, "openai/gpt-5.6-luna-pro");
-  assert.equal(model.reasoningEffort, "medium");
+  assert.equal(model.reasoningEffort, "xhigh");
 });
 
 test("keeps retired models internal to historical paper-review evals", () => {

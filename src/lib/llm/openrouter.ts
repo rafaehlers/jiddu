@@ -83,7 +83,7 @@ export type ModelChoice = {
   // only emits tool_calls reliably when the upstream is "MiniMax" itself
   // (Morph/Fireworks burn budget on reasoning and never call the tool).
   providerOrder?: string[];
-  reasoningEffort?: "low" | "medium" | "high";
+  reasoningEffort?: "low" | "medium" | "high" | "xhigh";
 };
 
 export const MODEL_CATALOG: ModelChoice[] = [
@@ -93,7 +93,7 @@ export const MODEL_CATALOG: ModelChoice[] = [
     flag: "🇺🇸",
     family: "openai",
     openrouter: "openai/gpt-5.6-luna",
-    reasoningEffort: "low",
+    reasoningEffort: "high",
   },
   {
     id: "minimax-m3",
@@ -120,7 +120,7 @@ const PAPER_REVIEW_INTERNAL_MODELS: Record<string, ModelChoice> = {
     flag: "🇺🇸",
     family: "openai",
     openrouter: "openai/gpt-5.6-luna-pro",
-    reasoningEffort: "medium",
+    reasoningEffort: "xhigh",
   },
   // Kept internally so historical evals remain reproducible. These models
   // are no longer exposed in the product picker or used by default.

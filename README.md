@@ -70,7 +70,7 @@ Choose the lens that fits the reading: logical fallacies, factual claims, neutra
 
 ### Across the product
 - **One reading interface** — the first five modes accept URL, pasted text, PDF or TXT; adversarial review accepts one complete PDF so the manuscript can be assessed as a self-contained submission.
-- **Model choice and fallback** — GPT-5.6 Luna with low reasoning is the default, MiniMax M3 is available for comparison, and requests fall back only when the first model fails before emitting output. Sonar Reasoning Pro is reserved for evidence-backed fact-check verdicts.
+- **Model choice and fallback** — GPT-5.6 Luna with high reasoning is the default, MiniMax M3 is available for comparison, and requests fall back only when the first model fails before emitting output. Deep review uses GPT-5.6 Luna Pro with xhigh reasoning, while Sonar Reasoning Pro is reserved for evidence-backed fact-check verdicts.
 - **Inspectable output** — findings quote the source and stay anchored to the relevant sentence, paragraph or paper page. Automated results are marked as unreviewed unless they receive an operator spot-check.
 - **Share and export** — every completed analysis gets an unlisted share URL and a print-ready PDF view. Adversarial reviews also export deterministic Markdown.
 - **English, Portuguese and Spanish** — the interface and model output follow the selected language.
