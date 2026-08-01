@@ -149,10 +149,10 @@ const MODE_CONFIG: Record<
 };
 
 /**
- * Unified home — one hero, the four lens cards as the mode selector, one
- * form. Switching lenses is pure client state (no navigation); the URL is
- * kept in sync via history.replaceState so /factcheck, /neutrality and
- * /explain still work as deep links and SEO entry points.
+ * Unified home — one hero, six lens cards as the form mode selector, plus a
+ * dedicated Live card. Switching form lenses is pure client state (no
+ * navigation); the URL is kept in sync via history.replaceState so the
+ * feature routes still work as deep links and SEO entry points.
  */
 export function HomeComposer({ initialMode = "detector" }: { initialMode?: Mode }) {
   const router = useRouter();

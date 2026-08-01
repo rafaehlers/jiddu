@@ -4,14 +4,24 @@ import { prisma } from "@/lib/db";
 import { splitSentences } from "@/lib/sentences";
 import { getProvider, resolveModel } from "@/lib/llm";
 import { FindingSchema, type Finding, type Sentence } from "@/lib/schema";
+import { ClaimSchema, type Claim } from "@/lib/claims-schema";
+import {
+  NEUTRALITY_VERDICTS,
+  NeutralityFindingSchema,
+  TEXT_TYPES,
+  type NeutralityFinding,
+  type NeutralityVerdictValue,
+  type TextType,
+} from "@/lib/neutrality-schema";
 import type { Lang } from "@/lib/fallacies";
 import {
   isAccessResponse,
   requireWebAnalysisAccess,
 } from "@/lib/web-analysis-access";
-import { modelCreditRate } from "@/lib/jiddu-credit-rates";
+import { maxCreditsForCalls } from "@/lib/jiddu-credit-rates";
 import {
   recordIncludedJidduCreditUsage,
+  releaseJidduCreditReservation,
   settleJidduCreditReservationFromUsage,
   type JidduCreditReservationHandle,
 } from "@/lib/jiddu-credits";
@@ -25,6 +35,10 @@ import { consume, rateLimitResponse } from "@/lib/rate-limit";
 import { bucketFromSettings, loadSettings } from "@/lib/settings";
 import { buildLiveAnalysisTitle } from "@/lib/live-title";
 import { normalizeLiveDurationMs } from "@/lib/live-billing";
+import {
+  normalizeLiveLenses,
+  type LiveLens,
+} from "@/lib/live-lenses";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -39,10 +53,13 @@ type Body = {
   text?: string;
   lang?: string;
   model?: string;
+  lenses?: string[];
   timeZone?: string;
   finalize?: boolean;
   audioDurationMs?: number;
 };
+
+type ClaimWithId = Claim & { id: string };
 
 export async function POST(req: NextRequest) {
   const access = await requireWebAnalysisAccess();
@@ -53,6 +70,7 @@ export async function POST(req: NextRequest) {
 
   const text = typeof body.text === "string" ? body.text : "";
   const lang = normalizeLang(body.lang);
+  const lenses = normalizeLiveLenses(body.lenses);
   const finalize = body.finalize === true;
   const billingReservationId =
     typeof body.billingReservationId === "string"
@@ -178,10 +196,10 @@ export async function POST(req: NextRequest) {
   try {
     reservation = shouldAnalyze
       ? await reserveWebAnalysisCredits(access, {
-          amount: modelCreditRate(chosenModel.id),
+          amount: maxCreditsForCalls([chosenModel.id], lenses.length),
           feature: "live_analysis",
           resourceId: row.id,
-          metadata: { model: chosenModel.id },
+          metadata: { model: chosenModel.id, lenses },
         })
       : null;
   } catch (error) {
@@ -196,10 +214,73 @@ export async function POST(req: NextRequest) {
     return reservation;
   }
 
+  let factCheckRow: Awaited<
+    ReturnType<typeof prisma.factCheck.findUnique>
+  > = null;
+  let neutralityRow: Awaited<
+    ReturnType<typeof prisma.neutrality.findUnique>
+  > = null;
+  try {
+    [factCheckRow, neutralityRow] = await Promise.all([
+      lenses.includes("factcheck")
+        ? prisma.factCheck.upsert({
+            where: { id: row.id },
+            update: {},
+            create: {
+              id: row.id,
+              ownerWorkosUserId: row.ownerWorkosUserId,
+              status: "running",
+              source: "live",
+              sourceRef: null,
+              title: row.title,
+              text: row.text,
+              language: row.language ?? lang,
+              provider: row.provider,
+              model: row.model,
+              sentences: row.sentences,
+              claims: JSON.stringify([]),
+            },
+          })
+        : null,
+      lenses.includes("neutrality")
+        ? prisma.neutrality.upsert({
+            where: { id: row.id },
+            update: {},
+            create: {
+              id: row.id,
+              ownerWorkosUserId: row.ownerWorkosUserId,
+              status: "running",
+              source: "live",
+              sourceRef: null,
+              title: row.title,
+              text: row.text,
+              language: row.language ?? lang,
+              provider: row.provider,
+              model: row.model,
+              sentences: row.sentences,
+              findings: JSON.stringify([]),
+            },
+          })
+        : null,
+    ]);
+  } catch (error) {
+    permit?.release();
+    if (reservation && !(reservation instanceof Response)) {
+      await releaseJidduCreditReservation(reservation);
+    }
+    if (isNew) await deleteLiveRows(row.id);
+    throw error;
+  }
+
+  const existingClaims = safeJsonArray<ClaimWithId>(factCheckRow?.claims ?? "[]");
+  const existingNeutralityFindings = safeJsonArray<NeutralityFinding>(
+    neutralityRow?.findings ?? "[]",
+  );
+
   // ── Stream ───────────────────────────────────────────────────────────
   const encoder = new TextEncoder();
   const abortController = new AbortController();
-  let billableModelCall = false;
+  const fallbackModels: string[] = [];
   const usages: OpenRouterUsage[] = [];
   let settled = false;
   const settle = async () => {
@@ -209,9 +290,9 @@ export async function POST(req: NextRequest) {
       reservation,
       {
         usages,
-        fallbackModels: billableModelCall ? [chosenModel.id] : [],
+        fallbackModels,
         resourceId: row.id,
-        metadata: { model: chosenModel.id },
+        metadata: { model: chosenModel.id, lenses },
         aggregateIntoLive:
           billingReservationId &&
           access.billing === "jiddu" &&
@@ -225,7 +306,7 @@ export async function POST(req: NextRequest) {
     );
     if (
       access.billing === "platform" &&
-      billableModelCall &&
+      fallbackModels.length > 0 &&
       access.userId &&
       access.email
     ) {
@@ -235,7 +316,7 @@ export async function POST(req: NextRequest) {
         feature: "live_analysis",
         resourceId: row.id,
         note: "Included platform access",
-        metadata: { model: chosenModel.id },
+        metadata: { model: chosenModel.id, lenses },
         usage: settlement,
       });
     }
@@ -259,57 +340,186 @@ export async function POST(req: NextRequest) {
               id: row.id,
               model: row.model,
               provider: row.provider,
+              lenses,
             });
           }
 
           const newFindings: Finding[] = [];
+          const newClaims: ClaimWithId[] = [];
+          const newNeutralityFindings: NeutralityFinding[] = [];
           let windowScore = 0;
           let windowSummary = "";
           let windowLanguage: string | null = null;
+          let windowNeutralityVerdict: NeutralityVerdictValue | null = null;
+          let windowNeutralityConfidence = 0;
+          let windowNeutralityRationale = "";
+          let windowTextType: TextType | null = null;
 
           if (shouldAnalyze) {
-            // Build a dedupe key set from existing findings.
-            const seen = new Set<string>(existingFindings.map(findingKey));
+            const tasks: Promise<void>[] = [];
 
-            try {
-              for await (const event of llm.analyzeStream(
-                { sentences: toAnalyze, lang, contextSentences },
-                {
-                  signal: abortController.signal,
-                  onUsage: (usage) => usages.push(usage),
-                },
-              )) {
-                billableModelCall = true;
-                if (event.type === "finding") {
-                  // Guard: drop findings the model wrongly anchored to context
-                  // sentences or to ids we don't recognize.
-                  const ok = event.finding.sentenceIds.every((id) =>
-                    toAnalyze.some((s) => s.id === id),
+            if (lenses.includes("fallacy")) {
+              tasks.push(
+                (async () => {
+                  let observedModelOutput = false;
+                  const seen = new Set<string>(
+                    existingFindings.map(findingKey),
                   );
-                  if (!ok) continue;
-                  const key = findingKey(event.finding);
-                  if (seen.has(key)) continue;
-                  seen.add(key);
-                  const parsed = FindingSchema.safeParse(event.finding);
-                  if (!parsed.success) continue;
-                  newFindings.push(parsed.data);
-                  send("finding", parsed.data);
-                } else if (event.type === "score") {
-                  windowScore = event.score;
-                } else if (event.type === "summary") {
-                  windowSummary = event.summary;
-                } else if (event.type === "language") {
-                  windowLanguage = event.language;
-                }
-              }
-            } catch (err) {
-              if (!abortController.signal.aborted) {
-                const message =
-                  err instanceof Error ? err.message : String(err);
-                console.error("[live/analyze] LLM error", err);
-                send("error", { error: message });
-              }
+                  try {
+                    for await (const event of llm.analyzeStream(
+                      { sentences: toAnalyze, lang, contextSentences },
+                      {
+                        signal: abortController.signal,
+                        onUsage: (usage) => usages.push(usage),
+                      },
+                    )) {
+                      if (!observedModelOutput) {
+                        fallbackModels.push(chosenModel.id);
+                        observedModelOutput = true;
+                      }
+                      if (event.type === "finding") {
+                        if (!isAnchoredToWindow(event.finding, toAnalyze)) {
+                          continue;
+                        }
+                        const key = findingKey(event.finding);
+                        if (seen.has(key)) continue;
+                        const parsed = FindingSchema.safeParse(event.finding);
+                        if (!parsed.success) continue;
+                        seen.add(key);
+                        newFindings.push(parsed.data);
+                        send("finding", parsed.data);
+                      } else if (event.type === "score") {
+                        windowScore = event.score;
+                      } else if (event.type === "summary") {
+                        windowSummary = event.summary;
+                      } else if (event.type === "language") {
+                        windowLanguage = event.language;
+                      }
+                    }
+                  } catch (err) {
+                    sendLensError(send, "fallacy", err, abortController.signal);
+                  }
+                })(),
+              );
             }
+
+            if (lenses.includes("factcheck") && factCheckRow) {
+              tasks.push(
+                (async () => {
+                  let observedModelOutput = false;
+                  const seen = new Set(existingClaims.map(claimKey));
+                  let claimCounter = highestClaimCounter(existingClaims);
+                  const maxClaims = Math.max(
+                    1,
+                    Math.floor(settings?.["factcheck.maxClaims"] ?? 50),
+                  );
+                  try {
+                    for await (const event of llm.extractClaimsStream(
+                      { sentences: toAnalyze, lang, contextSentences },
+                      {
+                        signal: abortController.signal,
+                        onUsage: (usage) => usages.push(usage),
+                      },
+                    )) {
+                      if (!observedModelOutput) {
+                        fallbackModels.push(chosenModel.id);
+                        observedModelOutput = true;
+                      }
+                      if (event.type === "language") {
+                        windowLanguage ??= event.language;
+                        continue;
+                      }
+                      if (
+                        existingClaims.length + newClaims.length >=
+                        maxClaims
+                      ) {
+                        break;
+                      }
+                      if (!isAnchoredToWindow(event.claim, toAnalyze)) continue;
+                      const parsed = ClaimSchema.safeParse(event.claim);
+                      if (!parsed.success) continue;
+                      const key = claimKey(parsed.data);
+                      if (seen.has(key)) continue;
+                      seen.add(key);
+                      const stored = {
+                        id: `c${++claimCounter}`,
+                        ...parsed.data,
+                      };
+                      newClaims.push(stored);
+                      send("claim", stored);
+                    }
+                  } catch (err) {
+                    sendLensError(
+                      send,
+                      "factcheck",
+                      err,
+                      abortController.signal,
+                    );
+                  }
+                })(),
+              );
+            }
+
+            if (lenses.includes("neutrality") && neutralityRow) {
+              tasks.push(
+                (async () => {
+                  let observedModelOutput = false;
+                  const seen = new Set(
+                    existingNeutralityFindings.map(neutralityFindingKey),
+                  );
+                  try {
+                    for await (const event of llm.analyzeNeutralityStream(
+                      { sentences: toAnalyze, lang, contextSentences },
+                      {
+                        signal: abortController.signal,
+                        onUsage: (usage) => usages.push(usage),
+                      },
+                    )) {
+                      if (!observedModelOutput) {
+                        fallbackModels.push(chosenModel.id);
+                        observedModelOutput = true;
+                      }
+                      if (event.type === "finding") {
+                        if (!isAnchoredToWindow(event.finding, toAnalyze)) {
+                          continue;
+                        }
+                        const parsed = NeutralityFindingSchema.safeParse(
+                          event.finding,
+                        );
+                        if (!parsed.success) continue;
+                        const key = neutralityFindingKey(parsed.data);
+                        if (seen.has(key)) continue;
+                        seen.add(key);
+                        newNeutralityFindings.push(parsed.data);
+                        send("neutralityFinding", parsed.data);
+                      } else if (event.type === "verdict") {
+                        windowNeutralityVerdict = event.verdict;
+                        windowNeutralityConfidence = event.confidence;
+                        windowNeutralityRationale = event.rationale;
+                        send("neutralityVerdict", {
+                          verdict: event.verdict,
+                          confidence: event.confidence,
+                          rationale: event.rationale,
+                        });
+                      } else if (event.type === "textType") {
+                        windowTextType = event.textType;
+                      } else if (event.type === "language") {
+                        windowLanguage ??= event.language;
+                      }
+                    }
+                  } catch (err) {
+                    sendLensError(
+                      send,
+                      "neutrality",
+                      err,
+                      abortController.signal,
+                    );
+                  }
+                })(),
+              );
+            }
+
+            await Promise.all(tasks);
           }
           await settle();
 
@@ -323,6 +533,20 @@ export async function POST(req: NextRequest) {
               ? allSentences.slice(0, committedCount + toAnalyze.length)
               : allSentences.slice(0, committedCount);
           const allFindings = [...existingFindings, ...newFindings];
+          const allClaims = [...existingClaims, ...newClaims];
+          const allNeutralityFindings = [
+            ...existingNeutralityFindings,
+            ...newNeutralityFindings,
+          ];
+          const neutrality = mergeNeutralityVerdict(
+            neutralityRow,
+            {
+              verdict: windowNeutralityVerdict,
+              confidence: windowNeutralityConfidence,
+              rationale: windowNeutralityRationale,
+              textType: windowTextType,
+            },
+          );
 
           // On finalize, derive score from density and severity. Otherwise let
           // the window score nudge the running score for stability.
@@ -341,28 +565,69 @@ export async function POST(req: NextRequest) {
               })
             : row.title;
 
-          await prisma.analysis.update({
-            where: { id: row.id },
-            data: {
-              status: finalize ? "complete" : "running",
-              text,
-              transcript: text,
-              sentences: JSON.stringify(persistedSentences),
-              findings: JSON.stringify(allFindings),
-              score: aggregateScore,
-              title,
-              summary: aggregateSummary || null,
-              language: windowLanguage ?? row.language ?? lang,
-              finishedAt: finalize ? new Date() : null,
-              audioDurationMs,
-            },
-          });
+          const finishedAt = finalize ? new Date() : null;
+          await Promise.all([
+            prisma.analysis.update({
+              where: { id: row.id },
+              data: {
+                status: finalize ? "complete" : "running",
+                text,
+                transcript: text,
+                sentences: JSON.stringify(persistedSentences),
+                findings: JSON.stringify(allFindings),
+                score: aggregateScore,
+                title,
+                summary: aggregateSummary || null,
+                language: windowLanguage ?? row.language ?? lang,
+                finishedAt,
+                audioDurationMs,
+              },
+            }),
+            factCheckRow
+              ? prisma.factCheck.update({
+                  where: { id: row.id },
+                  data: {
+                    status: finalize ? "complete" : "running",
+                    text,
+                    title,
+                    language: windowLanguage ?? factCheckRow.language ?? lang,
+                    sentences: JSON.stringify(persistedSentences),
+                    claims: JSON.stringify(allClaims),
+                    finishedAt,
+                  },
+                })
+              : Promise.resolve(),
+            neutralityRow
+              ? prisma.neutrality.update({
+                  where: { id: row.id },
+                  data: {
+                    status: finalize ? "complete" : "running",
+                    text,
+                    title,
+                    language: windowLanguage ?? neutralityRow.language ?? lang,
+                    sentences: JSON.stringify(persistedSentences),
+                    findings: JSON.stringify(allNeutralityFindings),
+                    verdict: neutrality.verdict,
+                    confidence: neutrality.confidence,
+                    rationale: neutrality.rationale || null,
+                    textType: neutrality.textType,
+                    finishedAt,
+                  },
+                })
+              : Promise.resolve(),
+          ]);
 
           send("done", {
             id: row.id,
             analyzed: shouldAnalyze,
             newFindings: newFindings.length,
             totalFindings: allFindings.length,
+            newClaims: newClaims.length,
+            totalClaims: allClaims.length,
+            newNeutralityFindings: newNeutralityFindings.length,
+            totalNeutralityFindings: allNeutralityFindings.length,
+            neutrality,
+            lenses,
             score: aggregateScore,
             title,
             finalize,
@@ -422,6 +687,111 @@ function safeJsonArray<T>(s: string): T[] {
 
 function findingKey(f: Finding): string {
   return `${[...f.sentenceIds].sort().join(",")}::${f.fallacy}`;
+}
+
+function claimKey(claim: Claim): string {
+  return claim.statement.trim().toLocaleLowerCase().replace(/\s+/g, " ");
+}
+
+function highestClaimCounter(claims: ClaimWithId[]): number {
+  return claims.reduce((highest, claim) => {
+    const match = /^c(\d+)$/.exec(claim.id);
+    return match ? Math.max(highest, Number(match[1])) : highest;
+  }, 0);
+}
+
+function neutralityFindingKey(finding: NeutralityFinding): string {
+  return `${[...finding.sentenceIds].sort().join(",")}::${finding.issue}`;
+}
+
+function isAnchoredToWindow(
+  value: { sentenceIds: string[] },
+  sentences: Sentence[],
+): boolean {
+  const ids = new Set(sentences.map((sentence) => sentence.id));
+  return value.sentenceIds.every((id) => ids.has(id));
+}
+
+type SendEvent = (event: string, data: unknown) => void;
+
+function sendLensError(
+  send: SendEvent,
+  lens: LiveLens,
+  error: unknown,
+  signal: AbortSignal,
+) {
+  if (signal.aborted) return;
+  const message = error instanceof Error ? error.message : String(error);
+  console.error(`[live/analyze] ${lens} error`, error);
+  send("lensError", { lens, error: message });
+}
+
+const NEUTRALITY_RANK: Record<NeutralityVerdictValue, number> = {
+  neutral: 0,
+  partisan_lean: 1,
+  explicitly_partisan: 2,
+  manipulation: 3,
+};
+
+function mergeNeutralityVerdict(
+  current:
+    | {
+        verdict: string;
+        confidence: number;
+        rationale: string | null;
+        textType: string | null;
+      }
+    | null,
+  window: {
+    verdict: NeutralityVerdictValue | null;
+    confidence: number;
+    rationale: string;
+    textType: TextType | null;
+  },
+): {
+  verdict: NeutralityVerdictValue;
+  confidence: number;
+  rationale: string;
+  textType: TextType;
+} {
+  const currentVerdict = normalizeNeutralityVerdict(current?.verdict);
+  const useWindow =
+    window.verdict !== null &&
+    (current?.verdict === "pending" ||
+      NEUTRALITY_RANK[window.verdict] > NEUTRALITY_RANK[currentVerdict] ||
+      (window.verdict === currentVerdict &&
+        window.confidence >= (current?.confidence ?? 0)));
+
+  return {
+    verdict: useWindow ? window.verdict! : currentVerdict,
+    confidence: useWindow
+      ? window.confidence
+      : Math.max(0, current?.confidence ?? 0),
+    rationale: useWindow
+      ? window.rationale
+      : current?.rationale ?? window.rationale,
+    textType: window.textType ?? normalizeTextType(current?.textType),
+  };
+}
+
+function normalizeNeutralityVerdict(value: unknown): NeutralityVerdictValue {
+  return NEUTRALITY_VERDICTS.includes(value as NeutralityVerdictValue)
+    ? (value as NeutralityVerdictValue)
+    : "neutral";
+}
+
+function normalizeTextType(value: unknown): TextType {
+  return TEXT_TYPES.includes(value as TextType)
+    ? (value as TextType)
+    : "informational";
+}
+
+async function deleteLiveRows(id: string): Promise<void> {
+  await prisma.$transaction([
+    prisma.factCheck.deleteMany({ where: { id } }),
+    prisma.neutrality.deleteMany({ where: { id } }),
+    prisma.analysis.deleteMany({ where: { id } }),
+  ]);
 }
 
 /**

@@ -13,7 +13,11 @@ import { bucketFromSettings, loadSettings } from "@/lib/settings";
 import type { IngestedDocument } from "@/lib/ingest/url";
 import { IngestError } from "@/lib/ingest/errors";
 import type { ExplainFinding } from "@/lib/explain-schema";
-import { normalizeLevel } from "@/lib/explain-schema";
+import {
+  normalizeLevel,
+  sanitizePaperSynthesis,
+  type PaperMap,
+} from "@/lib/explain-schema";
 import type { Lang } from "@/lib/fallacies";
 import {
   isAccessResponse,
@@ -28,6 +32,7 @@ import {
 } from "@/lib/jiddu-credit-rates";
 import { settleJidduCreditReservationFromUsage } from "@/lib/jiddu-credits";
 import type { OpenRouterUsage } from "@/lib/openrouter-usage";
+import { withModelFallbackPromise } from "@/lib/llm/fallback";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -131,10 +136,12 @@ export async function POST(req: NextRequest) {
   // accumulated char budget exactly as it does for the other pipelines.
   const chunks = chunkSentences(blocks);
   const creditReservation = await reserveWebAnalysisCredits(access, {
-    amount: maxCreditsForCalls(modelChain, chunks.length),
+    // One call per paragraph chunk, plus one bounded whole-document synthesis
+    // for the overview and evidence-linked Paper Map.
+    amount: maxCreditsForCalls(modelChain, chunks.length + 1),
     feature: "explain",
     resourceId: id,
-    metadata: { modelChain, chunkCount: chunks.length },
+    metadata: { modelChain, chunkCount: chunks.length, synthesisCalls: 1 },
   });
   if (isCreditResponse(creditReservation)) return creditReservation;
   const billableModels: string[] = [];
@@ -262,15 +269,64 @@ export async function POST(req: NextRequest) {
         return;
       }
 
-      const finalOverview =
+      const blockPos = new Map(blocks.map((block, index) => [block.id, index]));
+      const orderedFindings = [...allFindings].sort((a, b) => {
+        const aPos = blockPos.get(a.blockIds[0]) ?? Number.POSITIVE_INFINITY;
+        const bPos = blockPos.get(b.blockIds[0]) ?? Number.POSITIVE_INFINITY;
+        return aPos - bPos;
+      });
+      let finalOverview =
         [...overviews.entries()].sort((a, b) => a[0] - b[0])[0]?.[1] ?? "";
+      let paperMap: PaperMap | null = null;
+
+      // The per-chunk overview is useful while streaming, but only a final
+      // synthesis has seen evidence from the methods, results, conclusion and
+      // limitations together. Failure here does not discard the completed
+      // paragraph explanations; legacy overview behaviour remains a fallback.
+      send("synthesisStart", {});
+      try {
+        const synthesisOutput = await withModelFallbackPromise(
+          modelChain,
+          (model) =>
+            llm.synthesizePaperMap(
+              {
+                title: doc.title,
+                blocks,
+                findings: orderedFindings,
+                chunkOverviews: [...overviews.entries()]
+                  .sort((a, b) => a[0] - b[0])
+                  .map(([, value]) => value),
+                lang,
+                level,
+              },
+              {
+                model,
+                signal: abortController.signal,
+                onUsage: (usage) => usages.push(usage),
+              },
+            ),
+          abortController.signal,
+          (model) => billableModels.push(model),
+        );
+        const synthesis = sanitizePaperSynthesis(
+          synthesisOutput.result,
+          new Set(blocks.map((block) => block.id)),
+        );
+        if (synthesis.overview) finalOverview = synthesis.overview;
+        paperMap = synthesis.paperMap;
+      } catch (err) {
+        if (!abortController.signal.aborted) {
+          console.error("[/api/explain] paper-map synthesis failed:", err);
+        }
+      }
 
       await prisma.explanation.update({
         where: { id },
         data: {
           status: "complete",
           overview: finalOverview,
-          findings: JSON.stringify(allFindings),
+          paperMap: paperMap ? JSON.stringify(paperMap) : null,
+          findings: JSON.stringify(orderedFindings),
           finishedAt: new Date(),
         },
       });
@@ -283,6 +339,7 @@ export async function POST(req: NextRequest) {
           metadata: {
             models: billableModels,
             completedChunks: chunkOkCount,
+            paperMapCompleted: paperMap !== null,
           },
         },
       );
@@ -290,7 +347,8 @@ export async function POST(req: NextRequest) {
       send("done", {
         id,
         overview: finalOverview,
-        findingsCount: allFindings.length,
+        paperMap,
+        findingsCount: orderedFindings.length,
       });
       controller.close();
     },

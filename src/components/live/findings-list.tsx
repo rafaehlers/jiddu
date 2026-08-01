@@ -3,13 +3,15 @@
 import { FALLACY_BY_ID } from "@/lib/fallacies";
 import type { Finding } from "@/lib/schema";
 import { useI18n } from "@/lib/i18n/provider";
+import { LiveResultTypeBadge } from "./result-type-badge";
 
 type Props = {
   findings: Finding[];
   lang: "en" | "pt" | "es";
+  showLensBadge?: boolean;
 };
 
-export function FindingsList({ findings, lang }: Props) {
+export function FindingsList({ findings, lang, showLensBadge = false }: Props) {
   const { t } = useI18n();
   if (findings.length === 0) {
     return (
@@ -28,16 +30,21 @@ export function FindingsList({ findings, lang }: Props) {
             key={`${f.sentenceIds.join("-")}-${f.fallacy}-${idx}`}
             className="rounded-md border border-rule bg-paper p-3"
           >
-            <div className="flex items-center justify-between gap-2 mb-1">
-              <span
-                className="text-xs font-medium px-2 py-0.5 rounded"
-                style={{
-                  backgroundColor: `color-mix(in oklab, ${color} 22%, transparent)`,
-                  color: "var(--foreground)",
-                }}
-              >
-                {name}
-              </span>
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-1.5">
+                {showLensBadge ? (
+                  <LiveResultTypeBadge lens="fallacy" />
+                ) : null}
+                <span
+                  className="rounded px-2 py-0.5 text-xs font-medium"
+                  style={{
+                    backgroundColor: `color-mix(in oklab, ${color} 22%, transparent)`,
+                    color: "var(--foreground)",
+                  }}
+                >
+                  {name}
+                </span>
+              </div>
               <span
                 className={
                   "text-xs uppercase tracking-wider " +

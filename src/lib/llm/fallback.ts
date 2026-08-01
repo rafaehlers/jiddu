@@ -59,6 +59,38 @@ export async function* withModelFallback<E, R>(
   throw lastError;
 }
 
+// Non-streaming companion used by small final synthesis calls. As with the
+// streaming helper, each retry gets its own model-specific provider routing.
+export async function withModelFallbackPromise<T>(
+  models: string[],
+  makeRequest: (model: string) => Promise<T>,
+  signal?: AbortSignal,
+  onModelUsed?: (model: string) => void,
+): Promise<T> {
+  if (models.length === 0) {
+    throw new Error("withModelFallbackPromise: empty model list");
+  }
+  let lastError: unknown;
+  for (let i = 0; i < models.length; i++) {
+    const model = models[i];
+    if (signal?.aborted) throw new Error("aborted");
+    try {
+      const result = await makeRequest(model);
+      onModelUsed?.(model);
+      return result;
+    } catch (err) {
+      lastError = err;
+      if (i === models.length - 1) throw err;
+      console.warn(
+        `[withModelFallbackPromise] model="${model}" failed, falling back: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+    }
+  }
+  throw lastError;
+}
+
 // The default chain used everywhere when the caller doesn't pick a model
 // explicitly. Order is: cheapest/fastest first, robust fallback second.
 export const DEFAULT_MODEL_CHAIN: readonly string[] = [

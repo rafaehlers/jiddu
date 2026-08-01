@@ -306,7 +306,7 @@ export function FactCheckView({
   const verifyRunning = verifyStatus === "running";
 
   return (
-    <div className="mx-auto max-w-7xl w-full px-4 sm:px-6 py-6 sm:py-8 flex flex-col gap-6">
+    <div className="mx-auto max-w-5xl w-full px-4 sm:px-6 py-6 sm:py-8 flex flex-col gap-6">
       {/* Header */}
       <header className="flex flex-col gap-2">
         <h1 className="font-serif text-2xl sm:text-3xl leading-tight">

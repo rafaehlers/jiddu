@@ -4,19 +4,38 @@ import { useAuth } from "@workos-inc/authkit-nextjs/components";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Loader2, Play, Square, ExternalLink, RotateCcw } from "lucide-react";
+import {
+  ExternalLink,
+  Loader2,
+  Play,
+  RotateCcw,
+  Square,
+} from "lucide-react";
 import { AnalysisAuthModal } from "@/components/analysis-auth-modal";
 import { useLiveSession, type LiveSource } from "@/lib/live/use-live-session";
 import type { LiveSessionError } from "@/lib/live/use-live-session";
 import { useLiveAnalysis } from "@/lib/live/use-live-analysis";
+import { useLiveClaimVerification } from "@/lib/live/use-live-claim-verification";
 import { useI18n } from "@/lib/i18n/provider";
+import type { Messages } from "@/lib/i18n/messages";
+import {
+  DEFAULT_LIVE_LENSES,
+  type LiveLens,
+} from "@/lib/live-lenses";
 import { SourcePicker } from "./source-picker";
 import { TranscriptStream } from "./transcript-stream";
 import { FindingsList } from "./findings-list";
+import { LiveLensPicker } from "./lens-picker";
+import { LiveAnalysisIntervalPicker } from "./analysis-interval-picker";
+import { LiveClaimsList } from "./claims-list";
+import { LiveNeutralityList } from "./neutrality-list";
+import { LiveAllResults } from "./all-results";
+import { LiveClaimVerificationPanel } from "./claim-verification-panel";
 
 // Hard cap: stop the session after this many seconds to prevent runaway cost.
 // 60 minutes ≈ $1 of gpt-live-transcribe at $0.017/min, before LLM analysis.
 const MAX_SESSION_MS = 60 * 60 * 1000;
+type LiveResultTab = "all" | LiveLens;
 
 export function LivePage() {
   // Use the site-wide language preference (selector lives in the header) so
@@ -26,6 +45,12 @@ export function LivePage() {
   const { user, loading: authLoading } = useAuth();
   const pathname = usePathname();
   const [source, setSource] = useState<LiveSource>("mic");
+  const [lenses, setLenses] = useState<LiveLens[]>(DEFAULT_LIVE_LENSES);
+  const [sessionLenses, setSessionLenses] = useState<LiveLens[]>(
+    DEFAULT_LIVE_LENSES,
+  );
+  const [activeLens, setActiveLens] = useState<LiveResultTab>("all");
+  const [analysisIntervalMs, setAnalysisIntervalMs] = useState(30_000);
   const [authModalOpen, setAuthModalOpen] = useState(false);
 
   const session = useLiveSession({ language: lang });
@@ -34,12 +59,22 @@ export function LivePage() {
     transcript: session.transcript,
     active: session.state === "live",
     language: lang,
+    lenses: sessionLenses,
+    intervalMs: analysisIntervalMs,
   });
+  const claimVerification = useLiveClaimVerification(
+    analysis.sessionId,
+    analysis.claims,
+  );
 
   const isRunning =
     session.state === "live" ||
     session.state === "connecting" ||
     session.state === "stopping";
+  const verificationRunning = claimVerification.status === "running";
+  const controlsLocked = isRunning || verificationRunning;
+  const resultLenses =
+    session.state === "idle" && !analysis.sessionId ? lenses : sessionLenses;
   const reachedHardLimit =
     session.state === "live" && session.elapsedMs >= MAX_SESSION_MS;
   const autoStopTriggeredRef = useRef(false);
@@ -48,12 +83,31 @@ export function LivePage() {
   const hasConcludedSession =
     (session.state === "stopped" || session.state === "error") &&
     analysis.sessionId != null;
+  const visibleLensErrors =
+    activeLens === "all"
+      ? resultLenses.flatMap((lens) => {
+          const error = analysis.lensErrors[lens];
+          return error ? [{ lens, error }] : [];
+        })
+      : analysis.lensErrors[activeLens]
+        ? [{ lens: activeLens, error: analysis.lensErrors[activeLens]! }]
+        : [];
+  const canVerifyClaimsHere =
+    hasConcludedSession &&
+    sessionLenses.includes("factcheck") &&
+    analysis.claims.length > 0 &&
+    (activeLens === "all" || activeLens === "factcheck");
 
   const handleStart = () => {
-    if (authLoading) return;
+    if (authLoading || verificationRunning) return;
     if (!user) {
       setAuthModalOpen(true);
       return;
+    }
+    claimVerification.reset();
+    setSessionLenses(lenses);
+    if (activeLens !== "all" && !lenses.includes(activeLens)) {
+      setActiveLens("all");
     }
     void session.start(source);
   };
@@ -67,6 +121,7 @@ export function LivePage() {
     const audioDurationMs = await session.stop();
     const analysisId = await analysis.finalize(audioDurationMs);
     await session.finish(analysisId);
+    setActiveLens("all");
   }, [analysis, session]);
 
   // Auto-stop on hard limit.
@@ -81,7 +136,7 @@ export function LivePage() {
   }, [reachedHardLimit, handleStop]);
 
   return (
-    <div className="mx-auto max-w-3xl px-4 sm:px-6 py-8 sm:py-12 flex-1 w-full">
+    <div className="mx-auto max-w-5xl px-4 sm:px-6 py-8 sm:py-12 flex-1 w-full">
       <header className="mb-6">
         <div className="flex items-baseline gap-3">
           <h1 className="font-serif text-3xl sm:text-4xl tracking-tight">
@@ -97,18 +152,39 @@ export function LivePage() {
       </header>
 
       <div className="flex flex-wrap items-center gap-3 mb-4">
-        <SourcePicker value={source} onChange={setSource} disabled={isRunning} />
+        <SourcePicker
+          value={source}
+          onChange={setSource}
+          disabled={controlsLocked}
+        />
         <span className="text-xs text-muted">
           {t.live_language_follows_header}
         </span>
       </div>
+
+      <LiveLensPicker
+        disabled={controlsLocked}
+        value={lenses}
+        onChange={(next) => {
+          setLenses(next);
+          if (activeLens !== "all" && !next.includes(activeLens)) {
+            setActiveLens("all");
+          }
+        }}
+      />
+
+      <LiveAnalysisIntervalPicker
+        disabled={controlsLocked}
+        value={analysisIntervalMs}
+        onChange={setAnalysisIntervalMs}
+      />
 
       <div className="flex items-center gap-3 mb-4 flex-wrap">
         {!isRunning ? (
           <button
             type="button"
             onClick={handleStart}
-            disabled={authLoading}
+            disabled={authLoading || verificationRunning}
             className="inline-flex items-center gap-2 rounded-md bg-accent text-white px-4 py-2 text-sm font-medium hover:opacity-90 disabled:cursor-wait disabled:opacity-60"
           >
             {hasConcludedSession ? (
@@ -143,15 +219,28 @@ export function LivePage() {
       </div>
 
       {hasConcludedSession && (
-        <div className="mb-4 rounded-md border border-accent/40 bg-accent/10 text-foreground px-3 py-2 text-sm flex items-center justify-between gap-3 flex-wrap">
+        <div className="mb-4 rounded-md border border-accent/40 bg-accent/10 px-3 py-3 text-sm text-foreground">
           <span>{t.live_session_saved}</span>
-          <Link
-            href={`/a/${analysis.sessionId}`}
-            className="inline-flex items-center gap-1.5 text-accent hover:underline font-medium"
-          >
-            {t.live_view_analysis}
-            <ExternalLink className="size-3.5" />
-          </Link>
+          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2">
+            {sessionLenses.includes("fallacy") ? (
+              <ResultLink
+                href={`/a/${analysis.sessionId}`}
+                label={t.live_view_analysis}
+              />
+            ) : null}
+            {sessionLenses.includes("factcheck") ? (
+              <ResultLink
+                href={`/f/${analysis.sessionId}`}
+                label={t.live_view_factcheck}
+              />
+            ) : null}
+            {sessionLenses.includes("neutrality") ? (
+              <ResultLink
+                href={`/n/${analysis.sessionId}`}
+                label={t.live_view_neutrality}
+              />
+            ) : null}
+          </div>
         </div>
       )}
 
@@ -169,14 +258,35 @@ export function LivePage() {
       />
 
       <section className="mt-6">
-        <div className="flex items-baseline justify-between mb-3">
-          <h2 className="font-serif text-xl tracking-tight">
-            {t.live_findings}{" "}
-            <span className="text-muted text-base">
-              ({analysis.findings.length})
-            </span>
-          </h2>
-          {analysis.score != null && (
+        <div className="mb-4 flex flex-wrap items-center gap-2 border-b border-rule pb-3">
+          <button
+            type="button"
+            aria-pressed={activeLens === "all"}
+            onClick={() => setActiveLens("all")}
+            className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
+              activeLens === "all"
+                ? "border-accent bg-accent text-white"
+                : "border-rule text-muted hover:text-foreground"
+            }`}
+          >
+            {t.live_all} ({liveAllCount(analysis)})
+          </button>
+          {resultLenses.map((lens) => (
+            <button
+              key={lens}
+              type="button"
+              aria-pressed={activeLens === lens}
+              onClick={() => setActiveLens(lens)}
+              className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
+                activeLens === lens
+                  ? "border-accent bg-accent text-white"
+                  : "border-rule text-muted hover:text-foreground"
+              }`}
+            >
+              {liveLensLabel(lens, t)} ({liveLensCount(lens, analysis)})
+            </button>
+          ))}
+          {activeLens === "fallacy" && analysis.score != null && (
             <span className="text-sm text-muted">
               {t.live_running_score}:{" "}
               <strong className="text-foreground">{analysis.score}</strong>
@@ -184,7 +294,49 @@ export function LivePage() {
             </span>
           )}
         </div>
-        <FindingsList findings={analysis.findings} lang={lang} />
+
+        {visibleLensErrors.map(({ lens, error }) => (
+          <p
+            key={lens}
+            className="mb-3 rounded-md border border-severity-high/40 bg-severity-high/10 px-3 py-2 text-sm text-severity-high"
+          >
+            <strong>{liveLensLabel(lens, t)}:</strong> {error}
+          </p>
+        ))}
+
+        {canVerifyClaimsHere ? (
+          <LiveClaimVerificationPanel
+            status={claimVerification.status}
+            progress={claimVerification.progress}
+            error={claimVerification.error}
+            start={claimVerification.start}
+          />
+        ) : null}
+
+        {activeLens === "all" ? (
+          <LiveAllResults
+            findings={analysis.findings}
+            claims={analysis.claims}
+            neutralityFindings={analysis.neutralityFindings}
+            neutralityVerdict={analysis.neutralityVerdict}
+            verdicts={claimVerification.verdicts}
+            verifyingClaims={claimVerification.status === "running"}
+            lang={lang}
+          />
+        ) : activeLens === "fallacy" ? (
+          <FindingsList findings={analysis.findings} lang={lang} />
+        ) : activeLens === "factcheck" ? (
+          <LiveClaimsList
+            claims={analysis.claims}
+            verdicts={claimVerification.verdicts}
+            verifying={claimVerification.status === "running"}
+          />
+        ) : (
+          <LiveNeutralityList
+            findings={analysis.neutralityFindings}
+            verdict={analysis.neutralityVerdict}
+          />
+        )}
       </section>
 
       <p className="text-xs text-muted mt-6">{t.live_privacy_note}</p>
@@ -194,6 +346,47 @@ export function LivePage() {
         onClose={() => setAuthModalOpen(false)}
       />
     </div>
+  );
+}
+
+function ResultLink({ href, label }: { href: string; label: string }) {
+  return (
+    <Link
+      href={href}
+      className="inline-flex items-center gap-1.5 font-medium text-accent hover:underline"
+    >
+      {label}
+      <ExternalLink aria-hidden="true" className="size-3.5" />
+    </Link>
+  );
+}
+
+function liveLensLabel(lens: LiveLens, t: Messages): string {
+  if (lens === "factcheck") return t.live_lens_factcheck;
+  if (lens === "neutrality") return t.live_lens_neutrality;
+  return t.live_lens_fallacy;
+}
+
+function liveLensCount(
+  lens: LiveLens,
+  analysis: ReturnType<typeof useLiveAnalysis>,
+): number {
+  if (lens === "factcheck") return analysis.claims.length;
+  if (lens === "neutrality") {
+    return (
+      analysis.neutralityFindings.length +
+      (analysis.neutralityVerdict ? 1 : 0)
+    );
+  }
+  return analysis.findings.length;
+}
+
+function liveAllCount(analysis: ReturnType<typeof useLiveAnalysis>): number {
+  return (
+    analysis.findings.length +
+    analysis.claims.length +
+    analysis.neutralityFindings.length +
+    (analysis.neutralityVerdict ? 1 : 0)
   );
 }
 

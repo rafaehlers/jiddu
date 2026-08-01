@@ -70,6 +70,81 @@ export const ExplainFindingSchema = z.object({
 });
 export type ExplainFinding = z.infer<typeof ExplainFindingSchema>;
 
+// A concise, document-level reading map shown before the paragraph-by-
+// paragraph explainer. Statements keep their supporting block ids so the
+// reader can jump back to the paper instead of treating the synthesis as an
+// untraceable model assertion.
+export const PaperMapStatementSchema = z.object({
+  text: z.string(),
+  blockIds: z.array(z.string()),
+});
+export type PaperMapStatement = z.infer<typeof PaperMapStatementSchema>;
+
+export const PaperMapSchema = z.object({
+  paperTypes: z.array(z.string()),
+  contributionTypes: z.array(z.string()),
+  researchQuestion: PaperMapStatementSchema.nullable(),
+  contribution: PaperMapStatementSchema.nullable(),
+  approach: PaperMapStatementSchema.nullable(),
+  mainAnswer: PaperMapStatementSchema.nullable(),
+  evidence: PaperMapStatementSchema.nullable(),
+  statedLimitation: PaperMapStatementSchema.nullable(),
+});
+export type PaperMap = z.infer<typeof PaperMapSchema>;
+
+export const PaperSynthesisSchema = z.object({
+  overview: z.string(),
+  paperMap: PaperMapSchema,
+});
+export type PaperSynthesis = z.infer<typeof PaperSynthesisSchema>;
+
+export function parsePaperMap(value: string | null | undefined): PaperMap | null {
+  if (!value) return null;
+  try {
+    const parsed = PaperMapSchema.safeParse(JSON.parse(value));
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
+}
+
+// Tool schemas validate shape, but only the route knows the real block ids.
+// Filter invented ids and empty labels before persisting the final map.
+export function sanitizePaperSynthesis(
+  synthesis: PaperSynthesis,
+  validBlockIds: ReadonlySet<string>,
+): PaperSynthesis {
+  const cleanTags = (tags: string[]) =>
+    Array.from(new Set(tags.map((tag) => tag.trim()).filter(Boolean))).slice(0, 3);
+  const cleanStatement = (
+    statement: PaperMapStatement | null,
+  ): PaperMapStatement | null => {
+    if (!statement) return null;
+    const text = statement.text.trim();
+    if (!text) return null;
+    return {
+      text,
+      blockIds: Array.from(
+        new Set(statement.blockIds.filter((id) => validBlockIds.has(id))),
+      ).slice(0, 6),
+    };
+  };
+
+  return {
+    overview: synthesis.overview.trim(),
+    paperMap: {
+      paperTypes: cleanTags(synthesis.paperMap.paperTypes),
+      contributionTypes: cleanTags(synthesis.paperMap.contributionTypes),
+      researchQuestion: cleanStatement(synthesis.paperMap.researchQuestion),
+      contribution: cleanStatement(synthesis.paperMap.contribution),
+      approach: cleanStatement(synthesis.paperMap.approach),
+      mainAnswer: cleanStatement(synthesis.paperMap.mainAnswer),
+      evidence: cleanStatement(synthesis.paperMap.evidence),
+      statedLimitation: cleanStatement(synthesis.paperMap.statedLimitation),
+    },
+  };
+}
+
 export const ExplainResultSchema = z.object({
   language: z.string().nullable().optional(),
   // A short plain-language abstract of the whole document at the chosen level.

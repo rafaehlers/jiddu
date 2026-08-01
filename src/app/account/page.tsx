@@ -48,7 +48,7 @@ export default async function AccountPage({
     return (
       <>
         <SiteHeader variant="guide" />
-        <main className="flex-1 mx-auto w-full max-w-3xl px-4 sm:px-6 py-12">
+        <main className="flex-1 mx-auto w-full max-w-5xl px-4 sm:px-6 py-12">
           <h1 className="font-serif text-4xl mb-4">Account</h1>
           <p className="text-muted">
             Authentication is ready in the codebase but still needs the WorkOS
@@ -149,7 +149,7 @@ export default async function AccountPage({
   return (
     <>
       <SiteHeader variant="guide" />
-      <main className="flex-1 mx-auto w-full max-w-3xl px-4 sm:px-6 py-10 sm:py-14">
+      <main className="flex-1 mx-auto w-full max-w-5xl px-4 sm:px-6 py-10 sm:py-14">
         <div className="flex flex-col gap-8">
           <div>
             <p className="text-sm text-muted mb-2">Signed in as {user.email}</p>

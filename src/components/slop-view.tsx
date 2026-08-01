@@ -149,7 +149,7 @@ export function SlopView({
 
   return (
     <div className="flex-1 flex flex-col">
-      <div className="mx-auto max-w-7xl w-full px-4 sm:px-6 py-6 flex flex-col gap-4">
+      <div className="mx-auto max-w-5xl w-full px-4 sm:px-6 py-6 flex flex-col gap-4">
         <div className="flex flex-col gap-1 min-w-0">
           <h1 className="font-serif text-2xl md:text-3xl tracking-tight">
             {title ?? "Untitled"}
@@ -174,7 +174,7 @@ export function SlopView({
         </p>
       </div>
 
-      <div className="mx-auto max-w-7xl w-full px-4 sm:px-6 pb-10 grid grid-cols-1 lg:grid-cols-[1fr_22rem] gap-6 lg:gap-8">
+      <div className="mx-auto max-w-5xl w-full px-4 sm:px-6 pb-10 grid grid-cols-1 lg:grid-cols-[1fr_22rem] gap-6 lg:gap-8">
         <article
           ref={textColRef}
           className="bg-paper border border-rule rounded-lg p-5 sm:p-8 font-serif text-base sm:text-lg leading-[1.75] text-ink"
@@ -292,7 +292,7 @@ export function SlopView({
         </aside>
       </div>
 
-      <div className="mx-auto max-w-7xl w-full px-4 sm:px-6 pb-16 grid grid-cols-1 lg:grid-cols-[1fr_22rem] gap-8">
+      <div className="mx-auto max-w-5xl w-full px-4 sm:px-6 pb-16 grid grid-cols-1 lg:grid-cols-[1fr_22rem] gap-8">
         <ShareLinkBar rightSlot={<ExportPdfButton href={`/s/${id}/print`} />} />
       </div>
 

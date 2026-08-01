@@ -244,6 +244,7 @@ model Explanation {
   model             String
   level             String    @default("undergrad") // eli5 | high_school | undergrad | expert
   overview          String? // plain-language abstract of the whole paper at the chosen level
+  paperMap          String? // JSON PaperMap: document type, question, approach, evidence, answer and stated limitation
   blocks            String    @default("[]") // JSON array of {id,start,end,text} paragraph blocks
   findings          String    @default("[]") // JSON array of ExplainFinding {blockIds, role, explanation}
   errorMessage      String?

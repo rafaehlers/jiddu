@@ -38,7 +38,11 @@ export function AuthControlsProvider({
   );
 }
 
-export function AuthControls() {
+export function AuthControls({
+  leadingSeparator = false,
+}: {
+  leadingSeparator?: boolean;
+}) {
   const { user, loading } = useAuth();
   const { lang } = useI18n();
   const { enabled, isAdmin } = useContext(AuthControlsContext);
@@ -60,9 +64,11 @@ export function AuthControls() {
   if (!user) {
     return (
       <div className="flex items-center gap-2 sm:gap-3">
-        <span className="hidden text-muted md:inline" aria-hidden>
-          ·
-        </span>
+        {leadingSeparator ? (
+          <span className="hidden text-muted md:inline" aria-hidden>
+            ·
+          </span>
+        ) : null}
         <Link
           href="/login"
           className="text-sm text-muted hover:text-accent-hi transition-colors"
@@ -81,9 +87,11 @@ export function AuthControls() {
 
   return (
     <div className="flex items-center gap-2 sm:gap-3">
-      <span className="hidden text-muted md:inline" aria-hidden>
-        ·
-      </span>
+      {leadingSeparator ? (
+        <span className="hidden text-muted md:inline" aria-hidden>
+          ·
+        </span>
+      ) : null}
       <Link
         href="/account"
         className="text-sm text-muted hover:text-accent-hi transition-colors"

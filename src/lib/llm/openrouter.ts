@@ -25,15 +25,22 @@ import {
 import {
   ExplainFindingSchema,
   ExplainResultSchema,
+  PaperSynthesisSchema,
   type ExplainFinding,
   type ExplainLevel,
   type ExplainResult,
 } from "../explain-schema";
 import { EXPLAIN_JSON_SCHEMA } from "./explainJsonSchema";
+import { PAPER_SYNTHESIS_JSON_SCHEMA } from "./paperSynthesisJsonSchema";
 import {
   buildExplainSystemPrompt,
   buildExplainUserPrompt,
 } from "../explain-prompt";
+import {
+  buildPaperMapSystemPrompt,
+  buildPaperMapUserPrompt,
+  type PaperSynthesisInput,
+} from "../paper-map-prompt";
 import { buildSystemPrompt, buildUserPrompt } from "../prompt";
 import { ANALYSIS_JSON_SCHEMA } from "./jsonSchema";
 import {
@@ -1017,6 +1024,53 @@ export class OpenRouterProvider implements LlmProvider {
 
     if (requestUsage) requestUsage.completed = true;
     return { model: opts.model ?? this.defaultModel };
+  }
+
+  async synthesizePaperMap(
+    input: PaperSynthesisInput,
+    opts?: LlmStreamOptions,
+  ) {
+    const modelId = opts?.model ?? this.defaultModel;
+    const response = await this.client.chat.completions.create(
+      {
+        model: this.slug(modelId),
+        messages: [
+          {
+            role: "system",
+            content: buildPaperMapSystemPrompt(input.lang, input.level),
+          },
+          { role: "user", content: buildPaperMapUserPrompt(input) },
+        ],
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "report_paper_map",
+              description:
+                "Report a descriptive overview and evidence-linked reading map of the paper.",
+              parameters: PAPER_SYNTHESIS_JSON_SCHEMA,
+            },
+          },
+        ],
+        tool_choice: this.toolChoiceFor("report_paper_map", modelId),
+        ...this.openRouterExtras(modelId),
+      } as OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming,
+      opts?.signal ? { signal: opts.signal } : undefined,
+    );
+    const usage = readOpenRouterUsage(response, modelId);
+    if (usage) opts?.onUsage?.(usage);
+
+    const toolCall = response.choices[0]?.message?.tool_calls?.find(
+      (call) => call.type === "function" && call.function.name === "report_paper_map",
+    );
+    if (!toolCall || toolCall.type !== "function") {
+      throw new Error("OpenRouter paper-map response missing tool_call");
+    }
+    const result = PaperSynthesisSchema.parse(
+      JSON.parse(toolCall.function.arguments),
+    );
+    if (usage) usage.completed = true;
+    return { model: modelId, result };
   }
 }
 

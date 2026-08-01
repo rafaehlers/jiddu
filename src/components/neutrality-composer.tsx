@@ -120,7 +120,7 @@ export function NeutralityComposer() {
 
   if (!live) {
     return (
-      <section className="mx-auto max-w-7xl w-full px-4 sm:px-6 py-8 sm:py-14">
+      <section className="mx-auto max-w-5xl w-full px-4 sm:px-6 py-8 sm:py-14">
         <div className="flex flex-col lg:flex-row gap-8 lg:gap-10 lg:items-start">
           <div className="flex-1 min-w-0 flex flex-col gap-8 sm:gap-10 order-1">
             <div className="flex flex-col gap-4">

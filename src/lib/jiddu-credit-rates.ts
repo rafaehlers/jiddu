@@ -1,4 +1,4 @@
-export const JIDDU_CREDIT_RATE_VERSION = "2026-08-01.v8";
+export const JIDDU_CREDIT_RATE_VERSION = "2026-08-01.v9";
 export const DEFAULT_LIVE_MINIMUM_CREDITS = 20;
 
 export const MODEL_CREDIT_RATES = {
@@ -93,9 +93,9 @@ export const JIDDU_CREDIT_RATE_TABLE: CreditRateRow[] = [
   },
   {
     feature: "Live analysis",
-    unit: "Per completed analysis window",
+    unit: "Per selected lens and completed analysis window",
     detail:
-      "1 credit reserved with GPT-5.6 Luna or MiniMax M3. Completed window costs are accumulated with transcription and the Live session is rounded once at settlement.",
+      "1 credit reserved per selected lens with GPT-5.6 Luna or MiniMax M3, up to 3 with all lenses. Completed window costs are accumulated with transcription and the Live session is rounded once at settlement.",
   },
 ];
 

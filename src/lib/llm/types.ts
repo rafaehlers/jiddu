@@ -9,7 +9,9 @@ import type {
 } from "./stream";
 import type { Lang } from "../fallacies";
 import type { ExplainLevel } from "../explain-schema";
+import type { PaperSynthesis } from "../explain-schema";
 import type { OpenRouterUsage } from "../openrouter-usage";
+import type { PaperSynthesisInput } from "../paper-map-prompt";
 
 export type ProviderId = "anthropic" | "openai";
 
@@ -70,6 +72,10 @@ export interface LlmProvider {
     input: AnalyzeInput,
     opts: LlmStreamOptions & { level: ExplainLevel },
   ): AsyncGenerator<ExplainStreamEvent, { model: string }, void>;
+  synthesizePaperMap(
+    input: PaperSynthesisInput,
+    opts?: LlmStreamOptions,
+  ): Promise<{ model: string; result: PaperSynthesis }>;
   analyzeSlopStream(
     input: AnalyzeInput,
     opts?: LlmStreamOptions,

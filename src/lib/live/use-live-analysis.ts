@@ -3,6 +3,20 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { readSse } from "@/lib/sse";
 import type { Finding } from "@/lib/schema";
+import type { Claim } from "@/lib/claims-schema";
+import type {
+  NeutralityFinding,
+  NeutralityVerdictValue,
+} from "@/lib/neutrality-schema";
+import type { LiveLens } from "@/lib/live-lenses";
+
+export type LiveClaim = Claim & { id: string };
+
+export type LiveNeutralityVerdict = {
+  verdict: NeutralityVerdictValue;
+  confidence: number;
+  rationale: string;
+};
 
 type Options = {
   /** Billing ticket returned with the Realtime client secret. */
@@ -12,26 +26,25 @@ type Options = {
   /** Whether the live session is currently active (true → run the timer). */
   active: boolean;
   language: "en" | "pt" | "es";
-  /**
-   * Trigger an analyze call when the new transcript has at least this many
-   * characters past the last successful run. Lower → more API calls + faster
-   * feedback. Higher → cheaper but laggier.
-   */
-  minDeltaChars?: number;
+  lenses: LiveLens[];
   /** Minimum new text for the periodic slow-growth fallback. */
   timerMinDeltaChars?: number;
-  /** Periodic timer in ms — fallback so we still call on slow growth. */
+  /** Periodic analysis cadence in milliseconds. */
   intervalMs?: number;
 };
 
 type Result = {
   findings: Finding[];
+  claims: LiveClaim[];
+  neutralityFindings: NeutralityFinding[];
+  neutralityVerdict: LiveNeutralityVerdict | null;
   score: number | null;
   sessionId: string | null;
   /** True between firing an analyze call and getting the `done` event. */
   isAnalyzing: boolean;
   /** Last error from analyze; cleared on next successful call. */
   error: string | null;
+  lensErrors: Partial<Record<LiveLens, string>>;
   /**
    * Send the cumulative transcript with `finalize: true`. Resolves with the
    * session id (so the caller can redirect to the persisted analysis view).
@@ -44,25 +57,36 @@ export function useLiveAnalysis({
   transcript,
   active,
   language,
-  minDeltaChars = 800,
+  lenses,
   timerMinDeltaChars = 120,
   intervalMs = 30_000,
 }: Options): Result {
   const [findings, setFindings] = useState<Finding[]>([]);
+  const [claims, setClaims] = useState<LiveClaim[]>([]);
+  const [neutralityFindings, setNeutralityFindings] = useState<
+    NeutralityFinding[]
+  >([]);
+  const [neutralityVerdict, setNeutralityVerdict] =
+    useState<LiveNeutralityVerdict | null>(null);
   const [score, setScore] = useState<number | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lensErrors, setLensErrors] = useState<
+    Partial<Record<LiveLens, string>>
+  >({});
 
   // Latest transcript / language values, accessible inside the timer +
   // finalize without re-creating the closures every keystroke. Refs are
   // synced via an effect (assigning during render trips React 19's lint).
   const transcriptRef = useRef(transcript);
   const languageRef = useRef(language);
+  const lensesRef = useRef(lenses);
   const billingReservationIdRef = useRef(billingReservationId);
   useEffect(() => {
     transcriptRef.current = transcript;
     languageRef.current = language;
+    lensesRef.current = lenses;
     billingReservationIdRef.current = billingReservationId;
   });
   const sessionIdRef = useRef<string | null>(null);
@@ -75,11 +99,15 @@ export function useLiveAnalysis({
   useEffect(() => {
     if (active && !wasActiveRef.current) {
       setFindings([]);
+      setClaims([]);
+      setNeutralityFindings([]);
+      setNeutralityVerdict(null);
       setScore(null);
       setSessionId(null);
       sessionIdRef.current = null;
       lastAnalyzedLengthRef.current = 0;
       setError(null);
+      setLensErrors({});
     }
     wasActiveRef.current = active;
   }, [active]);
@@ -116,6 +144,7 @@ export function useLiveAnalysis({
             sessionId: sessionIdRef.current,
             text,
             lang: languageRef.current,
+            lenses: lensesRef.current,
             timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
             finalize,
             audioDurationMs: finalize ? audioDurationMs : undefined,
@@ -159,6 +188,37 @@ export function useLiveAnalysis({
             } catch {
               /* ignore */
             }
+          } else if (ev.event === "claim") {
+            try {
+              const claim = JSON.parse(ev.data) as LiveClaim;
+              setClaims((current) =>
+                current.some((item) => item.id === claim.id)
+                  ? current
+                  : [...current, claim],
+              );
+            } catch {
+              /* ignore */
+            }
+          } else if (ev.event === "neutralityFinding") {
+            try {
+              const finding = JSON.parse(ev.data) as NeutralityFinding;
+              const key = neutralityFindingKey(finding);
+              setNeutralityFindings((current) =>
+                current.some((item) => neutralityFindingKey(item) === key)
+                  ? current
+                  : [...current, finding],
+              );
+            } catch {
+              /* ignore */
+            }
+          } else if (ev.event === "neutralityVerdict") {
+            try {
+              setNeutralityVerdict(
+                JSON.parse(ev.data) as LiveNeutralityVerdict,
+              );
+            } catch {
+              /* ignore */
+            }
           } else if (ev.event === "done") {
             try {
               const data = JSON.parse(ev.data) as {
@@ -166,12 +226,16 @@ export function useLiveAnalysis({
                 score?: number;
                 analyzed?: boolean;
                 finalize?: boolean;
+                neutrality?: LiveNeutralityVerdict;
               };
               if (data.id) {
                 sessionIdRef.current = data.id;
                 setSessionId(data.id);
               }
               if (typeof data.score === "number") setScore(data.score);
+              if (data.neutrality) {
+                setNeutralityVerdict(data.neutrality);
+              }
               if (data.analyzed || data.finalize) {
                 lastAnalyzedLengthRef.current = text.length;
               }
@@ -183,6 +247,21 @@ export function useLiveAnalysis({
             try {
               const data = JSON.parse(ev.data) as { error?: string };
               if (data.error) setError(data.error);
+            } catch {
+              /* ignore */
+            }
+          } else if (ev.event === "lensError") {
+            try {
+              const data = JSON.parse(ev.data) as {
+                lens?: LiveLens;
+                error?: string;
+              };
+              if (data.lens && data.error) {
+                setLensErrors((current) => ({
+                  ...current,
+                  [data.lens!]: data.error,
+                }));
+              }
             } catch {
               /* ignore */
             }
@@ -204,8 +283,8 @@ export function useLiveAnalysis({
     [],
   );
 
-  // Timer: fires every `intervalMs` while active. Also triggers immediately
-  // whenever transcript length crosses the delta threshold (eager mode).
+  // Timer: the selected cadence is authoritative, so a one-minute interval
+  // never fires early just because the speaker produced text quickly.
   useEffect(() => {
     if (!active) return;
 
@@ -221,18 +300,24 @@ export function useLiveAnalysis({
     return () => window.clearInterval(id);
   }, [active, intervalMs, timerMinDeltaChars, runAnalyze]);
 
-  // Eager trigger on transcript growth — debounced via inFlight guard.
-  useEffect(() => {
-    if (!active) return;
-    const delta = transcript.length - lastAnalyzedLengthRef.current;
-    if (delta >= minDeltaChars && !inFlightRef.current) {
-      void runAnalyze(false);
-    }
-  }, [active, transcript, minDeltaChars, runAnalyze]);
-
   const finalize = useCallback(async (audioDurationMs?: number) => {
     return runAnalyze(true, audioDurationMs);
   }, [runAnalyze]);
 
-  return { findings, score, sessionId, isAnalyzing, error, finalize };
+  return {
+    findings,
+    claims,
+    neutralityFindings,
+    neutralityVerdict,
+    score,
+    sessionId,
+    isAnalyzing,
+    error,
+    lensErrors,
+    finalize,
+  };
+}
+
+function neutralityFindingKey(finding: NeutralityFinding): string {
+  return `${[...finding.sentenceIds].sort().join(",")}::${finding.issue}`;
 }

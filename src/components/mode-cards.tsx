@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n/provider";
 
@@ -12,7 +13,8 @@ type Mode =
   | "review";
 
 /**
- * The six lens cards, doubling as the mode selector for the unified home.
+ * The six lens cards double as the mode selector for the unified home. Live
+ * is the seventh card and links to its dedicated real-time experience.
  * Replaces both the PipelineSidebar (informational cards) and the mode tab
  * row inside UploadForm (navigation links) — one click switches the mode
  * in place, no page load.
@@ -37,9 +39,9 @@ export function ModeCards({
 
   return (
     <div
-      role="radiogroup"
+      role="group"
       aria-label={t.pipelines_heading}
-      className="grid grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3"
+      className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4"
     >
       {cards.map((c) => {
         const active = c.key === mode;
@@ -47,8 +49,7 @@ export function ModeCards({
           <button
             key={c.key}
             type="button"
-            role="radio"
-            aria-checked={active}
+            aria-pressed={active}
             onClick={() => onChange(c.key)}
             className={cn(
               "flex flex-col gap-1.5 p-3 sm:p-4 border rounded-lg text-left cursor-pointer transition-colors",
@@ -81,6 +82,23 @@ export function ModeCards({
           </button>
         );
       })}
+
+      <Link
+        href="/live"
+        className="flex cursor-pointer flex-col gap-1.5 rounded-lg border border-rule bg-paper p-3 text-left transition-colors hover:border-foreground/40 sm:p-4"
+      >
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="font-serif text-base font-medium text-foreground">
+            {t.mode_live}
+          </h3>
+          <span className="rounded-full border border-accent/40 bg-accent/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent-hi">
+            Beta
+          </span>
+        </div>
+        <p className="hidden text-sm leading-snug text-muted sm:block">
+          {t.pipeline_live_desc}
+        </p>
+      </Link>
     </div>
   );
 }

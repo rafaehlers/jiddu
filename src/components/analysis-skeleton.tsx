@@ -38,7 +38,7 @@ export function AnalysisSkeleton({ pulsing = true }: { pulsing?: boolean }) {
   return (
     <div className={cn("flex-1 flex flex-col", pulsing && "skel-pulse")}>
       {/* Header block: title / source line / two summary lines. */}
-      <div className="mx-auto max-w-7xl w-full px-4 sm:px-6 py-6 flex flex-col gap-4">
+      <div className="mx-auto max-w-5xl w-full px-4 sm:px-6 py-6 flex flex-col gap-4">
         <div className="flex flex-col gap-3">
           <Bar className="h-8 w-2/3 max-w-md" />
           <Bar className="h-3.5 w-44" />
@@ -50,7 +50,7 @@ export function AnalysisSkeleton({ pulsing = true }: { pulsing?: boolean }) {
       </div>
 
       {/* Reading grid: prose card on the left, score + finding cards right. */}
-      <div className="mx-auto max-w-7xl w-full px-4 sm:px-6 pb-16 grid grid-cols-1 lg:grid-cols-[1fr_22rem] gap-6 lg:gap-8">
+      <div className="mx-auto max-w-5xl w-full px-4 sm:px-6 pb-16 grid grid-cols-1 lg:grid-cols-[1fr_22rem] gap-6 lg:gap-8">
         <div className="bg-paper border border-rule rounded-lg p-5 sm:p-8 flex flex-col gap-3.5">
           {LINE_WIDTHS.map((w, i) => (
             <Bar key={i} width={`${w}%`} />

@@ -21,6 +21,7 @@ export type Messages = {
   pipeline_fallacy_desc: string;
   pipeline_factcheck_desc: string;
   pipeline_neutrality_desc: string;
+  pipeline_live_desc: string;
   quality_card_heading: string;
   quality_card_body: string;
   quality_card_link: string;
@@ -79,6 +80,7 @@ export type Messages = {
   // Mode toggle on the home composer
   mode_detector: string;
   mode_factcheck: string;
+  mode_live: string;
 
   // Fact-check viewer
   fc_untitled: string;
@@ -412,6 +414,15 @@ export type Messages = {
   live_source_tab_tooltip: string;
   live_source_tab_unsupported: string;
   live_language_follows_header: string;
+  live_lenses_title: string;
+  live_lenses_hint: string;
+  live_lens_fallacy: string;
+  live_lens_factcheck: string;
+  live_lens_neutrality: string;
+  live_all: string;
+  live_no_results_yet: string;
+  live_interval_title: string;
+  live_interval_hint: string;
   live_start: string;
   live_stop: string;
   live_findings: string;
@@ -426,8 +437,15 @@ export type Messages = {
   live_transcript_listening: string;
   live_transcript_idle: string;
   live_no_findings_yet: string;
+  live_no_claims_yet: string;
+  live_no_neutrality_yet: string;
+  live_claim_detected: string;
+  live_partial_verdict: string;
+  live_confidence: string;
   live_session_saved: string;
   live_view_analysis: string;
+  live_view_factcheck: string;
+  live_view_neutrality: string;
   live_start_new: string;
 };
 
@@ -438,7 +456,7 @@ const en: Messages = {
   hero_subtitle:
     "Upload a PDF or screenshot, paste text or an image, or drop a URL. Jiddu highlights the passages that contain logical fallacies and explains each one in a comment — just like a reviewer in Word — and gives the whole piece a fallacy score from 0 to 100.",
   home_hero_subtitle:
-    "Drop a PDF or screenshot, paste text or an image, or add a URL — then pick a lens: fallacies, fact-checking, neutrality, explanation, AI-slop detection, or a full adversarial paper review.",
+    "Drop a PDF or screenshot, paste text or an image, or add a URL — then pick a lens. Or use Live to monitor fallacies, check-worthy claims and neutrality as someone speaks.",
   privacy: "Privacy:",
   privacy_body:
     "your content — including pasted screenshots and selected PDF page images when visual inspection is needed — is sent to the chosen model via OpenRouter. Jiddu does not retain screenshot files; their extracted text is stored locally under a shareable id.",
@@ -452,7 +470,7 @@ const en: Messages = {
   bench_badge_label:
     "Pipeline validated · 67.5% match with PolitiFact in a 200-claim benchmark",
   bench_badge_link: "view report",
-  pipelines_heading: "Six lenses for critical reading",
+  pipelines_heading: "Seven ways to read critically",
   pipelines_subheading:
     "Pick a mode in the form above, or open a sample analysis to see what each one looks like.",
   pipeline_fallacy_desc:
@@ -461,6 +479,8 @@ const en: Messages = {
     "Pulls every verifiable claim — numbers, dates, quotes, causal and categorical assertions — and optionally checks each against the live web via Perplexity Sonar with cited sources.",
   pipeline_neutrality_desc:
     "Surfaces the framing, attribution and source-selection patterns that make a text partisan even when nothing is factually false. Deliberately does NOT classify left/right.",
+  pipeline_live_desc:
+    "Listens in real time and monitors fallacies, check-worthy claims and neutrality signals together as the speaker talks.",
   quality_card_heading: "Quality, measured against humans",
   quality_card_body:
     "We benchmarked the fact-check pipeline against 200 PolitiFact-labeled claims. Jiddu's verdict matched the human verdict on 81.3% of the unambiguous true / false / pants-on-fire claims, with strict polar disagreement in only 4.5% of cases.",
@@ -557,6 +577,7 @@ const en: Messages = {
 
   mode_detector: "Fallacy detector",
   mode_factcheck: "Fact-check",
+  mode_live: "Live",
 
   fc_untitled: "Untitled",
   fc_claims_one_extracted: "claim extracted",
@@ -913,7 +934,7 @@ const en: Messages = {
     {
       title: "1. The big picture",
       paragraphs: [
-        "Jiddu offers six independent ways to examine a text or paper: fallacy detection, fact-checking, neutrality assessment, paragraph-by-paragraph explanation, AI-slop pattern detection and adversarial paper review. Live mode adds real-time transcription and fallacy analysis.",
+        "Jiddu offers six independent ways to examine a text or paper: fallacy detection, fact-checking, neutrality assessment, paragraph-by-paragraph explanation, AI-slop pattern detection and adversarial paper review. Live mode adds real-time transcription with selectable fallacy, fact-check claim and neutrality lenses.",
         "Analyses return structured, source-linked findings as they become available. Output follows the language selected in the interface, and each feature can be used independently.",
       ],
     },
@@ -1005,7 +1026,7 @@ const en: Messages = {
       title: "11. Credits, billing and abuse controls",
       paragraphs: [
         "Jiddu Credits pay for analyses across the web app, account-owned REST API keys and hosted MCP. Before most work begins, Jiddu temporarily reserves the estimate shown below so concurrent jobs cannot spend the same balance. Live instead checks that the account has the required minimum balance without holding or charging it. Metered usage settles against the work actually completed, and any unused reservation is returned to the account. Some verified accounts have included platform access and do not consume their personal credit balance.",
-        "A reservation is an estimate, not always the final debit. Long documents can contain multiple chunks, fact-check verification is charged per eligible claim, and Live analysis is charged per completed analysis window. Live transcription is billed from actual audio duration at OpenAI's configured per-minute rate. Provider retries, reasoning usage or an unusually expensive completion can leave the account negative; new analyses then stay blocked until credits are added.",
+        "A reservation is an estimate, not always the final debit. Long documents can contain multiple chunks, fact-check verification is charged per eligible claim, and Live analysis is charged per selected lens and completed analysis window. Live transcription is billed from actual audio duration at OpenAI's configured per-minute rate. Provider retries, reasoning usage or an unusually expensive completion can leave the account negative; new analyses then stay blocked until credits are added.",
         "Paid credit packs are sold as one-time purchases through Stripe Checkout. Credits are granted only after Jiddu verifies the completed payment with Stripe; the credit ledger and transaction history remain the source of truth for purchases and usage.",
         "Per-account and per-request safeguards limit abusive or accidentally unbounded use. Limits vary by feature and may evolve as model capacity and provider pricing change.",
       ],
@@ -1068,7 +1089,7 @@ const en: Messages = {
           {
             feature: "Live analysis",
             unit: "Per completed analysis window",
-            estimate: "Up to 2 credits reserved",
+            estimate: "Up to 3 credits reserved with all three lenses",
           },
         ],
         note:
@@ -1086,7 +1107,9 @@ const en: Messages = {
       title: "13. Live mode (beta)",
       paragraphs: [
         "At [/live](/live), Jiddu transcribes a microphone or, on Chromium browsers, a browser tab with `gpt-live-transcribe`. Audio travels directly from the browser to OpenAI over an encrypted Realtime connection; Jiddu receives the transcript needed for analysis, not the raw audio.",
-        "GPT-5.6 Luna or MiniMax M3 periodically analyzes the growing transcript and streams fallacy findings into the page. Sessions are capped at 60 minutes, use Jiddu Credits or included access, and store only the transcript and findings. Tab audio is supported in Chrome and Edge; microphone capture works in other compatible browsers.",
+        "GPT-5.6 Luna or MiniMax M3 periodically analyzes the growing transcript through the selected Live lenses: logical fallacies, check-worthy claim extraction and neutrality assessment. The user chooses a 10, 20, 30 or 60-second interval; longer intervals give each analysis more context. Results stream into an All feed and dedicated panels, with a badge identifying each type.",
+        "After finalization, each selected lens receives a shareable full viewer. Detected claims can also be verified against web sources directly inside Live, with evidence-backed verdicts and sources, or from the full fact-check viewer.",
+        "Sessions are capped at 60 minutes, use Jiddu Credits or included access, and store only the transcript and selected analysis results. Tab audio is supported in Chrome and Edge; microphone capture works in other compatible browsers.",
       ],
     },
     {
@@ -1218,19 +1241,30 @@ const en: Messages = {
   finding_about_this_fallacy: "About this fallacy",
 
   live_subtitle:
-    "Listen in real time and surface logical fallacies as the speaker talks.",
+    "Listen in real time and surface fallacies, check-worthy claims and neutrality signals as the speaker talks.",
   live_source_mic: "Microphone",
   live_source_tab: "Browser tab",
   live_source_tab_chrome_only: "Chrome only",
   live_source_tab_tooltip: "Capture audio from a browser tab",
   live_source_tab_unsupported: "Tab capture requires Chrome or Edge",
   live_language_follows_header: "Language follows the selector in the header.",
+  live_lenses_title: "Live lenses",
+  live_lenses_hint: "Choose what Jiddu should monitor during this session.",
+  live_lens_fallacy: "Fallacies",
+  live_lens_factcheck: "Fact-check claims",
+  live_lens_neutrality: "Neutrality",
+  live_all: "All",
+  live_no_results_yet:
+    "No results detected yet. They will appear here as the speaker talks.",
+  live_interval_title: "Analysis interval",
+  live_interval_hint:
+    "Longer intervals give Jiddu more context for each analysis.",
   live_start: "Start",
   live_stop: "Stop & finalize",
   live_findings: "Findings",
   live_running_score: "Running score",
   live_privacy_note:
-    "Audio is streamed directly from your browser to OpenAI’s Realtime API via WebRTC. The raw audio is not stored — only the transcript and findings are persisted, and they become available at a shareable URL once you stop the session.",
+    "Audio is streamed directly from your browser to OpenAI’s Realtime API via WebRTC. The raw audio is not stored — only the transcript and selected analysis results are persisted, and they become available at shareable URLs once you stop the session.",
   live_status_connecting: "Connecting…",
   live_status_live: "Live",
   live_status_analyzing: "Analyzing",
@@ -1241,8 +1275,17 @@ const en: Messages = {
   live_transcript_idle: "Press Start to begin transcribing.",
   live_no_findings_yet:
     "No fallacies detected yet. They will appear here as the speaker talks.",
+  live_no_claims_yet:
+    "No check-worthy claims detected yet. They will appear here as the speaker talks.",
+  live_no_neutrality_yet:
+    "No neutrality signals detected yet. The running assessment will appear here.",
+  live_claim_detected: "Detected live · verify after finalizing",
+  live_partial_verdict: "Running assessment",
+  live_confidence: "Confidence",
   live_session_saved: "Session saved.",
-  live_view_analysis: "View full analysis",
+  live_view_analysis: "View fallacy analysis",
+  live_view_factcheck: "View and verify claims",
+  live_view_neutrality: "View neutrality assessment",
   live_start_new: "Start new recording",
 };
 
@@ -1253,7 +1296,7 @@ const pt: Messages = {
   hero_subtitle:
     "Envie um PDF ou screenshot, cole texto ou uma imagem, ou solte uma URL. O Jiddu destaca os trechos com falácias lógicas e explica cada um em um comentário — como um revisor no Word — e dá uma nota de 0 a 100 para o texto inteiro.",
   home_hero_subtitle:
-    "Solte um PDF ou screenshot, cole texto ou uma imagem, ou adicione uma URL — e escolha a lente: falácias, checagem de fatos, imparcialidade, explicação, detecção de slop ou revisão adversarial completa de um paper.",
+    "Solte um PDF ou screenshot, cole texto ou uma imagem, ou adicione uma URL — e escolha uma lente. Ou use o Live para monitorar falácias, afirmações verificáveis e sinais de imparcialidade enquanto alguém fala.",
   privacy: "Privacidade:",
   privacy_body:
     "seu conteúdo — incluindo screenshots colados e imagens de páginas selecionadas do PDF quando necessário — é enviado ao modelo escolhido via OpenRouter. O Jiddu não retém o arquivo do screenshot; o texto extraído é armazenado localmente sob um id compartilhável.",
@@ -1264,7 +1307,7 @@ const pt: Messages = {
   bench_badge_label:
     "Pipeline validado · 67,5% de concordância com PolitiFact em benchmark de 200 claims",
   bench_badge_link: "ver relatório",
-  pipelines_heading: "Seis lentes para leitura crítica",
+  pipelines_heading: "Sete formas de fazer uma leitura crítica",
   pipelines_subheading:
     "Escolha um modo no formulário acima, ou abra uma análise de exemplo para ver como cada um fica.",
   pipeline_fallacy_desc:
@@ -1273,6 +1316,8 @@ const pt: Messages = {
     "Extrai cada afirmação verificável — números, datas, citações, alegações causais e categóricas — e opcionalmente checa cada uma na web ao vivo via Perplexity Sonar com fontes citadas.",
   pipeline_neutrality_desc:
     "Sinaliza padrões de enquadramento, atribuição e seleção de fontes que tornam um texto partidário mesmo quando não há nenhuma falsidade factual. Deliberadamente NÃO classifica esquerda/direita.",
+  pipeline_live_desc:
+    "Escuta em tempo real e monitora falácias, afirmações verificáveis e sinais de imparcialidade enquanto alguém fala.",
   quality_card_heading: "Qualidade medida contra humanos",
   quality_card_body:
     "Medimos o pipeline de fact-check contra 200 afirmações rotuladas humanamente pelo PolitiFact. O veredito do Jiddu coincidiu com o veredito humano em 81,3% das afirmações inequívocas (true / false / pants-on-fire), com discordância estrita em apenas 4,5% dos casos.",
@@ -1370,6 +1415,7 @@ const pt: Messages = {
 
   mode_detector: "Detector de Falácias",
   mode_factcheck: "Checar Fatos",
+  mode_live: "Live",
 
   fc_untitled: "Sem título",
   fc_claims_one_extracted: "afirmação extraída",
@@ -1727,7 +1773,7 @@ const pt: Messages = {
     {
       title: "1. Visão geral",
       paragraphs: [
-        "O Jiddu oferece seis formas independentes de examinar um texto ou paper: detecção de falácias, checagem de fatos, avaliação de imparcialidade, explicação parágrafo a parágrafo, detecção de padrões de slop e revisão adversarial. O modo Live acrescenta transcrição e análise de falácias em tempo real.",
+        "O Jiddu oferece seis formas independentes de examinar um texto ou paper: detecção de falácias, checagem de fatos, avaliação de imparcialidade, explicação parágrafo a parágrafo, detecção de padrões de slop e revisão adversarial. O modo Live acrescenta transcrição em tempo real com lentes selecionáveis de falácias, afirmações para fact-check e neutralidade.",
         "As análises retornam achados estruturados e ligados à fonte conforme ficam disponíveis. O resultado segue o idioma selecionado na interface, e cada função pode ser usada de forma independente.",
       ],
     },
@@ -1819,7 +1865,7 @@ const pt: Messages = {
       title: "11. Créditos, cobrança e controles de abuso",
       paragraphs: [
         "Os Créditos Jiddu pagam análises no app web, em chaves REST vinculadas à conta e no MCP hospedado. Antes da maioria dos trabalhos, o Jiddu reserva temporariamente a estimativa abaixo para impedir que jobs simultâneos gastem o mesmo saldo. No Live, apenas verifica o saldo mínimo exigido, sem bloquear nem cobrar esse valor. O uso medido é liquidado pelo trabalho realmente concluído, e toda reserva não utilizada retorna à conta. Algumas contas verificadas possuem acesso incluído à plataforma e não consomem o saldo pessoal.",
-        "A reserva é uma estimativa, não necessariamente o débito final. Documentos longos podem gerar vários chunks, a verificação de fact-check é cobrada por afirmação elegível e a análise Live por janela concluída. A transcrição Live é cobrada pela duração real do áudio, usando a tarifa por minuto configurada da OpenAI. Retentativas do provedor, tokens de raciocínio ou uma resposta excepcionalmente cara podem deixar o saldo negativo; novas análises ficam bloqueadas até a adição de créditos.",
+        "A reserva é uma estimativa, não necessariamente o débito final. Documentos longos podem gerar vários chunks, a verificação de fact-check é cobrada por afirmação elegível e a análise Live por lente selecionada e janela concluída. A transcrição Live é cobrada pela duração real do áudio, usando a tarifa por minuto configurada da OpenAI. Retentativas do provedor, tokens de raciocínio ou uma resposta excepcionalmente cara podem deixar o saldo negativo; novas análises ficam bloqueadas até a adição de créditos.",
         "Pacotes pagos são vendidos como compras únicas pelo Stripe Checkout. Os créditos só são concedidos depois que o Jiddu confirma com o Stripe que o pagamento foi concluído; o ledger e o histórico de transações continuam sendo a fonte de verdade para compras e consumo.",
         "Salvaguardas por conta e por requisição limitam uso abusivo ou acidentalmente ilimitado. Os limites variam por função e podem evoluir conforme a capacidade dos modelos e os preços dos provedores.",
       ],
@@ -1882,7 +1928,7 @@ const pt: Messages = {
           {
             feature: "Análise Live",
             unit: "Por janela de análise concluída",
-            estimate: "Reserva de até 2 créditos",
+            estimate: "Reserva de até 3 créditos com as três lentes",
           },
         ],
         note:
@@ -1900,7 +1946,9 @@ const pt: Messages = {
       title: "13. Modo Live (beta)",
       paragraphs: [
         "Em [/live](/live), o Jiddu transcreve um microfone ou, em navegadores Chromium, uma aba com `gpt-live-transcribe`. O áudio segue diretamente do navegador para a OpenAI por uma conexão Realtime criptografada; o Jiddu recebe a transcrição necessária para a análise, não o áudio bruto.",
-        "GPT-5.6 Luna ou MiniMax M3 analisa periodicamente a transcrição crescente e mostra achados de falácias na página. As sessões são limitadas a 60 minutos, usam Créditos Jiddu ou acesso incluído e armazenam apenas transcrição e achados. Áudio de aba funciona em Chrome e Edge; microfone funciona em outros navegadores compatíveis.",
+        "GPT-5.6 Luna ou MiniMax M3 analisa periodicamente a transcrição crescente pelas lentes Live selecionadas: falácias lógicas, extração de afirmações verificáveis e neutralidade. O usuário escolhe um intervalo de 10, 20, 30 ou 60 segundos; intervalos maiores dão mais contexto a cada análise. Os resultados aparecem em um feed Todos e em painéis dedicados, com um badge identificando cada tipo.",
+        "Depois da finalização, cada lente selecionada recebe um viewer completo compartilhável. As afirmações detectadas também podem ser verificadas contra fontes da web diretamente no Live, com vereditos e fontes, ou no viewer completo de fact-check.",
+        "As sessões são limitadas a 60 minutos, usam Créditos Jiddu ou acesso incluído e armazenam apenas a transcrição e os resultados selecionados. Áudio de aba funciona em Chrome e Edge; microfone funciona em outros navegadores compatíveis.",
       ],
     },
     {
@@ -2032,19 +2080,30 @@ const pt: Messages = {
   finding_about_this_fallacy: "Sobre esta falácia",
 
   live_subtitle:
-    "Escute em tempo real e veja as falácias aparecerem conforme a pessoa fala.",
+    "Escute em tempo real e acompanhe falácias, afirmações verificáveis e sinais de parcialidade conforme a pessoa fala.",
   live_source_mic: "Microfone",
   live_source_tab: "Aba do navegador",
   live_source_tab_chrome_only: "Só no Chrome",
   live_source_tab_tooltip: "Capturar áudio de uma aba do navegador",
   live_source_tab_unsupported: "Captura de aba requer Chrome ou Edge",
   live_language_follows_header: "O idioma segue o seletor no cabeçalho.",
+  live_lenses_title: "Lentes ao vivo",
+  live_lenses_hint: "Escolha o que o Jiddu deve acompanhar nesta sessão.",
+  live_lens_fallacy: "Falácias",
+  live_lens_factcheck: "Afirmações para checagem",
+  live_lens_neutrality: "Neutralidade",
+  live_all: "Todos",
+  live_no_results_yet:
+    "Nenhum resultado detectado ainda. Eles aparecerão aqui conforme a pessoa fala.",
+  live_interval_title: "Intervalo das análises",
+  live_interval_hint:
+    "Quanto maior o intervalo, mais contexto o Jiddu terá para cada análise.",
   live_start: "Iniciar",
   live_stop: "Parar e finalizar",
   live_findings: "Falácias",
   live_running_score: "Nota parcial",
   live_privacy_note:
-    "O áudio é transmitido direto do seu navegador para a API Realtime da OpenAI via WebRTC. O áudio bruto não é armazenado — apenas a transcrição e as falácias detectadas ficam salvas, e estarão disponíveis em uma URL compartilhável quando você parar a sessão.",
+    "O áudio é transmitido direto do seu navegador para a API Realtime da OpenAI via WebRTC. O áudio bruto não é armazenado — apenas a transcrição e os resultados das análises selecionadas ficam salvos e disponíveis em URLs compartilháveis quando você parar a sessão.",
   live_status_connecting: "Conectando…",
   live_status_live: "Ao vivo",
   live_status_analyzing: "Analisando",
@@ -2055,8 +2114,17 @@ const pt: Messages = {
   live_transcript_idle: "Clique em Iniciar para começar a transcrever.",
   live_no_findings_yet:
     "Nenhuma falácia detectada ainda. Elas aparecerão aqui conforme a pessoa fala.",
+  live_no_claims_yet:
+    "Nenhuma afirmação verificável detectada ainda. Elas aparecerão aqui conforme a pessoa fala.",
+  live_no_neutrality_yet:
+    "Nenhum sinal de parcialidade detectado ainda. A avaliação parcial aparecerá aqui.",
+  live_claim_detected: "Detectada ao vivo · verifique após finalizar",
+  live_partial_verdict: "Avaliação parcial",
+  live_confidence: "Confiança",
   live_session_saved: "Sessão salva.",
-  live_view_analysis: "Ver análise completa",
+  live_view_analysis: "Ver análise de falácias",
+  live_view_factcheck: "Ver e checar afirmações",
+  live_view_neutrality: "Ver avaliação de neutralidade",
   live_start_new: "Nova gravação",
 };
 
@@ -2067,7 +2135,7 @@ const es: Messages = {
   hero_subtitle:
     "Sube un PDF o screenshot, pega texto o una imagen, o suelta una URL. Jiddu resalta los pasajes con falacias lógicas y explica cada uno en un comentario — como un revisor en Word — y le da al texto entero una puntuación de falacia de 0 a 100.",
   home_hero_subtitle:
-    "Suelta un PDF o screenshot, pega texto o una imagen, o añade una URL — y elige la lente: falacias, verificación de hechos, neutralidad, explicación, detección de slop o revisión adversarial completa de un paper.",
+    "Suelta un PDF o screenshot, pega texto o una imagen, o añade una URL — y elige una lente. O usa Live para monitorear falacias, afirmaciones verificables y señales de neutralidad mientras alguien habla.",
   privacy: "Privacidad:",
   privacy_body:
     "tu contenido — incluidos screenshots pegados e imágenes de páginas seleccionadas del PDF cuando sea necesario — se envía al modelo elegido vía OpenRouter. Jiddu no conserva el archivo del screenshot; el texto extraído se almacena localmente bajo un id compartible.",
@@ -2078,7 +2146,7 @@ const es: Messages = {
   bench_badge_label:
     "Pipeline validado · 67,5% de concordancia con PolitiFact en benchmark de 200 claims",
   bench_badge_link: "ver informe",
-  pipelines_heading: "Seis lentes para lectura crítica",
+  pipelines_heading: "Siete formas de leer críticamente",
   pipelines_subheading:
     "Elige un modo en el formulario de arriba, o abre un análisis de muestra para ver cómo se ve cada uno.",
   pipeline_fallacy_desc:
@@ -2087,6 +2155,8 @@ const es: Messages = {
     "Extrae cada afirmación verificable — números, fechas, citas, aseveraciones causales y categóricas — y opcionalmente revisa cada una en la web en vivo vía Perplexity Sonar con fuentes citadas.",
   pipeline_neutrality_desc:
     "Expone patrones de encuadre, atribución y selección de fuentes que vuelven un texto partidario aun cuando nada es factualmente falso. Deliberadamente NO clasifica izquierda/derecha.",
+  pipeline_live_desc:
+    "Escucha en tiempo real y monitorea falacias, afirmaciones verificables y señales de neutralidad mientras alguien habla.",
   quality_card_heading: "Calidad medida contra humanos",
   quality_card_body:
     "Medimos el pipeline de fact-check contra 200 afirmaciones etiquetadas humanamente por PolitiFact. El veredicto de Jiddu coincidió con el veredicto humano en 81,3% de las afirmaciones inequívocas (true / false / pants-on-fire), con desacuerdo estricto en apenas 4,5% de los casos.",
@@ -2184,6 +2254,7 @@ const es: Messages = {
 
   mode_detector: "Detector de Falacias",
   mode_factcheck: "Verificar Hechos",
+  mode_live: "Live",
 
   fc_untitled: "Sin título",
   fc_claims_one_extracted: "afirmación extraída",
@@ -2541,7 +2612,7 @@ const es: Messages = {
     {
       title: "1. Visión general",
       paragraphs: [
-        "Jiddu ofrece seis formas independientes de examinar un texto o paper: detección de falacias, fact-checking, evaluación de imparcialidad, explicación párrafo por párrafo, detección de patrones de slop y revisión adversarial. El modo Live añade transcripción y análisis de falacias en tiempo real.",
+        "Jiddu ofrece seis formas independientes de examinar un texto o paper: detección de falacias, fact-checking, evaluación de imparcialidad, explicación párrafo por párrafo, detección de patrones de slop y revisión adversarial. El modo Live añade transcripción en tiempo real con lentes seleccionables de falacias, afirmaciones para fact-check y neutralidad.",
         "Los análisis devuelven hallazgos estructurados y vinculados a la fuente a medida que están disponibles. El resultado sigue el idioma seleccionado en la interfaz y cada función puede utilizarse de forma independiente.",
       ],
     },
@@ -2633,7 +2704,7 @@ const es: Messages = {
       title: "11. Créditos, cobro y controles de abuso",
       paragraphs: [
         "Los Créditos Jiddu pagan análisis en la app web, claves REST vinculadas a la cuenta y MCP alojado. Antes de la mayoría de los trabajos, Jiddu reserva temporalmente la estimación mostrada abajo para impedir que jobs simultáneos gasten el mismo saldo. En Live solo comprueba el saldo mínimo requerido, sin bloquearlo ni cobrarlo. El uso medido se liquida según el trabajo realmente completado, y toda reserva no utilizada vuelve a la cuenta. Algunas cuentas verificadas tienen acceso incluido a la plataforma y no consumen su saldo personal.",
-        "La reserva es una estimación, no siempre el débito final. Los documentos largos pueden generar varios chunks, la verificación de fact-check se cobra por afirmación elegible y el análisis Live por ventana completada. La transcripción Live se cobra por la duración real del audio según la tarifa por minuto configurada de OpenAI. Reintentos del proveedor, tokens de razonamiento o una respuesta excepcionalmente costosa pueden dejar el saldo negativo; nuevos análisis quedan bloqueados hasta agregar créditos.",
+        "La reserva es una estimación, no siempre el débito final. Los documentos largos pueden generar varios chunks, la verificación de fact-check se cobra por afirmación elegible y el análisis Live por lente seleccionada y ventana completada. La transcripción Live se cobra por la duración real del audio según la tarifa por minuto configurada de OpenAI. Reintentos del proveedor, tokens de razonamiento o una respuesta excepcionalmente costosa pueden dejar el saldo negativo; nuevos análisis quedan bloqueados hasta agregar créditos.",
         "Los paquetes pagados se venden como compras únicas mediante Stripe Checkout. Los créditos solo se conceden después de que Jiddu verifica con Stripe que el pago se completó; el ledger y el historial de transacciones siguen siendo la fuente de verdad para compras y consumo.",
         "Las salvaguardas por cuenta y por solicitud limitan el uso abusivo o accidentalmente ilimitado. Los límites varían según la función y pueden evolucionar con la capacidad de los modelos y los precios de los proveedores.",
       ],
@@ -2696,7 +2767,7 @@ const es: Messages = {
           {
             feature: "Análisis Live",
             unit: "Por ventana de análisis completada",
-            estimate: "Reserva de hasta 2 créditos",
+            estimate: "Reserva de hasta 3 créditos con las tres lentes",
           },
         ],
         note:
@@ -2714,7 +2785,9 @@ const es: Messages = {
       title: "13. Modo Live (beta)",
       paragraphs: [
         "En [/live](/live), Jiddu transcribe un micrófono o, en navegadores Chromium, una pestaña con `gpt-live-transcribe`. El audio viaja directamente desde el navegador a OpenAI mediante una conexión Realtime cifrada; Jiddu recibe la transcripción necesaria para el análisis, no el audio bruto.",
-        "GPT-5.6 Luna o MiniMax M3 analiza periódicamente la transcripción creciente y muestra hallazgos de falacias en la página. Las sesiones están limitadas a 60 minutos, utilizan Créditos Jiddu o acceso incluido y almacenan únicamente la transcripción y los hallazgos. El audio de pestañas funciona en Chrome y Edge; el micrófono funciona en otros navegadores compatibles.",
+        "GPT-5.6 Luna o MiniMax M3 analiza periódicamente la transcripción creciente mediante las lentes Live seleccionadas: falacias lógicas, extracción de afirmaciones verificables y neutralidad. El usuario elige un intervalo de 10, 20, 30 o 60 segundos; los intervalos más largos aportan más contexto a cada análisis. Los resultados aparecen en un feed Todos y en paneles dedicados, con una insignia que identifica cada tipo.",
+        "Al finalizar, cada lente seleccionada recibe un visor completo compartible. Las afirmaciones detectadas también pueden verificarse con fuentes web directamente en Live, con veredictos y fuentes, o desde el visor completo de fact-check.",
+        "Las sesiones están limitadas a 60 minutos, utilizan Créditos Jiddu o acceso incluido y almacenan solo la transcripción y los resultados seleccionados. El audio de pestañas funciona en Chrome y Edge; el micrófono funciona en otros navegadores compatibles.",
       ],
     },
     {
@@ -2846,19 +2919,30 @@ const es: Messages = {
   finding_about_this_fallacy: "Sobre esta falacia",
 
   live_subtitle:
-    "Escucha en tiempo real y observa las falacias aparecer mientras la persona habla.",
+    "Escucha en tiempo real y sigue falacias, afirmaciones verificables y señales de parcialidad mientras la persona habla.",
   live_source_mic: "Micrófono",
   live_source_tab: "Pestaña del navegador",
   live_source_tab_chrome_only: "Solo Chrome",
   live_source_tab_tooltip: "Capturar audio de una pestaña del navegador",
   live_source_tab_unsupported: "La captura de pestaña requiere Chrome o Edge",
   live_language_follows_header: "El idioma sigue el selector del encabezado.",
+  live_lenses_title: "Lentes en vivo",
+  live_lenses_hint: "Elige qué debe monitorear Jiddu durante esta sesión.",
+  live_lens_fallacy: "Falacias",
+  live_lens_factcheck: "Afirmaciones para verificar",
+  live_lens_neutrality: "Neutralidad",
+  live_all: "Todos",
+  live_no_results_yet:
+    "Aún no se detectaron resultados. Aparecerán aquí mientras la persona habla.",
+  live_interval_title: "Intervalo de análisis",
+  live_interval_hint:
+    "Cuanto mayor sea el intervalo, más contexto tendrá Jiddu para cada análisis.",
   live_start: "Iniciar",
   live_stop: "Detener y finalizar",
   live_findings: "Falacias",
   live_running_score: "Puntuación parcial",
   live_privacy_note:
-    "El audio se transmite directamente desde tu navegador a la API Realtime de OpenAI vía WebRTC. El audio en bruto no se almacena — solo se guardan la transcripción y las falacias detectadas, y estarán disponibles en una URL compartible cuando detengas la sesión.",
+    "El audio se transmite directamente desde tu navegador a la API Realtime de OpenAI vía WebRTC. El audio en bruto no se almacena — solo se guardan la transcripción y los resultados seleccionados, disponibles en URLs compartibles cuando detengas la sesión.",
   live_status_connecting: "Conectando…",
   live_status_live: "En vivo",
   live_status_analyzing: "Analizando",
@@ -2869,8 +2953,17 @@ const es: Messages = {
   live_transcript_idle: "Haz clic en Iniciar para empezar a transcribir.",
   live_no_findings_yet:
     "Aún no se detectaron falacias. Aparecerán aquí mientras la persona habla.",
+  live_no_claims_yet:
+    "Aún no se detectaron afirmaciones verificables. Aparecerán aquí mientras la persona habla.",
+  live_no_neutrality_yet:
+    "Aún no se detectaron señales de parcialidad. La evaluación parcial aparecerá aquí.",
+  live_claim_detected: "Detectada en vivo · verifica después de finalizar",
+  live_partial_verdict: "Evaluación parcial",
+  live_confidence: "Confianza",
   live_session_saved: "Sesión guardada.",
-  live_view_analysis: "Ver análisis completo",
+  live_view_analysis: "Ver análisis de falacias",
+  live_view_factcheck: "Ver y verificar afirmaciones",
+  live_view_neutrality: "Ver evaluación de neutralidad",
   live_start_new: "Nueva grabación",
 };
 

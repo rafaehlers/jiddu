@@ -47,8 +47,7 @@ type Props = {
   submitLabel?: string;
   /**
    * Which mode this form is being rendered in. Drives the active state of
-   * the top-row mode toggle and gates the Live tab (only available in the
-   * fallacy detector mode).
+   * the top-row mode toggle and mode-specific form fields.
    */
   mode?: Mode;
   /**
@@ -339,17 +338,6 @@ export function UploadForm({
             <TabButton active={tab === "url"} onClick={() => setTab("url")}>{t.tab_url}</TabButton>
             <TabButton active={tab === "text"} onClick={() => setTab("text")}>{t.tab_paste}</TabButton>
           </>
-        )}
-        {mode === "detector" && (
-          <Link
-            href="/live"
-            className="-mb-px border-b-2 border-transparent px-1 py-2.5 text-sm font-medium text-muted hover:text-accent-hi transition-colors inline-flex items-center gap-1.5 whitespace-nowrap"
-            aria-label={t.tab_live}
-            title={t.tab_live}
-          >
-            <span className="h-1.5 w-1.5 rounded-full bg-[var(--severity-high)] animate-pulse" aria-hidden />
-            {t.tab_live}
-          </Link>
         )}
       </div>
 

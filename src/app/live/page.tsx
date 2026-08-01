@@ -5,9 +5,9 @@ import { LivePage } from "@/components/live/live-page";
 import { publicPageMetadata } from "@/lib/social-metadata";
 
 export const metadata: Metadata = publicPageMetadata({
-  title: "Jiddu Live — real-time fallacy detection",
+  title: "Jiddu Live — real-time critical analysis",
   description:
-    "Detect logical fallacies as the speaker talks. Capture your microphone or a browser tab and watch the analysis surface in real time.",
+    "Detect logical fallacies, check-worthy claims and neutrality signals as the speaker talks through a microphone or browser tab.",
   path: "/live",
 });
 
