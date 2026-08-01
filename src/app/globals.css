@@ -183,6 +183,17 @@ a:not(.font-serif):not([class*="rounded"]):not([class*="bg-accent"]):hover {
   text-overflow: ellipsis;
 }
 
+/* AG Grid gives custom cell renderers intrinsic-width wrappers. Constrain both
+   current and legacy React wrappers to the column so their content can
+   ellipsize instead of spilling into the next cell. */
+.jiddu-data-grid .ag-cell-wrapper,
+.jiddu-data-grid .ag-react-container {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
 .jiddu-data-grid .jiddu-grid-number-cell {
   justify-content: flex-end;
   font-variant-numeric: tabular-nums;

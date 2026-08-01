@@ -167,7 +167,7 @@ function TitleCell({
 }: ICellRendererParams<AdminAnalysisGridRow, string>) {
   if (!data) return null;
   return (
-    <div className="flex h-full min-w-0 flex-col justify-center">
+    <div className="flex h-full w-full min-w-0 flex-col justify-center overflow-hidden">
       <Link
         href={data.viewerHref}
         className="block truncate font-medium hover:underline"
@@ -176,7 +176,10 @@ function TitleCell({
         {data.title}
       </Link>
       {data.sourceRef && (
-        <span className="block truncate text-xs text-muted">
+        <span
+          className="block truncate text-xs text-muted"
+          title={data.sourceRef}
+        >
           {data.sourceRef}
         </span>
       )}
