@@ -335,7 +335,7 @@ export function ExplainView({
       paperMapRows.length > 0);
 
   return (
-    <div className="mx-auto max-w-7xl w-full px-4 sm:px-6 py-6 sm:py-8 flex flex-col gap-6">
+    <div className="mx-auto max-w-5xl w-full px-4 sm:px-6 py-6 sm:py-8 flex flex-col gap-6">
       {/* Header */}
       <header className="flex flex-col gap-2">
         <h1 className="font-serif text-2xl sm:text-3xl leading-tight">
@@ -515,7 +515,7 @@ export function ExplainView({
           )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_24rem] xl:grid-cols-[13rem_minmax(0,1fr)_24rem] gap-6 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_24rem] xl:grid-cols-[10rem_minmax(0,1fr)_19rem] gap-6 xl:gap-4 items-start">
           <nav
             aria-label={t.explain_sections_label}
             className="lg:col-span-2 xl:col-span-1 xl:sticky xl:top-20 min-w-0"
