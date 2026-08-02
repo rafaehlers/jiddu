@@ -149,6 +149,7 @@ function renderEmpty() {
 
 function renderLoading(state) {
   const progress = state.progress || { current: 0, total: 1 };
+  const isIndeterminate = progress.current === 0;
   const percent = Math.max(8, Math.round((progress.current / Math.max(1, progress.total)) * 100));
   app.replaceChildren(
     contextHeader(state),
@@ -157,18 +158,34 @@ function renderLoading(state) {
       element("div", { className: "loader-orbit", ariaHidden: "true" }),
       element("strong", { text: loadingTitle(state.lens) }),
       element("p", {
-        text: progress.total > 1
-          ? t("loading.progressMulti", {
-              current: Math.min(progress.current + 1, progress.total),
-              total: progress.total,
-            })
-          : t("loading.progressSingle"),
+        text: loadingProgressText(state.lens, progress),
       }),
-      element("div", { className: "progress-track" }, [
-        element("span", { style: { width: `${percent}%` } }),
+      element("div", {
+        className: `progress-track${isIndeterminate ? " is-indeterminate" : ""}`,
+      }, [
+        element("span", { style: { width: isIndeterminate ? "32%" : `${percent}%` } }),
       ]),
     ]),
   );
+}
+
+function loadingProgressText(lens, progress) {
+  if (lens === "facts") {
+    if (progress.total === 1) return t("loading.factsProgressSingle");
+    return progress.current === 0
+      ? t("loading.factsProgressMultiStart", { total: progress.total })
+      : t("loading.factsProgressMulti", {
+          current: progress.current,
+          total: progress.total,
+        });
+  }
+  const values = {
+    current: Math.min(progress.current + 1, progress.total),
+    total: progress.total,
+  };
+  return progress.total > 1
+    ? t("loading.progressMulti", values)
+    : t("loading.progressSingle");
 }
 
 function renderError(state) {
@@ -199,7 +216,18 @@ function renderResult(state) {
   if (state.lens === "neutrality") nodes.push(...neutralityResult(state.result));
   nodes.push(
     element("div", { className: "new-selection" }, [
-      button(t("result.selectAnother"), "secondary-button", () => void activateInspector()),
+      actionButton(
+        t("result.selectAnother"),
+        "secondary-button",
+        "search",
+        () => void activateInspector(),
+      ),
+      actionButton(
+        t("result.print"),
+        "secondary-button",
+        "print",
+        printReport,
+      ),
     ]),
   );
   app.replaceChildren(...nodes);
@@ -403,6 +431,22 @@ async function retryAnalysis() {
   await sendMessage({ type: "JIDDU_RETRY", tabId: activeTabId });
 }
 
+function printReport() {
+  if (activeState?.status !== "success") return;
+  const previousTitle = document.title;
+  const lens = ["fallacies", "facts", "neutrality"].includes(activeState.lens)
+    ? t(`lens.${activeState.lens}`)
+    : t("lens.analysis");
+  const sourceTitle = activeState.sourceTitle || t("source.untitled");
+  document.title = `${sourceTitle} — ${lens} — Jiddu`;
+
+  const restoreTitle = () => {
+    document.title = previousTitle;
+  };
+  window.addEventListener("afterprint", restoreTitle, { once: true });
+  window.print();
+}
+
 function sendMessage(message) {
   return chrome.runtime.sendMessage(message).catch((error) => ({ ok: false, error: error.message }));
 }
@@ -468,6 +512,38 @@ function button(label, className, onClick) {
   const node = element("button", { type: "button", className, text: label });
   node.addEventListener("click", onClick);
   return node;
+}
+
+function actionButton(label, className, iconName, onClick) {
+  const node = element("button", { type: "button", className }, [
+    actionIcon(iconName),
+    element("span", { text: label }),
+  ]);
+  node.addEventListener("click", onClick);
+  return node;
+}
+
+function actionIcon(name) {
+  const namespace = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(namespace, "svg");
+  svg.setAttribute("class", "button-icon");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("aria-hidden", "true");
+
+  const paths = name === "print"
+    ? [
+        "M6 9V3h12v6",
+        "M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2",
+        "M6 14h12v7H6z",
+      ]
+    : ["M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14Z", "m16 16 5 5"];
+
+  for (const pathData of paths) {
+    const path = document.createElementNS(namespace, "path");
+    path.setAttribute("d", pathData);
+    svg.append(path);
+  }
+  return svg;
 }
 
 function element(tagName, props = {}, children = []) {

@@ -331,6 +331,9 @@ export function HomeComposer({ initialMode = "detector" }: { initialMode?: Mode 
             />
           </span>
           <div className="flex min-w-0 flex-1 flex-col gap-3 sm:gap-4">
+            <p className="font-serif italic text-sm sm:text-base text-muted">
+              “{t.hero_quote}”
+            </p>
             <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl leading-tight text-balance">
               {t.hero_title}
             </h1>

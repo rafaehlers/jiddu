@@ -18,6 +18,12 @@ const textArg = z
   .max(2000, "Keep the text under 2000 characters.")
   .describe("The text to analyze (40–2000 characters).");
 
+const factTextArg = z
+  .string()
+  .min(40, "Provide at least 40 characters.")
+  .max(10_000, "Keep fact-check text under 10000 characters.")
+  .describe("The text to fact-check (40–10000 characters).");
+
 const langArg = z
   .enum(["en", "pt", "es"])
   .optional()
@@ -69,7 +75,7 @@ server.tool(
 server.tool(
   "fact_check",
   "Extract the verifiable factual claims from a text and check each one against live web search, returning a per-claim verdict (true / false / misleading / unverifiable) plus an overall reliability verdict. Use to verify content before relying on it as a source. Slower and metered — each claim runs a web search.",
-  { text: textArg, lang: langArg },
+  { text: factTextArg, lang: langArg },
   async ({ text, lang }) => toolResult("fact-check", { text, lang }),
 );
 

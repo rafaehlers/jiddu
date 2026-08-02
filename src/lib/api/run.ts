@@ -2,7 +2,8 @@
 //
 // The four analysis pipelines are streaming generators (SSE) in the web app.
 // The public API is request→JSON, and its input is a single short text
-// (40–2000 chars) that always fits in one chunk — so here we just drive each
+// (40–2000 chars for most tools, up to 10000 for fact-check) that fits in one
+// request — so here we just drive each
 // generator to completion and return a typed aggregate. No chunking, no DB
 // row, no SSE. We still split into sentences/blocks because the prompts and
 // findings reference per-unit ids (sN / pN).

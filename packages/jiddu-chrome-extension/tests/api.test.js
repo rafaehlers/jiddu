@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  MAX_FACTCHECK_TEXT_CHARS,
   MAX_API_TEXT_CHARS,
   MIN_API_TEXT_CHARS,
+  chunkConcurrencyForLens,
+  maxCharsForLens,
   mergeChunkResults,
   normalizeApiBase,
   splitIntoApiChunks,
@@ -31,6 +34,17 @@ test("splits long selections into valid API-sized chunks", () => {
     chunks.join(" ").replace(/\s+/g, " ").trim(),
     sentence.repeat(90).replace(/\s+/g, " ").trim(),
   );
+});
+
+test("uses the larger optimized request size for fact checks", () => {
+  assert.equal(maxCharsForLens("facts"), MAX_FACTCHECK_TEXT_CHARS);
+  assert.equal(maxCharsForLens("fallacies"), MAX_API_TEXT_CHARS);
+  assert.equal(chunkConcurrencyForLens("facts"), 2);
+  assert.equal(chunkConcurrencyForLens("neutrality"), 1);
+
+  const text = "A sufficiently long factual sentence with useful context. ".repeat(90);
+  assert.equal(splitIntoApiChunks(text, maxCharsForLens("facts")).length, 1);
+  assert.ok(splitIntoApiChunks(text).length > 1);
 });
 
 test("merges and deduplicates fallacy results", () => {
@@ -98,6 +112,10 @@ test("formats translated variables and exposes only inspector copy to pages", ()
   assert.equal(
     formatUiMessage(english, "loading.progressMulti", { current: 2, total: 3 }),
     "Analyzing part 2 of 3",
+  );
+  assert.equal(
+    formatUiMessage(english, "loading.factsProgressMulti", { current: 2, total: 3 }),
+    "2 of 3 parts checked against live sources…",
   );
   const inspector = getInspectorMessages("pt");
   assert.equal(inspector["lens.fallacies"], "Falácias");

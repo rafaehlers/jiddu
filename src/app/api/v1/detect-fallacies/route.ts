@@ -5,6 +5,7 @@ import { loadSettings, bucketFor } from "@/lib/settings";
 import { jsonError, mapRunError, normalizeLang, readText } from "@/lib/api/http";
 import { runFallacies } from "@/lib/api/run";
 import { mapFallacies } from "@/lib/api/map";
+import { startApiAnalysisHistory } from "@/lib/api/analysis-history";
 import {
   createApiCreditMeter,
   isApiCreditResponse,
@@ -34,18 +35,37 @@ export async function POST(req: NextRequest) {
   });
   if (isApiCreditResponse(meter)) return meter;
 
+  const history = await startApiAnalysisHistory({
+    kind: "fallacy",
+    ownerWorkosUserId: auth.userId,
+    transport: "API",
+    sourceLabel: auth.label,
+    text,
+    lang,
+  });
+
   try {
     const agg = await runFallacies(text, {
       lang,
       signal: req.signal,
       apiKey: auth.apiKey,
-      onModelUsed: meter.recordModel,
+      onModelUsed(model) {
+        meter.recordModel(model);
+        history.recordModel(model);
+      },
       onUsage: meter.recordUsage,
     });
-    await meter.settle();
+    await history.complete(agg);
+    await meter.settle({ resourceId: history.id });
     return Response.json(mapFallacies(agg));
   } catch (err) {
-    await meter.settle({ note: "REST fallacy analysis failed." });
+    await Promise.allSettled([
+      history.fail(err),
+      meter.settle({
+        resourceId: history.id,
+        note: "REST fallacy analysis failed.",
+      }),
+    ]);
     return mapRunError(err);
   }
 }

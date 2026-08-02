@@ -46,6 +46,11 @@ import {
   mapExplain,
   mapSlop,
 } from "@/lib/api/map";
+import {
+  startApiAnalysisHistory,
+  type ApiAnalysisHistory,
+  type ApiAnalysisKind,
+} from "@/lib/api/analysis-history";
 import { normalizeLevel } from "@/lib/explain-schema";
 import {
   preparePaperReview,
@@ -75,6 +80,12 @@ const textArg = z
   .min(40, "Provide at least 40 characters.")
   .max(2000, "Keep the text under 2000 characters.")
   .describe("The text to analyze (40–2000 characters).");
+
+const factTextArg = z
+  .string()
+  .min(40, "Provide at least 40 characters.")
+  .max(10_000, "Keep fact-check text under 10000 characters.")
+  .describe("The text to fact-check (40–10000 characters).");
 
 const langArg = z
   .enum(["en", "pt", "es"])
@@ -138,6 +149,32 @@ async function createMcpCreditMeter(input: {
   return meter;
 }
 
+async function startMcpAnalysisHistory(input: {
+  kind: ApiAnalysisKind;
+  text: string;
+  lang?: "en" | "pt" | "es";
+  level?: "eli5" | "high_school" | "undergrad" | "expert";
+}) {
+  const auth = currentMcpAuth();
+  return startApiAnalysisHistory({
+    ...input,
+    ownerWorkosUserId: auth.userId,
+    transport: "MCP",
+  });
+}
+
+async function settleFailedMcpAnalysis(
+  meter: ApiCreditMeter | null,
+  history: ApiAnalysisHistory | null,
+  error: unknown,
+  note: string,
+) {
+  const tasks: Promise<unknown>[] = [];
+  if (history) tasks.push(history.fail(error));
+  if (meter) tasks.push(meter.settle({ resourceId: history?.id, note }));
+  await Promise.allSettled(tasks);
+}
+
 async function creditResponseMessage(response: Response): Promise<string> {
   const payload = (await response.json().catch(() => null)) as
     | { error?: string }
@@ -157,24 +194,39 @@ const mcpHandler = createMcpHandler(
       },
       async ({ text, lang }) => {
         let meter: ApiCreditMeter | null = null;
+        let history: ApiAnalysisHistory | null = null;
         try {
           const auth = currentMcpAuth();
           meter = await createMcpCreditMeter({
             amount: maxCreditsForCalls(DEFAULT_MODEL_CHAIN, 1),
             feature: "fallacy",
           });
+          history = await startMcpAnalysisHistory({
+            kind: "fallacy",
+            text,
+            lang,
+          });
           const result = await runFallacies(text, {
             lang,
             apiKey: auth.apiKey,
-            onModelUsed: meter.recordModel,
+            onModelUsed(model) {
+              meter?.recordModel(model);
+              history?.recordModel(model);
+            },
             onUsage: meter.recordUsage,
           });
-          await meter.settle();
+          await history.complete(result);
+          await meter.settle({ resourceId: history.id });
           return ok(
             mapFallacies(result),
           );
         } catch (err) {
-          await meter?.settle({ note: "MCP fallacy analysis failed." });
+          await settleFailedMcpAnalysis(
+            meter,
+            history,
+            err,
+            "MCP fallacy analysis failed.",
+          );
           return fail(err);
         }
       },
@@ -186,10 +238,11 @@ const mcpHandler = createMcpHandler(
         title: "Fact-check",
         description:
           "Extract the verifiable factual claims from a text and check each against live web search, returning per-claim verdicts (true / false / misleading / unverifiable) plus an overall reliability verdict. Slower and metered — each claim runs a web search.",
-        inputSchema: { text: textArg, lang: langArg },
+        inputSchema: { text: factTextArg, lang: langArg },
       },
       async ({ text, lang }) => {
         let meter: ApiCreditMeter | null = null;
+        let history: ApiAnalysisHistory | null = null;
         try {
           const auth = currentMcpAuth();
           const settings = await loadSettings();
@@ -204,15 +257,25 @@ const mcpHandler = createMcpHandler(
             feature: "factcheck_api",
             metadata: { maxClaims },
           });
+          history = await startMcpAnalysisHistory({
+            kind: "factcheck",
+            text,
+            lang,
+          });
           const result = await runFactCheck(text, {
             lang,
             maxClaims,
             apiKey: auth.apiKey,
-            onModelUsed: meter.recordModel,
+            onModelUsed(model) {
+              meter?.recordModel(model);
+              history?.recordModel(model);
+            },
             onUsage: meter.recordUsage,
             onVerificationUsed: meter.recordVerification,
           });
+          await history.complete(result);
           await meter.settle({
+            resourceId: history.id,
             metadata: {
               claimCount: result.claims.length,
               verificationCount: result.verdicts.length,
@@ -222,7 +285,12 @@ const mcpHandler = createMcpHandler(
             mapFactCheck(result),
           );
         } catch (err) {
-          await meter?.settle({ note: "MCP fact-check failed." });
+          await settleFailedMcpAnalysis(
+            meter,
+            history,
+            err,
+            "MCP fact-check failed.",
+          );
           return fail(err);
         }
       },
@@ -238,24 +306,39 @@ const mcpHandler = createMcpHandler(
       },
       async ({ text, lang }) => {
         let meter: ApiCreditMeter | null = null;
+        let history: ApiAnalysisHistory | null = null;
         try {
           const auth = currentMcpAuth();
           meter = await createMcpCreditMeter({
             amount: maxCreditsForCalls(DEFAULT_MODEL_CHAIN, 1),
             feature: "neutrality",
           });
+          history = await startMcpAnalysisHistory({
+            kind: "neutrality",
+            text,
+            lang,
+          });
           const result = await runNeutrality(text, {
             lang,
             apiKey: auth.apiKey,
-            onModelUsed: meter.recordModel,
+            onModelUsed(model) {
+              meter?.recordModel(model);
+              history?.recordModel(model);
+            },
             onUsage: meter.recordUsage,
           });
-          await meter.settle();
+          await history.complete(result);
+          await meter.settle({ resourceId: history.id });
           return ok(
             mapNeutrality(result),
           );
         } catch (err) {
-          await meter?.settle({ note: "MCP neutrality analysis failed." });
+          await settleFailedMcpAnalysis(
+            meter,
+            history,
+            err,
+            "MCP neutrality analysis failed.",
+          );
           return fail(err);
         }
       },
@@ -271,24 +354,39 @@ const mcpHandler = createMcpHandler(
       },
       async ({ text, lang }) => {
         let meter: ApiCreditMeter | null = null;
+        let history: ApiAnalysisHistory | null = null;
         try {
           const auth = currentMcpAuth();
           meter = await createMcpCreditMeter({
             amount: maxCreditsForCalls(DEFAULT_MODEL_CHAIN, 1),
             feature: "slop",
           });
+          history = await startMcpAnalysisHistory({
+            kind: "slop",
+            text,
+            lang,
+          });
           const result = await runSlop(text, {
             lang,
             apiKey: auth.apiKey,
-            onModelUsed: meter.recordModel,
+            onModelUsed(model) {
+              meter?.recordModel(model);
+              history?.recordModel(model);
+            },
             onUsage: meter.recordUsage,
           });
-          await meter.settle();
+          await history.complete(result);
+          await meter.settle({ resourceId: history.id });
           return ok(
             mapSlop(result),
           );
         } catch (err) {
-          await meter?.settle({ note: "MCP slop analysis failed." });
+          await settleFailedMcpAnalysis(
+            meter,
+            history,
+            err,
+            "MCP slop analysis failed.",
+          );
           return fail(err);
         }
       },
@@ -311,6 +409,7 @@ const mcpHandler = createMcpHandler(
       },
       async ({ text, lang, level }) => {
         let meter: ApiCreditMeter | null = null;
+        let history: ApiAnalysisHistory | null = null;
         try {
           const auth = currentMcpAuth();
           const lvl = normalizeLevel(level);
@@ -319,19 +418,34 @@ const mcpHandler = createMcpHandler(
             feature: "explain",
             metadata: { level: lvl },
           });
+          history = await startMcpAnalysisHistory({
+            kind: "explain",
+            text,
+            lang,
+            level: lvl,
+          });
           const result = await runExplain(text, {
             lang,
             level: lvl,
             apiKey: auth.apiKey,
-            onModelUsed: meter.recordModel,
+            onModelUsed(model) {
+              meter?.recordModel(model);
+              history?.recordModel(model);
+            },
             onUsage: meter.recordUsage,
           });
-          await meter.settle();
+          await history.complete(result);
+          await meter.settle({ resourceId: history.id });
           return ok(
             mapExplain(result, lvl),
           );
         } catch (err) {
-          await meter?.settle({ note: "MCP explanation failed." });
+          await settleFailedMcpAnalysis(
+            meter,
+            history,
+            err,
+            "MCP explanation failed.",
+          );
           return fail(err);
         }
       },

@@ -61,18 +61,14 @@ a {
 }
 
 .brand-mark {
-  display: grid;
-  width: 38px;
-  height: 38px;
+  display: block;
+  width: 40px;
+  height: 40px;
   flex: none;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--ink);
-  color: #fff;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 20px;
-  font-weight: 800;
-  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  object-fit: contain;
 }
 
 .brand-copy {
@@ -243,6 +239,17 @@ a {
   text-decoration: none;
 }
 
+.button-icon {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
 .primary-button {
   border: 1px solid var(--ink);
   background: var(--ink);
@@ -405,6 +412,27 @@ a {
   border-radius: inherit;
   background: var(--accent);
   transition: width 240ms ease;
+}
+
+.progress-track.is-indeterminate span {
+  animation: jiddu-progress 1.25s ease-in-out infinite;
+  transform: translateX(-135%);
+}
+
+@keyframes jiddu-progress {
+  50% {
+    transform: translateX(210%);
+  }
+  100% {
+    transform: translateX(430%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress-track.is-indeterminate span {
+    animation: none;
+    transform: none;
+  }
 }
 
 .error-card {
@@ -611,8 +639,15 @@ a {
 
 .new-selection {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
+  gap: 8px;
   margin-top: 16px;
+}
+
+.new-selection .secondary-button {
+  flex: 1 1 150px;
+  gap: 7px;
 }
 
 .app-footer {
@@ -754,6 +789,66 @@ dialog::backdrop {
   .app-header,
   .app-footer {
     padding-inline: 11px;
+  }
+}
+
+@media print {
+  @page {
+    margin: 14mm;
+  }
+
+  :root {
+    color-scheme: light;
+  }
+
+  html,
+  body {
+    min-width: 0;
+    min-height: 0;
+    background: #fff;
+  }
+
+  body {
+    display: block;
+  }
+
+  .app-header {
+    position: static;
+    padding: 0 0 12px;
+    background: #fff;
+    backdrop-filter: none;
+  }
+
+  #settingsButton,
+  .new-selection,
+  dialog {
+    display: none !important;
+  }
+
+  #app {
+    max-width: none;
+    padding: 18px 0 0;
+  }
+
+  .context-block h1 {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+  }
+
+  .loading-card,
+  .error-card,
+  .summary-card,
+  .finding-card,
+  .quote-card,
+  .clean-card {
+    break-inside: avoid;
+    box-shadow: none;
+  }
+
+  .app-footer {
+    margin-top: 20px;
+    padding: 11px 0 0;
   }
 }
 

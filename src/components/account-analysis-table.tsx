@@ -30,7 +30,7 @@ export function AccountAnalysisTable({
       <div>
         <h2 className="mb-2 font-serif text-2xl">Analyses</h2>
         <p className="text-sm text-muted">
-          Analyses started while signed in to this account appear here.
+          Analyses run in the web app, with your API keys, or through MCP appear here.
         </p>
       </div>
 

@@ -5,6 +5,7 @@ import { loadSettings, bucketFor } from "@/lib/settings";
 import { jsonError, mapRunError, normalizeLang, readText } from "@/lib/api/http";
 import { runExplain } from "@/lib/api/run";
 import { mapExplain } from "@/lib/api/map";
+import { startApiAnalysisHistory } from "@/lib/api/analysis-history";
 import { normalizeLevel } from "@/lib/explain-schema";
 import {
   createApiCreditMeter,
@@ -38,19 +39,39 @@ export async function POST(req: NextRequest) {
   });
   if (isApiCreditResponse(meter)) return meter;
 
+  const history = await startApiAnalysisHistory({
+    kind: "explain",
+    ownerWorkosUserId: auth.userId,
+    transport: "API",
+    sourceLabel: auth.label,
+    text,
+    lang,
+    level,
+  });
+
   try {
     const agg = await runExplain(text, {
       lang,
       level,
       signal: req.signal,
       apiKey: auth.apiKey,
-      onModelUsed: meter.recordModel,
+      onModelUsed(model) {
+        meter.recordModel(model);
+        history.recordModel(model);
+      },
       onUsage: meter.recordUsage,
     });
-    await meter.settle();
+    await history.complete(agg);
+    await meter.settle({ resourceId: history.id });
     return Response.json(mapExplain(agg, level));
   } catch (err) {
-    await meter.settle({ note: "REST explanation failed." });
+    await Promise.allSettled([
+      history.fail(err),
+      meter.settle({
+        resourceId: history.id,
+        note: "REST explanation failed.",
+      }),
+    ]);
     return mapRunError(err);
   }
 }

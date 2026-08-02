@@ -4,6 +4,7 @@ export type Messages = {
   tagline: string;
 
   // Home
+  hero_quote: string;
   hero_title: string;
   hero_subtitle: string;
   // Generic subtitle for the unified home — mode-neutral, since the four
@@ -505,8 +506,9 @@ export type Messages = {
 };
 
 const en: Messages = {
-  tagline: "truth is a pathless land",
+  tagline: "Critical Reading",
 
+  hero_quote: "Truth is a pathless land",
   hero_title: "Read anything with a critical mind.",
   hero_subtitle:
     "Upload a PDF or screenshot, paste text or an image, or drop a URL. Jiddu highlights the passages that contain logical fallacies and explains each one in a comment — just like a reviewer in Word — and gives the whole piece a fallacy score from 0 to 100.",
@@ -898,7 +900,7 @@ const en: Messages = {
     {
       title: "Endpoints",
       paragraphs: [
-        "Jiddu exposes its five analysis pipelines as a public REST API. Every endpoint takes a JSON body with a `text` field (40–2000 characters) plus an optional `lang` (`en` / `pt` / `es`), and returns structured JSON.",
+        "Jiddu exposes its five analysis pipelines as a public REST API. Every endpoint takes a JSON body with a `text` field (40–2000 characters; up to 10000 for `fact-check`) plus an optional `lang` (`en` / `pt` / `es`), and returns structured JSON.",
         "```\nPOST /api/v1/detect-fallacies\nPOST /api/v1/fact-check\nPOST /api/v1/assess-neutrality\nPOST /api/v1/explain\nPOST /api/v1/detect-slop\n```",
         "`detect-fallacies`, `assess-neutrality`, `explain` and `detect-slop` are fast. `fact-check` extracts each claim and verifies it against live web search, so it is slower and metered.",
       ],
@@ -929,7 +931,7 @@ const en: Messages = {
     {
       title: "Limits & reliability",
       paragraphs: [
-        "Text tools are capped at 2000 characters per request. Review jobs accept one public or uploaded PDF up to 25 MB and reject papers above 300,000 extracted characters rather than truncating them. REST rate limits are per API key; hosted MCP limits are per WorkOS user. Exceeding them returns HTTP 429 with a `retry_after_seconds` field. Outputs are automated and can be wrong — treat them as signals to prompt verification, not as final authority.",
+        "Text tools are capped at 2000 characters per request, except `fact-check`, which accepts up to 10000. Successful and failed runs appear in the authenticated account's analysis history. Review jobs accept one public or uploaded PDF up to 25 MB and reject papers above 300,000 extracted characters rather than truncating them. REST rate limits are per API key; hosted MCP limits are per WorkOS user. Exceeding them returns HTTP 429 with a `retry_after_seconds` field. Outputs are automated and can be wrong — treat them as signals to prompt verification, not as final authority.",
         "Quality is measured against fixed internal test sets and the benchmark summaries published on this site.",
       ],
     },
@@ -1403,8 +1405,9 @@ const en: Messages = {
 };
 
 const pt: Messages = {
-  tagline: "truth is a pathless land",
+  tagline: "Leitura crítica",
 
+  hero_quote: "Truth is a pathless land",
   hero_title: "Leia qualquer coisa com senso crítico.",
   hero_subtitle:
     "Envie um PDF ou screenshot, cole texto ou uma imagem, ou solte uma URL. O Jiddu destaca os trechos com falácias lógicas e explica cada um em um comentário — como um revisor no Word — e dá uma nota de 0 a 100 para o texto inteiro.",
@@ -1794,7 +1797,7 @@ const pt: Messages = {
     {
       title: "Endpoints",
       paragraphs: [
-        "O Jiddu expõe seus cinco pipelines de análise como uma REST API pública. Todo endpoint recebe um corpo JSON com um campo `text` (40–2000 caracteres) e um `lang` opcional (`en` / `pt` / `es`), e retorna JSON estruturado.",
+        "O Jiddu expõe seus cinco pipelines de análise como uma REST API pública. Todo endpoint recebe um corpo JSON com um campo `text` (40–2000 caracteres; até 10000 no `fact-check`) e um `lang` opcional (`en` / `pt` / `es`), e retorna JSON estruturado.",
         "```\nPOST /api/v1/detect-fallacies\nPOST /api/v1/fact-check\nPOST /api/v1/assess-neutrality\nPOST /api/v1/explain\nPOST /api/v1/detect-slop\n```",
         "`detect-fallacies`, `assess-neutrality`, `explain` e `detect-slop` são rápidos. O `fact-check` extrai cada afirmação e a verifica com busca na web ao vivo, então é mais lento e medido.",
       ],
@@ -1825,7 +1828,7 @@ const pt: Messages = {
     {
       title: "Limites & confiabilidade",
       paragraphs: [
-        "As ferramentas de texto aceitam até 2000 caracteres por requisição. Jobs de revisão recebem um PDF público ou enviado de até 25 MB e recusam papers acima de 300 mil caracteres extraídos em vez de truncá-los. Os limites da REST são por chave de API; os do MCP hospedado são por usuário WorkOS. Ao excedê-los, a resposta é HTTP 429 com `retry_after_seconds`. As saídas são automatizadas e podem errar — trate-as como sinais para verificação, não como autoridade final.",
+        "As ferramentas de texto aceitam até 2000 caracteres por requisição, exceto o `fact-check`, que aceita até 10000. Execuções concluídas ou com falha aparecem no histórico de análises da conta autenticada. Jobs de revisão recebem um PDF público ou enviado de até 25 MB e recusam papers acima de 300 mil caracteres extraídos em vez de truncá-los. Os limites da REST são por chave de API; os do MCP hospedado são por usuário WorkOS. Ao excedê-los, a resposta é HTTP 429 com `retry_after_seconds`. As saídas são automatizadas e podem errar — trate-as como sinais para verificação, não como autoridade final.",
         "A qualidade é medida contra conjuntos de teste internos fixos e os resumos de benchmark publicados neste site.",
       ],
     },
@@ -2300,8 +2303,9 @@ const pt: Messages = {
 };
 
 const es: Messages = {
-  tagline: "truth is a pathless land",
+  tagline: "Lectura crítica",
 
+  hero_quote: "Truth is a pathless land",
   hero_title: "Lee cualquier cosa con espíritu crítico.",
   hero_subtitle:
     "Sube un PDF o screenshot, pega texto o una imagen, o suelta una URL. Jiddu resalta los pasajes con falacias lógicas y explica cada uno en un comentario — como un revisor en Word — y le da al texto entero una puntuación de falacia de 0 a 100.",
@@ -2691,7 +2695,7 @@ const es: Messages = {
     {
       title: "Endpoints",
       paragraphs: [
-        "Jiddu expone sus cinco pipelines de análisis como una REST API pública. Cada endpoint recibe un cuerpo JSON con un campo `text` (40–2000 caracteres) y un `lang` opcional (`en` / `pt` / `es`), y devuelve JSON estructurado.",
+        "Jiddu expone sus cinco pipelines de análisis como una REST API pública. Cada endpoint recibe un cuerpo JSON con un campo `text` (40–2000 caracteres; hasta 10000 para `fact-check`) y un `lang` opcional (`en` / `pt` / `es`), y devuelve JSON estructurado.",
         "```\nPOST /api/v1/detect-fallacies\nPOST /api/v1/fact-check\nPOST /api/v1/assess-neutrality\nPOST /api/v1/explain\nPOST /api/v1/detect-slop\n```",
         "`detect-fallacies`, `assess-neutrality`, `explain` y `detect-slop` son rápidos. `fact-check` extrae cada afirmación y la verifica con búsqueda web en vivo, por lo que es más lento y medido.",
       ],
@@ -2722,7 +2726,7 @@ const es: Messages = {
     {
       title: "Límites y fiabilidad",
       paragraphs: [
-        "Las herramientas de texto aceptan hasta 2000 caracteres por solicitud. Los jobs de revisión reciben un PDF público o subido de hasta 25 MB y rechazan papers por encima de 300.000 caracteres extraídos en lugar de truncarlos. Los límites de REST son por clave de API; los del MCP alojado son por usuario de WorkOS. Al excederlos, la respuesta es HTTP 429 con `retry_after_seconds`. Las salidas son automatizadas y pueden equivocarse — trátalas como señales para verificar, no como autoridad final.",
+        "Las herramientas de texto aceptan hasta 2000 caracteres por solicitud, excepto `fact-check`, que acepta hasta 10000. Las ejecuciones completadas o fallidas aparecen en el historial de análisis de la cuenta autenticada. Los jobs de revisión reciben un PDF público o subido de hasta 25 MB y rechazan papers por encima de 300.000 caracteres extraídos en lugar de truncarlos. Los límites de REST son por clave de API; los del MCP alojado son por usuario de WorkOS. Al excederlos, la respuesta es HTTP 429 con `retry_after_seconds`. Las salidas son automatizadas y pueden equivocarse — trátalas como señales para verificar, no como autoridad final.",
         "La calidad se mide contra conjuntos de prueba internos fijos y los resúmenes de benchmark publicados en este sitio.",
       ],
     },

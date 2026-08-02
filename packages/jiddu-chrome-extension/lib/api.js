@@ -1,5 +1,6 @@
 export const MIN_API_TEXT_CHARS = 40;
 export const MAX_API_TEXT_CHARS = 2000;
+export const MAX_FACTCHECK_TEXT_CHARS = 10000;
 
 export const API_BASES = Object.freeze([
   "https://jiddu.app",
@@ -25,6 +26,14 @@ export function endpointForLens(lens) {
   const endpoint = LENSES[lens]?.endpoint;
   if (!endpoint) throw new Error("Invalid analysis lens.");
   return endpoint;
+}
+
+export function maxCharsForLens(lens) {
+  return lens === "facts" ? MAX_FACTCHECK_TEXT_CHARS : MAX_API_TEXT_CHARS;
+}
+
+export function chunkConcurrencyForLens(lens) {
+  return lens === "facts" ? 2 : 1;
 }
 
 export function normalizeApiBase(value) {

@@ -2,9 +2,16 @@ import { NextRequest } from "next/server";
 import { requireApiKey } from "@/lib/api/auth";
 import { consume, rateLimitResponse } from "@/lib/rate-limit";
 import { loadSettings, bucketFor } from "@/lib/settings";
-import { jsonError, mapRunError, normalizeLang, readText } from "@/lib/api/http";
+import {
+  MAX_FACT_CHECK_TEXT_CHARS,
+  jsonError,
+  mapRunError,
+  normalizeLang,
+  readText,
+} from "@/lib/api/http";
 import { runFactCheck } from "@/lib/api/run";
 import { mapFactCheck } from "@/lib/api/map";
+import { startApiAnalysisHistory } from "@/lib/api/analysis-history";
 import {
   createApiCreditMeter,
   isApiCreditResponse,
@@ -31,7 +38,7 @@ export async function POST(req: NextRequest) {
   if (!rl.allowed) return rateLimitResponse(rl.retryAfterSec);
 
   const body = (await req.json().catch(() => null)) as { lang?: unknown } | null;
-  const text = readText(body);
+  const text = readText(body, MAX_FACT_CHECK_TEXT_CHARS);
   if (text instanceof Response) return text;
   const lang = normalizeLang(body?.lang);
   const maxClaims = Math.max(1, Math.floor(settings["api.maxClaims"]));
@@ -44,17 +51,31 @@ export async function POST(req: NextRequest) {
   });
   if (isApiCreditResponse(meter)) return meter;
 
+  const history = await startApiAnalysisHistory({
+    kind: "factcheck",
+    ownerWorkosUserId: auth.userId,
+    transport: "API",
+    sourceLabel: auth.label,
+    text,
+    lang,
+  });
+
   try {
     const agg = await runFactCheck(text, {
       lang,
       maxClaims,
       signal: req.signal,
       apiKey: auth.apiKey,
-      onModelUsed: meter.recordModel,
+      onModelUsed(model) {
+        meter.recordModel(model);
+        history.recordModel(model);
+      },
       onUsage: meter.recordUsage,
       onVerificationUsed: meter.recordVerification,
     });
+    await history.complete(agg);
     await meter.settle({
+      resourceId: history.id,
       metadata: {
         claimCount: agg.claims.length,
         verificationCount: agg.verdicts.length,
@@ -62,7 +83,13 @@ export async function POST(req: NextRequest) {
     });
     return Response.json(mapFactCheck(agg));
   } catch (err) {
-    await meter.settle({ note: "REST fact-check failed." });
+    await Promise.allSettled([
+      history.fail(err),
+      meter.settle({
+        resourceId: history.id,
+        note: "REST fact-check failed.",
+      }),
+    ]);
     return mapRunError(err);
   }
 }

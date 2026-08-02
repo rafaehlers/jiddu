@@ -5,6 +5,7 @@ import { IngestError } from "@/lib/ingest/errors";
 import { NoUnitsError } from "./run";
 
 export const MAX_API_TEXT_CHARS = 2000;
+export const MAX_FACT_CHECK_TEXT_CHARS = 10_000;
 export const MIN_API_TEXT_CHARS = 40; // matches ingestText's floor
 
 export function jsonError(message: string, status: number, code?: string): Response {
@@ -22,14 +23,24 @@ export function normalizeLang(v: unknown): Lang {
 
 // Validate and extract the `text` field shared by every v1 endpoint. Returns
 // the trimmed-but-not-yet-cleaned text, or a ready-to-return error Response.
-export function readText(body: unknown): string | Response {
+export function readText(
+  body: unknown,
+  maxChars = MAX_API_TEXT_CHARS,
+): string | Response {
   const text = (body as { text?: unknown } | null)?.text;
   if (typeof text !== "string") {
     return jsonError("`text` is required and must be a string", 400, "bad_request");
   }
-  if (text.length > MAX_API_TEXT_CHARS) {
+  if (text.trim().length < MIN_API_TEXT_CHARS) {
     return jsonError(
-      `\`text\` exceeds the ${MAX_API_TEXT_CHARS}-character limit`,
+      `Text is too short to analyze (need at least ${MIN_API_TEXT_CHARS} characters)`,
+      422,
+      "too_short",
+    );
+  }
+  if (text.length > maxChars) {
+    return jsonError(
+      `\`text\` exceeds the ${maxChars}-character limit`,
       400,
       "text_too_long",
     );

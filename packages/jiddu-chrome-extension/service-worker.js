@@ -4,6 +4,8 @@ import {
   MIN_API_TEXT_CHARS,
   endpointForLens,
   friendlyApiError,
+  chunkConcurrencyForLens,
+  maxCharsForLens,
   mergeChunkResults,
   normalizeApiBase,
   normalizeSelectionText,
@@ -160,7 +162,7 @@ async function startAnalysis(tabId, rawRequest) {
   const messages = getUiMessages(settings.uiLang);
   const request = sanitizeRequest(rawRequest, messages);
   const requestId = crypto.randomUUID();
-  const chunks = splitIntoApiChunks(request.text);
+  const chunks = splitIntoApiChunks(request.text, maxCharsForLens(request.lens));
 
   if (request.text.length < MIN_API_TEXT_CHARS) {
     await setTabState(tabId, {
@@ -200,20 +202,33 @@ async function startAnalysis(tabId, rawRequest) {
   }
 
   try {
-    const parts = [];
-    for (let index = 0; index < chunks.length; index += 1) {
-      const chunk = chunks[index];
-      const result = await callJidduApi({
-        apiBase: settings.apiBase,
-        apiKey: settings.apiKey,
-        lens: request.lens,
-        lang: settings.lang,
-        text: chunk,
-        messages,
-      });
-      parts.push({ result, charCount: chunk.length });
-      await updateProgressIfCurrent(tabId, requestId, index + 1, chunks.length);
-    }
+    const parts = new Array(chunks.length);
+    const concurrency = Math.min(
+      chunks.length,
+      chunkConcurrencyForLens(request.lens),
+    );
+    let cursor = 0;
+    let completed = 0;
+    const worker = async () => {
+      while (true) {
+        const index = cursor;
+        cursor += 1;
+        if (index >= chunks.length) return;
+        const chunk = chunks[index];
+        const result = await callJidduApi({
+          apiBase: settings.apiBase,
+          apiKey: settings.apiKey,
+          lens: request.lens,
+          lang: settings.lang,
+          text: chunk,
+          messages,
+        });
+        parts[index] = { result, charCount: chunk.length };
+        completed += 1;
+        await updateProgressIfCurrent(tabId, requestId, completed, chunks.length);
+      }
+    };
+    await Promise.all(Array.from({ length: concurrency }, worker));
 
     const current = await getTabState(tabId);
     if (current?.requestId !== requestId) return;

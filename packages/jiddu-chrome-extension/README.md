@@ -2,7 +2,8 @@
 
 Manifest V3 extension for analyzing a selected block on any web page with the
 Jiddu REST API. The extension supports the fallacy, fact-check and neutrality
-lenses, and displays results in Chrome's side panel.
+lenses, displays results in Chrome's side panel and can print a completed
+report.
 
 ## Load the unpacked extension
 
