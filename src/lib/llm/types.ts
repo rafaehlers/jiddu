@@ -10,8 +10,10 @@ import type {
 import type { Lang } from "../fallacies";
 import type { ExplainLevel } from "../explain-schema";
 import type { PaperSynthesis } from "../explain-schema";
+import type { PaperEvidenceFirstResult } from "../explain-schema";
 import type { OpenRouterUsage } from "../openrouter-usage";
 import type { PaperSynthesisInput } from "../paper-map-prompt";
+import type { PaperEvidenceInput } from "../paper-evidence-prompt";
 import type { ExplainInputSection } from "../explain-units";
 
 export type ProviderId = "anthropic" | "openai";
@@ -82,6 +84,10 @@ export interface LlmProvider {
     input: PaperSynthesisInput,
     opts?: LlmStreamOptions,
   ): Promise<{ model: string; result: PaperSynthesis }>;
+  analyzePaperEvidence(
+    input: PaperEvidenceInput,
+    opts?: LlmStreamOptions,
+  ): Promise<{ model: string; result: PaperEvidenceFirstResult }>;
   analyzeSlopStream(
     input: AnalyzeInput,
     opts?: LlmStreamOptions,

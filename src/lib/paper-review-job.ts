@@ -30,6 +30,7 @@ import type { Lang } from "@/lib/fallacies";
 import type { ResolvedVenueProfile } from "@/lib/venues";
 import type { OpenRouterUsage } from "@/lib/openrouter-usage";
 import { loadStringSettings } from "@/lib/settings";
+import { selectVisualPages } from "@/lib/paper-visual-pages";
 
 export const MAX_PAPER_TEXT_CHARS = 300_000;
 export const MAX_PDF_BYTES = 25 * 1024 * 1024;
@@ -559,44 +560,6 @@ export async function runPreparedPaperReview(
       .catch(() => null);
     throw err;
   }
-}
-
-export function selectVisualPages(
-  pages: NonNullable<Awaited<ReturnType<typeof ingestPdf>>["pages"]>,
-  complexity: Awaited<ReturnType<typeof ingestPdf>>["complexity"],
-): number[] {
-  const selected = new Set<number>();
-  for (const page of complexity ?? []) {
-    const layoutNeedsVision =
-      (page.layout?.ruledTableCount ?? 0) > 0 ||
-      (page.layout?.textTableRunCount ?? 0) > 0 ||
-      (page.layout?.figureCount ?? 0) > 0 ||
-      page.layout?.reasons.some((reason) =>
-        ["table-likely", "dense-graphics"].includes(reason),
-      );
-    if (
-      page.hasSubstantialImages ||
-      page.isGarbled ||
-      layoutNeedsVision ||
-      page.reasons.some((reason) =>
-        ["scanned", "embedded-images", "vector-text"].includes(reason),
-      )
-    ) {
-      selected.add(page.pageNumber);
-    }
-  }
-  for (const page of pages) {
-    if (
-      /(?:^|\n)\s*(?:figure|fig\.|table|algorithm|architecture)\s+\d+/im.test(
-        page.text,
-      )
-    ) {
-      selected.add(page.pageNumber);
-    }
-  }
-  return Array.from(selected)
-    .sort((a, b) => a - b)
-    .slice(0, 6);
 }
 
 function normalizeReview(

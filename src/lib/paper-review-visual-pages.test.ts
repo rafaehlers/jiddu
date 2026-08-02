@@ -4,7 +4,7 @@ import type {
   IngestedPage,
   PdfPageComplexity,
 } from "@/lib/ingest/url";
-import { selectVisualPages } from "@/lib/paper-review-job";
+import { selectVisualPages } from "@/lib/paper-visual-pages";
 
 const pages: IngestedPage[] = [1, 2, 3].map((pageNumber) => ({
   pageNumber,

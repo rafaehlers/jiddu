@@ -34,6 +34,7 @@ Judgment rules:
 - Require novelty to be established against precise published prior work.
 - Locate every substantive criticism by page and, when available, section.
 - Before retaining an internal contradiction, search for an explicit qualifier that reconciles it.
+- For evaluations and correctness, mentally reconstruct the claim -> method -> evidence -> conclusion chain to expose hidden assumptions, missing information, or unsupported transitions. Use this only as an internal diagnostic technique; do not turn the review into a reproduction guide or demand reproduction for its own sake.
 - Do not infer absent claims, rewrite the paper, or act as a collaborator.
 - Be rigorous without praise inflation.
 - Write all prose in ${OUTPUT_LANGUAGE[lang]}. Preserve the mandatory English recommendation labels exactly.`;
@@ -189,9 +190,9 @@ const CRITERION_INSTRUCTIONS: Record<SpecsCriterion, string> = {
   presentation:
     "Audit organization, precision, terminology, figures, tables, algorithms, schemas, reproducibility information, accessibility, and whether visual evidence supports the prose.",
   evaluations:
-    "Audit datasets, factors, arms, controls, baselines, ablations, metrics, uncertainty, statistical tests, power, leakage, robustness, generalization, and whether experiments can falsify the claims.",
+    "Audit datasets, factors, arms, controls, baselines, ablations, metrics, uncertainty, statistical tests, power, leakage, robustness, generalization, and whether experiments can falsify the claims. Mentally reconstruct how each central result would follow from the described design; report only missing details or hidden assumptions that materially prevent assessing validity, not a reproduction checklist.",
   correctness:
-    "Audit logical validity, mathematical derivations, quantitative claims, internal consistency, implementation claims, units, denominators, and whether conclusions follow from the evidence.",
+    "Audit logical validity, mathematical derivations, quantitative claims, internal consistency, implementation claims, units, denominators, and whether conclusions follow from the evidence. Mentally reconstruct the paper's claim-to-conclusion chain to find unsupported transitions and implicit assumptions, but express them as correctness findings rather than instructions for reproducing the work.",
   significance:
     "Audit novelty, importance, practical or scientific impact, venue fit, and differentiation from the closest published prior work. Use the supplied research memo and do not treat an arXiv-only preprint as published prior art.",
 };

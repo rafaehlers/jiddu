@@ -175,6 +175,7 @@ export type Messages = {
   explain_failed: string;
   loader_explain: string[];
   loader_explain_map: string;
+  loader_explain_evidence: string;
   explain_level: string;
   level_eli5: string;
   level_high_school: string;
@@ -200,6 +201,38 @@ export type Messages = {
   explain_map_open_evidence: string;
   explain_jump_to: string;
   explain_reader_label: string;
+  explain_mode_quick: string;
+  explain_mode_understand: string;
+  explain_mode_challenge: string;
+  explain_quick_label: string;
+  explain_quick_context: string;
+  explain_quick_correctness: string;
+  explain_quick_clarity: string;
+  explain_chain_label: string;
+  explain_chain_big_question: string;
+  explain_notebook_label: string;
+  explain_notebook_terms: string;
+  explain_notebook_questions: string;
+  explain_notebook_confusing: string;
+  explain_notebook_assumptions: string;
+  explain_notebook_further: string;
+  explain_challenge_label: string;
+  explain_challenge_independent: string;
+  explain_challenge_authors: string;
+  explain_challenge_comparison: string;
+  explain_challenge_fidelity: string;
+  explain_challenge_visual: string;
+  explain_challenge_uncertainties: string;
+  explain_challenge_unavailable: string;
+  explain_alignment_aligned: string;
+  explain_alignment_partially_aligned: string;
+  explain_alignment_divergent: string;
+  explain_alignment_unclear: string;
+  explain_fidelity_faithful: string;
+  explain_fidelity_partially_faithful: string;
+  explain_fidelity_misleading: string;
+  explain_fidelity_not_assessable: string;
+  explain_page: string;
   explain_sections_label: string;
   explain_document_section: string;
   explain_opening_section: string;
@@ -704,6 +737,7 @@ const en: Messages = {
     "Connecting the argument",
   ],
   loader_explain_map: "Building the paper map",
+  loader_explain_evidence: "Reading methods and results independently",
   explain_level: "Explanation level",
   level_eli5: "Child",
   level_high_school: "High school",
@@ -729,6 +763,39 @@ const en: Messages = {
   explain_map_open_evidence: "Open the supporting paragraph",
   explain_jump_to: "Jump to",
   explain_reader_label: "Paper reader",
+  explain_mode_quick: "Quick scan",
+  explain_mode_understand: "Understand",
+  explain_mode_challenge: "Challenge",
+  explain_quick_label: "First pass · five Cs",
+  explain_quick_context: "Context",
+  explain_quick_correctness: "Apparent correctness",
+  explain_quick_clarity: "Clarity",
+  explain_chain_label: "Evidence chain",
+  explain_chain_big_question: "Big question",
+  explain_notebook_label: "Reading notebook",
+  explain_notebook_terms: "Key terms",
+  explain_notebook_questions: "Questions for the authors",
+  explain_notebook_confusing: "Passages to revisit",
+  explain_notebook_assumptions: "Implicit assumptions",
+  explain_notebook_further: "Further reading",
+  explain_challenge_label: "Evidence-first reading",
+  explain_challenge_independent: "What the evidence shows independently",
+  explain_challenge_authors: "How the authors interpret it",
+  explain_challenge_comparison: "Comparison",
+  explain_challenge_fidelity: "Abstract fidelity",
+  explain_challenge_visual: "Figures and tables",
+  explain_challenge_uncertainties: "What remains uncertain",
+  explain_challenge_unavailable:
+    "This analysis predates evidence-first reading or did not contain recognizable methods and results.",
+  explain_alignment_aligned: "Aligned",
+  explain_alignment_partially_aligned: "Partially aligned",
+  explain_alignment_divergent: "Divergent",
+  explain_alignment_unclear: "Unclear",
+  explain_fidelity_faithful: "Faithful",
+  explain_fidelity_partially_faithful: "Partially faithful",
+  explain_fidelity_misleading: "Potentially misleading",
+  explain_fidelity_not_assessable: "Not assessable",
+  explain_page: "Page",
   explain_sections_label: "Sections",
   explain_document_section: "Document",
   explain_opening_section: "Opening",
@@ -1063,7 +1130,7 @@ const en: Messages = {
       paragraphs: [
         "WorkOS AuthKit provides user accounts and sessions. Completed results remain available through unlisted share URLs, and signed-in users can also see their associated analyses in the account area. Anyone with a share URL can still view its final result. Paper-review ledgers, research and draft judgements are internal intermediate artifacts and are not exposed in the public result.",
         "Jiddu Credits are an application balance for web, account-owned REST and hosted MCP analyses that use Jiddu's server-managed provider credentials. Verified accounts on the operator-managed platform allowlist receive included access instead.",
-        "Submitted content goes through OpenRouter to the upstream serving the chosen model. Pasted screenshots are sent for transcription, but Jiddu does not retain the image file; its extracted text is stored with the analysis. Paper review includes selected rendered page images, not only extracted text. Its literature stage searches public scholarly sources using technical claims while prompts prohibit queries by paper title, author name or other manuscripts by the same authors. Venue autocomplete sends only the typed venue query to DBLP. We log the request IP for rate-limiting and abuse signalling and do not sell it.",
+        "Submitted content goes through OpenRouter to the upstream serving the chosen model. Pasted screenshots are sent for transcription, but Jiddu does not retain the image file; its extracted text is stored with the analysis. Paper Explainer and paper review can include selected rendered PDF page images, not only extracted text, when figures or tables need visual inspection. The review literature stage searches public scholarly sources using technical claims while prompts prohibit queries by paper title, author name or other manuscripts by the same authors. Venue autocomplete sends only the typed venue query to DBLP. We log the request IP for rate-limiting and abuse signalling and do not sell it.",
         "Results are automated and unreviewed by default. A result explicitly marked as reviewed has been spot-checked by the operator; that status is an additional human check, not a guarantee that every finding is correct.",
       ],
     },
@@ -1107,8 +1174,9 @@ const en: Messages = {
           },
           {
             feature: "Paper explainer",
-            unit: "Per completed text chunk",
-            estimate: "Up to 2 credits reserved",
+            unit: "Per completed analysis call",
+            estimate:
+              "1 credit per completed call; paper runs include chunks, an evidence-first reading and a final synthesis",
           },
           {
             feature: "Slop detector",
@@ -1565,6 +1633,7 @@ const pt: Messages = {
     "Conectando o argumento",
   ],
   loader_explain_map: "Montando o mapa do paper",
+  loader_explain_evidence: "Lendo métodos e resultados de forma independente",
   explain_level: "Nível de explicação",
   level_eli5: "Criança",
   level_high_school: "Ensino médio",
@@ -1590,6 +1659,39 @@ const pt: Messages = {
   explain_map_open_evidence: "Abrir o parágrafo que sustenta este item",
   explain_jump_to: "Ir para",
   explain_reader_label: "Leitor do paper",
+  explain_mode_quick: "Visão rápida",
+  explain_mode_understand: "Compreender",
+  explain_mode_challenge: "Questionar",
+  explain_quick_label: "Primeira passagem · cinco Cs",
+  explain_quick_context: "Contexto",
+  explain_quick_correctness: "Correção aparente",
+  explain_quick_clarity: "Clareza",
+  explain_chain_label: "Cadeia de evidências",
+  explain_chain_big_question: "Pergunta maior",
+  explain_notebook_label: "Caderno de leitura",
+  explain_notebook_terms: "Termos importantes",
+  explain_notebook_questions: "Perguntas para os autores",
+  explain_notebook_confusing: "Passagens para reler",
+  explain_notebook_assumptions: "Pressupostos implícitos",
+  explain_notebook_further: "Leituras posteriores",
+  explain_challenge_label: "Leitura independente das evidências",
+  explain_challenge_independent: "O que as evidências mostram isoladamente",
+  explain_challenge_authors: "Como os autores interpretam",
+  explain_challenge_comparison: "Comparação",
+  explain_challenge_fidelity: "Fidelidade do abstract",
+  explain_challenge_visual: "Figuras e tabelas",
+  explain_challenge_uncertainties: "O que permanece incerto",
+  explain_challenge_unavailable:
+    "Esta análise é anterior à leitura independente ou não contém métodos e resultados reconhecíveis.",
+  explain_alignment_aligned: "Alinhadas",
+  explain_alignment_partially_aligned: "Parcialmente alinhadas",
+  explain_alignment_divergent: "Divergentes",
+  explain_alignment_unclear: "Incerto",
+  explain_fidelity_faithful: "Fiel",
+  explain_fidelity_partially_faithful: "Parcialmente fiel",
+  explain_fidelity_misleading: "Potencialmente enganoso",
+  explain_fidelity_not_assessable: "Não foi possível avaliar",
+  explain_page: "Página",
   explain_sections_label: "Seções",
   explain_document_section: "Documento",
   explain_opening_section: "Abertura",
@@ -1925,7 +2027,7 @@ const pt: Messages = {
       paragraphs: [
         "O WorkOS AuthKit fornece contas e sessões. Resultados concluídos continuam disponíveis por URLs não listadas, e usuários logados também veem suas análises associadas na área da conta. Qualquer pessoa com a URL compartilhável ainda consegue ver o resultado final. Ledgers, pesquisa e juízos preliminares da revisão de papers são artefatos intermediários internos e não aparecem no resultado público.",
         "Créditos Jiddu são um saldo para análises web, REST vinculadas à conta e MCP hospedadas que usam as credenciais de provedores administradas pelo Jiddu. Contas verificadas na allowlist administrada pelo operador recebem acesso incluído.",
-        "O conteúdo submetido passa pelo OpenRouter para o upstream do modelo escolhido. Screenshots colados são enviados para transcrição, mas o Jiddu não retém o arquivo da imagem; o texto extraído é armazenado com a análise. Na revisão de paper, o conteúdo enviado inclui imagens renderizadas de páginas selecionadas, não só o texto extraído. A etapa de literatura pesquisa fontes acadêmicas públicas por afirmações técnicas, enquanto os prompts proíbem consultas pelo título, nome dos autores ou outros manuscritos dos mesmos autores. O autocomplete envia apenas a consulta da venue ao DBLP. Registramos o IP para rate-limit e sinais de abuso e não o vendemos.",
+        "O conteúdo submetido passa pelo OpenRouter para o upstream do modelo escolhido. Screenshots colados são enviados para transcrição, mas o Jiddu não retém o arquivo da imagem; o texto extraído é armazenado com a análise. O Paper Explainer e a revisão de paper podem incluir imagens renderizadas de páginas selecionadas do PDF, não só o texto extraído, quando figuras ou tabelas precisam de inspeção visual. A etapa de literatura da revisão pesquisa fontes acadêmicas públicas por afirmações técnicas, enquanto os prompts proíbem consultas pelo título, nome dos autores ou outros manuscritos dos mesmos autores. O autocomplete envia apenas a consulta da venue ao DBLP. Registramos o IP para rate-limit e sinais de abuso e não o vendemos.",
         "Os resultados são automatizados e não revisados por padrão. Um resultado explicitamente marcado como revisado foi conferido pontualmente pelo operador; esse status representa uma verificação humana adicional, não uma garantia de que todos os achados estejam corretos.",
       ],
     },
@@ -1969,8 +2071,9 @@ const pt: Messages = {
           },
           {
             feature: "Explicador de papers",
-            unit: "Por chunk de texto concluído",
-            estimate: "Reserva de até 2 créditos",
+            unit: "Por chamada de análise concluída",
+            estimate:
+              "1 crédito por chamada concluída; a análise inclui chunks, leitura independente e síntese final",
           },
           {
             feature: "Detector de slop",
@@ -2427,6 +2530,7 @@ const es: Messages = {
     "Conectando el argumento",
   ],
   loader_explain_map: "Construyendo el mapa del paper",
+  loader_explain_evidence: "Leyendo métodos y resultados de forma independiente",
   explain_level: "Nivel de explicación",
   level_eli5: "Niño",
   level_high_school: "Secundaria",
@@ -2452,6 +2556,39 @@ const es: Messages = {
   explain_map_open_evidence: "Abrir el párrafo que sustenta este punto",
   explain_jump_to: "Ir a",
   explain_reader_label: "Lector del paper",
+  explain_mode_quick: "Vista rápida",
+  explain_mode_understand: "Comprender",
+  explain_mode_challenge: "Cuestionar",
+  explain_quick_label: "Primera pasada · cinco Cs",
+  explain_quick_context: "Contexto",
+  explain_quick_correctness: "Corrección aparente",
+  explain_quick_clarity: "Claridad",
+  explain_chain_label: "Cadena de evidencia",
+  explain_chain_big_question: "Pregunta mayor",
+  explain_notebook_label: "Cuaderno de lectura",
+  explain_notebook_terms: "Términos importantes",
+  explain_notebook_questions: "Preguntas para los autores",
+  explain_notebook_confusing: "Pasajes para releer",
+  explain_notebook_assumptions: "Supuestos implícitos",
+  explain_notebook_further: "Lecturas posteriores",
+  explain_challenge_label: "Lectura independiente de la evidencia",
+  explain_challenge_independent: "Qué muestra la evidencia por sí sola",
+  explain_challenge_authors: "Cómo la interpretan los autores",
+  explain_challenge_comparison: "Comparación",
+  explain_challenge_fidelity: "Fidelidad del abstract",
+  explain_challenge_visual: "Figuras y tablas",
+  explain_challenge_uncertainties: "Qué permanece incierto",
+  explain_challenge_unavailable:
+    "Este análisis es anterior a la lectura independiente o no contiene métodos y resultados reconocibles.",
+  explain_alignment_aligned: "Alineadas",
+  explain_alignment_partially_aligned: "Parcialmente alineadas",
+  explain_alignment_divergent: "Divergentes",
+  explain_alignment_unclear: "Incierto",
+  explain_fidelity_faithful: "Fiel",
+  explain_fidelity_partially_faithful: "Parcialmente fiel",
+  explain_fidelity_misleading: "Potencialmente engañoso",
+  explain_fidelity_not_assessable: "No evaluable",
+  explain_page: "Página",
   explain_sections_label: "Secciones",
   explain_document_section: "Documento",
   explain_opening_section: "Apertura",
@@ -2787,7 +2924,7 @@ const es: Messages = {
       paragraphs: [
         "WorkOS AuthKit proporciona cuentas y sesiones. Los resultados completados siguen disponibles mediante URLs no listadas, y los usuarios que iniciaron sesión también ven sus análisis asociados en el área de cuenta. Cualquiera que tenga la URL compartible todavía puede ver el resultado final. Los ledgers, la investigación y los juicios preliminares de la revisión de papers son artefactos intermedios internos y no se muestran en el resultado público.",
         "Los créditos Jiddu son un saldo para análisis web, REST asociados a la cuenta y MCP alojados que usan credenciales de proveedores administradas por Jiddu. Las cuentas verificadas en la allowlist administrada por el operador reciben acceso incluido.",
-        "El contenido enviado pasa por OpenRouter al upstream del modelo elegido. Los screenshots pegados se envían para transcripción, pero Jiddu no conserva el archivo de imagen; el texto extraído se almacena con el análisis. En revisión de papers se incluyen imágenes renderizadas de páginas seleccionadas, no solo texto extraído. La etapa de literatura busca fuentes académicas públicas por afirmaciones técnicas, mientras los prompts prohíben consultas por título, autor u otros manuscritos de los mismos autores. El autocompletado envía solo la consulta del venue a DBLP. Registramos el IP para rate-limit y señales de abuso y no lo vendemos.",
+        "El contenido enviado pasa por OpenRouter al upstream del modelo elegido. Los screenshots pegados se envían para transcripción, pero Jiddu no conserva el archivo de imagen; el texto extraído se almacena con el análisis. Paper Explainer y la revisión de papers pueden incluir imágenes renderizadas de páginas seleccionadas del PDF, no solo texto extraído, cuando figuras o tablas requieren inspección visual. La etapa de literatura de la revisión busca fuentes académicas públicas por afirmaciones técnicas, mientras los prompts prohíben consultas por título, autor u otros manuscritos de los mismos autores. El autocompletado envía solo la consulta del venue a DBLP. Registramos el IP para rate-limit y señales de abuso y no lo vendemos.",
         "Los resultados son automatizados y no revisados por defecto. Un resultado marcado explícitamente como revisado fue inspeccionado puntualmente por el operador; ese estado es una comprobación humana adicional, no una garantía de que todos los hallazgos sean correctos.",
       ],
     },
@@ -2831,8 +2968,9 @@ const es: Messages = {
           },
           {
             feature: "Explicador de papers",
-            unit: "Por chunk de texto completado",
-            estimate: "Reserva de hasta 2 créditos",
+            unit: "Por llamada de análisis completada",
+            estimate:
+              "1 crédito por llamada completada; el análisis incluye chunks, lectura independiente y síntesis final",
           },
           {
             feature: "Detector de slop",

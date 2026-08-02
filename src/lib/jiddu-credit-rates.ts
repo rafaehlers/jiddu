@@ -1,4 +1,4 @@
-export const JIDDU_CREDIT_RATE_VERSION = "2026-08-01.v10";
+export const JIDDU_CREDIT_RATE_VERSION = "2026-08-01.v11";
 export const DEFAULT_LIVE_MINIMUM_CREDITS = 20;
 
 export const MODEL_CREDIT_RATES = {
@@ -60,7 +60,7 @@ export const JIDDU_CREDIT_RATE_TABLE: CreditRateRow[] = [
     feature: "Paper explainer",
     unit: "Per completed analysis call",
     detail:
-      "One call per text chunk; full web papers add one final Paper Map synthesis. If cost data is missing, a completed GPT-5.6 Luna or MiniMax M3 call falls back to 1 credit.",
+      "One call per text chunk; papers with recognizable methods/results add one evidence-first reading and one final guided-reading synthesis. If cost data is missing, a completed GPT-5.6 Luna or MiniMax M3 call falls back to 1 credit.",
   },
   {
     feature: "Slop detector",

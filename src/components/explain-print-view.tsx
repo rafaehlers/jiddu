@@ -90,6 +90,47 @@ export function ExplainPrintView({
     (paperMap.paperTypes.length > 0 ||
       paperMap.contributionTypes.length > 0 ||
       paperMapRows.length > 0);
+  const quickScanRows = paperMap?.quickScan
+    ? [
+        { label: t.explain_map_paper_type, statement: paperMap.quickScan.category },
+        { label: t.explain_quick_context, statement: paperMap.quickScan.context },
+        {
+          label: t.explain_quick_correctness,
+          statement: paperMap.quickScan.apparentCorrectness,
+        },
+        {
+          label: t.explain_map_contribution_type,
+          statement: paperMap.quickScan.contributions,
+        },
+        { label: t.explain_quick_clarity, statement: paperMap.quickScan.clarity },
+      ].filter(
+        (row): row is { label: string; statement: PaperMapStatement } =>
+          row.statement !== null,
+      )
+    : [];
+  const evidenceChainRows = paperMap?.evidenceChain
+    ? [
+        {
+          label: t.explain_chain_big_question,
+          statement: paperMap.evidenceChain.bigQuestion,
+        },
+        {
+          label: t.explain_map_question,
+          statement: paperMap.evidenceChain.specificQuestion,
+        },
+        { label: t.role_method, statement: paperMap.evidenceChain.method },
+        { label: t.role_result, statement: paperMap.evidenceChain.result },
+        {
+          label: t.role_interpretation,
+          statement: paperMap.evidenceChain.interpretation,
+        },
+        { label: t.role_conclusion, statement: paperMap.evidenceChain.conclusion },
+      ].filter(
+        (row): row is { label: string; statement: PaperMapStatement } =>
+          row.statement !== null,
+      )
+    : [];
+  const challenge = paperMap?.challenge ?? null;
 
   return (
     <div className="print-root">
@@ -135,6 +176,20 @@ export function ExplainPrintView({
         </dl>
       </header>
 
+      {quickScanRows.length > 0 && (
+        <section className="print-section print-paper-map">
+          <h2>{t.explain_quick_label}</h2>
+          <dl className="print-map-grid">
+            {quickScanRows.map(({ label, statement }) => (
+              <div key={label}>
+                <dt>{label}</dt>
+                <dd>{statement.text}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      )}
+
       {hasPaperMap && paperMap && (
         <section className="print-section print-paper-map">
           <h2>{t.explain_map_label}</h2>
@@ -163,6 +218,99 @@ export function ExplainPrintView({
                 );
               })}
             </dl>
+          )}
+        </section>
+      )}
+
+      {evidenceChainRows.length > 0 && (
+        <section className="print-section print-paper-map">
+          <h2>{t.explain_chain_label}</h2>
+          <dl className="print-map-grid">
+            {evidenceChainRows.map(({ label, statement }, index) => (
+              <div key={`${label}-${index}`}>
+                <dt>{index + 1}. {label}</dt>
+                <dd>{statement.text}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      )}
+
+      {paperMap?.notebook &&
+        (paperMap.notebook.keyTerms.length > 0 ||
+          paperMap.notebook.questionsForAuthors.length > 0 ||
+          paperMap.notebook.confusingPassages.length > 0 ||
+          paperMap.notebook.implicitAssumptions.length > 0 ||
+          paperMap.notebook.furtherReading.length > 0) && (
+          <section className="print-section">
+            <h2>{t.explain_notebook_label}</h2>
+            {paperMap.notebook.keyTerms.length > 0 && (
+              <>
+                <h3>{t.explain_notebook_terms}</h3>
+                <ul>
+                  {paperMap.notebook.keyTerms.map((term) => (
+                    <li key={term.term}>
+                      <strong>{term.term}:</strong> {term.meaning}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+            {[
+              [t.explain_notebook_questions, paperMap.notebook.questionsForAuthors],
+              [t.explain_notebook_confusing, paperMap.notebook.confusingPassages],
+              [t.explain_notebook_assumptions, paperMap.notebook.implicitAssumptions],
+              [t.explain_notebook_further, paperMap.notebook.furtherReading],
+            ].map(([label, statements]) =>
+              typeof label === "string" && Array.isArray(statements) && statements.length > 0 ? (
+                <div key={label}>
+                  <h3>{label}</h3>
+                  <ul>
+                    {statements.map((statement, index) => (
+                      <li key={index}>{statement.text}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null,
+            )}
+          </section>
+        )}
+
+      {challenge && (
+        <section className="print-section print-paper-map">
+          <h2>{t.explain_challenge_label}</h2>
+          <dl className="print-map-grid">
+            {[
+              [t.explain_challenge_independent, challenge.independentInterpretation],
+              [t.explain_challenge_authors, challenge.authorsInterpretation],
+              [t.explain_challenge_comparison, challenge.comparison],
+            ].map(([label, statement]) =>
+              typeof label === "string" && statement && typeof statement === "object" && "text" in statement ? (
+                <div key={label}>
+                  <dt>{label}</dt>
+                  <dd>{statement.text}</dd>
+                </div>
+              ) : null,
+            )}
+            {challenge.abstractFidelity && (
+              <div>
+                <dt>{t.explain_challenge_fidelity}</dt>
+                <dd>{challenge.abstractFidelity.explanation}</dd>
+              </div>
+            )}
+          </dl>
+          {challenge.visualAudit.length > 0 && (
+            <>
+              <h3>{t.explain_challenge_visual}</h3>
+              <ul>
+                {challenge.visualAudit.map((item, index) => (
+                  <li key={`${item.pageNumber}-${index}`}>
+                    <strong>{item.label} · {t.explain_page} {item.pageNumber}:</strong>{" "}
+                    {item.assessment}{item.concern ? ` — ${item.concern}` : ""}
+                  </li>
+                ))}
+              </ul>
+            </>
           )}
         </section>
       )}

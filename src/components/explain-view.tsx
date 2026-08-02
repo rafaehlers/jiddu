@@ -27,6 +27,7 @@ import type {
   ExplainFinding,
   ExplainLevel,
   PaperMap,
+  PaperMapStatement,
   SectionRole,
 } from "@/lib/explain-schema";
 import { cn } from "@/lib/utils";
@@ -97,6 +98,9 @@ export function ExplainView({
   model,
 }: Props) {
   const { t } = useI18n();
+  const [readingMode, setReadingMode] = useState<
+    "quick" | "understand" | "challenge"
+  >("quick");
 
   const sections = useMemo(() => groupExplainSections(blocks), [blocks]);
   const contentSections = useMemo(
@@ -270,7 +274,7 @@ export function ExplainView({
       document.fonts.ready.then(() => measure()).catch(() => {});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visibleOrdered, selectedBlocks]);
+  }, [visibleOrdered, selectedBlocks, readingMode]);
 
   useEffect(() => {
     const handler = () => measure();
@@ -289,7 +293,7 @@ export function ExplainView({
       el.scrollIntoView({ behavior: "smooth", block: "center" });
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [selectedSectionId, selectedBlocks]);
+  }, [selectedSectionId, selectedBlocks, readingMode]);
 
   function focusCard(cardIdx: number) {
     setActive(cardIdx);
@@ -308,6 +312,13 @@ export function ExplainView({
     }
     const el = articleRef.current?.querySelector<HTMLElement>(`[data-bid="${blockId}"]`);
     el?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  function openEvidence(blockId: string) {
+    pendingBlockRef.current = blockId;
+    const targetSectionId = sectionIdByBlock.get(blockId);
+    if (targetSectionId) setSelectedSectionId(targetSectionId);
+    setReadingMode("understand");
   }
 
   function selectSection(sectionId: string) {
@@ -387,6 +398,89 @@ export function ExplainView({
     (paperMap.paperTypes.length > 0 ||
       paperMap.contributionTypes.length > 0 ||
       paperMapRows.length > 0);
+  const quickScanRows: Array<{
+    label: string;
+    statement: PaperMapStatement | null;
+  }> = paperMap?.quickScan
+    ? [
+        {
+          label: t.explain_map_paper_type,
+          statement: paperMap.quickScan.category,
+        },
+        {
+          label: t.explain_quick_context,
+          statement: paperMap.quickScan.context,
+        },
+        {
+          label: t.explain_quick_correctness,
+          statement: paperMap.quickScan.apparentCorrectness,
+        },
+        {
+          label: t.explain_map_contribution_type,
+          statement: paperMap.quickScan.contributions,
+        },
+        {
+          label: t.explain_quick_clarity,
+          statement: paperMap.quickScan.clarity,
+        },
+      ]
+    : [];
+  const evidenceChainRows: Array<{
+    label: string;
+    statement: PaperMapStatement | null;
+  }> = paperMap?.evidenceChain
+    ? [
+        {
+          label: t.explain_chain_big_question,
+          statement: paperMap.evidenceChain.bigQuestion,
+        },
+        {
+          label: t.explain_map_question,
+          statement: paperMap.evidenceChain.specificQuestion,
+        },
+        { label: t.role_method, statement: paperMap.evidenceChain.method },
+        { label: t.role_result, statement: paperMap.evidenceChain.result },
+        {
+          label: t.role_interpretation,
+          statement: paperMap.evidenceChain.interpretation,
+        },
+        {
+          label: t.role_conclusion,
+          statement: paperMap.evidenceChain.conclusion,
+        },
+      ]
+    : [];
+  const notebookGroups = paperMap?.notebook
+    ? [
+        {
+          label: t.explain_notebook_questions,
+          statements: paperMap.notebook.questionsForAuthors,
+        },
+        {
+          label: t.explain_notebook_confusing,
+          statements: paperMap.notebook.confusingPassages,
+        },
+        {
+          label: t.explain_notebook_assumptions,
+          statements: paperMap.notebook.implicitAssumptions,
+        },
+        {
+          label: t.explain_notebook_further,
+          statements: paperMap.notebook.furtherReading,
+        },
+      ].filter((group) => group.statements.length > 0)
+    : [];
+  const challenge = paperMap?.challenge ?? null;
+  const alignmentLabel = challenge
+    ? (t[
+        `explain_alignment_${challenge.alignment}` as keyof Messages
+      ] as string)
+    : "";
+  const fidelityLabel = challenge?.abstractFidelity
+    ? (t[
+        `explain_fidelity_${challenge.abstractFidelity.verdict}` as keyof Messages
+      ] as string)
+    : "";
 
   return (
     <div className="mx-auto max-w-5xl w-full px-4 sm:px-6 py-6 sm:py-8 flex flex-col gap-6">
@@ -423,8 +517,36 @@ export function ExplainView({
 
       <ShareLinkBar rightSlot={<ExportPdfButton href={`/e/${id}/print`} />} />
 
+      <nav
+        aria-label={t.mode_explain}
+        className="flex items-center gap-1 border-b border-rule"
+      >
+        {(
+          [
+            ["quick", t.explain_mode_quick],
+            ["understand", t.explain_mode_understand],
+            ["challenge", t.explain_mode_challenge],
+          ] as const
+        ).map(([mode, label]) => (
+          <button
+            key={mode}
+            type="button"
+            aria-current={readingMode === mode ? "page" : undefined}
+            onClick={() => setReadingMode(mode)}
+            className={cn(
+              "border-b-2 px-3 py-2 text-sm transition-colors",
+              readingMode === mode
+                ? "border-accent text-foreground"
+                : "border-transparent text-muted hover:text-foreground",
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
+
       {/* Overview panel — the plain-language abstract at the chosen level. */}
-      {overview && (
+      {readingMode === "quick" && overview && (
         <div className="border border-rule rounded-lg p-5 flex items-start gap-4 bg-paper">
           <GraduationCap className="h-7 w-7 shrink-0 text-muted" />
           <div className="flex-1 flex flex-col gap-1 min-w-0">
@@ -436,8 +558,45 @@ export function ExplainView({
         </div>
       )}
 
+      {readingMode === "quick" && quickScanRows.length > 0 && (
+        <section className="border border-rule rounded-lg bg-paper overflow-hidden">
+          <div className="flex items-center gap-3 border-b border-rule px-5 py-4">
+            <Compass className="h-5 w-5 text-muted" />
+            <h2 className="text-xs uppercase tracking-wide text-muted">
+              {t.explain_quick_label}
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2">
+            {quickScanRows.map(({ label, statement }, index) => {
+              if (!statement) return null;
+              const blockId = statement.blockIds[0];
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => blockId && openEvidence(blockId)}
+                  disabled={!blockId}
+                  className={cn(
+                    "flex min-w-0 flex-col gap-1.5 border-rule p-4 text-left",
+                    "border-b md:border-r hover:bg-foreground/[0.035] disabled:cursor-default",
+                    index === quickScanRows.length - 1 && "md:col-span-2",
+                  )}
+                >
+                  <span className="text-[11px] uppercase tracking-wide text-muted">
+                    {label}
+                  </span>
+                  <span className="text-sm leading-relaxed text-foreground">
+                    {statement.text}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
       {/* Whole-document reading map, synthesized after every chunk finishes. */}
-      {hasPaperMap && paperMap && (
+      {readingMode === "understand" && hasPaperMap && paperMap && (
         <section className="border border-rule rounded-lg p-5 sm:p-6 bg-paper flex flex-col gap-5">
           <div className="flex items-start gap-4">
             <Compass className="h-7 w-7 shrink-0 text-muted" />
@@ -519,8 +678,99 @@ export function ExplainView({
         </section>
       )}
 
+      {readingMode === "understand" && evidenceChainRows.length > 0 && (
+        <section className="border border-rule rounded-lg bg-paper p-5 sm:p-6">
+          <div className="mb-4 flex items-center gap-3">
+            <ListTree className="h-5 w-5 text-muted" />
+            <h2 className="text-xs uppercase tracking-wide text-muted">
+              {t.explain_chain_label}
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
+            {evidenceChainRows.map(({ label, statement }, index) => {
+              if (!statement) return null;
+              const blockId = statement.blockIds[0];
+              return (
+                <button
+                  key={`${label}-${index}`}
+                  type="button"
+                  onClick={() => blockId && focusBlock(blockId)}
+                  disabled={!blockId}
+                  className="relative flex min-w-0 flex-col gap-1.5 rounded-md border border-rule p-3 text-left hover:border-foreground disabled:cursor-default"
+                >
+                  <span className="text-[11px] uppercase tracking-wide text-muted">
+                    {index + 1}. {label}
+                  </span>
+                  <span className="text-sm leading-relaxed text-foreground">
+                    {statement.text}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {readingMode === "understand" && paperMap?.notebook &&
+        (paperMap.notebook.keyTerms.length > 0 || notebookGroups.length > 0) && (
+          <section className="border border-rule rounded-lg bg-paper p-5 sm:p-6">
+            <div className="mb-4 flex items-center gap-3">
+              <BookOpen className="h-5 w-5 text-muted" />
+              <h2 className="text-xs uppercase tracking-wide text-muted">
+                {t.explain_notebook_label}
+              </h2>
+            </div>
+            {paperMap.notebook.keyTerms.length > 0 && (
+              <div className="mb-5">
+                <h3 className="mb-2 text-sm font-medium">
+                  {t.explain_notebook_terms}
+                </h3>
+                <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                  {paperMap.notebook.keyTerms.map((term) => (
+                    <button
+                      key={term.term}
+                      type="button"
+                      onClick={() => term.blockIds[0] && focusBlock(term.blockIds[0])}
+                      disabled={!term.blockIds[0]}
+                      className="rounded-md border border-rule p-3 text-left hover:border-foreground disabled:cursor-default"
+                    >
+                      <span className="block text-sm font-medium">{term.term}</span>
+                      <span className="mt-1 block text-sm leading-relaxed text-muted">
+                        {term.meaning}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {notebookGroups.map((group) => (
+                <div key={group.label}>
+                  <h3 className="mb-2 text-sm font-medium">{group.label}</h3>
+                  <ul className="flex flex-col gap-2">
+                    {group.statements.map((statement, index) => (
+                      <li key={`${group.label}-${index}`}>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            statement.blockIds[0] && focusBlock(statement.blockIds[0])
+                          }
+                          disabled={!statement.blockIds[0]}
+                          className="w-full rounded-md border border-rule px-3 py-2 text-left text-sm leading-relaxed text-muted hover:border-foreground hover:text-foreground disabled:cursor-default"
+                        >
+                          {statement.text}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
       {/* Clickable legend doubles as a reading shortcut into the paper. */}
-      {rolesPresent.length > 0 && (
+      {readingMode === "understand" && rolesPresent.length > 0 && (
         <nav
           aria-label={t.explain_jump_to}
           className="flex flex-wrap items-center gap-2"
@@ -544,7 +794,7 @@ export function ExplainView({
         </nav>
       )}
 
-      <section
+      {readingMode === "understand" && <section
         ref={readerRef}
         aria-labelledby="paper-reader-heading"
         className="scroll-mt-20 flex flex-col gap-4"
@@ -874,7 +1124,156 @@ export function ExplainView({
             )}
           </aside>
         </div>
-      </section>
+      </section>}
+
+      {readingMode === "challenge" && (
+        <section className="flex flex-col gap-4">
+          {!challenge ? (
+            <div className="rounded-lg border border-rule bg-paper p-6 text-sm leading-relaxed text-muted">
+              {t.explain_challenge_unavailable}
+            </div>
+          ) : (
+            <>
+              <div className="rounded-lg border border-rule bg-paper p-5 sm:p-6">
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <BarChart3 className="h-5 w-5 text-muted" />
+                    <h2 className="text-xs uppercase tracking-wide text-muted">
+                      {t.explain_challenge_label}
+                    </h2>
+                  </div>
+                  <span
+                    className={cn(
+                      "rounded-full border px-2.5 py-1 text-xs",
+                      challenge.alignment === "aligned"
+                        ? "border-emerald-500/40 text-emerald-600 dark:text-emerald-400"
+                        : challenge.alignment === "divergent"
+                          ? "border-orange-500/40 text-orange-600 dark:text-orange-400"
+                          : "border-amber-500/40 text-amber-600 dark:text-amber-400",
+                    )}
+                  >
+                    {alignmentLabel}
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                  {[
+                    {
+                      label: t.explain_challenge_independent,
+                      statement: challenge.independentInterpretation,
+                    },
+                    {
+                      label: t.explain_challenge_authors,
+                      statement: challenge.authorsInterpretation,
+                    },
+                    {
+                      label: t.explain_challenge_comparison,
+                      statement: challenge.comparison,
+                    },
+                  ].map(({ label, statement }) => {
+                    if (!statement) return null;
+                    return (
+                      <button
+                        key={label}
+                        type="button"
+                        onClick={() =>
+                          statement.blockIds[0] && openEvidence(statement.blockIds[0])
+                        }
+                        disabled={!statement.blockIds[0]}
+                        className="rounded-md border border-rule p-4 text-left hover:border-foreground disabled:cursor-default"
+                      >
+                        <span className="text-[11px] uppercase tracking-wide text-muted">
+                          {label}
+                        </span>
+                        <span className="mt-2 block text-sm leading-relaxed">
+                          {statement.text}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {challenge.abstractFidelity && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    challenge.abstractFidelity?.blockIds[0] &&
+                    openEvidence(challenge.abstractFidelity.blockIds[0])
+                  }
+                  disabled={!challenge.abstractFidelity.blockIds[0]}
+                  className="rounded-lg border border-rule bg-paper p-5 text-left hover:border-foreground disabled:cursor-default"
+                >
+                  <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+                    <h2 className="text-xs uppercase tracking-wide text-muted">
+                      {t.explain_challenge_fidelity}
+                    </h2>
+                    <span className="rounded-full border border-purple-500/40 px-2.5 py-1 text-xs text-purple-600 dark:text-purple-400">
+                      {fidelityLabel}
+                    </span>
+                  </div>
+                  <p className="text-sm leading-relaxed">
+                    {challenge.abstractFidelity.explanation}
+                  </p>
+                </button>
+              )}
+
+              {challenge.visualAudit.length > 0 && (
+                <div className="rounded-lg border border-rule bg-paper p-5 sm:p-6">
+                  <h2 className="mb-4 text-xs uppercase tracking-wide text-muted">
+                    {t.explain_challenge_visual}
+                  </h2>
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    {challenge.visualAudit.map((item, index) => (
+                      <div
+                        key={`${item.pageNumber}-${item.label}-${index}`}
+                        className="rounded-md border border-rule p-4"
+                      >
+                        <div className="mb-2 flex items-center justify-between gap-3">
+                          <span className="text-sm font-medium">{item.label}</span>
+                          <span className="text-xs text-muted">
+                            {t.explain_page} {item.pageNumber}
+                          </span>
+                        </div>
+                        <p className="text-sm leading-relaxed">{item.assessment}</p>
+                        {item.concern && (
+                          <p className="mt-2 flex items-start gap-2 text-sm leading-relaxed text-orange-600 dark:text-orange-400">
+                            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                            {item.concern}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {challenge.uncertainties.length > 0 && (
+                <div className="rounded-lg border border-rule bg-paper p-5 sm:p-6">
+                  <h2 className="mb-3 text-xs uppercase tracking-wide text-muted">
+                    {t.explain_challenge_uncertainties}
+                  </h2>
+                  <ul className="flex flex-col gap-2">
+                    {challenge.uncertainties.map((statement, index) => (
+                      <li key={index}>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            statement.blockIds[0] && openEvidence(statement.blockIds[0])
+                          }
+                          disabled={!statement.blockIds[0]}
+                          className="w-full rounded-md border border-rule px-3 py-2 text-left text-sm leading-relaxed text-muted hover:border-foreground hover:text-foreground disabled:cursor-default"
+                        >
+                          {statement.text}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </>
+          )}
+        </section>
+      )}
 
       <p className="text-xs text-muted mt-2">{t.explain_footer(model)}</p>
     </div>

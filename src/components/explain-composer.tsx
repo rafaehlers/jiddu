@@ -17,6 +17,7 @@ type StreamingState = {
   chunkCount: number;
   chunksDone: number;
   findingsCount: number;
+  evidenceReading: boolean;
   synthesizing: boolean;
 };
 
@@ -52,6 +53,7 @@ export function ExplainComposer() {
         chunkCount: 0,
         chunksDone: 0,
         findingsCount: 0,
+        evidenceReading: false,
         synthesizing: false,
       },
     });
@@ -110,6 +112,24 @@ export function ExplainComposer() {
             ? {
                 status: "streaming",
                 data: { ...prev.data, chunksDone: prev.data.chunksDone + 1 },
+              }
+            : prev,
+        );
+      } else if (ev.event === "evidenceStart") {
+        setLive((prev) =>
+          prev?.status === "streaming"
+            ? {
+                status: "streaming",
+                data: { ...prev.data, evidenceReading: true },
+              }
+            : prev,
+        );
+      } else if (ev.event === "evidenceDone") {
+        setLive((prev) =>
+          prev?.status === "streaming"
+            ? {
+                status: "streaming",
+                data: { ...prev.data, evidenceReading: false },
               }
             : prev,
         );
@@ -201,7 +221,13 @@ export function ExplainComposer() {
 
 function LoadingPanel({ state }: { state: StreamingState }) {
   const { t } = useI18n();
-  const { chunkCount, chunksDone, findingsCount, synthesizing } = state;
+  const {
+    chunkCount,
+    chunksDone,
+    findingsCount,
+    evidenceReading,
+    synthesizing,
+  } = state;
   const known = chunkCount > 0;
   const [tick, setTick] = useState(0);
   useEffect(() => {
@@ -215,6 +241,8 @@ function LoadingPanel({ state }: { state: StreamingState }) {
     stage = pool[0];
   } else if (chunksDone < chunkCount) {
     stage = pool[tick % pool.length];
+  } else if (evidenceReading) {
+    stage = t.loader_explain_evidence;
   } else if (synthesizing) {
     stage = t.loader_explain_map;
   } else {

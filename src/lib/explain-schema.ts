@@ -77,6 +77,77 @@ export const PaperMapStatementSchema = z.object({
 });
 export type PaperMapStatement = z.infer<typeof PaperMapStatementSchema>;
 
+export const PaperQuickScanSchema = z.object({
+  category: PaperMapStatementSchema.nullable(),
+  context: PaperMapStatementSchema.nullable(),
+  apparentCorrectness: PaperMapStatementSchema.nullable(),
+  contributions: PaperMapStatementSchema.nullable(),
+  clarity: PaperMapStatementSchema.nullable(),
+});
+export type PaperQuickScan = z.infer<typeof PaperQuickScanSchema>;
+
+export const PaperEvidenceChainSchema = z.object({
+  bigQuestion: PaperMapStatementSchema.nullable(),
+  specificQuestion: PaperMapStatementSchema.nullable(),
+  method: PaperMapStatementSchema.nullable(),
+  result: PaperMapStatementSchema.nullable(),
+  interpretation: PaperMapStatementSchema.nullable(),
+  conclusion: PaperMapStatementSchema.nullable(),
+});
+export type PaperEvidenceChain = z.infer<typeof PaperEvidenceChainSchema>;
+
+export const PaperReadingTermSchema = z.object({
+  term: z.string(),
+  meaning: z.string(),
+  blockIds: z.array(z.string()),
+});
+export type PaperReadingTerm = z.infer<typeof PaperReadingTermSchema>;
+
+export const PaperReadingNotebookSchema = z.object({
+  keyTerms: z.array(PaperReadingTermSchema),
+  questionsForAuthors: z.array(PaperMapStatementSchema),
+  confusingPassages: z.array(PaperMapStatementSchema),
+  implicitAssumptions: z.array(PaperMapStatementSchema),
+  furtherReading: z.array(PaperMapStatementSchema),
+});
+export type PaperReadingNotebook = z.infer<typeof PaperReadingNotebookSchema>;
+
+export const PaperVisualAuditItemSchema = z.object({
+  pageNumber: z.number().int().positive(),
+  label: z.string(),
+  assessment: z.string(),
+  concern: z.string().nullable(),
+});
+export type PaperVisualAuditItem = z.infer<typeof PaperVisualAuditItemSchema>;
+
+export const PaperEvidenceFirstResultSchema = z.object({
+  methodSummary: PaperMapStatementSchema.nullable(),
+  resultSummary: PaperMapStatementSchema.nullable(),
+  independentInterpretation: PaperMapStatementSchema.nullable(),
+  uncertainties: z.array(PaperMapStatementSchema),
+  visualAudit: z.array(PaperVisualAuditItemSchema),
+});
+export type PaperEvidenceFirstResult = z.infer<
+  typeof PaperEvidenceFirstResultSchema
+>;
+
+export const PaperChallengeSchema = z.object({
+  independentInterpretation: PaperMapStatementSchema.nullable(),
+  authorsInterpretation: PaperMapStatementSchema.nullable(),
+  comparison: PaperMapStatementSchema.nullable(),
+  alignment: z.enum(["aligned", "partially_aligned", "divergent", "unclear"]),
+  abstractFidelity: z
+    .object({
+      verdict: z.enum(["faithful", "partially_faithful", "misleading", "not_assessable"]),
+      explanation: z.string(),
+      blockIds: z.array(z.string()),
+    })
+    .nullable(),
+  visualAudit: z.array(PaperVisualAuditItemSchema),
+  uncertainties: z.array(PaperMapStatementSchema),
+});
+export type PaperChallenge = z.infer<typeof PaperChallengeSchema>;
+
 export const PaperMapSchema = z.object({
   paperTypes: z.array(z.string()),
   contributionTypes: z.array(z.string()),
@@ -86,6 +157,11 @@ export const PaperMapSchema = z.object({
   mainAnswer: PaperMapStatementSchema.nullable(),
   evidence: PaperMapStatementSchema.nullable(),
   statedLimitation: PaperMapStatementSchema.nullable(),
+  // Optional for compatibility with analyses persisted before guided reading.
+  quickScan: PaperQuickScanSchema.optional(),
+  evidenceChain: PaperEvidenceChainSchema.optional(),
+  notebook: PaperReadingNotebookSchema.optional(),
+  challenge: PaperChallengeSchema.nullable().optional(),
 });
 export type PaperMap = z.infer<typeof PaperMapSchema>;
 
@@ -126,6 +202,87 @@ export function sanitizePaperSynthesis(
       ).slice(0, 6),
     };
   };
+  const cleanStatements = (statements: PaperMapStatement[], limit: number) =>
+    statements
+      .map((statement) => cleanStatement(statement))
+      .filter((statement): statement is PaperMapStatement => statement !== null)
+      .slice(0, limit);
+  const cleanQuickScan = (quickScan: PaperQuickScan | undefined) =>
+    quickScan
+      ? {
+          category: cleanStatement(quickScan.category),
+          context: cleanStatement(quickScan.context),
+          apparentCorrectness: cleanStatement(quickScan.apparentCorrectness),
+          contributions: cleanStatement(quickScan.contributions),
+          clarity: cleanStatement(quickScan.clarity),
+        }
+      : undefined;
+  const cleanEvidenceChain = (chain: PaperEvidenceChain | undefined) =>
+    chain
+      ? {
+          bigQuestion: cleanStatement(chain.bigQuestion),
+          specificQuestion: cleanStatement(chain.specificQuestion),
+          method: cleanStatement(chain.method),
+          result: cleanStatement(chain.result),
+          interpretation: cleanStatement(chain.interpretation),
+          conclusion: cleanStatement(chain.conclusion),
+        }
+      : undefined;
+  const cleanVisualAudit = (items: PaperVisualAuditItem[]) =>
+    items
+      .map((item) => ({
+        ...item,
+        label: item.label.trim(),
+        assessment: item.assessment.trim(),
+        concern: item.concern?.trim() || null,
+      }))
+      .filter((item) => item.label && item.assessment)
+      .slice(0, 8);
+  const cleanNotebook = (notebook: PaperReadingNotebook | undefined) =>
+    notebook
+      ? {
+          keyTerms: notebook.keyTerms
+            .map((term) => ({
+              term: term.term.trim(),
+              meaning: term.meaning.trim(),
+              blockIds: Array.from(
+                new Set(term.blockIds.filter((id) => validBlockIds.has(id))),
+              ).slice(0, 4),
+            }))
+            .filter((term) => term.term && term.meaning)
+            .slice(0, 8),
+          questionsForAuthors: cleanStatements(notebook.questionsForAuthors, 6),
+          confusingPassages: cleanStatements(notebook.confusingPassages, 5),
+          implicitAssumptions: cleanStatements(notebook.implicitAssumptions, 6),
+          furtherReading: cleanStatements(notebook.furtherReading, 6),
+        }
+      : undefined;
+  const cleanChallenge = (challenge: PaperChallenge | null | undefined) =>
+    challenge
+      ? {
+          independentInterpretation: cleanStatement(
+            challenge.independentInterpretation,
+          ),
+          authorsInterpretation: cleanStatement(challenge.authorsInterpretation),
+          comparison: cleanStatement(challenge.comparison),
+          alignment: challenge.alignment,
+          abstractFidelity: challenge.abstractFidelity
+            ? {
+                verdict: challenge.abstractFidelity.verdict,
+                explanation: challenge.abstractFidelity.explanation.trim(),
+                blockIds: Array.from(
+                  new Set(
+                    challenge.abstractFidelity.blockIds.filter((id) =>
+                      validBlockIds.has(id),
+                    ),
+                  ),
+                ).slice(0, 6),
+              }
+            : null,
+          visualAudit: cleanVisualAudit(challenge.visualAudit),
+          uncertainties: cleanStatements(challenge.uncertainties, 6),
+        }
+      : null;
 
   return {
     overview: synthesis.overview.trim(),
@@ -138,7 +295,46 @@ export function sanitizePaperSynthesis(
       mainAnswer: cleanStatement(synthesis.paperMap.mainAnswer),
       evidence: cleanStatement(synthesis.paperMap.evidence),
       statedLimitation: cleanStatement(synthesis.paperMap.statedLimitation),
+      quickScan: cleanQuickScan(synthesis.paperMap.quickScan),
+      evidenceChain: cleanEvidenceChain(synthesis.paperMap.evidenceChain),
+      notebook: cleanNotebook(synthesis.paperMap.notebook),
+      challenge: cleanChallenge(synthesis.paperMap.challenge),
     },
+  };
+}
+
+export function sanitizePaperEvidenceFirstResult(
+  result: PaperEvidenceFirstResult,
+  validBlockIds: ReadonlySet<string>,
+): PaperEvidenceFirstResult {
+  const cleanStatement = (
+    statement: PaperMapStatement | null,
+  ): PaperMapStatement | null => {
+    if (!statement?.text.trim()) return null;
+    return {
+      text: statement.text.trim(),
+      blockIds: Array.from(
+        new Set(statement.blockIds.filter((id) => validBlockIds.has(id))),
+      ).slice(0, 6),
+    };
+  };
+  return {
+    methodSummary: cleanStatement(result.methodSummary),
+    resultSummary: cleanStatement(result.resultSummary),
+    independentInterpretation: cleanStatement(result.independentInterpretation),
+    uncertainties: result.uncertainties
+      .map((statement) => cleanStatement(statement))
+      .filter((statement): statement is PaperMapStatement => statement !== null)
+      .slice(0, 6),
+    visualAudit: result.visualAudit
+      .map((item) => ({
+        ...item,
+        label: item.label.trim(),
+        assessment: item.assessment.trim(),
+        concern: item.concern?.trim() || null,
+      }))
+      .filter((item) => item.label && item.assessment)
+      .slice(0, 8),
   };
 }
 

@@ -3,6 +3,7 @@ import { nanoid } from "nanoid";
 import { prisma } from "@/lib/db";
 import { ingestUrl } from "@/lib/ingest/url";
 import { ingestAnalysisFile } from "@/lib/ingest/file";
+import { ingestPdf, renderPdfPages } from "@/lib/ingest/pdf";
 import { ingestText } from "@/lib/ingest/text";
 import { splitExplainDocument } from "@/lib/paper-structure";
 import { getExplainableBlocks } from "@/lib/explain-sections";
@@ -22,9 +23,13 @@ import { IngestError } from "@/lib/ingest/errors";
 import type { ExplainFinding } from "@/lib/explain-schema";
 import {
   normalizeLevel,
+  sanitizePaperEvidenceFirstResult,
   sanitizePaperSynthesis,
+  type PaperEvidenceFirstResult,
   type PaperMap,
 } from "@/lib/explain-schema";
+import { selectPaperEvidenceBlocks } from "@/lib/paper-evidence-prompt";
+import { selectVisualPages } from "@/lib/paper-visual-pages";
 import type { Lang } from "@/lib/fallacies";
 import {
   isAccessResponse,
@@ -66,6 +71,7 @@ export async function POST(req: NextRequest) {
   let modelId: string | undefined;
   let lang: Lang = "en";
   let level = normalizeLevel(undefined);
+  let pdfBuffer: ArrayBuffer | null = null;
   const id = nanoid(10);
 
   try {
@@ -77,16 +83,25 @@ export async function POST(req: NextRequest) {
       level = normalizeLevel(form.get("level"));
       const file = form.get("file");
       if (!(file instanceof File)) return jsonError("Missing 'file' field", 400);
-      const ingested = await ingestAnalysisFile(file, {
-        access,
-        feature: "explain",
-        resourceId: id,
-        modelId,
-        lang,
-        signal: req.signal,
-      });
-      if (ingested instanceof Response) return ingested;
-      doc = ingested;
+      const isPdf =
+        file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+      if (isPdf) {
+        pdfBuffer = await file.arrayBuffer();
+        doc = await ingestPdf(pdfBuffer, file.name || "paper.pdf", {
+          mode: "academic",
+        });
+      } else {
+        const ingested = await ingestAnalysisFile(file, {
+          access,
+          feature: "explain",
+          resourceId: id,
+          modelId,
+          lang,
+          signal: req.signal,
+        });
+        if (ingested instanceof Response) return ingested;
+        doc = ingested;
+      }
     } else {
       const body = (await req.json().catch(() => null)) as
         | {
@@ -152,12 +167,19 @@ export async function POST(req: NextRequest) {
   // a section or become visible navigation units.
   const chunks = chunkExplainSections(explainSections);
   const creditReservation = await reserveWebAnalysisCredits(access, {
-    // One call per section batch, plus one bounded whole-document synthesis
-    // for the overview and evidence-linked Paper Map.
-    amount: maxCreditsForCalls(modelChain, chunks.length + 1),
+    // One call per section batch, one evidence-first methods/results reading,
+    // and one bounded whole-document synthesis. The evidence-first call is
+    // skipped for documents with no recognizable method or result sections;
+    // settlement always follows actual completed usage.
+    amount: maxCreditsForCalls(modelChain, chunks.length + 2),
     feature: "explain",
     resourceId: id,
-    metadata: { modelChain, chunkCount: chunks.length, synthesisCalls: 1 },
+    metadata: {
+      modelChain,
+      chunkCount: chunks.length,
+      evidenceFirstCalls: 1,
+      synthesisCalls: 1,
+    },
   });
   if (isCreditResponse(creditReservation)) return creditReservation;
   const billableModels: string[] = [];
@@ -314,6 +336,64 @@ export async function POST(req: NextRequest) {
       let finalOverview =
         [...overviews.entries()].sort((a, b) => a[0] - b[0])[0]?.[1] ?? "";
       let paperMap: PaperMap | null = null;
+      let evidenceFirst: PaperEvidenceFirstResult | null = null;
+      let visualPageCount = 0;
+
+      const rolesByBlock = new Map<string, string>();
+      for (const finding of orderedFindings) {
+        for (const blockId of finding.blockIds) {
+          rolesByBlock.set(blockId, finding.role);
+        }
+      }
+      const evidenceBlocks = selectPaperEvidenceBlocks(
+        explainableBlocks,
+        rolesByBlock,
+      );
+      if (evidenceBlocks.length > 0) {
+        send("evidenceStart", {});
+        try {
+          const visualPageNumbers =
+            pdfBuffer && doc.pages
+              ? selectVisualPages(doc.pages, doc.complexity)
+              : [];
+          const screenshots = pdfBuffer
+            ? await renderPdfPages(pdfBuffer, visualPageNumbers)
+            : [];
+          visualPageCount = screenshots.length;
+          const evidenceOutput = await withModelFallbackPromise(
+            modelChain,
+            (model) =>
+              llm.analyzePaperEvidence(
+                {
+                  title: doc.title,
+                  blocks: evidenceBlocks,
+                  visualPages: screenshots.map((page) => ({
+                    pageNumber: page.pageNumber,
+                    base64: page.png.toString("base64"),
+                  })),
+                  lang,
+                  level,
+                },
+                {
+                  model,
+                  signal: abortController.signal,
+                  onUsage: (usage) => usages.push(usage),
+                },
+              ),
+            abortController.signal,
+            (model) => billableModels.push(model),
+          );
+          evidenceFirst = sanitizePaperEvidenceFirstResult(
+            evidenceOutput.result,
+            explainableIds,
+          );
+        } catch (err) {
+          if (!abortController.signal.aborted) {
+            console.error("[/api/explain] evidence-first reading failed:", err);
+          }
+        }
+        send("evidenceDone", { complete: evidenceFirst !== null });
+      }
 
       // The per-chunk overview is useful while streaming, but only a final
       // synthesis has seen evidence from the methods, results, conclusion and
@@ -334,6 +414,7 @@ export async function POST(req: NextRequest) {
                   .map(([, value]) => value),
                 lang,
                 level,
+                evidenceFirst,
               },
               {
                 model,
@@ -375,6 +456,8 @@ export async function POST(req: NextRequest) {
           metadata: {
             models: billableModels,
             completedChunks: chunkOkCount,
+            evidenceFirstCompleted: evidenceFirst !== null,
+            visualPageCount,
             paperMapCompleted: paperMap !== null,
           },
         },

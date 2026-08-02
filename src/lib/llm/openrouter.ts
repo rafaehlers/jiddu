@@ -25,12 +25,14 @@ import {
 import {
   ExplainFindingSchema,
   ExplainResultSchema,
+  PaperEvidenceFirstResultSchema,
   PaperSynthesisSchema,
   type ExplainFinding,
   type ExplainLevel,
   type ExplainResult,
 } from "../explain-schema";
 import { EXPLAIN_JSON_SCHEMA } from "./explainJsonSchema";
+import { PAPER_EVIDENCE_JSON_SCHEMA } from "./paperEvidenceJsonSchema";
 import { PAPER_SYNTHESIS_JSON_SCHEMA } from "./paperSynthesisJsonSchema";
 import {
   buildExplainSystemPrompt,
@@ -41,6 +43,11 @@ import {
   buildPaperMapUserPrompt,
   type PaperSynthesisInput,
 } from "../paper-map-prompt";
+import {
+  buildPaperEvidenceSystemPrompt,
+  buildPaperEvidenceUserPrompt,
+  type PaperEvidenceInput,
+} from "../paper-evidence-prompt";
 import { buildSystemPrompt, buildUserPrompt } from "../prompt";
 import { ANALYSIS_JSON_SCHEMA } from "./jsonSchema";
 import {
@@ -1064,6 +1071,72 @@ export class OpenRouterProvider implements LlmProvider {
       throw new Error("OpenRouter paper-map response missing tool_call");
     }
     const result = PaperSynthesisSchema.parse(
+      JSON.parse(toolCall.function.arguments),
+    );
+    if (usage) usage.completed = true;
+    return { model: modelId, result };
+  }
+
+  async analyzePaperEvidence(
+    input: PaperEvidenceInput,
+    opts?: LlmStreamOptions,
+  ) {
+    const modelId = opts?.model ?? this.defaultModel;
+    const userContent: OpenAI.Chat.Completions.ChatCompletionContentPart[] = [
+      { type: "text", text: buildPaperEvidenceUserPrompt(input) },
+      ...input.visualPages.flatMap(
+        (page): OpenAI.Chat.Completions.ChatCompletionContentPart[] => [
+          {
+            type: "text",
+            text: `Visual rendering of paper page ${page.pageNumber}:`,
+          },
+          {
+            type: "image_url",
+            image_url: {
+              url: `data:image/png;base64,${page.base64}`,
+              detail: "high",
+            },
+          },
+        ],
+      ),
+    ];
+    const response = await this.client.chat.completions.create(
+      {
+        model: this.slug(modelId),
+        messages: [
+          {
+            role: "system",
+            content: buildPaperEvidenceSystemPrompt(input.lang, input.level),
+          },
+          { role: "user", content: userContent },
+        ],
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "report_paper_evidence",
+              description:
+                "Report an evidence-first reading of methods, results, figures, and tables.",
+              parameters: PAPER_EVIDENCE_JSON_SCHEMA,
+            },
+          },
+        ],
+        tool_choice: this.toolChoiceFor("report_paper_evidence", modelId),
+        ...this.openRouterExtras(modelId),
+      } as OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming,
+      opts?.signal ? { signal: opts.signal } : undefined,
+    );
+    const usage = readOpenRouterUsage(response, modelId);
+    if (usage) opts?.onUsage?.(usage);
+    const toolCall = response.choices[0]?.message?.tool_calls?.find(
+      (call) =>
+        call.type === "function" &&
+        call.function.name === "report_paper_evidence",
+    );
+    if (!toolCall || toolCall.type !== "function") {
+      throw new Error("OpenRouter paper-evidence response missing tool_call");
+    }
+    const result = PaperEvidenceFirstResultSchema.parse(
       JSON.parse(toolCall.function.arguments),
     );
     if (usage) usage.completed = true;
