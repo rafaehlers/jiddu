@@ -2,15 +2,23 @@ import "server-only";
 
 import {
   InsufficientJidduCreditsError,
+  recordIncludedJidduCreditUsage,
   reserveJidduCredits,
+  settleJidduCreditReservationFromUsage,
   type JidduCreditReservationHandle,
 } from "@/lib/jiddu-credits";
 import type { JidduCreditFeature } from "@/lib/jiddu-credit-rates";
-type CreditBillableAccess = {
-  billing: "platform" | "jiddu";
-  userId?: string;
-  email?: string;
-};
+import type {
+  JidduCreditSettlement,
+  OpenRouterUsage,
+} from "@/lib/openrouter-usage";
+import {
+  includedPlatformUsage,
+  onceAnalysisSettlement,
+  type AnalysisBillingAccess,
+} from "@/lib/analysis-usage-policy";
+
+type CreditBillableAccess = AnalysisBillingAccess;
 
 export async function reserveWebAnalysisCredits(
   access: CreditBillableAccess,
@@ -55,4 +63,61 @@ export function isCreditResponse(
   value: JidduCreditReservationHandle | null | Response,
 ): value is Response {
   return value instanceof Response;
+}
+
+export function createWebAnalysisUsageSettlement(
+  access: CreditBillableAccess,
+  reservation: JidduCreditReservationHandle | null,
+  context: {
+    feature: JidduCreditFeature;
+    resourceId?: string;
+    metadata?: Record<string, unknown>;
+  },
+): (input: {
+  usages: readonly OpenRouterUsage[];
+  fallbackModels: readonly string[];
+  resourceId?: string;
+  note?: string;
+  metadata?: Record<string, unknown>;
+}) => Promise<JidduCreditSettlement> {
+  return onceAnalysisSettlement((input) =>
+    settleWebAnalysisUsage(access, reservation, {
+      usages: input.usages,
+      fallbackModels: input.fallbackModels,
+      feature: context.feature,
+      resourceId: input.resourceId ?? context.resourceId,
+      note: input.note,
+      metadata: {
+        ...(context.metadata ?? {}),
+        ...(input.metadata ?? {}),
+      },
+    }),
+  );
+}
+
+async function settleWebAnalysisUsage(
+  access: CreditBillableAccess,
+  reservation: JidduCreditReservationHandle | null,
+  input: {
+    usages: readonly OpenRouterUsage[];
+    fallbackModels: readonly string[];
+    feature: JidduCreditFeature;
+    resourceId?: string;
+    note?: string;
+    metadata?: Record<string, unknown>;
+  },
+): Promise<JidduCreditSettlement> {
+  const settlement = await settleJidduCreditReservationFromUsage(
+    reservation,
+    {
+      usages: input.usages,
+      fallbackModels: input.fallbackModels,
+      resourceId: input.resourceId,
+      note: input.note,
+      metadata: input.metadata,
+    },
+  );
+  const included = includedPlatformUsage(access, input, settlement);
+  if (included) await recordIncludedJidduCreditUsage(included);
+  return settlement;
 }

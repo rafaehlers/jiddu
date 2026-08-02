@@ -23,9 +23,7 @@ import {
   paperReviewMaximumModels,
 } from "@/lib/jiddu-credit-rates";
 import {
-  settleJidduCreditReservationFromUsage,
-} from "@/lib/jiddu-credits";
-import {
+  createWebAnalysisUsageSettlement,
   isCreditResponse,
   reserveWebAnalysisCredits,
 } from "@/lib/web-credit-billing";
@@ -114,10 +112,11 @@ export async function POST(req: NextRequest) {
     deepModel: routing["paperReview.deepModel"],
     criticModel: routing["paperReview.criticModel"],
   });
+  const reviewFeature =
+    prepared.reviewDepth === "deep" ? "review_deep" : "review_standard";
   const reservation = await reserveWebAnalysisCredits(access, {
     amount: creditsForModels(maximumModels),
-    feature:
-      prepared.reviewDepth === "deep" ? "review_deep" : "review_standard",
+    feature: reviewFeature,
     resourceId: prepared.id,
     metadata: {
       depth: prepared.reviewDepth,
@@ -132,20 +131,21 @@ export async function POST(req: NextRequest) {
 
   const billableCalls: { operation: string; model: string }[] = [];
   const usages: OpenRouterUsage[] = [];
-  let settled = false;
-  const settle = async () => {
-    if (settled) return;
-    settled = true;
-    await settleJidduCreditReservationFromUsage(
-      reservation,
-      {
-        usages,
-        fallbackModels: billableCalls.map((call) => call.model),
-        resourceId: prepared.id,
-        metadata: { calls: billableCalls },
-      },
-    );
-  };
+  const settleUsage = createWebAnalysisUsageSettlement(access, reservation, {
+    feature: reviewFeature,
+    resourceId: prepared.id,
+    metadata: {
+      depth: prepared.reviewDepth,
+      selectedModel: prepared.modelId,
+      maximumModels,
+    },
+  });
+  const settle = () =>
+    settleUsage({
+      usages,
+      fallbackModels: billableCalls.map((call) => call.model),
+      metadata: { calls: billableCalls },
+    });
 
   after(async () => {
     try {

@@ -481,6 +481,7 @@ export function ExplainView({
         `explain_fidelity_${challenge.abstractFidelity.verdict}` as keyof Messages
       ] as string)
     : "";
+  const showsPaperReader = readingMode !== "challenge";
 
   return (
     <div className="mx-auto max-w-5xl w-full px-4 sm:px-6 py-6 sm:py-8 flex flex-col gap-6">
@@ -574,7 +575,7 @@ export function ExplainView({
                 <button
                   key={label}
                   type="button"
-                  onClick={() => blockId && openEvidence(blockId)}
+                  onClick={() => blockId && focusBlock(blockId)}
                   disabled={!blockId}
                   className={cn(
                     "flex min-w-0 flex-col gap-1.5 border-rule p-4 text-left",
@@ -770,7 +771,7 @@ export function ExplainView({
         )}
 
       {/* Clickable legend doubles as a reading shortcut into the paper. */}
-      {readingMode === "understand" && rolesPresent.length > 0 && (
+      {showsPaperReader && rolesPresent.length > 0 && (
         <nav
           aria-label={t.explain_jump_to}
           className="flex flex-wrap items-center gap-2"
@@ -794,7 +795,7 @@ export function ExplainView({
         </nav>
       )}
 
-      {readingMode === "understand" && <section
+      {showsPaperReader && <section
         ref={readerRef}
         aria-labelledby="paper-reader-heading"
         className="scroll-mt-20 flex flex-col gap-4"

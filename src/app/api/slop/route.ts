@@ -19,13 +19,13 @@ import {
   requireWebAnalysisAccess,
 } from "@/lib/web-analysis-access";
 import {
+  createWebAnalysisUsageSettlement,
   isCreditResponse,
   reserveWebAnalysisCredits,
 } from "@/lib/web-credit-billing";
 import {
   maxCreditsForCalls,
 } from "@/lib/jiddu-credit-rates";
-import { settleJidduCreditReservationFromUsage } from "@/lib/jiddu-credits";
 import type { OpenRouterUsage } from "@/lib/openrouter-usage";
 
 export const runtime = "nodejs";
@@ -128,6 +128,15 @@ export async function POST(req: NextRequest) {
   if (isCreditResponse(creditReservation)) return creditReservation;
   const billableModels: string[] = [];
   const usages: OpenRouterUsage[] = [];
+  const settleUsage = createWebAnalysisUsageSettlement(
+    access,
+    creditReservation,
+    {
+      feature: "slop",
+      resourceId: id,
+      metadata: { modelChain, chunkCount: chunks.length },
+    },
+  );
 
   await prisma.slopCheck.create({
     data: {
@@ -243,15 +252,11 @@ export async function POST(req: NextRequest) {
           where: { id },
           data: { status: "failed", errorMessage: message, finishedAt: new Date() },
         });
-        await settleJidduCreditReservationFromUsage(
-          creditReservation,
-          {
-            usages,
-            fallbackModels: billableModels,
-            resourceId: id,
-            metadata: { models: billableModels, completedChunks: 0 },
-          },
-        );
+        await settleUsage({
+          usages,
+          fallbackModels: billableModels,
+          metadata: { models: billableModels, completedChunks: 0 },
+        });
         send("error", { error: message });
         controller.close();
         return;
@@ -280,34 +285,26 @@ export async function POST(req: NextRequest) {
           finishedAt: new Date(),
         },
       });
-      await settleJidduCreditReservationFromUsage(
-        creditReservation,
-        {
-          usages,
-          fallbackModels: billableModels,
-          resourceId: id,
-          metadata: {
-            models: billableModels,
-            completedChunks: chunkResults.length,
-          },
+      await settleUsage({
+        usages,
+        fallbackModels: billableModels,
+        metadata: {
+          models: billableModels,
+          completedChunks: chunkResults.length,
         },
-      );
+      });
 
       send("done", { id, score: finalScore, summary: finalSummary });
       controller.close();
     },
     async cancel() {
       abortController.abort();
-      await settleJidduCreditReservationFromUsage(
-        creditReservation,
-        {
-          usages,
-          fallbackModels: billableModels,
-          resourceId: id,
-          note: "Client disconnected before completion.",
-          metadata: { models: billableModels },
-        },
-      );
+      await settleUsage({
+        usages,
+        fallbackModels: billableModels,
+        note: "Client disconnected before completion.",
+        metadata: { models: billableModels },
+      });
     },
   });
 

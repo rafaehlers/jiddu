@@ -5,10 +5,10 @@ import { getProvider, resolveModel } from "@/lib/llm";
 import type { Lang } from "@/lib/fallacies";
 import type { JidduCreditFeature } from "@/lib/jiddu-credit-rates";
 import { maxCreditsForCalls } from "@/lib/jiddu-credit-rates";
-import { settleJidduCreditReservationFromUsage } from "@/lib/jiddu-credits";
 import type { OpenRouterUsage } from "@/lib/openrouter-usage";
 import type { WebAnalysisAccess } from "@/lib/web-analysis-access";
 import {
+  createWebAnalysisUsageSettlement,
   isCreditResponse,
   reserveWebAnalysisCredits,
 } from "@/lib/web-credit-billing";
@@ -75,6 +75,15 @@ export async function ingestAnalysisFile(
     metadata: { stage: "image_transcription", modelChain },
   });
   if (isCreditResponse(reservation)) return reservation;
+  const settleUsage = createWebAnalysisUsageSettlement(
+    opts.access,
+    reservation,
+    {
+      feature: opts.feature,
+      resourceId: opts.resourceId,
+      metadata: { stage: "image_transcription", modelChain },
+    },
+  );
 
   const usages: OpenRouterUsage[] = [];
   const models: string[] = [];
@@ -90,10 +99,9 @@ export async function ingestAnalysisFile(
     completed = true;
     return doc;
   } finally {
-    await settleJidduCreditReservationFromUsage(reservation, {
+    await settleUsage({
       usages,
       fallbackModels: models,
-      resourceId: opts.resourceId,
       note: "Screenshot text transcription",
       metadata: {
         stage: "image_transcription",

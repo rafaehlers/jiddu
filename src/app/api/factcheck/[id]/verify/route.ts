@@ -15,9 +15,9 @@ import {
 } from "@/lib/jiddu-credit-rates";
 import {
   releaseJidduCreditReservation,
-  settleJidduCreditReservationFromUsage,
 } from "@/lib/jiddu-credits";
 import {
+  createWebAnalysisUsageSettlement,
   isCreditResponse,
   reserveWebAnalysisCredits,
 } from "@/lib/web-credit-billing";
@@ -110,23 +110,20 @@ export async function POST(
   const abortController = new AbortController();
   let billableCacheMisses = 0;
   const usages: OpenRouterUsage[] = [];
-  let settled = false;
-  const settle = async () => {
-    if (settled) return;
-    settled = true;
-    await settleJidduCreditReservationFromUsage(
-      reservation,
-      {
-        usages,
-        fallbackModels: Array.from(
-          { length: billableCacheMisses },
-          () => VERIFY_MODEL,
-        ),
-        resourceId: id,
-        metadata: { uncachedClaimCalls: billableCacheMisses },
-      },
-    );
-  };
+  const settleUsage = createWebAnalysisUsageSettlement(access, reservation, {
+    feature: "factcheck_verify",
+    resourceId: id,
+    metadata: { eligibleClaimCount: eligibleClaims.length },
+  });
+  const settle = () =>
+    settleUsage({
+      usages,
+      fallbackModels: Array.from(
+        { length: billableCacheMisses },
+        () => VERIFY_MODEL,
+      ),
+      metadata: { uncachedClaimCalls: billableCacheMisses },
+    });
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {

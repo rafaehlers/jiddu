@@ -71,6 +71,39 @@ export const ComputationAuditItemSchema = ComputationProposalSchema.extend({
 });
 export type ComputationAuditItem = z.infer<typeof ComputationAuditItemSchema>;
 
+// MiniMax occasionally wraps prose fields in a small object even though the
+// tool schema asks for a string (for example, { issue, evidence }). Preserve
+// those useful string fragments while still rejecting arrays, nested objects,
+// numbers and other arbitrary shapes.
+const ModelGeneratedTextSchema = z.preprocess((value) => {
+  if (
+    !value ||
+    typeof value !== "object" ||
+    Array.isArray(value)
+  ) {
+    return value;
+  }
+
+  const entries = Object.entries(value as Record<string, unknown>);
+  if (
+    entries.length === 0 ||
+    entries.length > 8 ||
+    entries.some(([, text]) => typeof text !== "string" || !text.trim())
+  ) {
+    return value;
+  }
+
+  if (entries.length === 1) return (entries[0][1] as string).trim();
+  return entries
+    .map(([key, text]) => `${humanizeTextKey(key)}: ${(text as string).trim()}`)
+    .join(" ");
+}, z.string().trim().min(1));
+
+function humanizeTextKey(value: string): string {
+  const text = value.replaceAll(/[_-]+/g, " ").trim();
+  return text ? text.charAt(0).toUpperCase() + text.slice(1) : "Detail";
+}
+
 export const QualityAuditFlagSchema = z.object({
   category: z.enum([
     "unsupported_claim",
@@ -83,18 +116,18 @@ export const QualityAuditFlagSchema = z.object({
     "editorial",
   ]),
   severity: z.enum(["warning", "blocking"]),
-  description: z.string().min(1),
+  description: ModelGeneratedTextSchema,
   relatedFindingIds: z.array(z.string().min(1)).default([]),
 });
 
 export const QualityAuditSchema = z.object({
-  summary: z.string().min(1),
+  summary: ModelGeneratedTextSchema,
   flags: z.array(QualityAuditFlagSchema),
   findingDecisions: z.array(
     z.object({
       findingId: z.string().min(1),
       decision: z.enum(["retain", "dismiss"]),
-      reason: z.string().min(1),
+      reason: ModelGeneratedTextSchema,
     }),
   ),
 });

@@ -11,11 +11,9 @@ import {
   requireWebAnalysisAccess,
 } from "@/lib/web-analysis-access";
 import { modelCreditRate } from "@/lib/jiddu-credit-rates";
+import { releaseJidduCreditReservation } from "@/lib/jiddu-credits";
 import {
-  releaseJidduCreditReservation,
-  settleJidduCreditReservationFromUsage,
-} from "@/lib/jiddu-credits";
-import {
+  createWebAnalysisUsageSettlement,
   isCreditResponse,
   reserveWebAnalysisCredits,
 } from "@/lib/web-credit-billing";
@@ -78,6 +76,11 @@ export async function POST(
     metadata: { claimId, forcedRefresh: true },
   });
   if (isCreditResponse(reservation)) return reservation;
+  const settleUsage = createWebAnalysisUsageSettlement(access, reservation, {
+    feature: "factcheck_verify",
+    resourceId: id,
+    metadata: { claimId, forcedRefresh: true },
+  });
 
   // Force a fresh Sonar call — the per-claim refresh button is the user
   // explicitly saying "I don't trust the cached verdict, do it again".
@@ -119,15 +122,10 @@ export async function POST(
       },
     });
   } finally {
-    await settleJidduCreditReservationFromUsage(
-      reservation,
-      {
-        usages: usage ? [usage] : [],
-        fallbackModels: [VERIFY_MODEL],
-        resourceId: id,
-        metadata: { claimId, forcedRefresh: true },
-      },
-    );
+    await settleUsage({
+      usages: usage ? [usage] : [],
+      fallbackModels: [VERIFY_MODEL],
+    });
   }
 
   return new Response(

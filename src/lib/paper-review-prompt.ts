@@ -254,6 +254,8 @@ export function buildQualityAuditPrompt(args: {
 
 For every specialist finding, return exactly one retain/dismiss decision. A dismissal requires a concrete reason grounded in the supplied artifacts. Flag as blocking any missing retained MAJOR/MODERATE finding, unsupported rejection rationale, source mismatch used materially, or recommendation that conflicts with the written assessment. Do not rewrite the review.
 
+Return summary, every flag description, and every decision reason as a single plain-text string. Never return an object, array, localized map, or key/value structure inside those fields.
+
 SPECS ARTIFACTS:
 ${JSON.stringify(args.specs)}
 

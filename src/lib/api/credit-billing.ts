@@ -1,9 +1,9 @@
 import "server-only";
 
 import type { JidduCreditFeature } from "@/lib/jiddu-credit-rates";
-import { settleJidduCreditReservationFromUsage } from "@/lib/jiddu-credits";
 import type { OpenRouterUsage } from "@/lib/openrouter-usage";
 import {
+  createWebAnalysisUsageSettlement,
   isCreditResponse,
   reserveWebAnalysisCredits,
 } from "@/lib/web-credit-billing";
@@ -40,6 +40,11 @@ export async function createApiCreditMeter(
 ): Promise<ApiCreditMeter | Response> {
   const reservation = await reserveWebAnalysisCredits(auth, input);
   if (isCreditResponse(reservation)) return reservation;
+  const settleUsage = createWebAnalysisUsageSettlement(auth, reservation, {
+    feature: input.feature,
+    resourceId: input.resourceId,
+    metadata: input.metadata,
+  });
 
   const models: string[] = [];
   const usages: OpenRouterUsage[] = [];
@@ -60,19 +65,16 @@ export async function createApiCreditMeter(
     async settle(settlement) {
       if (settled) return;
       settled = true;
-      await settleJidduCreditReservationFromUsage(
-        reservation,
-        {
-          usages,
-          fallbackModels: models,
-          resourceId: settlement?.resourceId ?? input.resourceId,
-          note: settlement?.note,
-          metadata: {
-            models,
-            ...(settlement?.metadata ?? {}),
-          },
+      await settleUsage({
+        usages,
+        fallbackModels: models,
+        resourceId: settlement?.resourceId,
+        note: settlement?.note,
+        metadata: {
+          models,
+          ...(settlement?.metadata ?? {}),
         },
-      );
+      });
     },
   };
 }

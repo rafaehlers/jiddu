@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n/provider";
+import { paperReviewCallErrorMessage } from "@/lib/paper-review-error-message";
 import type { PaperReviewStageTiming } from "@/lib/paper-review-telemetry";
 
 type JobStatus = {
@@ -245,32 +246,42 @@ function JobTimeline({
             </div>
             {timing.calls.length > 0 && (
               <ul className="mt-2 flex flex-col gap-1.5 text-sm">
-                {timing.calls.map((call) => (
-                  <li
-                    key={call.id}
-                    className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-muted"
-                  >
-                    <span>
-                      {humanize(call.operation)} ·{" "}
-                      <span className="text-foreground/80">{call.model}</span>
-                    </span>
-                    <span className="tabular-nums">
-                      {statusLabel(call.status, copy)} ·{" "}
-                      {formatDuration(
-                        call.durationMs ??
-                          Math.max(
-                            0,
-                            now - new Date(call.startedAt).getTime(),
-                          ),
-                      )}
-                    </span>
-                    {call.status === "failed" && call.error && (
-                      <span className="basis-full text-xs text-[var(--severity-high)]">
-                        {call.error}
+                {timing.calls.map((call, callIndex) => {
+                  const fallback = timing.calls
+                    .slice(callIndex + 1)
+                    .find((candidate) => candidate.operation === call.operation);
+                  return (
+                    <li
+                      key={call.id}
+                      className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-muted"
+                    >
+                      <span>
+                        {humanize(call.operation)} ·{" "}
+                        <span className="text-foreground/80">{call.model}</span>
                       </span>
-                    )}
-                  </li>
-                ))}
+                      <span className="tabular-nums">
+                        {statusLabel(call.status, copy)} ·{" "}
+                        {formatDuration(
+                          call.durationMs ??
+                            Math.max(
+                              0,
+                              now - new Date(call.startedAt).getTime(),
+                            ),
+                        )}
+                      </span>
+                      {call.status === "failed" && call.error && (
+                        <span className="basis-full text-xs text-[var(--severity-high)]">
+                          {paperReviewCallErrorMessage({
+                            error: call.error,
+                            model: call.model,
+                            fallbackModel: fallback?.model,
+                            lang,
+                          })}
+                        </span>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             )}
             {timing.status === "failed" &&
