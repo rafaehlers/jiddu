@@ -25,6 +25,27 @@ export type IngestedPage = {
   markdown: string;
   width?: number;
   height?: number;
+  /**
+   * Layout-aware PDF text. Academic consumers use this to tell real headings
+   * from running headers and to keep section boundaries independent from page
+   * and column breaks. It is intentionally optional for URLs, plain text and
+   * the pdfjs fallback.
+   */
+  textItems?: IngestedTextItem[];
+};
+
+export type IngestedTextItem = {
+  text: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  fontName?: string;
+  fontSize?: number;
+  fontHeight?: number;
+  fontWeight?: number;
+  fillColor?: string;
+  rotation?: number;
 };
 
 export type PdfPageComplexity = {

@@ -1,8 +1,7 @@
 import { z } from "zod";
 
 // The four explanation audiences the user picks before running. Each level
-// only changes the *vocabulary and depth* of the explanation prose — the
-// pipeline (paragraph segmentation, section-role tagging) is identical.
+// only changes the vocabulary and depth of the section explanation.
 export const EXPLAIN_LEVELS = [
   "eli5", // a curious child / general public — everyday words, analogies
   "high_school", // bright high-schooler — defines field terms
@@ -25,9 +24,7 @@ export function normalizeLevel(v: unknown): ExplainLevel {
   return DEFAULT_LEVEL;
 }
 
-// The role each paragraph plays in an academic paper. The color attached to
-// each role (defined in the viewer) becomes the in-text highlight + legend,
-// so the reader can see a paper's skeleton at a glance.
+// The dominant role each section plays in an academic paper.
 export const SECTION_ROLES = [
   "background", // context, motivation, prior work, problem statement
   "objective", // research question, hypothesis, aim, contribution claim
@@ -61,8 +58,8 @@ const RoleSchema = z.preprocess((v) => {
   return "background";
 }, z.enum(SECTION_ROLES));
 
-// One explanation per (substantive) paragraph. `blockIds` points at the
-// paragraph block(s) the explanation covers — usually exactly one.
+// One explanation per substantive section. `blockIds` contains every
+// paragraph anchor belonging to that section.
 export const ExplainFindingSchema = z.object({
   blockIds: z.array(z.string()).min(1),
   role: RoleSchema,

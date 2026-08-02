@@ -9,11 +9,20 @@ import type { Sentence } from "./schema";
 // headings as section dividers in the text column; the model receives them
 // as context. When a document has no detectable headings, every block's
 // `section` is null and the view is a plain paragraph list.
-export type BlockKind = "content" | "references";
+export type BlockKind = "content" | "references" | "metadata";
 
 export type Block = Sentence & {
   section?: string | null;
   kind?: BlockKind;
+  /** Stable structural identity. Several paragraph blocks can belong to one
+   * paper section without making the model or the UI confuse them with chunks. */
+  sectionId?: string | null;
+  sectionLevel?: number;
+  sectionParent?: string | null;
+  sectionPath?: string[];
+  pageStart?: number;
+  pageEnd?: number;
+  analysisUnit?: "section" | "paragraph";
 };
 
 // When a document has no blank-line paragraph structure at all (some PDF
@@ -23,7 +32,7 @@ export type Block = Sentence & {
 const SENTENCES_PER_PSEUDO_PARAGRAPH = 4;
 
 const NAMED_HEADING =
-  /^(abstract|introduction|background|related works?|prior works?|literature review|motivations?|methods?|methodology|materials and methods|experimental (setup|design)|data|datasets?|results?|findings|discussions?|analysis|evaluation|conclusions?|concluding remarks|future work|limitations?|references|bibliography|acknowledge?ments?|appendix|appendices|supplementary)\b/i;
+  /^(abstract|resumo|resumen|introduction|introdu[cç][aã]o|introducci[oó]n|background|antecedentes|related works?|prior works?|literature review|revis[aã]o da literatura|revisi[oó]n de la literatura|motivations?|motiva[cç][aã]o|motivaci[oó]n|methods?|methodology|materials and methods|m[eé]todos?|metodologia|material(?:es)? y m[eé]todos|experimental (setup|design)|data|dados|datos|datasets?|results?|resultados?|findings|achados|discussions?|discuss[aã]o|discusi[oó]n|analysis|an[aá]lise|an[aá]lisis|evaluation|avalia[cç][aã]o|evaluaci[oó]n|conclusions?|conclus[aã]o|conclusiones?|concluding remarks|future work|trabalhos futuros|trabajo futuro|limitations?|limita[cç][oõ]es|limitaciones|references|refer[eê]ncias|referencias|bibliography|bibliograf[ií]a|acknowledge?ments?|agradecimentos?|agradecimientos?|appendix|appendices|ap[eê]ndice|ap[eé]ndices|supplementary)\b/i;
 
 const REFERENCES_HEADING =
   /^(references|bibliography|works cited|literature cited|refer[eê]ncias|referencias|bibliograf[ií]a|bibliographie)$/i;
@@ -43,6 +52,25 @@ function normalizeHeading(line: string): string {
     .replace(/^#{1,6}\s+/, "")
     .replace(/\s+#+$/, "")
     .trim();
+}
+
+export function splitInlineReferencesHeading(
+  line: string,
+): { heading: string; remainder: string } | null {
+  const normalized = normalizeHeading(line);
+  const match = normalized.match(
+    /^(References|Bibliography|Works cited|Literature cited|Refer[eê]ncias|Referencias|Bibliograf[ií]a)(\s*[:.]\s*|\s+)(.+)$/i,
+  );
+  if (!match) return null;
+  const explicitSeparator = /[:.]/.test(match[2]);
+  const remainder = match[3].trim();
+  const looksBibliographic =
+    /\b(?:19|20)\d{2}[a-z]?\b/i.test(remainder) &&
+    /^(?:\[?\d+[.)\]]?\s+|[A-ZÀ-Ý][A-Za-zÀ-ÿ'’.-]+(?:,\s*[A-ZÀ-Ý]|\s+[A-ZÀ-Ý](?:\.|\s)))/u.test(
+      remainder,
+    );
+  if (!explicitSeparator && !looksBibliographic) return null;
+  return { heading: match[1], remainder };
 }
 
 // Heuristic: is this single line a section heading rather than body prose?
@@ -110,6 +138,16 @@ export function splitBlocks(text: string): Block[] {
       flushPara(lineStart);
       continue;
     }
+    const inlineReferences = splitInlineReferencesHeading(trimmed);
+    if (inlineReferences) {
+      flushPara(lineStart);
+      currentSection = inlineReferences.heading;
+      currentKind = "references";
+      headingCount++;
+      paraStart = lineStart + Math.max(0, line.indexOf(inlineReferences.remainder));
+      para.push(inlineReferences.remainder);
+      continue;
+    }
     if (isHeading(trimmed)) {
       flushPara(lineStart);
       currentSection = normalizeHeading(trimmed);
@@ -125,6 +163,9 @@ export function splitBlocks(text: string): Block[] {
   // No real heading structure → drop the (possibly stray) labels and behave
   // like a plain paragraph list.
   if (headingCount < 2) {
+    if (blocks.some((block) => block.kind === "references")) {
+      return blocks.map((block) => ({ ...block, section: null }));
+    }
     if (blocks.length <= 1) {
       // No blank-line structure either → use the sentence-grouping fallback.
       return splitParagraphs(text);

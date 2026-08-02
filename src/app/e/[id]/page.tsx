@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const title = e.title ?? "Untitled";
   const desc = e.overview
     ? e.overview.slice(0, 200)
-    : "Explained paragraph by paragraph with Jiddu.";
+    : "Explained section by section with Jiddu.";
   return analysisSocialMetadata({
     title: `${title} · Jiddu explainer`,
     description: desc,

@@ -314,7 +314,20 @@ async function smokeExplain() {
   const output = await withTransientRetry("explain", () =>
     consume(
       provider.explainStream(
-        { sentences: inputSentences, lang: "en" },
+        {
+          sections: [
+            {
+              id: "smoke-section",
+              title: "Method",
+              level: 1,
+              parent: null,
+              path: ["Method"],
+              blocks: inputSentences,
+              chars: text.length,
+            },
+          ],
+          lang: "en",
+        },
         {
           level: "high_school",
           onUsage: (usage) => usages.push(usage),

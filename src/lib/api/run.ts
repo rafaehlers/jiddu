@@ -13,6 +13,11 @@ import { verifyClaim, VERIFY_MODEL } from "@/lib/llm/verifyClaim";
 import { ingestText } from "@/lib/ingest/text";
 import { splitSentences } from "@/lib/sentences";
 import { splitBlocks } from "@/lib/paragraphs";
+import { getExplainableBlocks } from "@/lib/explain-sections";
+import {
+  buildParagraphExplainInputSections,
+  normalizeFindingsForSections,
+} from "@/lib/explain-units";
 import type { Lang } from "@/lib/fallacies";
 import type { Finding } from "@/lib/schema";
 import type { Claim } from "@/lib/claims-schema";
@@ -210,8 +215,12 @@ export async function runExplain(
   const { text: clean } = prep(text);
   const lang = opts?.lang ?? "en";
   const level = opts?.level ?? "undergrad";
-  const blocks = splitBlocks(clean);
+  const blocks = getExplainableBlocks(splitBlocks(clean));
   if (blocks.length === 0) throw new NoUnitsError();
+  // The versioned REST/MCP contract remains paragraph-by-paragraph. Each
+  // paragraph is represented as a one-block section for the shared provider,
+  // while the web paper reader groups real PDF subsections.
+  const sections = buildParagraphExplainInputSections(blocks);
 
   const chain = modelChain();
   const llm = getProvider(chain[0], opts?.apiKey);
@@ -224,7 +233,7 @@ export async function runExplain(
     chain,
     (model) =>
       llm.explainStream(
-        { sentences: blocks, lang },
+        { sections, lang },
         { model, level, signal: opts?.signal, onUsage: opts?.onUsage },
       ),
     opts?.signal,
@@ -235,7 +244,11 @@ export async function runExplain(
     else if (ev.type === "language") language = ev.language;
   }
 
-  return { overview, findings, language };
+  return {
+    overview,
+    findings: normalizeFindingsForSections(findings, sections),
+    language,
+  };
 }
 
 // ---------- Fact-check (extract + verify) ----------

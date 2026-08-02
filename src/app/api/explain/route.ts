@@ -4,9 +4,15 @@ import { prisma } from "@/lib/db";
 import { ingestUrl } from "@/lib/ingest/url";
 import { ingestAnalysisFile } from "@/lib/ingest/file";
 import { ingestText } from "@/lib/ingest/text";
-import { splitBlocks } from "@/lib/paragraphs";
+import { splitExplainDocument } from "@/lib/paper-structure";
 import { getExplainableBlocks } from "@/lib/explain-sections";
-import { chunkSentences } from "@/lib/chunker";
+import {
+  buildExplainInputSections,
+  capExplainBlocks,
+  chunkExplainSections,
+  normalizeFindingForSections,
+  normalizeFindingsForSections,
+} from "@/lib/explain-units";
 import { getProvider, resolveModel } from "@/lib/llm";
 import { DEFAULT_MODEL_CHAIN, withModelFallback } from "@/lib/llm/fallback";
 import { consume, ipFromRequest, rateLimitResponse } from "@/lib/rate-limit";
@@ -119,11 +125,17 @@ export async function POST(req: NextRequest) {
     doc = { ...doc, text: doc.text.slice(0, MAX_TEXT_CHARS) };
   }
 
-  const blocks = splitBlocks(doc.text);
+  const blocks = capExplainBlocks(splitExplainDocument(doc), MAX_TEXT_CHARS);
+  if (blocks.some((block) => block.analysisUnit === "section")) {
+    // Keep persisted/printed source text aligned with the same normalized,
+    // size-bounded structure rendered and sent to the model.
+    doc = { ...doc, text: blocks.map((block) => block.text).join("\n\n") };
+  }
   const explainableBlocks = getExplainableBlocks(blocks);
   if (explainableBlocks.length === 0) {
-    return jsonError("No substantive paragraphs detected", 422);
+    return jsonError("No substantive paper sections detected", 422);
   }
+  const explainSections = buildExplainInputSections(explainableBlocks);
 
   const modelChain: string[] = modelId
     ? Array.from(new Set([resolveModel(modelId).id, ...DEFAULT_MODEL_CHAIN]))
@@ -136,11 +148,11 @@ export async function POST(req: NextRequest) {
     return jsonError(err instanceof Error ? err.message : "Provider error", 400);
   }
 
-  // Blocks reuse the Sentence shape, so the sentence chunker groups them by
-  // accumulated char budget exactly as it does for the other pipelines.
-  const chunks = chunkSentences(explainableBlocks);
+  // Technical batches may contain several complete sections, but never split
+  // a section or become visible navigation units.
+  const chunks = chunkExplainSections(explainSections);
   const creditReservation = await reserveWebAnalysisCredits(access, {
-    // One call per paragraph chunk, plus one bounded whole-document synthesis
+    // One call per section batch, plus one bounded whole-document synthesis
     // for the overview and evidence-linked Paper Map.
     amount: maxCreditsForCalls(modelChain, chunks.length + 1),
     feature: "explain",
@@ -208,16 +220,19 @@ export async function POST(req: NextRequest) {
           if (idx >= chunks.length) return;
           const chunk = chunks[idx];
           let chunkOverview = "";
+          const emittedSectionIds = new Set<string>();
           send("chunkStart", {
             index: chunk.index,
-            blockIds: chunk.sentences.map((s) => s.id),
+            blockIds: chunk.sections.flatMap((section) =>
+              section.blocks.map((block) => block.id),
+            ),
           });
           try {
             for await (const event of withModelFallback(
               modelChain,
               (model) =>
                 llm.explainStream(
-                  { sentences: chunk.sentences, lang },
+                  { sections: chunk.sections, lang },
                   {
                     model,
                     signal: abortController.signal,
@@ -229,8 +244,15 @@ export async function POST(req: NextRequest) {
               (model) => billableModels.push(model),
             )) {
               if (event.type === "finding") {
-                allFindings.push(event.finding);
-                send("finding", event.finding);
+                const finding = normalizeFindingForSections(
+                  event.finding,
+                  chunk.sections,
+                  emittedSectionIds,
+                );
+                if (finding) {
+                  allFindings.push(finding);
+                  send("finding", finding);
+                }
               } else if (event.type === "overview") {
                 chunkOverview = event.overview;
               }
@@ -275,7 +297,10 @@ export async function POST(req: NextRequest) {
 
       const explainableIds = new Set(explainableBlocks.map((block) => block.id));
       const blockPos = new Map(blocks.map((block, index) => [block.id, index]));
-      const orderedFindings = allFindings
+      const orderedFindings = normalizeFindingsForSections(
+        allFindings,
+        explainSections,
+      )
         .map((finding) => ({
           ...finding,
           blockIds: finding.blockIds.filter((id) => explainableIds.has(id)),

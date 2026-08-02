@@ -100,13 +100,44 @@ export function ExplainView({
 
   const sections = useMemo(() => groupExplainSections(blocks), [blocks]);
   const contentSections = useMemo(
-    () => sections.filter((section) => !section.isReferences),
+    () =>
+      sections.filter(
+        (section) => !section.isReferences && !section.isMetadata,
+      ),
     [sections],
   );
   const referenceSections = useMemo(
     () => sections.filter((section) => section.isReferences),
     [sections],
   );
+  const sectionNavigationRows = useMemo(() => {
+    const rows: Array<
+      | { kind: "group"; id: string; title: string; level: number }
+      | { kind: "section"; section: ExplainSection }
+    > = [];
+    let previousPath: string[] = [];
+    for (const section of contentSections) {
+      const path =
+        section.path.length > 0
+          ? section.path
+          : section.title
+            ? [section.title]
+            : [];
+      const ancestors = path.slice(0, -1);
+      for (let level = 0; level < ancestors.length; level++) {
+        if (previousPath[level] === ancestors[level]) continue;
+        rows.push({
+          kind: "group",
+          id: `group-${section.id}-${level}`,
+          title: ancestors[level],
+          level: level + 1,
+        });
+      }
+      rows.push({ kind: "section", section });
+      previousPath = path;
+    }
+    return rows;
+  }, [contentSections]);
   const explainableFindings = useMemo(
     () => getExplainableFindings(findings, blocks),
     [findings, blocks],
@@ -173,6 +204,13 @@ export function ExplainView({
     () => ordered.filter(({ f }) => f.blockIds.some((id) => selectedBlockIds.has(id))),
     [ordered, selectedBlockIds],
   );
+  const usesSectionAnalysis =
+    selectedBlocks.length > 0 &&
+    selectedBlocks.every((block) => block.analysisUnit === "section");
+  const selectedSectionFinding =
+    usesSectionAnalysis && visibleOrdered.length === 1
+      ? visibleOrdered[0]
+      : null;
   const findingCountBySection = useMemo(() => {
     const counts = new Map<string, number>();
     for (const { f } of ordered) {
@@ -316,6 +354,22 @@ export function ExplainView({
     if (sections.length === 1) return t.explain_document_section;
     if (index === 0) return t.explain_opening_section;
     return `${t.explain_section_fallback} ${index + 1}`;
+  }
+
+  function sectionMeta(section: ExplainSection): string {
+    if (section.blocks.every((block) => block.analysisUnit === "section")) {
+      const pages = section.blocks.flatMap((block) =>
+        [block.pageStart, block.pageEnd].filter(
+          (page): page is number => typeof page === "number",
+        ),
+      );
+      if (pages.length > 0) {
+        const first = Math.min(...pages);
+        const last = Math.max(...pages);
+        return first === last ? `p. ${first}` : `p. ${first}–${last}`;
+      }
+    }
+    return String(findingCountBySection.get(section.id) ?? 0);
   }
 
   const paperMapRows = paperMap
@@ -515,7 +569,7 @@ export function ExplainView({
           )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_24rem] xl:grid-cols-[10rem_minmax(0,1fr)_19rem] gap-6 xl:gap-4 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_24rem] xl:grid-cols-[11rem_minmax(0,1fr)_18rem] gap-6 xl:gap-4 items-start">
           <nav
             aria-label={t.explain_sections_label}
             className="lg:col-span-2 xl:col-span-1 xl:sticky xl:top-20 min-w-0"
@@ -533,7 +587,9 @@ export function ExplainView({
                 <option key={section.id} value={section.id}>
                   {section.isReferences
                     ? `${t.explain_references_label} · ${sectionTitle(section, index)}`
-                    : sectionTitle(section, index)}
+                    : section.path.length > 1
+                      ? section.path.join(" › ")
+                      : sectionTitle(section, index)}
                 </option>
               ))}
             </select>
@@ -542,7 +598,21 @@ export function ExplainView({
               <h3 className="px-2 pb-2 pt-1 text-[11px] uppercase tracking-wide text-muted">
                 {t.explain_sections_label}
               </h3>
-              {contentSections.map((section) => {
+              {sectionNavigationRows.map((row) => {
+                if (row.kind === "group") {
+                  return (
+                    <div
+                      key={row.id}
+                      className="break-normal px-2.5 pb-1 pt-2 text-[10px] uppercase tracking-wide text-muted/80"
+                      style={{
+                        paddingLeft: `${0.625 + Math.max(0, row.level - 1) * 0.3}rem`,
+                      }}
+                    >
+                      {row.title}
+                    </div>
+                  );
+                }
+                const section = row.section;
                 const index = sections.findIndex((item) => item.id === section.id);
                 const selected = selectedSection?.id === section.id;
                 return (
@@ -558,7 +628,12 @@ export function ExplainView({
                         : "border-transparent text-muted hover:border-rule hover:text-foreground",
                     )}
                   >
-                    <span className="min-w-0 break-words">
+                    <span
+                      className="min-w-0 break-normal"
+                      style={{
+                        paddingLeft: `${Math.max(0, section.level - 1) * 0.3}rem`,
+                      }}
+                    >
                       {sectionTitle(section, index)}
                     </span>
                     <span
@@ -567,7 +642,7 @@ export function ExplainView({
                         selected ? "text-background/70" : "text-muted",
                       )}
                     >
-                      {findingCountBySection.get(section.id) ?? 0}
+                      {sectionMeta(section)}
                     </span>
                   </button>
                 );
@@ -615,7 +690,9 @@ export function ExplainView({
                 <span className="text-[11px] uppercase tracking-wide text-muted">
                   {selectedSection?.isReferences
                     ? t.explain_references_label
-                    : t.explain_reader_label}
+                    : selectedSection && selectedSection.path.length > 1
+                      ? selectedSection.path.slice(0, -1).join(" › ")
+                      : t.explain_reader_label}
                 </span>
                 <h3 className="mt-1 font-serif text-xl leading-tight">
                   {selectedSection
@@ -659,17 +736,42 @@ export function ExplainView({
             <article
               ref={articleRef}
               className="font-serif text-lg leading-relaxed bg-paper border border-rule rounded-lg p-5 sm:p-6"
+              style={
+                selectedSectionFinding
+                  ? {
+                      borderLeftWidth: "3px",
+                      borderLeftColor:
+                        ROLE_COLOR[selectedSectionFinding.f.role] ?? "currentColor",
+                    }
+                  : undefined
+              }
             >
               {selectedBlocks.map((block, index) => {
                 const hit = findingByBlock.get(block.id);
                 const paragraphClass = index > 0 ? "mt-4" : undefined;
-                if (!hit) {
+                if (!hit || usesSectionAnalysis) {
                   return (
                     <p
                       key={block.id}
                       id={`b-${block.id}`}
                       data-bid={block.id}
-                      className={paragraphClass}
+                      className={cn(
+                        paragraphClass,
+                        hit && usesSectionAnalysis &&
+                          "cursor-pointer rounded-sm transition-colors hover:bg-foreground/[0.025]",
+                      )}
+                      onClick={
+                        hit && usesSectionAnalysis
+                          ? () => focusCard(hit.cardIdx)
+                          : undefined
+                      }
+                      onKeyDown={
+                        hit && usesSectionAnalysis
+                          ? onActivate(() => focusCard(hit.cardIdx))
+                          : undefined
+                      }
+                      role={hit && usesSectionAnalysis ? "button" : undefined}
+                      tabIndex={hit && usesSectionAnalysis ? 0 : undefined}
                     >
                       {block.text}
                     </p>

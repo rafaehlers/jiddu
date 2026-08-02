@@ -53,6 +53,7 @@ import { buildSlopSystemPrompt, buildSlopUserPrompt } from "../slop-prompt";
 import type {
   AnalyzeInput,
   AnalyzeOutput,
+  ExplainInput,
   ImageTranscriptionInput,
   ImageTranscriptionOutput,
   LlmProvider,
@@ -894,7 +895,7 @@ export class OpenRouterProvider implements LlmProvider {
   }
 
   async *explainStream(
-    input: AnalyzeInput,
+    input: ExplainInput,
     opts: LlmStreamOptions & { level: ExplainLevel },
   ): AsyncGenerator<ExplainStreamEvent, { model: string }, void> {
     const model = this.slug(opts.model);
@@ -908,11 +909,7 @@ export class OpenRouterProvider implements LlmProvider {
           { role: "system", content: buildExplainSystemPrompt(lang, level) },
           {
             role: "user",
-            content: buildExplainUserPrompt(
-              input.sentences,
-              lang,
-              input.contextSentences,
-            ),
+            content: buildExplainUserPrompt(input.sections, lang),
           },
         ],
         tools: [
@@ -921,7 +918,7 @@ export class OpenRouterProvider implements LlmProvider {
             function: {
               name: "report_explanation",
               description:
-                "Report the paragraph-by-paragraph explanation of the given paper.",
+                "Report one cohesive explanation for each supplied paper section.",
               parameters: EXPLAIN_JSON_SCHEMA,
             },
           },

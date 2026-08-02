@@ -93,6 +93,7 @@ async function ingestWithLiteParse(
     outputFormat: academic ? "markdown" : "text",
     imageMode: academic ? "placeholder" : "off",
     extractLinks: academic,
+    extractTextMetadata: academic,
     // Papers benefit from removing repeated journal chrome and page numbers.
     // Keep this explicit so a future LiteParse default cannot change output.
     keepHeadersFooters: false,
@@ -108,6 +109,21 @@ async function ingestWithLiteParse(
     markdown: page.markdown.trim(),
     width: page.width,
     height: page.height,
+    textItems: academic
+      ? page.textItems.map((item) => ({
+          text: item.text,
+          x: item.x,
+          y: item.y,
+          width: item.width,
+          height: item.height,
+          fontName: item.fontName,
+          fontSize: item.fontSize,
+          fontHeight: item.fontHeight,
+          fontWeight: item.fontWeight,
+          fillColor: item.fillColor,
+          rotation: item.rotation,
+        }))
+      : undefined,
   }));
 
   const text = academic

@@ -12,6 +12,7 @@ import type { ExplainLevel } from "../explain-schema";
 import type { PaperSynthesis } from "../explain-schema";
 import type { OpenRouterUsage } from "../openrouter-usage";
 import type { PaperSynthesisInput } from "../paper-map-prompt";
+import type { ExplainInputSection } from "../explain-units";
 
 export type ProviderId = "anthropic" | "openai";
 
@@ -32,6 +33,11 @@ export type AnalyzeOutput = {
   model: string;
   result: AnalysisResult;
   usage?: OpenRouterUsage;
+};
+
+export type ExplainInput = {
+  sections: ExplainInputSection[];
+  lang?: Lang;
 };
 
 export type LlmStreamOptions = {
@@ -69,7 +75,7 @@ export interface LlmProvider {
     opts?: LlmStreamOptions,
   ): AsyncGenerator<NeutralityStreamEvent, { model: string }, void>;
   explainStream(
-    input: AnalyzeInput,
+    input: ExplainInput,
     opts: LlmStreamOptions & { level: ExplainLevel },
   ): AsyncGenerator<ExplainStreamEvent, { model: string }, void>;
   synthesizePaperMap(
