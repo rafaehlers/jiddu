@@ -111,8 +111,19 @@ export function ExplainView({
     () => getExplainableFindings(findings, blocks),
     [findings, blocks],
   );
+  const explainedBlockIds = useMemo(
+    () => new Set(explainableFindings.flatMap((finding) => finding.blockIds)),
+    [explainableFindings],
+  );
+  const defaultSectionId =
+    contentSections.find((section) =>
+      section.blocks.some((block) => explainedBlockIds.has(block.id)),
+    )?.id ??
+    contentSections[0]?.id ??
+    sections[0]?.id ??
+    "";
   const [selectedSectionId, setSelectedSectionId] = useState(
-    () => contentSections[0]?.id ?? sections[0]?.id ?? "",
+    () => defaultSectionId,
   );
   const selectedSection =
     sections.find((section) => section.id === selectedSectionId) ??
