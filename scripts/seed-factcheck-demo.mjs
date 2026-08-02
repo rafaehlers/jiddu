@@ -1,13 +1,13 @@
-import Database from "better-sqlite3";
-import { fileURLToPath } from "node:url";
-import path from "node:path";
+import { createSeedDatabase } from "./lib/postgres-seed.mjs";
+import { structureDemoDocument } from "./lib/demo-document.mjs";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const envUrl = process.env.DATABASE_URL;
-const dbPath = envUrl
-  ? envUrl.replace(/^file:/, "")
-  : path.join(__dirname, "..", "dev.db");
-const db = new Database(dbPath);
+const db = createSeedDatabase();
+
+const SECTION_TITLES = {
+  en: ["1 Economic indicators", "2 Public claims", "3 International comparison"],
+  pt: ["1 Indicadores econômicos", "2 Declarações públicas", "3 Comparação internacional"],
+  es: ["1 Indicadores económicos", "2 Declaraciones públicas", "3 Comparación internacional"],
+};
 
 // Each demo is a short polemic with a deliberate mix of claim types
 // (numeric / date / quote / causal / categorical) and a mix of verdicts
@@ -499,15 +499,19 @@ function tierForUrl(url) {
 const insert = db.prepare(`
   INSERT OR REPLACE INTO FactCheck (
     id, status, source, sourceRef, title, text, language, provider, model,
-    sentences, claims, verdicts, refreshCounts, verifyStatus, verifyModel,
+    blocks, sentences, claims, verdicts, refreshCounts, verifyStatus, verifyModel,
     verifyStartedAt, verifyFinishedAt, createdAt, finishedAt, reviewedAt
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `);
 
 const now = new Date().toISOString();
 
 function seed(lang, profile) {
-  const sentences = buildSentences(profile.text);
+  const document = structureDemoDocument(
+    buildSentences(profile.text),
+    SECTION_TITLES[lang],
+  );
+  const { sentences } = document;
   if (sentences.length !== profile.claims.length) {
     console.warn(
       `[${lang}] expected ${profile.claims.length} sentences, got ${sentences.length}; check punctuation`,
@@ -542,10 +546,11 @@ function seed(lang, profile) {
     "paste",
     null,
     profile.title,
-    profile.text,
+    document.text,
     lang,
     "openai",
     "demo",
+    JSON.stringify(document.blocks),
     JSON.stringify(sentences),
     JSON.stringify(claims),
     JSON.stringify(verdicts),
@@ -568,3 +573,4 @@ for (const [lang, profile] of Object.entries(PROFILES)) {
 }
 
 console.log("\nDone. Open /f/demo-en, /f/demo-pt, /f/demo-es.");
+await db.close();

@@ -8,6 +8,8 @@ import type { Lang } from "@/lib/fallacies";
 import type { Sentence } from "@/lib/schema";
 import type { Claim } from "@/lib/claims-schema";
 import type { Verdict } from "@/lib/verdict-schema";
+import type { Block } from "@/lib/paragraphs";
+import { StructuredDocumentText } from "@/components/structured-document-text";
 
 type ClaimWithId = Claim & { id: string };
 
@@ -17,6 +19,7 @@ type Props = {
   sourceRef: string | null;
   source: string;
   text: string;
+  blocks: Block[];
   sentences: Sentence[];
   claims: ClaimWithId[];
   verdicts: Verdict[];
@@ -36,6 +39,8 @@ export function FactCheckPrintView({
   sourceRef,
   source,
   text,
+  blocks,
+  sentences,
   claims,
   verdicts,
   verifyModel,
@@ -102,7 +107,13 @@ export function FactCheckPrintView({
 
       <section className="print-section print-source-text">
         <h2>{t.print_section_source_text}</h2>
-        <p>{text}</p>
+        <StructuredDocumentText
+          text={text}
+          blocks={blocks}
+          sentences={sentences}
+          renderSentence={(sentence) => <span>{sentence.text}</span>}
+          variant="print"
+        />
       </section>
 
       <section className="print-section">
@@ -243,7 +254,20 @@ const PRINT_CSS = `
   .print-source-text p {
     font-size: 14px;
     text-align: justify;
-    margin: 0;
+  }
+  .print-document-paragraph {
+    margin: 0 0 10px;
+  }
+  .print-document-heading,
+  .print-document-references h3 {
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #555;
+    margin: 18px 0 8px;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 4px;
   }
   .print-claims {
     padding: 0;

@@ -914,7 +914,7 @@ const en: Messages = {
     {
       title: "REST API authentication",
       paragraphs: [
-        "The REST API is separate from MCP OAuth. Send its API key in the `X-Jiddu-Key` header. Every key is assigned to one verified WorkOS account and follows that account's funding: included platform access or Jiddu Credits. Keys without an owner are disabled. See “Getting a REST API key” below.",
+        "The REST API is separate from MCP OAuth. Send its API key in the `X-Jiddu-Key` header. Every key belongs to one verified WorkOS account and follows that account's funding: included platform access or Jiddu Credits. Generate and manage your keys from [your account](/account?tab=api).",
         "```\ncurl -X POST https://jiddu.app/api/v1/detect-fallacies \\\n  -H \"content-type: application/json\" \\\n  -H \"X-Jiddu-Key: YOUR_KEY\" \\\n  -d '{\"text\": \"Everyone agrees this is best, so critics must be fools.\"}'\n```",
       ],
     },
@@ -934,9 +934,9 @@ const en: Messages = {
       ],
     },
     {
-      title: "Getting a REST API key",
+      title: "Create a REST API key",
       paragraphs: [
-        "Keys are issued manually for now and assigned to your verified WorkOS account. Contact the operator through the channel listed on the Terms page to request one. The secret is shown once and stored only as a sha256 hash.",
+        "Sign in, open [API keys in your account](/account?tab=api), choose a descriptive label and select “Generate API key.” Copy the secret immediately: it is shown only once, and Jiddu stores only its sha256 hash. You can revoke the key from the same page at any time.",
       ],
     },
   ],
@@ -1014,7 +1014,7 @@ const en: Messages = {
       title: "5. Privacy",
       paragraphs: [
         "Each completed analysis or paper review receives an unlisted share URL and is stored on a server in Brazil. Anyone with the URL can view the final result, but these pages are not enumerated in the public sitemap. Signed-in users can see analyses associated with their account, but the share URL itself remains accessible to anyone who has it; private intermediate review stages are not exposed in the public viewer.",
-        "Authentication is provided by WorkOS AuthKit. Jiddu receives the account identity needed to maintain the session, authorize MCP clients and associate operator-issued REST keys, credit balances and usage with the correct account. REST secrets are shown once and stored only as hashes. Model-provider credentials are managed by Jiddu and are never exposed to browser JavaScript, REST clients or MCP clients.",
+        "Authentication is provided by WorkOS AuthKit. Jiddu receives the account identity needed to maintain the session, authorize MCP clients and associate account-owned REST keys, credit balances and usage with the correct account. REST secrets are shown once and stored only as hashes. Model-provider credentials are managed by Jiddu and are never exposed to browser JavaScript, REST clients or MCP clients.",
         "Venue autocomplete sends only the venue query — not the manuscript — to the public [DBLP](https://dblp.org) venue search. The literature-research stage searches public scholarly sources using technical claims from the manuscript; prompts prohibit searching by paper title, author name or other manuscripts by the same authors.",
         "We log the request IP for rate-limiting and abuse detection. We do not sell or share that information.",
         "Page traffic is measured via Google Analytics (gtag.js).",
@@ -1810,7 +1810,7 @@ const pt: Messages = {
     {
       title: "Autenticação da REST API",
       paragraphs: [
-        "A REST API é separada do OAuth do MCP. Envie a chave no cabeçalho `X-Jiddu-Key`. Cada chave é atribuída a uma conta WorkOS verificada e segue o financiamento dessa conta: acesso incluído da plataforma ou créditos Jiddu. Chaves sem proprietário ficam desativadas. Veja “Obter uma chave da REST API” abaixo.",
+        "A REST API é separada do OAuth do MCP. Envie a chave no cabeçalho `X-Jiddu-Key`. Cada chave pertence a uma conta WorkOS verificada e segue o financiamento dessa conta: acesso incluído da plataforma ou créditos Jiddu. Gere e administre suas chaves em [sua conta](/account?tab=api).",
         "```\ncurl -X POST https://jiddu.app/api/v1/detect-fallacies \\\n  -H \"content-type: application/json\" \\\n  -H \"X-Jiddu-Key: SUA_CHAVE\" \\\n  -d '{\"text\": \"Todo mundo concorda que isso é o melhor, então quem critica é tolo.\"}'\n```",
       ],
     },
@@ -1830,9 +1830,9 @@ const pt: Messages = {
       ],
     },
     {
-      title: "Obter uma chave da REST API",
+      title: "Criar uma chave da REST API",
       paragraphs: [
-        "As chaves são emitidas manualmente por enquanto e atribuídas à sua conta WorkOS verificada. Entre em contato com o operador pelo canal indicado na página de Termos para solicitar uma. O segredo é mostrado uma vez e guardado apenas como hash sha256.",
+        "Entre na sua conta, abra [Chaves de API](/account?tab=api), escolha um nome descritivo e selecione “Generate API key”. Copie o segredo imediatamente: ele aparece apenas uma vez, e o Jiddu guarda somente seu hash sha256. Você pode revogar a chave na mesma página a qualquer momento.",
       ],
     },
   ],
@@ -2707,7 +2707,7 @@ const es: Messages = {
     {
       title: "Autenticación de la REST API",
       paragraphs: [
-        "La REST API está separada del OAuth de MCP. Envía la clave en el encabezado `X-Jiddu-Key`. Cada clave se asigna a una cuenta WorkOS verificada y sigue la financiación de esa cuenta: acceso incluido de plataforma o créditos Jiddu. Las claves sin propietario quedan desactivadas. Consulta “Obtener una clave de la REST API” más abajo.",
+        "La REST API está separada del OAuth de MCP. Envía la clave en el encabezado `X-Jiddu-Key`. Cada clave pertenece a una cuenta WorkOS verificada y sigue la financiación de esa cuenta: acceso incluido de plataforma o créditos Jiddu. Genera y administra tus claves desde [tu cuenta](/account?tab=api).",
         "```\ncurl -X POST https://jiddu.app/api/v1/detect-fallacies \\\n  -H \"content-type: application/json\" \\\n  -H \"X-Jiddu-Key: TU_CLAVE\" \\\n  -d '{\"text\": \"Todos están de acuerdo en que esto es lo mejor, así que quien critica es un tonto.\"}'\n```",
       ],
     },
@@ -2727,9 +2727,9 @@ const es: Messages = {
       ],
     },
     {
-      title: "Obtener una clave de la REST API",
+      title: "Crear una clave de la REST API",
       paragraphs: [
-        "Las claves se emiten manualmente por ahora y se asignan a tu cuenta WorkOS verificada. Contacta al operador mediante el canal indicado en la página de Términos para solicitar una. El secreto se muestra una vez y se guarda únicamente como hash sha256.",
+        "Inicia sesión, abre [Claves de API en tu cuenta](/account?tab=api), elige una etiqueta descriptiva y selecciona “Generate API key”. Copia el secreto de inmediato: se muestra una sola vez y Jiddu guarda únicamente su hash sha256. Puedes revocar la clave desde la misma página en cualquier momento.",
       ],
     },
   ],

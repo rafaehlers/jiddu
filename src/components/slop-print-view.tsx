@@ -9,6 +9,8 @@ import type { Sentence } from "@/lib/schema";
 import { SLOP_BY_ID } from "@/lib/slop";
 import type { Lang } from "@/lib/fallacies";
 import { PRINT_CSS } from "@/components/analysis-print-view";
+import type { Block } from "@/lib/paragraphs";
+import { StructuredDocumentText } from "@/components/structured-document-text";
 
 type Props = {
   id: string;
@@ -16,6 +18,7 @@ type Props = {
   sourceRef: string | null;
   source: string;
   text: string;
+  blocks: Block[];
   sentences: Sentence[];
   findings: SlopFinding[];
   score: number;
@@ -42,6 +45,8 @@ export function SlopPrintView({
   sourceRef,
   source,
   text,
+  blocks,
+  sentences,
   findings,
   score,
   summary,
@@ -101,7 +106,13 @@ export function SlopPrintView({
 
       <section className="print-section print-source-text">
         <h2>{t.print_section_source_text}</h2>
-        <p>{text}</p>
+        <StructuredDocumentText
+          text={text}
+          blocks={blocks}
+          sentences={sentences}
+          renderSentence={(sentence) => <span>{sentence.text}</span>}
+          variant="print"
+        />
       </section>
 
       <section className="print-section">

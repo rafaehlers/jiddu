@@ -6,9 +6,9 @@ import type {
 
 export type PdfIngestOptions = {
   /**
-   * The existing five pipelines only need clean prose. Academic mode keeps
-   * page structure/Markdown and enables selective OCR when LiteParse says a
-   * page needs it.
+   * Academic mode keeps page structure/Markdown and enables selective OCR
+   * when LiteParse says a page needs it. Fast mode remains available as a
+   * lightweight compatibility path for isolated consumers and tests.
    */
   mode?: "fast" | "academic";
   ocrLanguage?: string;

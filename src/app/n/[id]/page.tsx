@@ -14,6 +14,7 @@ import type {
   TextType,
 } from "@/lib/neutrality-schema";
 import { analysisSocialMetadata } from "@/lib/social-metadata";
+import { readAnalysisBlocks } from "@/lib/analysis-document";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -38,6 +39,7 @@ export default async function NeutralityViewerPage({ params }: Props) {
   if (!n) notFound();
 
   const sentences = JSON.parse(n.sentences) as Sentence[];
+  const blocks = readAnalysisBlocks(n.blocks, n.text);
   const findings = JSON.parse(n.findings) as NeutralityFinding[];
 
   return (
@@ -51,6 +53,7 @@ export default async function NeutralityViewerPage({ params }: Props) {
           sourceRef={n.sourceRef}
           source={n.source}
           text={n.text}
+          blocks={blocks}
           sentences={sentences}
           findings={findings}
           verdict={n.verdict as NeutralityVerdictValue}

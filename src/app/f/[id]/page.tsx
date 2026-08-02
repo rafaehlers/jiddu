@@ -12,6 +12,7 @@ import type { Claim } from "@/lib/claims-schema";
 import type { Verdict } from "@/lib/verdict-schema";
 import { loadSettings } from "@/lib/settings";
 import { analysisSocialMetadata } from "@/lib/social-metadata";
+import { readAnalysisBlocks } from "@/lib/analysis-document";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -37,6 +38,7 @@ export default async function FactCheckPageView({ params }: Props) {
   if (!f) notFound();
 
   const sentences = JSON.parse(f.sentences) as Sentence[];
+  const blocks = readAnalysisBlocks(f.blocks, f.text);
   const claims = JSON.parse(f.claims) as (Claim & { id: string })[];
   const verdicts = JSON.parse(f.verdicts) as Verdict[];
   const refreshCounts = parseCounts(f.refreshCounts);
@@ -57,6 +59,7 @@ export default async function FactCheckPageView({ params }: Props) {
           sourceRef={f.sourceRef}
           source={f.source}
           text={f.text}
+          blocks={blocks}
           sentences={sentences}
           claims={claims}
           status={f.status}

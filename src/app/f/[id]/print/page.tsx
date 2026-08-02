@@ -4,6 +4,7 @@ import { FactCheckPrintView } from "@/components/factcheck-print-view";
 import type { Sentence } from "@/lib/schema";
 import type { Claim } from "@/lib/claims-schema";
 import type { Verdict } from "@/lib/verdict-schema";
+import { readAnalysisBlocks } from "@/lib/analysis-document";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -19,6 +20,7 @@ export default async function FactCheckPrintPage({ params }: Props) {
   if (!f) notFound();
 
   const sentences = JSON.parse(f.sentences) as Sentence[];
+  const blocks = readAnalysisBlocks(f.blocks, f.text);
   const claims = JSON.parse(f.claims) as (Claim & { id: string })[];
   const verdicts = JSON.parse(f.verdicts) as Verdict[];
 
@@ -29,6 +31,7 @@ export default async function FactCheckPrintPage({ params }: Props) {
       sourceRef={f.sourceRef}
       source={f.source}
       text={f.text}
+      blocks={blocks}
       sentences={sentences}
       claims={claims}
       verdicts={verdicts}

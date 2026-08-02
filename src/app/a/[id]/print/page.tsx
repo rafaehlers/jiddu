@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { AnalysisPrintView } from "@/components/analysis-print-view";
 import { resolveAnalysisTitle } from "@/lib/live-title";
+import { readAnalysisBlocks } from "@/lib/analysis-document";
 import type { Finding, Sentence } from "@/lib/schema";
 
 type Props = { params: Promise<{ id: string }> };
@@ -18,6 +19,7 @@ export default async function AnalysisPrintPage({ params }: Props) {
   if (!a) notFound();
 
   const sentences = JSON.parse(a.sentences) as Sentence[];
+  const blocks = readAnalysisBlocks(a.blocks, a.text);
   const findings = JSON.parse(a.findings) as Finding[];
   const title = resolveAnalysisTitle({
     title: a.title,
@@ -35,6 +37,7 @@ export default async function AnalysisPrintPage({ params }: Props) {
       sourceRef={a.sourceRef}
       source={a.source}
       text={a.text}
+      blocks={blocks}
       sentences={sentences}
       findings={findings}
       score={a.score}

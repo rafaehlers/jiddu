@@ -1,0 +1,11 @@
+ALTER TABLE "Analysis"
+ADD COLUMN "blocks" TEXT NOT NULL DEFAULT '[]';
+
+ALTER TABLE "SlopCheck"
+ADD COLUMN "blocks" TEXT NOT NULL DEFAULT '[]';
+
+ALTER TABLE "Neutrality"
+ADD COLUMN "blocks" TEXT NOT NULL DEFAULT '[]';
+
+ALTER TABLE "FactCheck"
+ADD COLUMN "blocks" TEXT NOT NULL DEFAULT '[]';

@@ -6,6 +6,8 @@ import { useI18n } from "@/lib/i18n/provider";
 import type { Messages } from "@/lib/i18n/messages";
 import type { Finding, Sentence } from "@/lib/schema";
 import { FALLACY_BY_ID, type Lang } from "@/lib/fallacies";
+import type { Block } from "@/lib/paragraphs";
+import { StructuredDocumentText } from "@/components/structured-document-text";
 
 type Props = {
   id: string;
@@ -13,6 +15,7 @@ type Props = {
   sourceRef: string | null;
   source: string;
   text: string;
+  blocks: Block[];
   sentences: Sentence[];
   findings: Finding[];
   score: number;
@@ -38,6 +41,8 @@ export function AnalysisPrintView({
   sourceRef,
   source,
   text,
+  blocks,
+  sentences,
   findings,
   score,
   summary,
@@ -97,7 +102,13 @@ export function AnalysisPrintView({
 
       <section className="print-section print-source-text">
         <h2>{t.print_section_source_text}</h2>
-        <p>{text}</p>
+        <StructuredDocumentText
+          text={text}
+          blocks={blocks}
+          sentences={sentences}
+          renderSentence={(sentence) => <span>{sentence.text}</span>}
+          variant="print"
+        />
       </section>
 
       <section className="print-section">
@@ -246,7 +257,20 @@ export const PRINT_CSS = `
   .print-source-text p {
     font-size: 14px;
     text-align: justify;
-    margin: 0;
+  }
+  .print-document-paragraph {
+    margin: 0 0 10px;
+  }
+  .print-document-heading,
+  .print-document-references h3 {
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #555;
+    margin: 18px 0 8px;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 4px;
   }
   .print-findings {
     padding: 0;

@@ -1,13 +1,13 @@
-import Database from "better-sqlite3";
-import { fileURLToPath } from "node:url";
-import path from "node:path";
+import { createSeedDatabase } from "./lib/postgres-seed.mjs";
+import { structureDemoDocument } from "./lib/demo-document.mjs";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const envUrl = process.env.DATABASE_URL;
-const dbPath = envUrl
-  ? envUrl.replace(/^file:/, "")
-  : path.join(__dirname, "..", "dev.db");
-const db = new Database(dbPath);
+const db = createSeedDatabase();
+
+const SECTION_TITLES = {
+  en: ["1 Policy framing", "2 Sources and attribution"],
+  pt: ["1 Enquadramento da política", "2 Fontes e atribuição"],
+  es: ["1 Encuadre de la política", "2 Fuentes y atribución"],
+};
 
 // One demo per locale. The texts are written to deliberately stack three
 // of the 8 neutrality patterns (loaded_language, source_asymmetry,
@@ -248,15 +248,19 @@ function buildSentences(text) {
 const insert = db.prepare(`
   INSERT OR REPLACE INTO Neutrality (
     id, status, source, sourceRef, title, text, language, provider, model,
-    textType, verdict, confidence, rationale, sentences, findings,
+    textType, verdict, confidence, rationale, blocks, sentences, findings,
     createdAt, finishedAt, reviewedAt
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `);
 
 const now = new Date().toISOString();
 
 function seed(lang, profile) {
-  const sentences = buildSentences(profile.text);
+  const document = structureDemoDocument(
+    buildSentences(profile.text),
+    SECTION_TITLES[lang],
+  );
+  const { sentences } = document;
   const findings = profile.findings.map((f) => ({
     sentenceIds: [sentences[f.sentenceIndex]?.id ?? `s${f.sentenceIndex}`],
     issue: f.issue,
@@ -271,7 +275,7 @@ function seed(lang, profile) {
     "paste",
     null,
     profile.title,
-    profile.text,
+    document.text,
     lang,
     "openai",
     "demo",
@@ -279,6 +283,7 @@ function seed(lang, profile) {
     profile.verdict,
     profile.confidence,
     profile.rationale,
+    JSON.stringify(document.blocks),
     JSON.stringify(sentences),
     JSON.stringify(findings),
     now,
@@ -293,3 +298,4 @@ for (const [lang, profile] of Object.entries(PROFILES)) {
 }
 
 console.log("\nDone. Open /n/demo-en, /n/demo-pt, /n/demo-es.");
+await db.close();

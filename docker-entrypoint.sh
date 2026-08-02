@@ -11,5 +11,8 @@ else
   echo "[jiddu] prisma CLI not found, skipping migrate deploy"
 fi
 
+echo "[jiddu] refreshing curated demos…"
+node ./scripts/seed-all-demos.mjs
+
 echo "[jiddu] starting server on :${PORT:-3000}"
 exec "$@"

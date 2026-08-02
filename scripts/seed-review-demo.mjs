@@ -1,13 +1,6 @@
-import Database from "better-sqlite3";
-import { fileURLToPath } from "node:url";
-import path from "node:path";
+import { createSeedDatabase } from "./lib/postgres-seed.mjs";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const envUrl = process.env.DATABASE_URL;
-const dbPath = envUrl
-  ? envUrl.replace(/^file:/, "")
-  : path.join(__dirname, "..", "dev.db");
-const db = new Database(dbPath);
+const db = createSeedDatabase();
 
 // A deliberately imperfect, entirely fictional manuscript. Keeping the paper
 // synthetic lets the demo show a candid rejection-grade review without
@@ -533,4 +526,4 @@ for (const [language, profile] of Object.entries(PROFILES)) {
 }
 
 console.log("\nDone. Open /r/demo-en, /r/demo-pt, /r/demo-es.");
-db.close();
+await db.close();

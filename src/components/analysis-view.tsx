@@ -1,5 +1,4 @@
 "use client";
-/* eslint-disable react-hooks/refs -- DOM refs are read only in effects and interaction/ref callbacks. */
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { FALLACY_BY_ID } from "@/lib/fallacies";
@@ -12,7 +11,9 @@ import { FindingModal } from "@/components/finding-modal";
 import { MobileHintModal } from "@/components/mobile-hint-modal";
 import { ShareLinkBar } from "@/components/share-link-bar";
 import { ExportPdfButton } from "@/components/export-pdf-button";
+import { StructuredDocumentText } from "@/components/structured-document-text";
 import { useMobileHint } from "@/lib/mobile-hint";
+import type { Block } from "@/lib/paragraphs";
 
 const MOBILE_BREAKPOINT = 1024; // matches Tailwind's `lg`
 
@@ -22,6 +23,7 @@ type Props = {
   sourceRef: string | null;
   source: string;
   text: string;
+  blocks: Block[];
   sentences: Sentence[];
   findings: Finding[];
   score: number | null;
@@ -38,6 +40,7 @@ export function AnalysisView({
   sourceRef,
   source,
   text,
+  blocks,
   sentences,
   findings,
   score,
@@ -142,7 +145,37 @@ export function AnalysisView({
     node?.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 
-  const segments = useMemo(() => buildSegments(text, sentences), [text, sentences]);
+  function renderSentence(s: Sentence) {
+    const fs = findingsBySentence.get(s.id);
+    if (!fs || fs.length === 0) {
+      return (
+        <span data-sid={s.id}>
+          {s.text}
+        </span>
+      );
+    }
+    const isActive = fs.some((f) => f.key === active);
+    const color = FALLACY_BY_ID[fs[0].fallacy]?.color ?? "currentColor";
+    const names = fs
+      .map((f) => FALLACY_BY_ID[f.fallacy]?.name[lang] ?? f.fallacy)
+      .join(", ");
+    return (
+      <mark
+        data-sid={s.id}
+        data-active={isActive ? "true" : undefined}
+        className="fallacy"
+        role="button"
+        tabIndex={0}
+        aria-label={`${t.a11y_show_fallacy}: ${names}`}
+        onClick={() => focusSentence(s.id)}
+        onKeyDown={onActivate(() => focusSentence(s.id))}
+        title={names}
+        style={{ "--fallacy-color": color } as React.CSSProperties}
+      >
+        {s.text}
+      </mark>
+    );
+  }
 
   return (
     <div className="flex-1 flex flex-col">
@@ -176,46 +209,12 @@ export function AnalysisView({
           ref={textColRef}
           className="bg-paper border border-rule rounded-lg p-5 sm:p-8 font-serif text-base sm:text-lg leading-[1.75] text-ink"
         >
-          {segments.map((seg, i) => {
-            if (seg.type === "gap") {
-              return <span key={`g${i}`} style={{ whiteSpace: "pre-wrap" }}>{seg.text}</span>;
-            }
-            const s = seg.sentence;
-            const fs = findingsBySentence.get(s.id);
-            if (!fs || fs.length === 0) {
-              return (
-                <span key={s.id} data-sid={s.id}>
-                  {s.text}
-                </span>
-              );
-            }
-            const isActive = fs.some((f) => f.key === active);
-            const color = FALLACY_BY_ID[fs[0].fallacy]?.color ?? "currentColor";
-            const names = fs
-              .map((f) => FALLACY_BY_ID[f.fallacy]?.name[lang] ?? f.fallacy)
-              .join(", ");
-            return (
-              <mark
-                key={s.id}
-                data-sid={s.id}
-                data-active={isActive ? "true" : undefined}
-                className="fallacy"
-                role="button"
-                tabIndex={0}
-                aria-label={`${t.a11y_show_fallacy}: ${names}`}
-                onClick={() => focusSentence(s.id)}
-                onKeyDown={onActivate(() => focusSentence(s.id))}
-                title={names}
-                style={
-                  {
-                    "--fallacy-color": color,
-                  } as React.CSSProperties
-                }
-              >
-                {s.text}
-              </mark>
-            );
-          })}
+          <StructuredDocumentText
+            text={text}
+            blocks={blocks}
+            sentences={sentences}
+            renderSentence={renderSentence}
+          />
           {keyedFindings.length === 0 && (
             <p className="mt-6 text-sm text-muted italic">{t.no_fallacies}</p>
           )}
@@ -366,24 +365,4 @@ function ScoreBadge({ score }: { score: number }) {
       </span>
     </div>
   );
-}
-
-type Segment =
-  | { type: "sentence"; sentence: Sentence }
-  | { type: "gap"; text: string };
-
-function buildSegments(text: string, sentences: Sentence[]): Segment[] {
-  const segs: Segment[] = [];
-  let cursor = 0;
-  for (const s of sentences) {
-    if (s.start > cursor) {
-      segs.push({ type: "gap", text: text.slice(cursor, s.start) });
-    }
-    segs.push({ type: "sentence", sentence: s });
-    cursor = s.end;
-  }
-  if (cursor < text.length) {
-    segs.push({ type: "gap", text: text.slice(cursor) });
-  }
-  return segs;
 }

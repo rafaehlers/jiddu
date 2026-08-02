@@ -1,13 +1,13 @@
-import Database from "better-sqlite3";
-import { fileURLToPath } from "node:url";
-import path from "node:path";
+import { createSeedDatabase } from "./lib/postgres-seed.mjs";
+import { structureDemoDocument } from "./lib/demo-document.mjs";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const envUrl = process.env.DATABASE_URL;
-const dbPath = envUrl
-  ? envUrl.replace(/^file:/, "")
-  : path.join(__dirname, "..", "dev.db");
-const db = new Database(dbPath);
+const db = createSeedDatabase();
+
+const SECTION_TITLES = {
+  en: ["1 Opening claim", "2 Supporting arguments", "3 Closing challenge"],
+  pt: ["1 Alegação inicial", "2 Argumentos de apoio", "3 Desafio final"],
+  es: ["1 Afirmación inicial", "2 Argumentos de apoyo", "3 Desafío final"],
+};
 
 // Each demo is a short polemic text in its native language, structured so
 // every sentence demonstrates a different fallacy from the catalog. The 8
@@ -192,8 +192,8 @@ const PROFILES = {
 const insert = db.prepare(`
   INSERT OR REPLACE INTO Analysis (
     id, status, source, sourceRef, title, text, language, provider, model,
-    score, summary, sentences, findings, createdAt, finishedAt, reviewedAt
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    score, summary, blocks, sentences, findings, createdAt, finishedAt, reviewedAt
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `);
 
 const now = new Date().toISOString();
@@ -276,7 +276,11 @@ function buildSentences(text) {
 }
 
 function seedProfile(lang, profile) {
-  const sentences = buildSentences(profile.text);
+  const document = structureDemoDocument(
+    buildSentences(profile.text),
+    SECTION_TITLES[lang],
+  );
+  const { sentences } = document;
   if (sentences.length !== profile.findings.length) {
     console.warn(
       `[${lang}] expected ${profile.findings.length} sentences, got ${sentences.length}; check punctuation`,
@@ -296,12 +300,13 @@ function seedProfile(lang, profile) {
     "paste",
     "demo",
     profile.title,
-    profile.text,
+    document.text,
     lang,
     "anthropic",
     "demo-seed",
     78,
     profile.summary,
+    JSON.stringify(document.blocks),
     JSON.stringify(sentences),
     JSON.stringify(findings),
     now,
@@ -317,7 +322,11 @@ for (const lang of Object.keys(PROFILES)) {
 
 // Legacy short id → Portuguese demo (kept for old shareable links).
 const pt = PROFILES.pt;
-const sentencesPt = buildSentences(pt.text);
+const documentPt = structureDemoDocument(
+  buildSentences(pt.text),
+  SECTION_TITLES.pt,
+);
+const sentencesPt = documentPt.sentences;
 const findingsPt = pt.findings.map((f, i) => ({
   sentenceIds: [`s${i}`],
   fallacy: f.fallacy,
@@ -331,12 +340,13 @@ insert.run(
   "paste",
   "demo",
   pt.title,
-  pt.text,
+  documentPt.text,
   "pt",
   "anthropic",
   "demo-seed",
   78,
   pt.summary,
+  JSON.stringify(documentPt.blocks),
   JSON.stringify(sentencesPt),
   JSON.stringify(findingsPt),
   now,
@@ -345,4 +355,4 @@ insert.run(
 );
 console.log("Seeded legacy /a/demo123abc");
 
-db.close();
+await db.close();

@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import { ingestUrl } from "@/lib/ingest/url";
 import { ingestAnalysisFile } from "@/lib/ingest/file";
 import { ingestText } from "@/lib/ingest/text";
-import { splitSentences } from "@/lib/sentences";
+import { prepareAnalysisDocument } from "@/lib/analysis-document";
 import { chunkSentences } from "@/lib/chunker";
 import { getProvider, resolveModel } from "@/lib/llm";
 import { DEFAULT_MODEL_CHAIN, withModelFallback } from "@/lib/llm/fallback";
@@ -100,11 +100,9 @@ export async function POST(req: NextRequest) {
     return jsonError(err instanceof Error ? err.message : "Ingestion failed", 400);
   }
 
-  if (doc.text.length > MAX_TEXT_CHARS) {
-    doc = { ...doc, text: doc.text.slice(0, MAX_TEXT_CHARS) };
-  }
-
-  const sentences = splitSentences(doc.text);
+  const preparedDocument = prepareAnalysisDocument(doc, MAX_TEXT_CHARS);
+  doc = { ...doc, text: preparedDocument.text };
+  const { blocks, sentences } = preparedDocument;
   if (sentences.length === 0) return jsonError("No sentences detected", 422);
 
   // Build the fallback chain. If the caller explicitly picked a model we
@@ -153,6 +151,7 @@ export async function POST(req: NextRequest) {
       language: lang,
       provider: llm.id,
       model: llm.defaultModel,
+      blocks: JSON.stringify(blocks),
       sentences: JSON.stringify(sentences),
       claims: JSON.stringify([]),
     },
@@ -174,6 +173,7 @@ export async function POST(req: NextRequest) {
         title: doc.title,
         source: doc.source,
         sourceRef: doc.sourceRef,
+        blocks,
         sentences,
         provider: llm.id,
         model: llm.defaultModel,

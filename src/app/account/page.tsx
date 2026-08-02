@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
 import { withAuth } from "@workos-inc/authkit-nextjs";
+import { cookies } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import {
+  AccountApiKeys,
+  type AccountApiKeyRow,
+} from "@/components/account-api-keys";
 import { AccountAnalysisTable } from "@/components/account-analysis-table";
 import { AccountIdentity } from "@/components/account-identity";
 import { AccountReviewJobs } from "@/components/account-review-jobs";
@@ -28,6 +33,7 @@ import {
   listPaperReviewJobs,
   mapPaperReviewJobStatus,
 } from "@/lib/api/paper-review";
+import { ACCOUNT_NEW_KEY_COOKIE } from "./api-keys/cookie";
 
 export const dynamic = "force-dynamic";
 
@@ -73,6 +79,8 @@ export default async function AccountPage({
       ? "analyses"
       : query.tab === "credits"
         ? "credits"
+        : query.tab === "api"
+          ? "api"
         : "profile";
   const checkoutSessionId =
     typeof query.session_id === "string" ? query.session_id : null;
@@ -131,6 +139,34 @@ export default async function AccountPage({
       : null;
   const analysisRows =
     activeTab === "analyses" ? await listUserAnalyses(user.id) : [];
+  const apiKeys =
+    activeTab === "api"
+      ? await prisma.apiKey.findMany({
+          where: { ownerWorkosUserId: user.id },
+          orderBy: { createdAt: "desc" },
+          take: 50,
+          select: {
+            id: true,
+            label: true,
+            prefix: true,
+            createdAt: true,
+            lastUsedAt: true,
+            revokedAt: true,
+          },
+        })
+      : [];
+  const apiKeyRows = apiKeys.map<AccountApiKeyRow>((key) => ({
+    id: key.id,
+    label: key.label,
+    prefix: key.prefix,
+    createdAt: key.createdAt.toISOString(),
+    lastUsedAt: key.lastUsedAt?.toISOString() ?? null,
+    revokedAt: key.revokedAt?.toISOString() ?? null,
+  }));
+  const newApiKeySecret =
+    activeTab === "api" && query.created
+      ? (await cookies()).get(ACCOUNT_NEW_KEY_COOKIE)?.value
+      : undefined;
   const reviewJobs = (await listPaperReviewJobs(user.id, 5)).map((row) =>
     mapPaperReviewJobStatus(row),
   );
@@ -182,6 +218,9 @@ export default async function AccountPage({
               active={activeTab === "credits"}
             >
               Credit activity
+            </AccountTab>
+            <AccountTab href="/account?tab=api" active={activeTab === "api"}>
+              API keys
             </AccountTab>
           </nav>
 
@@ -271,6 +310,14 @@ export default async function AccountPage({
             </>
           ) : activeTab === "analyses" ? (
             <AccountAnalysisTable rows={analysisRows} />
+          ) : activeTab === "api" ? (
+            <AccountApiKeys
+              keys={apiKeyRows}
+              newSecret={newApiKeySecret}
+              created={query.created === "1"}
+              revoked={query.revoked === "1"}
+              error={typeof query.error === "string" ? query.error : undefined}
+            />
           ) : (
             <section className="flex flex-col gap-4">
               {query.checkout === "success" && (

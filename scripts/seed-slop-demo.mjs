@@ -1,13 +1,13 @@
-import Database from "better-sqlite3";
-import { fileURLToPath } from "node:url";
-import path from "node:path";
+import { createSeedDatabase } from "./lib/postgres-seed.mjs";
+import { structureDemoDocument } from "./lib/demo-document.mjs";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const envUrl = process.env.DATABASE_URL;
-const dbPath = envUrl
-  ? envUrl.replace(/^file:/, "")
-  : path.join(__dirname, "..", "dev.db");
-const db = new Database(dbPath);
+const db = createSeedDatabase();
+
+const SECTION_TITLES = {
+  en: ["1 Product framing", "2 Promised benefits", "3 Closing pitch"],
+  pt: ["1 Enquadramento do produto", "2 Benefícios prometidos", "3 Fechamento"],
+  es: ["1 Presentación del producto", "2 Beneficios prometidos", "3 Cierre"],
+};
 
 // Each demo is a short fictional product-launch blurb written to be
 // deliberately slop-heavy: every sentence demonstrates a different pattern
@@ -302,14 +302,18 @@ function buildSentences(text) {
 const insert = db.prepare(`
   INSERT OR REPLACE INTO SlopCheck (
     id, status, source, sourceRef, title, text, language, provider, model,
-    score, summary, sentences, findings, createdAt, finishedAt, reviewedAt
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    score, summary, blocks, sentences, findings, createdAt, finishedAt, reviewedAt
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `);
 
 const now = new Date().toISOString();
 
 function seedProfile(lang, profile) {
-  const sentences = buildSentences(profile.text);
+  const document = structureDemoDocument(
+    buildSentences(profile.text),
+    SECTION_TITLES[lang],
+  );
+  const { sentences } = document;
   if (sentences.length !== profile.findings.length) {
     console.warn(
       `[${lang}] expected ${profile.findings.length} sentences, got ${sentences.length}; check punctuation`,
@@ -329,12 +333,13 @@ function seedProfile(lang, profile) {
     "paste",
     "demo",
     profile.title,
-    profile.text,
+    document.text,
     lang,
     "anthropic",
     "demo-seed",
     85,
     profile.summary,
+    JSON.stringify(document.blocks),
     JSON.stringify(sentences),
     JSON.stringify(findings),
     now,
@@ -348,4 +353,4 @@ for (const lang of Object.keys(PROFILES)) {
   seedProfile(lang, PROFILES[lang]);
 }
 
-db.close();
+await db.close();

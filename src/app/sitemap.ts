@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { blogPosts, blogTags } from "@/lib/blog";
 
 const BASE_URL = "https://jiddu.app";
 
@@ -29,7 +30,22 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${BASE_URL}/pricing`, changeFrequency: "weekly", priority: 0.8 },
     { url: `${BASE_URL}/api-access`, changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE_URL}/benchmark`, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${BASE_URL}/blog`, changeFrequency: "weekly", priority: 0.7 },
     { url: `${BASE_URL}/legal`, changeFrequency: "yearly", priority: 0.3 },
+  ];
+
+  const blogPages: MetadataRoute.Sitemap = [
+    ...blogPosts.map((post) => ({
+      url: `${BASE_URL}/blog/${post.slug}`,
+      lastModified: new Date(`${post.updatedAt}T12:00:00Z`),
+      changeFrequency: "monthly" as const,
+      priority: 0.8,
+    })),
+    ...blogTags.map((tag) => ({
+      url: `${BASE_URL}/blog/tag/${tag.slug}`,
+      changeFrequency: "monthly" as const,
+      priority: 0.5,
+    })),
   ];
 
   const demoPages: MetadataRoute.Sitemap = DEMO_PREFIXES.flatMap((prefix) =>
@@ -40,5 +56,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
     })),
   );
 
-  return [...staticPages, ...demoPages];
+  return [...staticPages, ...blogPages, ...demoPages];
 }

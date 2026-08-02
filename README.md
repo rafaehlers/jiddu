@@ -172,9 +172,8 @@ fulfillment path. Verified
 accounts granted access through `/admin/platform-access` instead receive
 included use of `OPENROUTER_API_KEY`; administrator emails configured in
 `ADMIN_EMAILS` always receive that access. Jiddu credits cover the web app,
-REST API and hosted MCP, while
-REST keys remain a separately operator-issued integration surface bound to a
-verified WorkOS account.
+REST API and hosted MCP. Verified users generate and revoke their own REST keys
+from the API keys tab in `/account`; each key remains bound to its owner account.
 
 ## Architecture
 
@@ -307,10 +306,10 @@ POST /api/v1/adversarial-reviews
 GET  /api/v1/adversarial-reviews/{id}
 ```
 
-Body is `{ "text": "…" }` (40–2000 chars) plus optional `lang` (`en`/`pt`/`es`) and, for explain, `level`. Authenticate with an operator-issued `X-Jiddu-Key`. Every key is assigned to one verified WorkOS account, stored only as a hash, shown once and rate-limited independently. Requests use that account's included access or Jiddu credits. Credit-funded calls reserve the maximum route estimate, then settle from OpenRouter's returned token counts and real cost plus the configured margin; the rate card is used only when provider accounting is unavailable. `fact-check` extracts and verifies each claim via Sonar, capped by `api.maxClaims`; uncached verification calls are charged individually.
+Body is `{ "text": "…" }` (40–2000 chars) plus optional `lang` (`en`/`pt`/`es`) and, for explain, `level`. Authenticate with an account-generated `X-Jiddu-Key`. Verified users create and revoke keys in `/account?tab=api`; every key is assigned to that WorkOS account, stored only as a hash, shown once and rate-limited independently. Requests use that account's included access or Jiddu credits. Credit-funded calls reserve the maximum route estimate, then settle from OpenRouter's returned token counts and real cost plus the configured margin; the rate card is used only when provider accounting is unavailable. `fact-check` extracts and verifies each claim via Sonar, capped by `api.maxClaims`; uncached verification calls are charged individually.
 
 - **Adversarial review API:** start a job with one multipart `file`, or JSON `{ "pdf_url": "https://…", "depth": "standard" }`. `depth` is `standard` or `deep`. The `202` response includes the id and status URL. Poll `GET /api/v1/adversarial-reviews/{id}` until `status` is `complete` or `failed`. Complete jobs include the structured review, public audit summary, source-verification metadata, and viewer/Markdown/print URLs.
-- **MCP server (remote, recommended):** the hosted endpoint at `https://jiddu.app/api/mcp` exposes five synchronous text tools plus `start_adversarial_review` and `get_adversarial_review`. Compatible MCP clients discover [WorkOS AuthKit MCP](https://workos.com/docs/authkit/mcp) automatically, open Jiddu sign-in and receive a resource-scoped bearer token. Tool calls use included platform access for allowlisted users and reserve, settle and debit Jiddu Credits for everyone else, so no manually issued `X-Jiddu-Key` is required.
+- **MCP server (remote, recommended):** the hosted endpoint at `https://jiddu.app/api/mcp` exposes five synchronous text tools plus `start_adversarial_review` and `get_adversarial_review`. Compatible MCP clients discover [WorkOS AuthKit MCP](https://workos.com/docs/authkit/mcp) automatically, open Jiddu sign-in and receive a resource-scoped bearer token. Tool calls use included platform access for allowlisted users and reserve, settle and debit Jiddu Credits for everyone else, so no REST API key is required.
 - **MCP server (local):** the same tools also ship as a standalone package, [`packages/jiddu-mcp`](./packages/jiddu-mcp), for offline/dev use — run from source (`node dist/index.js`), not published to npm. Machine-oriented docs: [`packages/jiddu-mcp/AGENT.md`](./packages/jiddu-mcp/AGENT.md).
 - **Evals:** fixed test sets in [`evals/`](./evals), plus a 30-case balanced synthetic SPECS benchmark under [`evals/paper-review`](./evals/paper-review). GPT-5.4 mini, GPT-5.5, GPT-5.6 Luna and GPT-5.6 Luna Pro all detected 30/30 injected defects; Luna Pro returned 8% fewer findings than standard Luna. See the [benchmark report](./evals/paper-review/report.md). Run deterministic tests with `npm test`; the paid specialist benchmark is opt-in via `OPENROUTER_API_KEY=<key> npm run eval:paper-review`.
 - **Paid smoke test:** `DATABASE_URL=postgresql://... npm run smoke:openrouter-postgres` exercises every OpenRouter-backed mode, persists and rereads each result in a disposable PostgreSQL database, reports latency/token/cost data, and removes its temporary rows. Use `SMOKE_ONLY=economical`, `paper-review-standard`, or `paper-review-deep` to narrow the run; `SMOKE_OPENROUTER_PROVIDER=OpenAI` can pin the Luna upstream while diagnosing provider-specific failures.

@@ -35,6 +35,13 @@ export function SiteFooter() {
         </span>
         <span className="flex items-center justify-center gap-3 flex-wrap">
           <Link
+            href="/blog"
+            className="hover:text-accent-hi transition-colors"
+          >
+            Blog
+          </Link>
+          <span aria-hidden>·</span>
+          <Link
             href="/how-it-works"
             className="hover:text-accent-hi transition-colors"
           >

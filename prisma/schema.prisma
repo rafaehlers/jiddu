@@ -20,6 +20,7 @@ model Analysis {
   model             String
   score             Int       @default(0) // 0..100 fallacy intensity
   summary           String? // short verdict
+  blocks            String    @default("[]") // JSON structural paragraphs with section/reference metadata
   sentences         String    @default("[]") // JSON array of {id,start,end,text}
   findings          String    @default("[]") // JSON array of findings
   transcript        String? // raw transcript accumulated during a live session
@@ -196,6 +197,7 @@ model SlopCheck {
   model             String
   score             Int       @default(0) // 0..100 slop intensity
   summary           String?
+  blocks            String    @default("[]") // JSON structural paragraphs with section/reference metadata
   sentences         String    @default("[]") // JSON array of {id,start,end,text}
   findings          String    @default("[]") // JSON array of SlopFinding
   errorMessage      String?
@@ -221,6 +223,7 @@ model Neutrality {
   verdict           String    @default("pending") // neutral | partisan_lean | explicitly_partisan | manipulation | pending
   confidence        Float     @default(0)
   rationale         String?
+  blocks            String    @default("[]") // JSON structural paragraphs with section/reference metadata
   sentences         String    @default("[]") // JSON array of {id,start,end,text}
   findings          String    @default("[]") // JSON array of NeutralityFinding
   errorMessage      String?
@@ -338,6 +341,7 @@ model FactCheck {
   language          String? // "pt" | "en" | "es"
   provider          String // "openai" (mapped from MODEL_CATALOG family)
   model             String // catalog id, e.g. "gpt-5.6-luna"
+  blocks            String    @default("[]") // JSON structural paragraphs with section/reference metadata
   sentences         String    @default("[]") // JSON array of {id,start,end,text}
   claims            String    @default("[]") // JSON array of {id, sentenceIds, statement, type, rationale}
   verdicts          String    @default("[]") // JSON array of {claimId, verdict, confidence, rationale, sources, model}

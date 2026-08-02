@@ -25,8 +25,10 @@ import { cn } from "@/lib/utils";
 import { onActivate } from "@/lib/a11y";
 import { ShareLinkBar } from "@/components/share-link-bar";
 import { ExportPdfButton } from "@/components/export-pdf-button";
+import { StructuredDocumentText } from "@/components/structured-document-text";
 import { useI18n } from "@/lib/i18n/provider";
 import type { Messages } from "@/lib/i18n/messages";
+import type { Block } from "@/lib/paragraphs";
 
 type ClaimWithId = Claim & { id: string };
 
@@ -36,6 +38,7 @@ type Props = {
   sourceRef: string | null;
   source: string;
   text: string;
+  blocks: Block[];
   sentences: Sentence[];
   claims: ClaimWithId[];
   status: string;
@@ -138,6 +141,7 @@ export function FactCheckView({
   sourceRef,
   source,
   text,
+  blocks,
   sentences,
   claims,
   status,
@@ -295,10 +299,31 @@ export function FactCheckView({
     }
   }
 
-  const paragraphs = useMemo(
-    () => groupIntoParagraphs(text, sentences),
-    [text, sentences],
-  );
+  function renderSentence(s: Sentence) {
+    const claimsForSentence = claimsBySentence.get(s.id);
+    if (!claimsForSentence?.length) {
+      return <span id={`s-${s.id}`}>{s.text}</span>;
+    }
+    const firstClaim = claimsForSentence[0];
+    const color = TYPE_COLOR[firstClaim.type] ?? "currentColor";
+    const isActive =
+      active && claimsForSentence.some((claim) => claim.id === active);
+    return (
+      <mark
+        id={`s-${s.id}`}
+        className="highlight"
+        data-active={isActive ? "true" : undefined}
+        role="button"
+        tabIndex={0}
+        aria-label={t.a11y_show_claim}
+        style={{ "--highlight-color": color } as React.CSSProperties}
+        onClick={() => scrollToClaim(firstClaim.id)}
+        onKeyDown={onActivate(() => scrollToClaim(firstClaim.id))}
+      >
+        {s.text}
+      </mark>
+    );
+  }
 
   const showVerifyButton =
     claims.length > 0 &&
@@ -389,52 +414,12 @@ export function FactCheckView({
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_28rem] gap-6">
         {/* Left: text */}
         <article className="font-serif text-lg leading-relaxed text-balance bg-paper border border-rule rounded-lg p-6">
-          {paragraphs.map((para, pIdx) => (
-            <p key={pIdx} className={pIdx > 0 ? "mt-4" : undefined}>
-              {para.map((s, sIdx) => {
-                const claimsForSentence = claimsBySentence.get(s.id);
-                const hasClaim = !!claimsForSentence?.length;
-                if (!hasClaim) {
-                  return (
-                    <span key={s.id} id={`s-${s.id}`}>
-                      {s.text}
-                      {sIdx < para.length - 1 && " "}
-                    </span>
-                  );
-                }
-                // Multi-claim sentences: take the first claim's color
-                // so the highlight aligns with the first card a click
-                // would scroll to. Rare case.
-                const firstClaim = claimsForSentence![0];
-                const color =
-                  TYPE_COLOR[firstClaim.type] ?? "currentColor";
-                const isActive =
-                  active &&
-                  claimsForSentence!.some((c) => c.id === active);
-                return (
-                  <mark
-                    key={s.id}
-                    id={`s-${s.id}`}
-                    className="highlight"
-                    data-active={isActive ? "true" : undefined}
-                    role="button"
-                    tabIndex={0}
-                    aria-label={t.a11y_show_claim}
-                    style={
-                      {
-                        "--highlight-color": color,
-                      } as React.CSSProperties
-                    }
-                    onClick={() => scrollToClaim(firstClaim.id)}
-                    onKeyDown={onActivate(() => scrollToClaim(firstClaim.id))}
-                  >
-                    {s.text}
-                    {sIdx < para.length - 1 && " "}
-                  </mark>
-                );
-              })}
-            </p>
-          ))}
+          <StructuredDocumentText
+            text={text}
+            blocks={blocks}
+            sentences={sentences}
+            renderSentence={renderSentence}
+          />
         </article>
 
         {/* Right: claim list */}
@@ -747,23 +732,4 @@ function SourceTierBadge({ tier }: { tier: SourceTier }) {
       {t[labelKey]}
     </span>
   );
-}
-
-function groupIntoParagraphs(
-  text: string,
-  sentences: Sentence[],
-): Sentence[][] {
-  if (sentences.length === 0) return [];
-  const groups: Sentence[][] = [[sentences[0]]];
-  for (let i = 1; i < sentences.length; i++) {
-    const prev = sentences[i - 1];
-    const cur = sentences[i];
-    const between = text.slice(prev.end, cur.start);
-    if (/\n\s*\n/.test(between)) {
-      groups.push([cur]);
-    } else {
-      groups[groups.length - 1].push(cur);
-    }
-  }
-  return groups;
 }

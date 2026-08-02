@@ -14,3 +14,14 @@ This version has breaking changes — APIs, conventions, and file structure may 
   and checks `https://jiddu.app/`.
 - Do not report a production push as complete until that script finishes with
   a successful health check.
+
+## Blog publishing — mandatory
+
+- Every blog post slug must always be written in English, regardless of the
+  language of the article being displayed.
+- Every blog post must ship complete versions in English, Portuguese and
+  Spanish, following the site's existing language selector.
+- Localization covers the full editorial surface: index copy, title, SEO
+  title, description, excerpt, body, reading time, FAQ, tags, CTAs, image alt
+  text and captions. Do not publish a blog post with one of the three locales
+  missing or partially translated.

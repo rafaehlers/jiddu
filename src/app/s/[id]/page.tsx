@@ -10,6 +10,7 @@ import { AnalysisSkeleton } from "@/components/analysis-skeleton";
 import type { SlopFinding } from "@/lib/slop-schema";
 import type { Sentence } from "@/lib/schema";
 import { analysisSocialMetadata } from "@/lib/social-metadata";
+import { readAnalysisBlocks } from "@/lib/analysis-document";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -45,6 +46,7 @@ export default async function SlopPage({ params }: Props) {
   if (!s) notFound();
 
   const sentences = JSON.parse(s.sentences) as Sentence[];
+  const blocks = readAnalysisBlocks(s.blocks, s.text);
   const findings = JSON.parse(s.findings) as SlopFinding[];
 
   return (
@@ -58,6 +60,7 @@ export default async function SlopPage({ params }: Props) {
           sourceRef={s.sourceRef}
           source={s.source}
           text={s.text}
+          blocks={blocks}
           sentences={sentences}
           findings={findings}
           score={s.status === "complete" ? s.score : null}

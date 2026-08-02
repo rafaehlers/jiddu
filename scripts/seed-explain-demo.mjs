@@ -1,13 +1,6 @@
-import Database from "better-sqlite3";
-import { fileURLToPath } from "node:url";
-import path from "node:path";
+import { createSeedDatabase } from "./lib/postgres-seed.mjs";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const envUrl = process.env.DATABASE_URL;
-const dbPath = envUrl
-  ? envUrl.replace(/^file:/, "")
-  : path.join(__dirname, "..", "dev.db");
-const db = new Database(dbPath);
+const db = createSeedDatabase();
 
 // One demo per locale. A short, accessible mini-paper with numbered sections
 // (1 Introduction / 2 Methods / 3 …) so the demo shows BOTH features the
@@ -387,4 +380,4 @@ for (const [lang, profile] of Object.entries(PROFILES)) {
 }
 
 console.log("\nDone. Open /e/demo-en, /e/demo-pt, /e/demo-es.");
-db.close();
+await db.close();

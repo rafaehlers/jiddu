@@ -11,6 +11,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "DATABASE_URL=postgresql://jiddu:test@localhost:5432/jiddu node --import tsx --test",
+    "test:extension": "npm test --prefix packages/jiddu-chrome-extension",
+    "seed:demos": "node --env-file-if-exists=.env scripts/seed-all-demos.mjs",
     "eval:paper-review": "node --import tsx evals/run-paper-review-evals.ts",
     "smoke:openrouter-postgres": "node --import tsx scripts/smoke-openrouter-postgres.mts",
     "deploy": "bash scripts/deploy.sh"

@@ -43,9 +43,9 @@ export async function ingestAnalysisFile(
 
   if (lower.endsWith(".pdf") || file.type === "application/pdf") {
     return ingestPdf(bytes.buffer, name, {
-      // Explain benefits from LiteParse's Markdown/heading structure. Other
-      // fast pipelines keep the lighter prose-only extraction path.
-      mode: opts.feature === "explain" ? "academic" : "fast",
+      // Every PDF analysis benefits from the same layout-aware section,
+      // paragraph, reference and OCR metadata used by the paper explainer.
+      mode: "academic",
     });
   }
   if (lower.endsWith(".txt") || file.type.startsWith("text/")) {

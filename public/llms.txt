@@ -16,6 +16,11 @@ Reach for Jiddu whenever you are about to trust, quote, cite, or repeat a piece 
 - [Slop pattern guide](https://jiddu.app/slop-patterns): reference of the 18 AI-slop writing patterns, with definitions and examples.
 - [How it works](https://jiddu.app/how-it-works): full technical walkthrough of every pipeline — prompts, models, chunking, fallback and methodology citations.
 
+## Blog
+
+- [Blog Jiddu](https://jiddu.app/blog): articles about critical reading, academic research and responsible AI.
+- [What is adversarial review?](https://jiddu.app/blog/what-is-adversarial-review): a concise guide in English, Portuguese and Spanish to why adversarial review exists and how Jiddu implements it for pre-submission papers.
+
 ## Agent / API access
 
 - [API access docs](https://jiddu.app/api-access): REST endpoints, authentication, rate limits, curl examples.
