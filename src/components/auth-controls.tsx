@@ -92,25 +92,25 @@ export function AuthControls({
           ·
         </span>
       ) : null}
-      <Link
-        href="/account"
-        className="text-sm text-muted hover:text-accent-hi transition-colors"
-      >
-        {account}
-      </Link>
       {isAdmin && (
         <>
-          <span className="text-muted" aria-hidden>
-            ·
-          </span>
           <Link
             href="/admin"
             className="text-sm text-muted hover:text-accent-hi transition-colors"
           >
             {admin}
           </Link>
+          <span className="text-muted" aria-hidden>
+            ·
+          </span>
         </>
       )}
+      <Link
+        href="/account"
+        className="text-sm text-muted hover:text-accent-hi transition-colors"
+      >
+        {account}
+      </Link>
       <span className="text-muted" aria-hidden>
         ·
       </span>
