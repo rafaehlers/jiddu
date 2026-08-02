@@ -239,19 +239,6 @@ export function BlogPostView({ post }: { post: BlogPost }) {
           </dl>
         </section>
 
-        <aside className="mt-12 rounded-xl border border-rule bg-paper p-6 sm:p-8">
-          <p className="font-serif text-2xl">{copy.ctaTitle}</p>
-          <p className="mt-2 max-w-2xl text-base leading-relaxed text-muted">
-            {copy.ctaDescription}
-          </p>
-          <Link
-            href="/review"
-            className="mt-5 inline-flex rounded-md bg-accent px-4 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
-          >
-            {copy.ctaLabel}
-          </Link>
-        </aside>
-
         <footer className="mt-10 border-t border-rule pt-6">
           <p className="text-sm font-medium text-foreground">{copy.tagsTitle}</p>
           <div className="mt-3 flex flex-wrap gap-2">
@@ -266,6 +253,19 @@ export function BlogPostView({ post }: { post: BlogPost }) {
             ))}
           </div>
         </footer>
+
+        <aside className="mt-12 rounded-xl border border-rule bg-paper p-6 sm:p-8">
+          <p className="font-serif text-2xl">{copy.ctaTitle}</p>
+          <p className="mt-2 max-w-2xl text-base leading-relaxed text-muted">
+            {copy.ctaDescription}
+          </p>
+          <Link
+            href="/review"
+            className="mt-5 inline-flex rounded-md bg-accent px-4 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
+          >
+            {copy.ctaLabel}
+          </Link>
+        </aside>
       </div>
     </article>
   );
