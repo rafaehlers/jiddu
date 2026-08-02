@@ -64,6 +64,18 @@ async function ingestWithLiteParse(
       hasSubstantialImages: page.hasSubstantialImages,
       imageCoverage: page.imageCoverage,
       isGarbled: page.isGarbled,
+      layout: page.layout
+        ? {
+            columnCount: page.layout.columnCount,
+            ruledTableCount: page.layout.ruledTableCount,
+            ruledTableCoverage: page.layout.ruledTableCoverage,
+            textTableRunCount: page.layout.textTableRunCount,
+            figureCount: page.layout.figureCount,
+            figureCoverage: page.layout.figureCoverage,
+            isComplex: page.layout.isComplex,
+            reasons: page.layout.reasons,
+          }
+        : undefined,
     }));
     // A short title/references page is often labelled "sparse-text" but does
     // not benefit from OCR. Reserve the expensive path for signals that mean
@@ -81,6 +93,9 @@ async function ingestWithLiteParse(
     outputFormat: academic ? "markdown" : "text",
     imageMode: academic ? "placeholder" : "off",
     extractLinks: academic,
+    // Papers benefit from removing repeated journal chrome and page numbers.
+    // Keep this explicit so a future LiteParse default cannot change output.
+    keepHeadersFooters: false,
     quiet: true,
     // A partial native-text result is more useful than discarding the whole
     // paper when OCR fails on one decorative or scanned page.

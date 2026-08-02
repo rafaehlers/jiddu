@@ -561,15 +561,23 @@ export async function runPreparedPaperReview(
   }
 }
 
-function selectVisualPages(
+export function selectVisualPages(
   pages: NonNullable<Awaited<ReturnType<typeof ingestPdf>>["pages"]>,
   complexity: Awaited<ReturnType<typeof ingestPdf>>["complexity"],
 ): number[] {
   const selected = new Set<number>();
   for (const page of complexity ?? []) {
+    const layoutNeedsVision =
+      (page.layout?.ruledTableCount ?? 0) > 0 ||
+      (page.layout?.textTableRunCount ?? 0) > 0 ||
+      (page.layout?.figureCount ?? 0) > 0 ||
+      page.layout?.reasons.some((reason) =>
+        ["table-likely", "dense-graphics"].includes(reason),
+      );
     if (
       page.hasSubstantialImages ||
       page.isGarbled ||
+      layoutNeedsVision ||
       page.reasons.some((reason) =>
         ["scanned", "embedded-images", "vector-text"].includes(reason),
       )

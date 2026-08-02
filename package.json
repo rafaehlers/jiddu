@@ -16,7 +16,7 @@
     "deploy": "bash scripts/deploy.sh"
   },
   "dependencies": {
-    "@llamaindex/liteparse": "2.5.1",
+    "@llamaindex/liteparse": "2.10.1",
     "@mozilla/readability": "^0.6.0",
     "@napi-rs/canvas": "^1.0.2",
     "@prisma/adapter-better-sqlite3": "^7.8.0",

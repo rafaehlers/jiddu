@@ -34,6 +34,18 @@ export type PdfPageComplexity = {
   hasSubstantialImages: boolean;
   imageCoverage: number;
   isGarbled: boolean;
+  layout?: PdfPageLayoutComplexity;
+};
+
+export type PdfPageLayoutComplexity = {
+  columnCount: number;
+  ruledTableCount: number;
+  ruledTableCoverage: number;
+  textTableRunCount: number;
+  figureCount: number;
+  figureCoverage: number;
+  isComplex: boolean;
+  reasons: string[];
 };
 
 const FETCH_TIMEOUT_MS = 15_000;

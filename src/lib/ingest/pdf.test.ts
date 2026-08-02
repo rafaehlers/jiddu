@@ -48,6 +48,12 @@ test("academic ingestion preserves pages with LiteParse", async () => {
   assert.match(doc.pages?.[0]?.text ?? "", /Adversarial Review Fixture/);
   assert.match(doc.pages?.[1]?.text ?? "", /matched control condition/);
   assert.equal(doc.complexity?.length, 2);
+  assert.ok(doc.complexity?.every((page) => page.layout));
+  assert.ok(
+    doc.complexity?.every(
+      (page) => typeof page.layout?.columnCount === "number",
+    ),
+  );
 });
 
 test("fast ingestion remains compatible with the existing text pipelines", async () => {
