@@ -234,6 +234,24 @@ export function HomeComposer({ initialMode = "detector" }: { initialMode?: Mode 
       return;
     }
 
+    if (mode === "review") {
+      const job = (await res.json().catch(() => null)) as {
+        id?: string;
+        viewerUrl?: string;
+      } | null;
+      if (!job?.id) {
+        setLive(null);
+        setSubmitError({
+          message: "The review job was created without a valid id.",
+          code: "invalid_job_response",
+        });
+        return;
+      }
+      abortRef.current = null;
+      router.replace(job.viewerUrl ?? `${cfg.resultPrefix}/${job.id}`);
+      return;
+    }
+
     for await (const ev of readSse(res, ctrl.signal)) {
       if (ev.event === "meta") {
         const meta = JSON.parse(ev.data) as { id: string; chunkCount: number };

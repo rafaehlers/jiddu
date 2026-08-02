@@ -8,6 +8,8 @@ import { PaperReviewView } from "@/components/paper-review-view";
 import { ScrollIndicator } from "@/components/scroll-indicator";
 import { parseStoredVenueProfile } from "@/lib/venues";
 import { analysisSocialMetadata } from "@/lib/social-metadata";
+import { mapPaperReviewJobStatus } from "@/lib/api/paper-review";
+import { PaperReviewJobStatus } from "@/components/paper-review-job-status";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -34,17 +36,7 @@ export default async function PaperReviewPage({ params }: Props) {
     return (
       <main className="flex-1 flex flex-col">
         <SiteHeader variant="viewer" />
-        <section className="mx-auto max-w-3xl w-full px-6 py-16 flex flex-col gap-4">
-          <h1 className="font-serif text-3xl">
-            {row.title ?? "Adversarial paper review"}
-          </h1>
-          <p className="text-muted">
-            Status: {row.status} · stage: {row.stage}
-          </p>
-          {row.errorMessage && (
-            <p className="text-[var(--severity-high)]">{row.errorMessage}</p>
-          )}
-        </section>
+        <PaperReviewJobStatus initialJob={mapPaperReviewJobStatus(row)} />
         <SiteFooter />
       </main>
     );

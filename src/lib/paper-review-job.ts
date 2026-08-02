@@ -9,6 +9,7 @@ import {
   researchPaperNovelty,
   runSpecsStage,
   selfCritiquePaperReview,
+  type PaperReviewModelCallEvent,
 } from "@/lib/llm/paper-review";
 import { resolveModel } from "@/lib/llm";
 import { paperReviewToMarkdown } from "@/lib/paper-review-markdown";
@@ -31,6 +32,7 @@ import type { ResolvedVenueProfile } from "@/lib/venues";
 import type { OpenRouterUsage } from "@/lib/openrouter-usage";
 import { loadStringSettings } from "@/lib/settings";
 import { selectVisualPages } from "@/lib/paper-visual-pages";
+import { appendPaperReviewTelemetry } from "@/lib/paper-review-telemetry";
 
 export const MAX_PAPER_TEXT_CHARS = 300_000;
 export const MAX_PDF_BYTES = 25 * 1024 * 1024;
@@ -106,6 +108,8 @@ export async function preparePaperReview(input: {
   venueProfile: ResolvedVenueProfile;
   reviewDate: string;
 }): Promise<PreparedPaperReview> {
+  const ingestStarted = Date.now();
+  const ingestStartedAt = new Date(ingestStarted).toISOString();
   const filename = input.filename.trim().slice(0, 2_000) || "paper.pdf";
   if (input.buffer.byteLength === 0) {
     throw new PaperReviewInputError(
@@ -173,6 +177,8 @@ export async function preparePaperReview(input: {
     ? (input.reviewDepth ?? "standard")
     : "standard";
   const id = nanoid(10);
+  const ingestFinished = Date.now();
+  const ingestFinishedAt = new Date(ingestFinished).toISOString();
 
   await prisma.paperReview.create({
     data: {
@@ -194,6 +200,22 @@ export async function preparePaperReview(input: {
       text: doc.text,
       pages: JSON.stringify(doc.pages),
       complexity: JSON.stringify(doc.complexity ?? []),
+      telemetry: JSON.stringify([
+        {
+          kind: "stage_started",
+          stageIndex: -1,
+          stage: "ingest",
+          at: ingestStartedAt,
+        },
+        {
+          kind: "stage_completed",
+          stageIndex: -1,
+          stage: "ingest",
+          startedAt: ingestStartedAt,
+          finishedAt: ingestFinishedAt,
+          durationMs: Math.max(0, ingestFinished - ingestStarted),
+        },
+      ]),
     },
   });
 
@@ -229,11 +251,28 @@ export async function runPreparedPaperReview(
   const { id, pageTaggedPaper, screenshots, venueProfile, reviewDate } =
     prepared;
   const callbacks = options?.callbacks;
+  let activeStage:
+    | {
+        index: number;
+        name: string;
+        started: number;
+        startedAt: string;
+      }
+    | undefined;
 
   const stage = async (index: number, name: string, dbStage: string) => {
+    const started = Date.now();
+    const startedAt = new Date(started).toISOString();
+    activeStage = { index, name, started, startedAt };
     await prisma.paperReview.update({
       where: { id },
       data: { stage: dbStage },
+    });
+    await appendPaperReviewTelemetry(id, {
+      kind: "stage_started",
+      stageIndex: index,
+      stage: name,
+      at: startedAt,
     });
     await callbacks?.onStage?.({
       index,
@@ -242,8 +281,52 @@ export async function runPreparedPaperReview(
     });
   };
   const stageDone = async (index: number) => {
+    if (activeStage?.index === index) {
+      const finished = Date.now();
+      await appendPaperReviewTelemetry(id, {
+        kind: "stage_completed",
+        stageIndex: index,
+        stage: activeStage.name,
+        startedAt: activeStage.startedAt,
+        finishedAt: new Date(finished).toISOString(),
+        durationMs: Math.max(0, finished - activeStage.started),
+      });
+      activeStage = undefined;
+    }
     await callbacks?.onStageDone?.({ index });
   };
+  const recordModelCall = async (event: PaperReviewModelCallEvent) => {
+    const current = activeStage;
+    if (!current) return;
+    if (event.kind === "started") {
+      await appendPaperReviewTelemetry(id, {
+        kind: "call_started",
+        callId: event.callId,
+        stageIndex: current.index,
+        stage: current.name,
+        operation: event.operation,
+        model: event.model,
+        startedAt: event.startedAt,
+      });
+      return;
+    }
+    await appendPaperReviewTelemetry(id, {
+      kind: event.kind === "completed" ? "call_completed" : "call_failed",
+      callId: event.callId,
+      stageIndex: current.index,
+      stage: current.name,
+      operation: event.operation,
+      model: event.model,
+      startedAt: event.startedAt,
+      finishedAt: event.finishedAt,
+      durationMs: event.durationMs,
+      error: event.error,
+    });
+  };
+  const callTelemetry = (operation: string) => ({
+    operation,
+    onCallEvent: recordModelCall,
+  });
   const routing = await loadStringSettings();
   const deepModel =
     prepared.reviewDepth === "deep"
@@ -265,6 +348,7 @@ export async function runPreparedPaperReview(
       {
         modelId: prepared.modelId,
         lang: prepared.lang,
+        ...callTelemetry("ledger"),
         signal: options?.signal,
         apiKey: options?.apiKey,
         onUsage: callbacks?.onUsage,
@@ -290,6 +374,7 @@ export async function runPreparedPaperReview(
     const research = await researchPaperNovelty(ledger, venueProfile, {
       modelId: deepModel,
       lang: prepared.lang,
+      ...callTelemetry("research"),
       signal: options?.signal,
       apiKey: options?.apiKey,
       onUsage: callbacks?.onUsage,
@@ -326,6 +411,7 @@ export async function runPreparedPaperReview(
           {
             modelId: specialistModel,
             lang: prepared.lang,
+            ...callTelemetry(`specs_${criterion}`),
             signal: options?.signal,
             apiKey: options?.apiKey,
             onUsage: callbacks?.onUsage,
@@ -368,6 +454,7 @@ export async function runPreparedPaperReview(
         {
           modelId: deepModel,
           lang: prepared.lang,
+          ...callTelemetry("synthesis"),
           signal: options?.signal,
           apiKey: options?.apiKey,
           onUsage: callbacks?.onUsage,
@@ -403,6 +490,7 @@ export async function runPreparedPaperReview(
         {
           modelId: deepModel,
           lang: prepared.lang,
+          ...callTelemetry("self_critique"),
           signal: options?.signal,
           apiKey: options?.apiKey,
           onUsage: callbacks?.onUsage,
@@ -445,6 +533,7 @@ export async function runPreparedPaperReview(
         {
           modelId: criticModel,
           lang: prepared.lang,
+          ...callTelemetry("quality_audit"),
           signal: options?.signal,
           apiKey: options?.apiKey,
           onUsage: callbacks?.onUsage,
@@ -479,6 +568,7 @@ export async function runPreparedPaperReview(
         {
           modelId: deepModel,
           lang: prepared.lang,
+          ...callTelemetry("final_repair"),
           signal: options?.signal,
           apiKey: options?.apiKey,
           onUsage: callbacks?.onUsage,
@@ -548,6 +638,19 @@ export async function runPreparedPaperReview(
     return review;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    if (activeStage) {
+      const finished = Date.now();
+      await appendPaperReviewTelemetry(id, {
+        kind: "stage_failed",
+        stageIndex: activeStage.index,
+        stage: activeStage.name,
+        startedAt: activeStage.startedAt,
+        finishedAt: new Date(finished).toISOString(),
+        durationMs: Math.max(0, finished - activeStage.started),
+        error: message.slice(0, 1_000),
+      });
+      activeStage = undefined;
+    }
     await prisma.paperReview
       .update({
         where: { id },

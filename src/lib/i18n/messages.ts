@@ -886,7 +886,7 @@ const en: Messages = {
   review_pdf_hint: "Drop exactly one final PDF, or click to choose",
   review_file_size_hint: "PDF only · read in full · up to ~300k characters",
   review_form_hint:
-    "A complete review can take several minutes. Keep this page open.",
+    "A complete review can take several minutes. It runs as a background job, so you can close this page after it starts.",
 
   nav_legal: "Terms",
   nav_how_it_works: "How it works",
@@ -1782,7 +1782,7 @@ const pt: Messages = {
   review_pdf_hint: "Solte exatamente um PDF final, ou clique para escolher",
   review_file_size_hint: "Somente PDF · leitura integral · até ~300 mil caracteres",
   review_form_hint:
-    "Uma revisão completa pode levar alguns minutos. Mantenha esta página aberta.",
+    "Uma revisão completa pode levar alguns minutos. Ela roda como job em segundo plano, então você pode fechar esta página depois que começar.",
 
   nav_legal: "Termos",
   nav_how_it_works: "Como funciona",
@@ -2679,7 +2679,7 @@ const es: Messages = {
   review_pdf_hint: "Suelta exactamente un PDF final, o haz clic para elegir",
   review_file_size_hint: "Solo PDF · lectura completa · hasta ~300 mil caracteres",
   review_form_hint:
-    "Una revisión completa puede tardar varios minutos. Mantén esta página abierta.",
+    "Una revisión completa puede tardar varios minutos. Se ejecuta como job en segundo plano, así que puedes cerrar esta página después de que comience.",
 
   nav_legal: "Términos",
   nav_how_it_works: "Cómo funciona",

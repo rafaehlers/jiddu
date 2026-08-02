@@ -1,0 +1,2 @@
+ALTER TABLE "PaperReview"
+ADD COLUMN "telemetry" TEXT NOT NULL DEFAULT '[]';

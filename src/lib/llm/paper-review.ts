@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { nanoid } from "nanoid";
 import type { ZodType } from "zod";
 import type { Lang } from "../fallacies";
 import {
@@ -49,13 +50,34 @@ type VisualPage = {
   png: Buffer;
 };
 
+export type PaperReviewModelCallEvent =
+  | {
+      kind: "started";
+      callId: string;
+      operation: string;
+      model: string;
+      startedAt: string;
+    }
+  | {
+      kind: "completed" | "failed";
+      callId: string;
+      operation: string;
+      model: string;
+      startedAt: string;
+      finishedAt: string;
+      durationMs: number;
+      error?: string;
+    };
+
 type RunOptions = {
   modelId?: string;
   lang: Lang;
+  operation?: string;
   signal?: AbortSignal;
   strictModel?: boolean;
   apiKey?: string;
   onUsage?: (usage: OpenRouterUsage) => void;
+  onCallEvent?: (event: PaperReviewModelCallEvent) => void | Promise<void>;
 };
 
 let cachedClient: OpenAI | null = null;
@@ -121,59 +143,61 @@ export async function researchPaperNovelty(
   for (const modelId of modelChain(opts.modelId, opts.strictModel)) {
     const choice = resolvePaperReviewModel(modelId);
     try {
-      const response = await client.chat.completions.create(
-        {
-          model: choice.openrouter,
-          messages: [
-            { role: "system", content: paperReviewContract(opts.lang) },
-            {
-              role: "user",
-              content: buildResearchPrompt(ledger, venueProfile),
-            },
-          ],
-          tools: [
-            {
-              type: "openrouter:web_search",
-              parameters: {
-                engine: "auto",
-                max_results: 6,
-                max_total_results: 20,
-                max_uses: 4,
-                search_context_size: "medium",
-                excluded_domains: [
-                  "reddit.com",
-                  "medium.com",
-                  "substack.com",
-                  "researchgate.net",
-                ],
+      return await trackModelCall(choice.id, opts, async () => {
+        const response = await client.chat.completions.create(
+          {
+            model: choice.openrouter,
+            messages: [
+              { role: "system", content: paperReviewContract(opts.lang) },
+              {
+                role: "user",
+                content: buildResearchPrompt(ledger, venueProfile),
               },
-            },
-          ],
-          max_tool_calls: 5,
-          max_tokens: 8_000,
-          ...providerExtras(choice),
-        } as unknown as OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming,
-        opts.signal ? { signal: opts.signal } : undefined,
-      );
-      const usage = readOpenRouterUsage(response, choice.id);
-      if (usage) opts.onUsage?.(usage);
-      const message = response.choices[0]?.message as
-        | (OpenAI.Chat.Completions.ChatCompletionMessage & {
-            annotations?: Array<{
-              type?: string;
-              url_citation?: { url?: string; title?: string };
-            }>;
-          })
-        | undefined;
-      const synthesis =
-        typeof message?.content === "string" ? message.content.trim() : "";
-      if (!synthesis) throw new Error("Research model returned no memo");
-      if (usage) usage.completed = true;
-      return {
-        synthesis,
-        sources: sourcesFromAnnotations(message?.annotations ?? []),
-        model: choice.id,
-      };
+            ],
+            tools: [
+              {
+                type: "openrouter:web_search",
+                parameters: {
+                  engine: "auto",
+                  max_results: 6,
+                  max_total_results: 20,
+                  max_uses: 4,
+                  search_context_size: "medium",
+                  excluded_domains: [
+                    "reddit.com",
+                    "medium.com",
+                    "substack.com",
+                    "researchgate.net",
+                  ],
+                },
+              },
+            ],
+            max_tool_calls: 5,
+            max_tokens: 8_000,
+            ...providerExtras(choice),
+          } as unknown as OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming,
+          opts.signal ? { signal: opts.signal } : undefined,
+        );
+        const usage = readOpenRouterUsage(response, choice.id);
+        if (usage) opts.onUsage?.(usage);
+        const message = response.choices[0]?.message as
+          | (OpenAI.Chat.Completions.ChatCompletionMessage & {
+              annotations?: Array<{
+                type?: string;
+                url_citation?: { url?: string; title?: string };
+              }>;
+            })
+          | undefined;
+        const synthesis =
+          typeof message?.content === "string" ? message.content.trim() : "";
+        if (!synthesis) throw new Error("Research model returned no memo");
+        if (usage) usage.completed = true;
+        return {
+          synthesis,
+          sources: sourcesFromAnnotations(message?.annotations ?? []),
+          model: choice.id,
+        };
+      });
     } catch (err) {
       if (opts.signal?.aborted) throw err;
       const message = err instanceof Error ? err.message : String(err);
@@ -341,51 +365,53 @@ async function runStructuredWithFallback<T>(
   for (const modelId of modelChain(opts.modelId, opts.strictModel)) {
     const choice = resolvePaperReviewModel(modelId);
     try {
-      const response = await client.chat.completions.create(
-        {
-          model: choice.openrouter,
-          messages: [
-            { role: "system", content: system },
-            { role: "user", content: userContent },
-          ],
-          tools: [
-            {
-              type: "function",
-              function: {
-                name: "report_analysis",
-                description: "Return the complete structured analysis.",
-                parameters: schema,
-              },
-            },
-          ],
-          tool_choice:
-            choice.toolMode === "auto"
-              ? "auto"
-              : {
-                  type: "function",
-                  function: { name: "report_analysis" },
+      return await trackModelCall(choice.id, opts, async () => {
+        const response = await client.chat.completions.create(
+          {
+            model: choice.openrouter,
+            messages: [
+              { role: "system", content: system },
+              { role: "user", content: userContent },
+            ],
+            tools: [
+              {
+                type: "function",
+                function: {
+                  name: "report_analysis",
+                  description: "Return the complete structured analysis.",
+                  parameters: schema,
                 },
-          max_tokens: 16_000,
-          ...providerExtras(choice),
-        } as OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming,
-        opts.signal ? { signal: opts.signal } : undefined,
-      );
-      const usage = readOpenRouterUsage(response, choice.id);
-      if (usage) opts.onUsage?.(usage);
-      const toolCall = response.choices[0]?.message?.tool_calls?.find(
-        (call) =>
-          call.type === "function" &&
-          call.function.name === "report_analysis",
-      );
-      if (!toolCall || toolCall.type !== "function") {
-        throw new Error("Model response missing report_analysis tool call");
-      }
-      const value = validator.parse(JSON.parse(toolCall.function.arguments));
-      if (usage) usage.completed = true;
-      return {
-        value,
-        model: choice.id,
-      };
+              },
+            ],
+            tool_choice:
+              choice.toolMode === "auto"
+                ? "auto"
+                : {
+                    type: "function",
+                    function: { name: "report_analysis" },
+                  },
+            max_tokens: 16_000,
+            ...providerExtras(choice),
+          } as OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming,
+          opts.signal ? { signal: opts.signal } : undefined,
+        );
+        const usage = readOpenRouterUsage(response, choice.id);
+        if (usage) opts.onUsage?.(usage);
+        const toolCall = response.choices[0]?.message?.tool_calls?.find(
+          (call) =>
+            call.type === "function" &&
+            call.function.name === "report_analysis",
+        );
+        if (!toolCall || toolCall.type !== "function") {
+          throw new Error("Model response missing report_analysis tool call");
+        }
+        const value = validator.parse(JSON.parse(toolCall.function.arguments));
+        if (usage) usage.completed = true;
+        return {
+          value,
+          model: choice.id,
+        };
+      });
     } catch (err) {
       if (opts.signal?.aborted) throw err;
       const message = err instanceof Error ? err.message : String(err);
@@ -427,6 +453,69 @@ function providerExtras(
       ? { reasoning: { effort: choice.reasoningEffort } }
       : {}),
   };
+}
+
+async function trackModelCall<T>(
+  model: string,
+  opts: RunOptions,
+  run: () => Promise<T>,
+): Promise<T> {
+  const callId = nanoid(10);
+  const operation = opts.operation ?? "paper_review";
+  const started = Date.now();
+  const startedAt = new Date(started).toISOString();
+  await emitCallEvent(opts, {
+    kind: "started",
+    callId,
+    operation,
+    model,
+    startedAt,
+  });
+
+  try {
+    const result = await run();
+    const finished = Date.now();
+    await emitCallEvent(opts, {
+      kind: "completed",
+      callId,
+      operation,
+      model,
+      startedAt,
+      finishedAt: new Date(finished).toISOString(),
+      durationMs: Math.max(0, finished - started),
+    });
+    return result;
+  } catch (error) {
+    const finished = Date.now();
+    await emitCallEvent(opts, {
+      kind: "failed",
+      callId,
+      operation,
+      model,
+      startedAt,
+      finishedAt: new Date(finished).toISOString(),
+      durationMs: Math.max(0, finished - started),
+      error: (error instanceof Error ? error.message : String(error)).slice(
+        0,
+        1_000,
+      ),
+    });
+    throw error;
+  }
+}
+
+async function emitCallEvent(
+  opts: RunOptions,
+  event: Parameters<NonNullable<RunOptions["onCallEvent"]>>[0],
+) {
+  try {
+    await opts.onCallEvent?.(event);
+  } catch (error) {
+    console.warn(
+      "[paper-review:call-telemetry]",
+      error instanceof Error ? error.message : error,
+    );
+  }
 }
 
 function sourcesFromAnnotations(

@@ -283,6 +283,7 @@ model PaperReview {
   sourceAudit       String? // URL reachability, title consistency, publication type
   qualityAudit      String? // independent critic flags and finding decisions
   retentionAudit    String? // deterministic specialist-finding retention gate
+  telemetry         String    @default("[]") // append-only stage/model-call timing events
   review            String? // final self-critiqued PaperReviewResult JSON
   markdown          String? // deterministic export generated from final JSON
   errorMessage      String?

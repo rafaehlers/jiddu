@@ -4,6 +4,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AccountAnalysisTable } from "@/components/account-analysis-table";
 import { AccountIdentity } from "@/components/account-identity";
+import { AccountReviewJobs } from "@/components/account-review-jobs";
 import { CopyCode } from "@/components/copy-code";
 import {
   AccountCreditActivityGrid,
@@ -23,6 +24,10 @@ import { getJidduCreditSnapshot } from "@/lib/jiddu-credits";
 import { prisma } from "@/lib/db";
 import { loadSettings } from "@/lib/settings";
 import { fulfillStripeCheckoutSession } from "@/lib/stripe-billing";
+import {
+  listPaperReviewJobs,
+  mapPaperReviewJobStatus,
+} from "@/lib/api/paper-review";
 
 export const dynamic = "force-dynamic";
 
@@ -126,6 +131,9 @@ export default async function AccountPage({
       : null;
   const analysisRows =
     activeTab === "analyses" ? await listUserAnalyses(user.id) : [];
+  const reviewJobs = (await listPaperReviewJobs(user.id, 5)).map((row) =>
+    mapPaperReviewJobStatus(row),
+  );
   const creditActivityRows =
     creditTransactions.map<AccountCreditActivityGridRow>((transaction) => ({
       activity:
@@ -176,6 +184,8 @@ export default async function AccountPage({
               Credit activity
             </AccountTab>
           </nav>
+
+          <AccountReviewJobs initialJobs={reviewJobs} />
 
           {activeTab === "profile" ? (
             <>

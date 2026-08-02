@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { after, NextRequest } from "next/server";
 import {
   PAPER_REVIEW_STAGE_COUNT,
   PaperReviewInputError,
@@ -130,9 +130,6 @@ export async function POST(req: NextRequest) {
     return reservation;
   }
 
-  const encoder = new TextEncoder();
-  const abortController = new AbortController();
-  let streamOpen = true;
   const billableCalls: { operation: string; model: string }[] = [];
   const usages: OpenRouterUsage[] = [];
   let settled = false;
@@ -150,79 +147,65 @@ export async function POST(req: NextRequest) {
     );
   };
 
-  const stream = new ReadableStream<Uint8Array>({
-    async start(controller) {
-      const send = (event: string, data: unknown) => {
-        if (!streamOpen) return;
-        controller.enqueue(
-          encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`),
-        );
-      };
-      send("meta", {
-        id: prepared.id,
-        title: prepared.title,
-        source: "pdf",
-        sourceRef: filename,
-        parser: prepared.parser,
-        pageCount: prepared.pageCount,
-        visualPageCount: prepared.visualPageCount,
-        model: prepared.modelId,
-        reviewDepth: prepared.reviewDepth,
-        venueTarget,
-        venueProfileVerified: venueProfile.profileVerified,
-        chunkCount: PAPER_REVIEW_STAGE_COUNT,
-      });
-
-      try {
-        const review = await runPreparedPaperReview(prepared, {
-          signal: abortController.signal,
-          apiKey: access.apiKey,
-          callbacks: {
-            onStage(event) {
-              send("stage", event);
-            },
-            onStageDone(event) {
-              send("chunkDone", event);
-            },
-            onBillableCall(event) {
-              billableCalls.push(event);
-            },
-            onUsage(usage) {
-              usages.push(usage);
-            },
+  after(async () => {
+    try {
+      await runPreparedPaperReview(prepared, {
+        apiKey: access.apiKey,
+        callbacks: {
+          onBillableCall(event) {
+            billableCalls.push(event);
           },
-        });
-        send("done", {
-          id: prepared.id,
-          recommendation: review.recommendation,
-          weaknessCount: review.weaknesses.length,
-        });
-        await settle();
-        if (streamOpen) controller.close();
-        streamOpen = false;
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        send("error", { error: message });
-        await settle();
-        if (streamOpen) controller.close();
-        streamOpen = false;
-      }
-    },
-    async cancel() {
-      streamOpen = false;
-      abortController.abort();
-      await settle();
-    },
+          onUsage(usage) {
+            usages.push(usage);
+          },
+        },
+      });
+    } catch (err) {
+      console.error(
+        `[web:adversarial-review:${prepared.id}]`,
+        err instanceof Error ? err.message : err,
+      );
+    } finally {
+      await settle().catch((err) => {
+        console.error(
+          `[web:adversarial-review:${prepared.id}:billing]`,
+          err instanceof Error ? err.message : err,
+        );
+      });
+    }
   });
 
-  return new Response(stream, {
-    headers: {
-      "content-type": "text/event-stream",
-      "cache-control": "no-cache, no-transform",
-      "x-accel-buffering": "no",
-      connection: "keep-alive",
+  return Response.json(
+    {
+      id: prepared.id,
+      status: "running",
+      stage: "ledger",
+      title: prepared.title,
+      source: "pdf",
+      sourceRef: filename,
+      parser: prepared.parser,
+      pageCount: prepared.pageCount,
+      visualPageCount: prepared.visualPageCount,
+      model: prepared.modelId,
+      reviewDepth: prepared.reviewDepth,
+      venueTarget,
+      venueProfileVerified: venueProfile.profileVerified,
+      progress: {
+        completedStages: 0,
+        totalStages: PAPER_REVIEW_STAGE_COUNT,
+      },
+      viewerUrl: `/r/${prepared.id}`,
+      retryAfterSeconds: 10,
     },
-  });
+    {
+      status: 202,
+      headers: {
+        location: `/r/${prepared.id}`,
+        "retry-after": "10",
+        "cache-control": "no-store",
+      },
+    },
+  );
 }
 
 function normalizeString(
