@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "Jiddu — Critical Reading",
+  "name": "__MSG_extensionName__",
   "version": "0.1.0",
-  "description": "Select a passage on any page and analyze fallacies, facts, or bias with Jiddu.",
+  "description": "__MSG_extensionDescription__",
+  "default_locale": "en",
   "icons": {
     "16": "icons/icon16.png",
     "32": "icons/icon32.png",
@@ -25,7 +26,7 @@
     "type": "module"
   },
   "action": {
-    "default_title": "Select a passage with Jiddu",
+    "default_title": "__MSG_actionTitle__",
     "default_icon": {
       "16": "icons/icon16.png",
       "32": "icons/icon32.png"
@@ -40,7 +41,7 @@
         "default": "Alt+J",
         "mac": "Command+Shift+J"
       },
-      "description": "Turn Jiddu passage selection on or off"
+      "description": "__MSG_commandDescription__"
     }
   }
 }

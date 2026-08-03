@@ -47,6 +47,22 @@ export function AccountApiKeys({
         </p>
       </div>
 
+      <div className="flex flex-col gap-4 rounded-lg border border-rule bg-paper p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+        <div>
+          <h3 className="font-serif text-xl">Use your key with Jiddu for Chrome</h3>
+          <p className="mt-1 max-w-2xl text-sm leading-6 text-muted">
+            Select a passage on any website and analyze its fallacies, factual
+            claims, or bias beside the original page.
+          </p>
+        </div>
+        <Link
+          href="/extension"
+          className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-md border border-rule bg-background px-4 py-2 text-sm font-medium transition-colors hover:border-accent-edge"
+        >
+          View Chrome extension
+        </Link>
+      </div>
+
       {newSecret ? (
         <div
           role="status"

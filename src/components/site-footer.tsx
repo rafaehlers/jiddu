@@ -19,6 +19,12 @@ export function SiteFooter() {
         : "Create account";
   const contactLabel =
     lang === "pt" ? "Contato" : lang === "es" ? "Contacto" : "Contact";
+  const extensionLabel =
+    lang === "pt"
+      ? "Extensão Chrome"
+      : lang === "es"
+        ? "Extensión Chrome"
+        : "Chrome extension";
 
   return (
     <footer className="mt-auto border-t border-rule">
@@ -90,6 +96,13 @@ export function SiteFooter() {
             className="hover:text-accent-hi transition-colors"
           >
             {contactLabel}
+          </Link>
+          <span aria-hidden>·</span>
+          <Link
+            href="/extension"
+            className="hover:text-accent-hi transition-colors"
+          >
+            {extensionLabel}
           </Link>
           {authEnabled && !loading && (
             <>

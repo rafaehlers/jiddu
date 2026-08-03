@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build": "node scripts/build.mjs",
+    "render:store-assets": "node scripts/render-store-assets.mjs",
     "test": "node --test tests/*.test.js"
   }
 }

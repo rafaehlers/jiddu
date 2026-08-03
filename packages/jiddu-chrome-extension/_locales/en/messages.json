@@ -1,0 +1,16 @@
+{
+  "extensionName": {
+    "message": "Jiddu — Critical Reading",
+    "description": "Extension name shown by Chrome and the Chrome Web Store."
+  },
+  "extensionDescription": {
+    "message": "Select a passage on any page and analyze fallacies, factual claims, or bias with Jiddu.",
+    "description": "Short description shown by Chrome and the Chrome Web Store."
+  },
+  "actionTitle": {
+    "message": "Select a passage with Jiddu"
+  },
+  "commandDescription": {
+    "message": "Turn Jiddu passage selection on or off"
+  }
+}

@@ -1,14 +1,10 @@
+import { API_BASES, DEFAULT_API_BASE } from "./runtime-config.js";
+
 export const MIN_API_TEXT_CHARS = 40;
 export const MAX_API_TEXT_CHARS = 2000;
 export const MAX_FACTCHECK_TEXT_CHARS = 10000;
 
-export const API_BASES = Object.freeze([
-  "https://jiddu.app",
-  "http://localhost:3000",
-  "http://127.0.0.1:3000",
-]);
-
-export const DEFAULT_API_BASE = API_BASES[0];
+export { API_BASES, DEFAULT_API_BASE };
 
 export const LENSES = Object.freeze({
   fallacies: {

@@ -19,6 +19,7 @@
 
 # production
 /build
+/packages/jiddu-chrome-extension/dist
 
 # misc
 .DS_Store

@@ -55,4 +55,22 @@ npm test --prefix packages/jiddu-chrome-extension
 - `sidepanel.*`: settings, loading states and structured results.
 - `lib/api.js`: API contract, safe chunking and result aggregation.
 
-No runtime dependencies or build step are required.
+The development version has no runtime dependencies. Build the Chrome Web
+Store package with:
+
+```bash
+npm run build:extension
+```
+
+That command creates a production-only unpacked directory and ZIP under
+`packages/jiddu-chrome-extension/dist`. The published manifest allows HTTPS
+requests to `jiddu.app` only; localhost options remain exclusive to the source
+development build.
+
+Store listing copy, reviewer notes and submission assets live under
+`store-listing`. Regenerate the promotional tile and screenshots after a
+material UI change with:
+
+```bash
+npm run render:store-assets --prefix packages/jiddu-chrome-extension
+```

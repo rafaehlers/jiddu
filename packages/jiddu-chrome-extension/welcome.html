@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Welcome to Jiddu</title>
+    <link rel="stylesheet" href="welcome.css" />
+  </head>
+  <body>
+    <header class="welcome-header">
+      <a class="brand" href="https://jiddu.app" target="_blank" rel="noreferrer">
+        <img src="icons/icon128.png" alt="" aria-hidden="true" />
+        <span><strong>Jiddu</strong><small data-i18n="brand.subtitle">Critical reading</small></span>
+      </a>
+      <a class="quiet-link" href="https://jiddu.app/extension/privacy" target="_blank" rel="noreferrer" data-i18n="links.privacy">Extension privacy policy</a>
+    </header>
+
+    <main>
+      <section class="hero">
+        <span class="eyebrow" data-i18n="hero.eyebrow">WELCOME TO JIDDU</span>
+        <h1 data-i18n="hero.title">Read the web with a critical mind.</h1>
+        <p data-i18n="hero.description">Connect your account once, then select any passage worth examining.</p>
+      </section>
+
+      <ol class="steps">
+        <li><span>1</span><div><strong data-i18n="steps.account.title">Sign in to Jiddu</strong><p data-i18n="steps.account.text">Use your Jiddu account to keep API access and analysis history together.</p></div></li>
+        <li><span>2</span><div><strong data-i18n="steps.key.title">Create an API key</strong><p data-i18n="steps.key.text">Generate a personal key in your account. It can be revoked at any time.</p></div></li>
+        <li><span>3</span><div><strong data-i18n="steps.connect.title">Connect this extension</strong><p data-i18n="steps.connect.text">Paste the key below, save, and click the Jiddu icon on any page.</p></div></li>
+      </ol>
+
+      <div class="content-grid">
+        <form id="welcomeForm" class="connection-card">
+          <a class="account-link" href="https://jiddu.app/account?tab=api" target="_blank" rel="noreferrer" data-i18n="links.account">Sign in and create an API key</a>
+          <label class="field">
+            <span data-i18n="form.apiKey">Jiddu API key</span>
+            <input id="apiKeyInput" type="password" autocomplete="off" placeholder="jdk_…" required />
+            <small data-i18n="form.apiKeyHint">Stored only in this Chrome installation and sent to Jiddu only for authentication.</small>
+          </label>
+          <div class="language-grid">
+            <label class="field">
+              <span data-i18n="form.interfaceLanguage">Interface language</span>
+              <select id="uiLangInput">
+                <option value="en">English</option>
+                <option value="pt">Português</option>
+                <option value="es">Español</option>
+              </select>
+            </label>
+            <label class="field">
+              <span data-i18n="form.explanationLanguage">Explanation language</span>
+              <select id="langInput">
+                <option value="en">English</option>
+                <option value="pt">Português</option>
+                <option value="es">Español</option>
+              </select>
+            </label>
+          </div>
+          <button id="saveButton" type="submit" data-i18n="form.save">Save and start reading</button>
+          <p id="feedback" class="feedback" role="status"></p>
+        </form>
+
+        <aside class="privacy-card">
+          <span class="privacy-icon" aria-hidden="true">◎</span>
+          <h2 data-i18n="privacy.title">What happens to selected text</h2>
+          <p data-i18n="privacy.body">Nothing is sent when you hover or select. Only after you choose Fallacies, Facts, or Bias, the selected passage is sent securely to Jiddu, processed by model providers, and stored in your account analysis history. The page title and URL stay in this Chrome session and are not sent to Jiddu.</p>
+          <strong data-i18n="privacy.limited">Jiddu does not sell this data or use it for advertising.</strong>
+        </aside>
+      </div>
+    </main>
+
+    <footer><span data-i18n="footer.note">Jiddu can be wrong. Review the findings and sources.</span><a href="https://jiddu.app" target="_blank" rel="noreferrer">jiddu.app</a></footer>
+    <script type="module" src="welcome.js"></script>
+  </body>
+</html>

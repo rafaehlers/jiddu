@@ -28,8 +28,11 @@ const SETTINGS_KEY = "jiddu:settings";
 
 void initializeExtension();
 
-chrome.runtime.onInstalled.addListener(() => {
+chrome.runtime.onInstalled.addListener(({ reason }) => {
   void initializeExtension();
+  if (reason === "install") {
+    void chrome.tabs.create({ url: chrome.runtime.getURL("welcome.html") });
+  }
 });
 
 chrome.action.onClicked.addListener((tab) => {

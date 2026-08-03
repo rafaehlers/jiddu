@@ -1,0 +1,14 @@
+{
+  "extensionName": {
+    "message": "Jiddu — Lectura crítica"
+  },
+  "extensionDescription": {
+    "message": "Selecciona un pasaje en cualquier página y analiza falacias, afirmaciones factuales o sesgo con Jiddu."
+  },
+  "actionTitle": {
+    "message": "Seleccionar un pasaje con Jiddu"
+  },
+  "commandDescription": {
+    "message": "Activar o desactivar la selección de pasajes de Jiddu"
+  }
+}
