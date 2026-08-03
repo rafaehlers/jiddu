@@ -154,7 +154,13 @@ const MODE_CONFIG: Record<
  * navigation); the URL is kept in sync via history.replaceState so the
  * feature routes still work as deep links and SEO entry points.
  */
-export function HomeComposer({ initialMode = "detector" }: { initialMode?: Mode }) {
+export function HomeComposer({
+  initialMode = "detector",
+  showOriginNote = false,
+}: {
+  initialMode?: Mode;
+  showOriginNote?: boolean;
+}) {
   const router = useRouter();
   const { t, lang } = useI18n();
   const [mode, setMode] = useState<Mode>(initialMode);
@@ -395,6 +401,34 @@ export function HomeComposer({ initialMode = "detector" }: { initialMode?: Mode 
           <span className="font-medium text-foreground">{t.privacy}</span>{" "}
           {t.privacy_body}
         </div>
+
+        {showOriginNote && (
+          <aside
+            className="grid gap-3 border-t border-rule pt-6 sm:grid-cols-[10rem_1fr] sm:gap-8 sm:pt-8"
+            aria-labelledby="home-origin-heading"
+          >
+            <h2
+              id="home-origin-heading"
+              className="font-serif text-xl text-foreground"
+            >
+              {t.home_origin_heading}
+            </h2>
+            <p className="max-w-3xl text-sm leading-relaxed text-foreground/80 sm:text-base">
+              {t.home_origin_before_name}{" "}
+              <a
+                href="https://en.wikipedia.org/wiki/Jiddu_Krishnamurti"
+                target="_blank"
+                rel="noreferrer"
+                className="underline underline-offset-4"
+              >
+                Jiddu Krishnamurti
+              </a>
+              {t.home_origin_after_name}{" "}
+              <em>{t.home_origin_quote}</em>{" "}
+              {t.home_origin_explanation}
+            </p>
+          </aside>
+        )}
       </section>
     );
   }

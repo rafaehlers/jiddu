@@ -18,7 +18,7 @@ export default function Home() {
   return (
     <main className="flex-1 flex flex-col">
       <SiteHeader showLogo={false} />
-      <HomeComposer initialMode="detector" />
+      <HomeComposer initialMode="detector" showOriginNote />
       <SiteFooter />
     </main>
   );

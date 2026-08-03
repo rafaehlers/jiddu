@@ -10,6 +10,11 @@ export type Messages = {
   // Generic subtitle for the unified home — mode-neutral, since the four
   // lenses are picked via the cards rather than separate pages.
   home_hero_subtitle: string;
+  home_origin_heading: string;
+  home_origin_before_name: string;
+  home_origin_after_name: string;
+  home_origin_quote: string;
+  home_origin_explanation: string;
   privacy: string;
   privacy_body: string;
   see_demo: string;
@@ -514,6 +519,12 @@ const en: Messages = {
     "Upload a PDF or screenshot, paste text or an image, or drop a URL. Jiddu highlights the passages that contain logical fallacies and explains each one in a comment — just like a reviewer in Word — and gives the whole piece a fallacy score from 0 to 100.",
   home_hero_subtitle:
     "Drop a PDF or screenshot, paste text or an image, or add a URL — then pick a lens. Or use Live to monitor fallacies, check-worthy claims and neutrality as someone speaks.",
+  home_origin_heading: "Why Jiddu?",
+  home_origin_before_name: "The name is a nod to",
+  home_origin_after_name: ", who declared in 1929 that",
+  home_origin_quote: "truth is a pathless land",
+  home_origin_explanation:
+    "— no creed, authority, or method can hand it to you; you have to get there yourself. That is the whole point of the tool: it doesn't rule a text true or false for you, it gives you the instruments to read it critically and decide on your own.",
   privacy: "Privacy:",
   privacy_body:
     "your content — including pasted screenshots and selected PDF page images when visual inspection is needed — is sent to the chosen model via OpenRouter. Jiddu does not retain screenshot files; their extracted text is stored locally under a shareable id.",
@@ -1413,6 +1424,12 @@ const pt: Messages = {
     "Envie um PDF ou screenshot, cole texto ou uma imagem, ou solte uma URL. O Jiddu destaca os trechos com falácias lógicas e explica cada um em um comentário — como um revisor no Word — e dá uma nota de 0 a 100 para o texto inteiro.",
   home_hero_subtitle:
     "Solte um PDF ou screenshot, cole texto ou uma imagem, ou adicione uma URL — e escolha uma lente. Ou use o Live para monitorar falácias, afirmações verificáveis e sinais de imparcialidade enquanto alguém fala.",
+  home_origin_heading: "Por que Jiddu?",
+  home_origin_before_name: "O nome é uma homenagem a",
+  home_origin_after_name: ", que declarou em 1929 que",
+  home_origin_quote: "a verdade é uma terra sem caminhos",
+  home_origin_explanation:
+    "— nenhum credo, autoridade ou método pode entregá-la a você; é preciso chegar até ela por conta própria. Esse é o propósito da ferramenta: ela não determina se um texto é verdadeiro ou falso por você; oferece os instrumentos para lê-lo criticamente e decidir por conta própria.",
   privacy: "Privacidade:",
   privacy_body:
     "seu conteúdo — incluindo screenshots colados e imagens de páginas selecionadas do PDF quando necessário — é enviado ao modelo escolhido via OpenRouter. O Jiddu não retém o arquivo do screenshot; o texto extraído é armazenado localmente sob um id compartilhável.",
@@ -2311,6 +2328,12 @@ const es: Messages = {
     "Sube un PDF o screenshot, pega texto o una imagen, o suelta una URL. Jiddu resalta los pasajes con falacias lógicas y explica cada uno en un comentario — como un revisor en Word — y le da al texto entero una puntuación de falacia de 0 a 100.",
   home_hero_subtitle:
     "Suelta un PDF o screenshot, pega texto o una imagen, o añade una URL — y elige una lente. O usa Live para monitorear falacias, afirmaciones verificables y señales de neutralidad mientras alguien habla.",
+  home_origin_heading: "¿Por qué Jiddu?",
+  home_origin_before_name: "El nombre es un guiño a",
+  home_origin_after_name: ", quien declaró en 1929 que",
+  home_origin_quote: "la verdad es una tierra sin caminos",
+  home_origin_explanation:
+    "— ningún credo, autoridad o método puede entregártela; tienes que llegar a ella por tu cuenta. Ese es precisamente el propósito de la herramienta: no decide por ti si un texto es verdadero o falso, sino que te da los instrumentos para leerlo críticamente y decidir por tu cuenta.",
   privacy: "Privacidad:",
   privacy_body:
     "tu contenido — incluidos screenshots pegados e imágenes de páginas seleccionadas del PDF cuando sea necesario — se envía al modelo elegido vía OpenRouter. Jiddu no conserva el archivo del screenshot; el texto extraído se almacena localmente bajo un id compartible.",
