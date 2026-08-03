@@ -777,6 +777,29 @@ dialog::backdrop {
   font-size: 10px;
 }
 
+html.print-view body {
+  background: #fff;
+}
+
+html.print-view .app-header,
+html.print-view #app,
+html.print-view .app-footer {
+  width: min(100%, 780px);
+  margin-inline: auto;
+}
+
+html.print-view .app-header {
+  position: static;
+  background: #fff;
+  backdrop-filter: none;
+}
+
+html.print-view #settingsButton,
+html.print-view .new-selection,
+html.print-view dialog {
+  display: none !important;
+}
+
 @keyframes orbit {
   to { transform: rotate(360deg); }
 }

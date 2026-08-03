@@ -4,6 +4,10 @@ import {
   getUiMessages,
   normalizeUiLang,
 } from "./lib/i18n.js";
+import {
+  buildPrintViewUrl,
+  parsePrintTabId,
+} from "./lib/print.js";
 
 const app = document.querySelector("#app");
 const settingsDialog = document.querySelector("#settingsDialog");
@@ -21,10 +25,18 @@ let activeState = null;
 let settings = null;
 let uiLang = DEFAULT_UI_LANG;
 let uiMessages = getUiMessages(uiLang);
+const printSourceTabId = parsePrintTabId(window.location.search);
+const isPrintView = Number.isInteger(printSourceTabId);
+let initializationComplete = false;
+let printStarted = false;
 
-settingsButton.addEventListener("click", () => void openSettings());
-closeSettingsButton.addEventListener("click", () => settingsDialog.close());
-settingsForm.addEventListener("submit", (event) => void saveSettings(event));
+if (isPrintView) {
+  document.documentElement.classList.add("print-view");
+} else {
+  settingsButton.addEventListener("click", () => void openSettings());
+  closeSettingsButton.addEventListener("click", () => settingsDialog.close());
+  settingsForm.addEventListener("submit", (event) => void saveSettings(event));
+}
 
 chrome.runtime.onMessage.addListener((message) => {
   if (message?.type !== "JIDDU_STATE_CHANGED" || message.tabId !== activeTabId) return;
@@ -32,17 +44,17 @@ chrome.runtime.onMessage.addListener((message) => {
   render();
 });
 
-chrome.tabs.onActivated.addListener(({ tabId }) => {
-  activeTabId = tabId;
-  void loadState();
-});
-
 void initialize();
 
 async function initialize() {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  activeTabId = tab?.id ?? null;
+  if (isPrintView) {
+    activeTabId = printSourceTabId;
+  } else {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    activeTabId = tab?.id ?? null;
+  }
   await Promise.all([loadState(), loadSettings()]);
+  initializationComplete = true;
   render();
 }
 
@@ -121,6 +133,7 @@ function render() {
   }
   if (activeState.status === "success") {
     renderResult(activeState);
+    schedulePrint();
     return;
   }
   renderEmpty();
@@ -433,18 +446,31 @@ async function retryAnalysis() {
 
 function printReport() {
   if (activeState?.status !== "success") return;
-  const previousTitle = document.title;
+  const printUrl = buildPrintViewUrl(
+    chrome.runtime.getURL("sidepanel.html"),
+    activeTabId,
+  );
+  void chrome.tabs.create({ url: printUrl });
+}
+
+function schedulePrint() {
+  if (!isPrintView || !initializationComplete || printStarted) return;
+  printStarted = true;
+
   const lens = ["fallacies", "facts", "neutrality"].includes(activeState.lens)
     ? t(`lens.${activeState.lens}`)
     : t("lens.analysis");
   const sourceTitle = activeState.sourceTitle || t("source.untitled");
   document.title = `${sourceTitle} — ${lens} — Jiddu`;
+  window.addEventListener("afterprint", closePrintView, { once: true });
+  setTimeout(() => window.print(), 250);
+}
 
-  const restoreTitle = () => {
-    document.title = previousTitle;
-  };
-  window.addEventListener("afterprint", restoreTitle, { once: true });
-  window.print();
+function closePrintView() {
+  void chrome.tabs.getCurrent().then((tab) => {
+    if (Number.isInteger(tab?.id)) return chrome.tabs.remove(tab.id);
+    return undefined;
+  }).catch(() => undefined);
 }
 
 function sendMessage(message) {

@@ -18,6 +18,10 @@ import {
   getUiMessages,
   normalizeUiLang,
 } from "./lib/i18n.js";
+import {
+  defaultSidePanelOptions,
+  tabSidePanelOptions,
+} from "./lib/side-panel.js";
 
 const STATE_PREFIX = "jiddu:analysis:";
 const SETTINGS_KEY = "jiddu:settings";
@@ -61,6 +65,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
 async function initializeExtension() {
   await Promise.allSettled([
     chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: false }),
+    chrome.sidePanel.setOptions(defaultSidePanelOptions()),
     chrome.storage.local.setAccessLevel?.({ accessLevel: "TRUSTED_CONTEXTS" }),
     chrome.storage.session.setAccessLevel?.({ accessLevel: "TRUSTED_CONTEXTS" }),
   ]);
@@ -137,6 +142,7 @@ async function toggleInspector(tabId) {
   const settings = await getSettings();
   const messages = getUiMessages(settings.uiLang);
   if (!Number.isInteger(tabId)) throw new Error(text(messages, "worker.openPage"));
+  await chrome.sidePanel.setOptions(tabSidePanelOptions(tabId));
   try {
     await chrome.tabs.sendMessage(tabId, { type: "JIDDU_TOGGLE_INSPECTOR" });
     return;

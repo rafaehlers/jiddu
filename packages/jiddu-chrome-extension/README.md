@@ -17,6 +17,14 @@ Click the toolbar icon, hover a readable block, click it and choose a lens. The
 first analysis opens the side panel, where the extension asks for a Jiddu API
 key generated from the API keys tab in the user's account.
 
+The side panel is enabled only for the tab where Jiddu was activated. Switching
+tabs hides it without moving or discarding that tab's report.
+
+**Print report** opens a temporary, print-friendly extension tab and launches
+Chrome's print dialog from there. That temporary tab does not inherit the Jiddu
+side panel and closes after printing or cancelling. Chrome does not reliably
+print directly from a side panel document.
+
 The extension uses `activeTab`: it can inspect a page only after an explicit
 toolbar click or keyboard shortcut. The selected text is sent only after the
 user chooses a lens.
