@@ -10,6 +10,7 @@ import {
 import { AccountAnalysisTable } from "@/components/account-analysis-table";
 import { AccountIdentity } from "@/components/account-identity";
 import { AccountReviewJobs } from "@/components/account-review-jobs";
+import { AccountSupportForm } from "@/components/account-support-form";
 import { CopyCode } from "@/components/copy-code";
 import {
   AccountCreditActivityGrid,
@@ -81,7 +82,9 @@ export default async function AccountPage({
         ? "credits"
         : query.tab === "api"
           ? "api"
-        : "profile";
+          : query.tab === "support"
+            ? "support"
+            : "profile";
   const checkoutSessionId =
     typeof query.session_id === "string" ? query.session_id : null;
   let checkoutFulfilled = false;
@@ -222,6 +225,12 @@ export default async function AccountPage({
             <AccountTab href="/account?tab=api" active={activeTab === "api"}>
               API keys
             </AccountTab>
+            <AccountTab
+              href="/account?tab=support"
+              active={activeTab === "support"}
+            >
+              Support
+            </AccountTab>
           </nav>
 
           <AccountReviewJobs initialJobs={reviewJobs} />
@@ -318,6 +327,8 @@ export default async function AccountPage({
               revoked={query.revoked === "1"}
               error={typeof query.error === "string" ? query.error : undefined}
             />
+          ) : activeTab === "support" ? (
+            <AccountSupportForm email={user.email} />
           ) : (
             <section className="flex flex-col gap-4">
               {query.checkout === "success" && (

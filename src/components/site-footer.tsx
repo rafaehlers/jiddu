@@ -17,6 +17,8 @@ export function SiteFooter() {
       : lang === "es"
         ? "Crear cuenta"
         : "Create account";
+  const contactLabel =
+    lang === "pt" ? "Contato" : lang === "es" ? "Contacto" : "Contact";
 
   return (
     <footer className="mt-auto border-t border-rule">
@@ -81,6 +83,13 @@ export function SiteFooter() {
             className="hover:text-accent-hi transition-colors"
           >
             {t.nav_api}
+          </Link>
+          <span aria-hidden>·</span>
+          <Link
+            href="/contact"
+            className="hover:text-accent-hi transition-colors"
+          >
+            {contactLabel}
           </Link>
           {authEnabled && !loading && (
             <>
