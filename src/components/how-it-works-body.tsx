@@ -47,7 +47,10 @@ export function HowItWorksBody() {
             id={`section-${i}`}
             className="flex flex-col gap-3 scroll-mt-16"
           >
-            <h2 className="font-serif text-xl">
+            <h2
+              id={s.creditTable ? "credits-billing" : undefined}
+              className="scroll-mt-16 font-serif text-xl"
+            >
               {numberedSectionTitle(s.title, i)}
             </h2>
             <div className="flex flex-col gap-4">

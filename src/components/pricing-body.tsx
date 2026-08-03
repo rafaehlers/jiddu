@@ -215,7 +215,7 @@ export function PricingBody({
           </p>
         </div>
         <Link
-          href="/how-it-works#section-10"
+          href="/how-it-works#credits-billing"
           className="mt-4 inline-flex shrink-0 text-sm sm:mt-0"
         >
           {copy.learnMore} →
