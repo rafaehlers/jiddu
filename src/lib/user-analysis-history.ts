@@ -2,8 +2,10 @@ import "server-only";
 
 import { prisma } from "@/lib/db";
 import { resolveAnalysisTitle } from "@/lib/live-title";
+import { readLiveContext } from "@/lib/live-context-schema";
 
 export type UserAnalysisKind =
+  | "context"
   | "fallacy"
   | "factcheck"
   | "neutrality"
@@ -58,6 +60,7 @@ export async function listUserAnalyses(
         summary: true,
         transcript: true,
         language: true,
+        liveContext: true,
       },
     }),
     prisma.factCheck.findMany({ ...query, select }),
@@ -68,6 +71,37 @@ export async function listUserAnalyses(
   ]);
 
   return [
+    ...analyses.flatMap((row) => {
+      if (row.source !== "live") return [];
+      const context = readLiveContext(row.liveContext);
+      const hasContext =
+        context.tags.length > 0 ||
+        context.relatedLinks.length > 0 ||
+        context.topics.length > 0 ||
+        context.terms.length > 0 ||
+        context.segments.length > 0 ||
+        Boolean(context.summary);
+      if (!hasContext) return [];
+      return [
+        {
+          kind: "context" as const,
+          id: row.id,
+          title: resolveAnalysisTitle({
+            title: row.title,
+            source: row.source,
+            createdAt: row.createdAt,
+            summary: row.summary,
+            transcript: row.transcript,
+            language: row.language,
+          }),
+          source: row.source,
+          sourceRef: row.sourceRef,
+          model: row.model,
+          status: row.status,
+          createdAt: row.createdAt,
+        },
+      ];
+    }),
     ...analyses.map((row) => ({
       kind: "fallacy" as const,
       id: row.id,

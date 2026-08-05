@@ -1,4 +1,3 @@
-import OpenAI from "openai";
 import { z } from "zod";
 import {
   CONFIDENCE_FLOOR,
@@ -25,45 +24,18 @@ import {
   readOpenRouterUsage,
   type OpenRouterUsage,
 } from "../openrouter-usage";
+import {
+  getSonarClient,
+  SONAR_MODEL,
+  type SonarMessage,
+} from "./sonar-client";
 
 // Sonar variant used for verification. Reasoning Pro: built-in web search,
 // returns citations via message.annotations, ~$0.005 per search request.
 // Not exposed in the user-facing model dropdown.
-export const VERIFY_MODEL = "perplexity/sonar-reasoning-pro";
-
-const OPENROUTER_BASE = "https://openrouter.ai/api/v1";
-const REFERER = process.env.OPENROUTER_REFERER || "https://jiddu.app";
-
-let cachedClient: OpenAI | null = null;
-function getClient(apiKey?: string): OpenAI {
-  if (!apiKey && cachedClient) return cachedClient;
-  const resolvedKey = apiKey ?? process.env.OPENROUTER_API_KEY;
-  if (!resolvedKey) {
-    throw new Error("OPENROUTER_API_KEY is not set in the environment");
-  }
-  const client = new OpenAI({
-    apiKey: resolvedKey,
-    baseURL: OPENROUTER_BASE,
-    defaultHeaders: {
-      "HTTP-Referer": REFERER,
-      "X-Title": "Jiddu",
-    },
-  });
-  if (!apiKey) cachedClient = client;
-  return client;
-}
+export const VERIFY_MODEL = SONAR_MODEL;
 
 type ClaimWithId = Claim & { id: string };
-
-// Extracted-payload type that includes the raw fields plus the channel
-// annotations Perplexity sends back so we can surface URLs to the user.
-type RawMessage = {
-  content?: string | null;
-  annotations?: Array<{
-    type?: string;
-    url_citation?: { url?: string; title?: string };
-  }>;
-};
 
 export async function verifyClaim(
   claim: ClaimWithId,
@@ -90,7 +62,7 @@ export async function verifyClaim(
     }
   }
 
-  const client = getClient(opts.apiKey);
+  const client = getSonarClient(opts.apiKey);
   const res = await client.chat.completions.create(
     {
       model: VERIFY_MODEL,
@@ -109,7 +81,8 @@ export async function verifyClaim(
   if (usage) opts.onUsage?.(usage);
 
   const choice = res.choices?.[0];
-  const message = (choice?.message as unknown as RawMessage | undefined) ?? null;
+  const message =
+    (choice?.message as unknown as SonarMessage | undefined) ?? null;
   const content = message?.content?.trim() ?? "";
   if (!content) {
     throw new Error("Sonar returned an empty content body");

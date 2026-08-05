@@ -10,6 +10,7 @@ import { parseStoredVenueProfile } from "@/lib/venues";
 import { analysisSocialMetadata } from "@/lib/social-metadata";
 import { mapPaperReviewJobStatus } from "@/lib/api/paper-review";
 import { PaperReviewJobStatus } from "@/components/paper-review-job-status";
+import { canEmailOwnedReport } from "@/lib/report-email-access";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -44,11 +45,13 @@ export default async function PaperReviewPage({ params }: Props) {
 
   const parsed = PaperReviewResultSchema.safeParse(JSON.parse(row.review));
   if (!parsed.success) notFound();
+  const canEmail = await canEmailOwnedReport(row.ownerWorkosUserId);
 
   return (
     <main className="flex-1 flex flex-col">
       <SiteHeader variant="viewer" />
       <PaperReviewView
+        canEmail={canEmail}
         id={row.id}
         review={parsed.data}
         model={row.model}

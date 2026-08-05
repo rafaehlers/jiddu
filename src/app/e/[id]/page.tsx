@@ -14,6 +14,7 @@ import {
   type ExplainLevel,
 } from "@/lib/explain-schema";
 import { analysisSocialMetadata } from "@/lib/social-metadata";
+import { canEmailOwnedReport } from "@/lib/report-email-access";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -38,6 +39,7 @@ export default async function ExplainViewerPage({ params }: Props) {
   const { id } = await params;
   const e = await prisma.explanation.findUnique({ where: { id } });
   if (!e) notFound();
+  const canEmail = await canEmailOwnedReport(e.ownerWorkosUserId);
 
   const blocks = JSON.parse(e.blocks) as Block[];
   const findings = JSON.parse(e.findings) as ExplainFinding[];
@@ -48,6 +50,7 @@ export default async function ExplainViewerPage({ params }: Props) {
 
       <SkeletonReveal skeleton={<AnalysisSkeleton />}>
         <ExplainView
+          canEmail={canEmail}
           id={e.id}
           title={e.title}
           sourceRef={e.sourceRef}

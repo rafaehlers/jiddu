@@ -94,6 +94,7 @@ function TypeCell({
 }: ICellRendererParams<AccountAnalysisGridRow, UserAnalysisKind>) {
   if (!value) return null;
   const cls = {
+    context: "bg-indigo-500/15 text-indigo-500",
     fallacy: "bg-amber-500/15 text-amber-500",
     factcheck: "bg-blue-500/15 text-blue-500",
     neutrality: "bg-purple-500/15 text-purple-500",
@@ -102,6 +103,7 @@ function TypeCell({
     review: "bg-red-500/15 text-red-500",
   }[value];
   const label = {
+    context: "Live context",
     fallacy: "Fallacy",
     factcheck: "Fact-check",
     neutrality: "Neutrality",

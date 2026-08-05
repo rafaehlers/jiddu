@@ -15,6 +15,10 @@ import type { OpenRouterUsage } from "../openrouter-usage";
 import type { PaperSynthesisInput } from "../paper-map-prompt";
 import type { PaperEvidenceInput } from "../paper-evidence-prompt";
 import type { ExplainInputSection } from "../explain-units";
+import type {
+  LiveContext,
+  LiveContextWindow,
+} from "../live-context-schema";
 
 export type ProviderId = "anthropic" | "openai";
 
@@ -60,6 +64,11 @@ export type ImageTranscriptionOutput = {
   usage?: OpenRouterUsage;
 };
 
+export type LiveContextInput = AnalyzeInput & {
+  previous: LiveContext;
+  finalize?: boolean;
+};
+
 export interface LlmProvider {
   readonly id: ProviderId;
   readonly defaultModel: string;
@@ -76,6 +85,10 @@ export interface LlmProvider {
     input: AnalyzeInput,
     opts?: LlmStreamOptions,
   ): AsyncGenerator<NeutralityStreamEvent, { model: string }, void>;
+  analyzeLiveContext(
+    input: LiveContextInput,
+    opts?: LlmStreamOptions,
+  ): Promise<{ model: string; result: LiveContextWindow }>;
   explainStream(
     input: ExplainInput,
     opts: LlmStreamOptions & { level: ExplainLevel },

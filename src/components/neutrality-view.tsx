@@ -9,8 +9,8 @@ import type {
 } from "@/lib/neutrality-schema";
 import { cn } from "@/lib/utils";
 import { onActivate } from "@/lib/a11y";
+import { ReportDeliveryActions } from "@/components/report-delivery-actions";
 import { ShareLinkBar } from "@/components/share-link-bar";
-import { ExportPdfButton } from "@/components/export-pdf-button";
 import { StructuredDocumentText } from "@/components/structured-document-text";
 import type { Block } from "@/lib/paragraphs";
 import { useI18n } from "@/lib/i18n/provider";
@@ -22,6 +22,7 @@ import {
 } from "@/components/neutrality-visuals";
 
 type Props = {
+  canEmail: boolean;
   id: string;
   title: string | null;
   sourceRef: string | null;
@@ -43,6 +44,7 @@ function textTypeLabelKey(tt: TextType): keyof Messages {
 }
 
 export function NeutralityView({
+  canEmail,
   id,
   title,
   sourceRef,
@@ -148,7 +150,16 @@ export function NeutralityView({
         </div>
       </header>
 
-      <ShareLinkBar rightSlot={<ExportPdfButton href={`/n/${id}/print`} />} />
+      <ShareLinkBar
+        rightSlot={
+          <ReportDeliveryActions
+            canEmail={canEmail}
+            id={id}
+            kind="n"
+            printHref={`/n/${id}/print`}
+          />
+        }
+      />
 
       {/* Top verdict panel — equivalent of the "score panel" in the fallacy
           view. Big visual statement of where the document landed. */}

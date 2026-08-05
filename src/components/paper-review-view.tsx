@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { ShareLinkBar } from "@/components/share-link-bar";
 import { DownloadMarkdownButton } from "@/components/download-markdown-button";
-import { ExportPdfButton } from "@/components/export-pdf-button";
+import { ReportDeliveryActions } from "@/components/report-delivery-actions";
 import { VenueStandardCard } from "@/components/venue-standard-card";
 import { PAPER_REVIEW_DISCLAIMER } from "@/lib/paper-review-markdown";
 import type {
@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import type { ResolvedVenueProfile } from "@/lib/venues";
 
 type Props = {
+  canEmail: boolean;
   id: string;
   review: PaperReviewResult;
   model: string;
@@ -40,6 +41,7 @@ const SEVERITY_STYLE: Record<ReviewSeverity, string> = {
 };
 
 export function PaperReviewView({
+  canEmail,
   id,
   review,
   model,
@@ -68,10 +70,14 @@ export function PaperReviewView({
 
       <ShareLinkBar
         rightSlot={
-          <div className="flex items-center gap-2">
+          <ReportDeliveryActions
+            canEmail={canEmail}
+            id={id}
+            kind="r"
+            printHref={`/r/${id}/print`}
+          >
             <DownloadMarkdownButton href={`/api/review/${id}/markdown`} />
-            <ExportPdfButton href={`/r/${id}/print`} />
-          </div>
+          </ReportDeliveryActions>
         }
       />
 

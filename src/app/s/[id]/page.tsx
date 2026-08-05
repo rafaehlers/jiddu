@@ -11,6 +11,7 @@ import type { SlopFinding } from "@/lib/slop-schema";
 import type { Sentence } from "@/lib/schema";
 import { analysisSocialMetadata } from "@/lib/social-metadata";
 import { readAnalysisBlocks } from "@/lib/analysis-document";
+import { canEmailOwnedReport } from "@/lib/report-email-access";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -44,6 +45,7 @@ export default async function SlopPage({ params }: Props) {
   const { id } = await params;
   const s = await prisma.slopCheck.findUnique({ where: { id } });
   if (!s) notFound();
+  const canEmail = await canEmailOwnedReport(s.ownerWorkosUserId);
 
   const sentences = JSON.parse(s.sentences) as Sentence[];
   const blocks = readAnalysisBlocks(s.blocks, s.text);
@@ -55,6 +57,7 @@ export default async function SlopPage({ params }: Props) {
 
       <SkeletonReveal skeleton={<AnalysisSkeleton />}>
         <SlopView
+          canEmail={canEmail}
           id={s.id}
           title={s.title}
           sourceRef={s.sourceRef}

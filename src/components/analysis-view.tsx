@@ -9,8 +9,8 @@ import { useI18n } from "@/lib/i18n/provider";
 import { FallacyModal } from "@/components/fallacy-modal";
 import { FindingModal } from "@/components/finding-modal";
 import { MobileHintModal } from "@/components/mobile-hint-modal";
+import { ReportDeliveryActions } from "@/components/report-delivery-actions";
 import { ShareLinkBar } from "@/components/share-link-bar";
-import { ExportPdfButton } from "@/components/export-pdf-button";
 import { StructuredDocumentText } from "@/components/structured-document-text";
 import { useMobileHint } from "@/lib/mobile-hint";
 import type { Block } from "@/lib/paragraphs";
@@ -18,6 +18,7 @@ import type { Block } from "@/lib/paragraphs";
 const MOBILE_BREAKPOINT = 1024; // matches Tailwind's `lg`
 
 type Props = {
+  canEmail: boolean;
   id: string;
   title: string | null;
   sourceRef: string | null;
@@ -35,6 +36,7 @@ type Props = {
 type FindingWithKey = Finding & { key: string };
 
 export function AnalysisView({
+  canEmail,
   id,
   title,
   sourceRef,
@@ -295,7 +297,16 @@ export function AnalysisView({
       </div>
 
       <div className="mx-auto max-w-5xl w-full px-4 sm:px-6 pb-16 grid grid-cols-1 lg:grid-cols-[1fr_22rem] gap-8">
-        <ShareLinkBar rightSlot={<ExportPdfButton href={`/a/${id}/print`} />} />
+        <ShareLinkBar
+          rightSlot={
+            <ReportDeliveryActions
+              canEmail={canEmail}
+              id={id}
+              kind="a"
+              printHref={`/a/${id}/print`}
+            />
+          }
+        />
       </div>
 
       <FallacyModal

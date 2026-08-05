@@ -50,6 +50,7 @@ export function AccountAnalysisTable({
 
 function viewerHref(kind: UserAnalysisKind, id: string): string {
   const prefix = {
+    context: "live",
     fallacy: "a",
     factcheck: "f",
     neutrality: "n",

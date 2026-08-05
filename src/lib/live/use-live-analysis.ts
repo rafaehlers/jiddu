@@ -9,6 +9,11 @@ import type {
   NeutralityVerdictValue,
 } from "@/lib/neutrality-schema";
 import type { LiveLens } from "@/lib/live-lenses";
+import {
+  EMPTY_LIVE_CONTEXT,
+  LiveContextSchema,
+  type LiveContext,
+} from "@/lib/live-context-schema";
 
 export type LiveClaim = Claim & { id: string };
 
@@ -38,6 +43,7 @@ type Result = {
   claims: LiveClaim[];
   neutralityFindings: NeutralityFinding[];
   neutralityVerdict: LiveNeutralityVerdict | null;
+  context: LiveContext;
   score: number | null;
   sessionId: string | null;
   /** True between firing an analyze call and getting the `done` event. */
@@ -68,6 +74,7 @@ export function useLiveAnalysis({
   >([]);
   const [neutralityVerdict, setNeutralityVerdict] =
     useState<LiveNeutralityVerdict | null>(null);
+  const [context, setContext] = useState<LiveContext>(EMPTY_LIVE_CONTEXT);
   const [score, setScore] = useState<number | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -102,6 +109,7 @@ export function useLiveAnalysis({
       setClaims([]);
       setNeutralityFindings([]);
       setNeutralityVerdict(null);
+      setContext(EMPTY_LIVE_CONTEXT);
       setScore(null);
       setSessionId(null);
       sessionIdRef.current = null;
@@ -219,6 +227,13 @@ export function useLiveAnalysis({
             } catch {
               /* ignore */
             }
+          } else if (ev.event === "context") {
+            try {
+              const parsed = LiveContextSchema.safeParse(JSON.parse(ev.data));
+              if (parsed.success) setContext(parsed.data);
+            } catch {
+              /* ignore */
+            }
           } else if (ev.event === "done") {
             try {
               const data = JSON.parse(ev.data) as {
@@ -227,6 +242,7 @@ export function useLiveAnalysis({
                 analyzed?: boolean;
                 finalize?: boolean;
                 neutrality?: LiveNeutralityVerdict;
+                context?: unknown;
               };
               if (data.id) {
                 sessionIdRef.current = data.id;
@@ -236,6 +252,8 @@ export function useLiveAnalysis({
               if (data.neutrality) {
                 setNeutralityVerdict(data.neutrality);
               }
+              const parsedContext = LiveContextSchema.safeParse(data.context);
+              if (parsedContext.success) setContext(parsedContext.data);
               if (data.analyzed || data.finalize) {
                 lastAnalyzedLengthRef.current = text.length;
               }
@@ -309,6 +327,7 @@ export function useLiveAnalysis({
     claims,
     neutralityFindings,
     neutralityVerdict,
+    context,
     score,
     sessionId,
     isAnalyzing,

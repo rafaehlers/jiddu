@@ -18,7 +18,10 @@ import {
   isAccessResponse,
   requireWebAnalysisAccess,
 } from "@/lib/web-analysis-access";
-import { maxCreditsForCalls } from "@/lib/jiddu-credit-rates";
+import {
+  maxCreditsForCalls,
+  modelCreditRate,
+} from "@/lib/jiddu-credit-rates";
 import {
   recordIncludedJidduCreditUsage,
   releaseJidduCreditReservation,
@@ -39,9 +42,20 @@ import {
   normalizeLiveLenses,
   type LiveLens,
 } from "@/lib/live-lenses";
+import {
+  findLiveRelatedLinks,
+  RELATED_LINKS_MODEL,
+} from "@/lib/llm/live-related-links";
+import {
+  EMPTY_LIVE_CONTEXT,
+  mergeLiveContext,
+  readLiveContext,
+  sanitizeLiveContextWindow,
+  type LiveContext,
+} from "@/lib/live-context-schema";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 const MAX_TRANSCRIPT_CHARS = 500_000;
 const MIN_NEW_CHARS_TO_ANALYZE = 80;
@@ -127,6 +141,7 @@ export async function POST(req: NextRequest) {
         model: llm.defaultModel,
         score: 0,
         summary: null,
+        liveContext: JSON.stringify(EMPTY_LIVE_CONTEXT),
         sentences: JSON.stringify([]),
         findings: JSON.stringify([]),
       },
@@ -137,6 +152,7 @@ export async function POST(req: NextRequest) {
   // ── Compute what's new and worth analyzing ───────────────────────────
   const existingSentences = safeJsonArray<Sentence>(row.sentences);
   const existingFindings = safeJsonArray<Finding>(row.findings);
+  const existingLiveContext = readLiveContext(row.liveContext);
 
   const allSentences = splitSentences(text);
 
@@ -154,11 +170,17 @@ export async function POST(req: NextRequest) {
   // Skip LLM if there's not enough new content (except on finalize).
   const shouldAnalyze =
     toAnalyze.length > 0 && (finalize || newCharCount >= MIN_NEW_CHARS_TO_ANALYZE);
+  const shouldSearchRelated =
+    finalize &&
+    lenses.includes("context") &&
+    text.trim().length > 0 &&
+    existingLiveContext.relatedLinks.length === 0;
+  const shouldCallProvider = shouldAnalyze || shouldSearchRelated;
 
   const contextSentences = existingSentences.slice(-CONTEXT_SENTENCE_COUNT);
 
   const identity = access.userId ?? access.email ?? "unknown";
-  const settings = shouldAnalyze ? await loadSettings() : null;
+  const settings = shouldCallProvider ? await loadSettings() : null;
   const rate = settings
     ? consume(
         `live:analyze:${identity}`,
@@ -172,10 +194,10 @@ export async function POST(req: NextRequest) {
     return rateLimitResponse(rate.retryAfterSec);
   }
 
-  const permit = shouldAnalyze
+  const permit = shouldCallProvider
     ? acquireConcurrency(`live:analyze:${identity}`, 1)
     : null;
-  if (shouldAnalyze && !permit) {
+  if (shouldCallProvider && !permit) {
     if (isNew) {
       await prisma.analysis.delete({ where: { id: row.id } });
     }
@@ -194,12 +216,20 @@ export async function POST(req: NextRequest) {
 
   let reservation: JidduCreditReservationHandle | null | Response;
   try {
-    reservation = shouldAnalyze
+    reservation = shouldCallProvider
       ? await reserveWebAnalysisCredits(access, {
-          amount: maxCreditsForCalls([chosenModel.id], lenses.length),
+          amount:
+            (shouldAnalyze
+              ? maxCreditsForCalls([chosenModel.id], lenses.length)
+              : 0) +
+            (shouldSearchRelated ? modelCreditRate(RELATED_LINKS_MODEL) : 0),
           feature: "live_analysis",
           resourceId: row.id,
-          metadata: { model: chosenModel.id, lenses },
+          metadata: {
+            model: chosenModel.id,
+            lenses,
+            relatedLinks: shouldSearchRelated,
+          },
         })
       : null;
   } catch (error) {
@@ -347,6 +377,7 @@ export async function POST(req: NextRequest) {
           const newFindings: Finding[] = [];
           const newClaims: ClaimWithId[] = [];
           const newNeutralityFindings: NeutralityFinding[] = [];
+          let nextLiveContext: LiveContext = existingLiveContext;
           let windowScore = 0;
           let windowSummary = "";
           let windowLanguage: string | null = null;
@@ -357,6 +388,47 @@ export async function POST(req: NextRequest) {
 
           if (shouldAnalyze) {
             const tasks: Promise<void>[] = [];
+
+            if (lenses.includes("context")) {
+              tasks.push(
+                (async () => {
+                  try {
+                    const response = await llm.analyzeLiveContext(
+                      {
+                        sentences: toAnalyze,
+                        lang,
+                        contextSentences,
+                        previous: existingLiveContext,
+                        finalize,
+                      },
+                      {
+                        signal: abortController.signal,
+                        onUsage: (usage) => usages.push(usage),
+                      },
+                    );
+                    fallbackModels.push(chosenModel.id);
+                    const sanitized = sanitizeLiveContextWindow(
+                      response.result,
+                      new Set(toAnalyze.map((sentence) => sentence.id)),
+                    );
+                    if (!sanitized) return;
+                    nextLiveContext = mergeLiveContext(
+                      existingLiveContext,
+                      sanitized,
+                    );
+                    windowLanguage ??= sanitized.language ?? null;
+                    send("context", nextLiveContext);
+                  } catch (err) {
+                    sendLensError(
+                      send,
+                      "context",
+                      err,
+                      abortController.signal,
+                    );
+                  }
+                })(),
+              );
+            }
 
             if (lenses.includes("fallacy")) {
               tasks.push(
@@ -521,6 +593,28 @@ export async function POST(req: NextRequest) {
 
             await Promise.all(tasks);
           }
+
+          if (shouldSearchRelated) {
+            try {
+              const relatedLinks = await findLiveRelatedLinks(
+                {
+                  context: nextLiveContext,
+                  transcript: text,
+                  lang,
+                },
+                {
+                  signal: abortController.signal,
+                  apiKey: access.apiKey,
+                  onUsage: (usage) => usages.push(usage),
+                },
+              );
+              fallbackModels.push(RELATED_LINKS_MODEL);
+              nextLiveContext = { ...nextLiveContext, relatedLinks };
+              send("context", nextLiveContext);
+            } catch (err) {
+              sendLensError(send, "context", err, abortController.signal);
+            }
+          }
           await settle();
 
           // ── Persist ────────────────────────────────────────────────────
@@ -538,15 +632,14 @@ export async function POST(req: NextRequest) {
             ...existingNeutralityFindings,
             ...newNeutralityFindings,
           ];
-          const neutrality = mergeNeutralityVerdict(
-            neutralityRow,
-            {
-              verdict: windowNeutralityVerdict,
-              confidence: windowNeutralityConfidence,
-              rationale: windowNeutralityRationale,
-              textType: windowTextType,
-            },
-          );
+          const neutrality = neutralityRow
+            ? mergeNeutralityVerdict(neutralityRow, {
+                verdict: windowNeutralityVerdict,
+                confidence: windowNeutralityConfidence,
+                rationale: windowNeutralityRationale,
+                textType: windowTextType,
+              })
+            : null;
 
           // On finalize, derive score from density and severity. Otherwise let
           // the window score nudge the running score for stability.
@@ -578,6 +671,7 @@ export async function POST(req: NextRequest) {
                 score: aggregateScore,
                 title,
                 summary: aggregateSummary || null,
+                liveContext: JSON.stringify(nextLiveContext),
                 language: windowLanguage ?? row.language ?? lang,
                 finishedAt,
                 audioDurationMs,
@@ -597,7 +691,7 @@ export async function POST(req: NextRequest) {
                   },
                 })
               : Promise.resolve(),
-            neutralityRow
+            neutralityRow && neutrality
               ? prisma.neutrality.update({
                   where: { id: row.id },
                   data: {
@@ -626,7 +720,8 @@ export async function POST(req: NextRequest) {
             totalClaims: allClaims.length,
             newNeutralityFindings: newNeutralityFindings.length,
             totalNeutralityFindings: allNeutralityFindings.length,
-            neutrality,
+            context: nextLiveContext,
+            ...(neutrality ? { neutrality } : {}),
             lenses,
             score: aggregateScore,
             title,

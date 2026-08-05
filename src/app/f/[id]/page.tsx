@@ -13,6 +13,7 @@ import type { Verdict } from "@/lib/verdict-schema";
 import { loadSettings } from "@/lib/settings";
 import { analysisSocialMetadata } from "@/lib/social-metadata";
 import { readAnalysisBlocks } from "@/lib/analysis-document";
+import { canEmailOwnedReport } from "@/lib/report-email-access";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -36,6 +37,7 @@ export default async function FactCheckPageView({ params }: Props) {
   const { id } = await params;
   const f = await prisma.factCheck.findUnique({ where: { id } });
   if (!f) notFound();
+  const canEmail = await canEmailOwnedReport(f.ownerWorkosUserId);
 
   const sentences = JSON.parse(f.sentences) as Sentence[];
   const blocks = readAnalysisBlocks(f.blocks, f.text);
@@ -54,6 +56,7 @@ export default async function FactCheckPageView({ params }: Props) {
 
       <SkeletonReveal skeleton={<AnalysisSkeleton />}>
         <FactCheckView
+          canEmail={canEmail}
           id={f.id}
           title={f.title}
           sourceRef={f.sourceRef}

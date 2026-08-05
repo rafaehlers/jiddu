@@ -15,6 +15,7 @@ import type {
 } from "@/lib/neutrality-schema";
 import { analysisSocialMetadata } from "@/lib/social-metadata";
 import { readAnalysisBlocks } from "@/lib/analysis-document";
+import { canEmailOwnedReport } from "@/lib/report-email-access";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -37,6 +38,7 @@ export default async function NeutralityViewerPage({ params }: Props) {
   const { id } = await params;
   const n = await prisma.neutrality.findUnique({ where: { id } });
   if (!n) notFound();
+  const canEmail = await canEmailOwnedReport(n.ownerWorkosUserId);
 
   const sentences = JSON.parse(n.sentences) as Sentence[];
   const blocks = readAnalysisBlocks(n.blocks, n.text);
@@ -48,6 +50,7 @@ export default async function NeutralityViewerPage({ params }: Props) {
 
       <SkeletonReveal skeleton={<AnalysisSkeleton />}>
         <NeutralityView
+          canEmail={canEmail}
           id={n.id}
           title={n.title}
           sourceRef={n.sourceRef}

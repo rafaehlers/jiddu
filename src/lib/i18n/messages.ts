@@ -436,6 +436,10 @@ export type Messages = {
 
   // Export / print
   export_pdf: string;
+  email_report: string;
+  email_report_sending: string;
+  email_report_sent: string;
+  email_report_failed: string;
 
   // Print view labels — shared across the three print companions
   // (/a/*/print, /f/*/print, /n/*/print).
@@ -477,6 +481,7 @@ export type Messages = {
   live_language_follows_header: string;
   live_lenses_title: string;
   live_lenses_hint: string;
+  live_lens_context: string;
   live_lens_fallacy: string;
   live_lens_factcheck: string;
   live_lens_neutrality: string;
@@ -497,6 +502,9 @@ export type Messages = {
   live_status_error: string;
   live_transcript_listening: string;
   live_transcript_idle: string;
+  live_transcript_heading: string;
+  live_local_recording: string;
+  live_local_recording_hint: string;
   live_no_findings_yet: string;
   live_no_claims_yet: string;
   live_no_neutrality_yet: string;
@@ -507,7 +515,27 @@ export type Messages = {
   live_view_analysis: string;
   live_view_factcheck: string;
   live_view_neutrality: string;
+  live_view_context: string;
   live_start_new: string;
+  live_context_current_topics: string;
+  live_context_listening: string;
+  live_context_explaining: string;
+  live_context_history: string;
+  live_context_known: string;
+  live_context_recap: string;
+  live_context_summary: string;
+  live_context_tags: string;
+  live_context_topics: string;
+  live_context_glossary: string;
+  live_context_topic_changes: string;
+  live_context_related_links: string;
+  live_context_related_links_hint: string;
+  live_context_jump: string;
+  live_context_terms_learned: (count: number) => string;
+  live_context_kind_slang: string;
+  live_context_kind_acronym: string;
+  live_context_kind_jargon: string;
+  live_context_kind_cultural_reference: string;
 };
 
 const en: Messages = {
@@ -518,7 +546,7 @@ const en: Messages = {
   hero_subtitle:
     "Upload a PDF or screenshot, paste text or an image, or drop a URL. Jiddu highlights the passages that contain logical fallacies and explains each one in a comment — just like a reviewer in Word — and gives the whole piece a fallacy score from 0 to 100.",
   home_hero_subtitle:
-    "Drop a PDF or screenshot, paste text or an image, or add a URL — then pick a lens. Or use Live to monitor fallacies, check-worthy claims and neutrality as someone speaks.",
+    "Drop a PDF or screenshot, paste text or an image, or add a URL — then pick a lens. Or use Live to follow topics and unfamiliar terms while monitoring fallacies, check-worthy claims and neutrality as someone speaks.",
   home_origin_heading: "Why Jiddu?",
   home_origin_before_name: "The name is a nod to",
   home_origin_after_name: ", who declared in 1929 that",
@@ -548,7 +576,7 @@ const en: Messages = {
   pipeline_neutrality_desc:
     "Surfaces the framing, attribution and source-selection patterns that make a text partisan even when nothing is factually false. Deliberately does NOT classify left/right.",
   pipeline_live_desc:
-    "Listens in real time and monitors fallacies, check-worthy claims and neutrality signals together as the speaker talks.",
+    "Follows topics, explains unfamiliar terms and monitors fallacies, check-worthy claims and neutrality signals as the speaker talks.",
   quality_card_heading: "Quality, measured against humans",
   quality_card_body:
     "We benchmarked the fact-check pipeline against 200 PolitiFact-labeled claims. Jiddu's verdict matched the human verdict on 81.3% of the unambiguous true / false / pants-on-fire claims, with strict polar disagreement in only 4.5% of cases.",
@@ -954,6 +982,10 @@ const en: Messages = {
     },
   ],
   export_pdf: "Export PDF",
+  email_report: "Send to my email",
+  email_report_sending: "Sending…",
+  email_report_sent: "Sent",
+  email_report_failed: "Try again",
 
   print_type_fallacy: "Fallacy analysis",
   print_type_factcheck: "Fact-check",
@@ -1215,7 +1247,8 @@ const en: Messages = {
           {
             feature: "Live analysis",
             unit: "Per completed analysis window",
-            estimate: "Up to 3 credits reserved with all three lenses",
+            estimate:
+              "Up to 4 credits with all lenses; final Context search adds up to 2 credits",
           },
         ],
         note:
@@ -1367,7 +1400,7 @@ const en: Messages = {
   finding_about_this_fallacy: "About this fallacy",
 
   live_subtitle:
-    "Listen in real time and surface fallacies, check-worthy claims and neutrality signals as the speaker talks.",
+    "Follow topics and unfamiliar terms while surfacing fallacies, check-worthy claims and neutrality signals in real time.",
   live_source_mic: "Microphone",
   live_source_tab: "Browser tab",
   live_source_tab_chrome_only: "Chrome only",
@@ -1376,6 +1409,7 @@ const en: Messages = {
   live_language_follows_header: "Language follows the selector in the header.",
   live_lenses_title: "Live lenses",
   live_lenses_hint: "Choose what Jiddu should monitor during this session.",
+  live_lens_context: "Context guide",
   live_lens_fallacy: "Fallacies",
   live_lens_factcheck: "Fact-check claims",
   live_lens_neutrality: "Neutrality",
@@ -1390,7 +1424,7 @@ const en: Messages = {
   live_findings: "Findings",
   live_running_score: "Running score",
   live_privacy_note:
-    "Audio is streamed directly from your browser to OpenAI’s Realtime API via WebRTC. The raw audio is not stored — only the transcript and selected analysis results are persisted, and they become available at shareable URLs once you stop the session.",
+    "Audio is streamed directly from your browser to OpenAI’s Realtime API via WebRTC. The raw audio is not uploaded to or stored by Jiddu. A temporary local copy stays in this tab for replay until you start a new session or close it; only the transcript and selected analysis results are persisted. When the Context guide is finalized, its recap and transcript excerpt are sent through OpenRouter to Perplexity Sonar to find related public sources.",
   live_status_connecting: "Connecting…",
   live_status_live: "Live",
   live_status_analyzing: "Analyzing",
@@ -1399,6 +1433,10 @@ const en: Messages = {
   live_status_error: "Error",
   live_transcript_listening: "Listening… speak into your microphone.",
   live_transcript_idle: "Press Start to begin transcribing.",
+  live_transcript_heading: "Session transcript",
+  live_local_recording: "Session audio",
+  live_local_recording_hint:
+    "Temporary replay in this tab. Context links seek to the approximate passage.",
   live_no_findings_yet:
     "No fallacies detected yet. They will appear here as the speaker talks.",
   live_no_claims_yet:
@@ -1412,7 +1450,30 @@ const en: Messages = {
   live_view_analysis: "View fallacy analysis",
   live_view_factcheck: "View and verify claims",
   live_view_neutrality: "View neutrality assessment",
+  live_view_context: "View context recap",
   live_start_new: "Start new recording",
+  live_context_current_topics: "Current topics",
+  live_context_listening:
+    "Tags, topics and explanations will appear here as the speaker talks.",
+  live_context_explaining: "Worth knowing now",
+  live_context_history: "Earlier explanations",
+  live_context_known: "I know this",
+  live_context_recap: "Session recap",
+  live_context_summary: "Summary",
+  live_context_tags: "Tags",
+  live_context_topics: "Topics discussed",
+  live_context_glossary: "Glossary",
+  live_context_topic_changes: "Topic changes",
+  live_context_related_links: "Related links",
+  live_context_related_links_hint:
+    "Sources selected by Perplexity Sonar when this session was finalized.",
+  live_context_jump: "Go to passage",
+  live_context_terms_learned: (count) =>
+    `${count} term${count === 1 ? "" : "s"} explained`,
+  live_context_kind_slang: "Slang",
+  live_context_kind_acronym: "Acronym",
+  live_context_kind_jargon: "Jargon",
+  live_context_kind_cultural_reference: "Cultural reference",
 };
 
 const pt: Messages = {
@@ -1423,7 +1484,7 @@ const pt: Messages = {
   hero_subtitle:
     "Envie um PDF ou screenshot, cole texto ou uma imagem, ou solte uma URL. O Jiddu destaca os trechos com falácias lógicas e explica cada um em um comentário — como um revisor no Word — e dá uma nota de 0 a 100 para o texto inteiro.",
   home_hero_subtitle:
-    "Solte um PDF ou screenshot, cole texto ou uma imagem, ou adicione uma URL — e escolha uma lente. Ou use o Live para monitorar falácias, afirmações verificáveis e sinais de imparcialidade enquanto alguém fala.",
+    "Solte um PDF ou screenshot, cole texto ou uma imagem, ou adicione uma URL — e escolha uma lente. Ou use o Live para acompanhar assuntos e termos desconhecidos, além de falácias, afirmações verificáveis e sinais de imparcialidade enquanto alguém fala.",
   home_origin_heading: "Por que Jiddu?",
   home_origin_before_name: "O nome é uma homenagem a",
   home_origin_after_name: ", que declarou em 1929 que",
@@ -1450,7 +1511,7 @@ const pt: Messages = {
   pipeline_neutrality_desc:
     "Sinaliza padrões de enquadramento, atribuição e seleção de fontes que tornam um texto partidário mesmo quando não há nenhuma falsidade factual. Deliberadamente NÃO classifica esquerda/direita.",
   pipeline_live_desc:
-    "Escuta em tempo real e monitora falácias, afirmações verificáveis e sinais de imparcialidade enquanto alguém fala.",
+    "Acompanha assuntos, explica termos desconhecidos e monitora falácias, afirmações verificáveis e sinais de imparcialidade enquanto alguém fala.",
   quality_card_heading: "Qualidade medida contra humanos",
   quality_card_body:
     "Medimos o pipeline de fact-check contra 200 afirmações rotuladas humanamente pelo PolitiFact. O veredito do Jiddu coincidiu com o veredito humano em 81,3% das afirmações inequívocas (true / false / pants-on-fire), com discordância estrita em apenas 4,5% dos casos.",
@@ -1857,6 +1918,10 @@ const pt: Messages = {
     },
   ],
   export_pdf: "Exportar PDF",
+  email_report: "Enviar para meu e-mail",
+  email_report_sending: "Enviando…",
+  email_report_sent: "Enviado",
+  email_report_failed: "Tentar novamente",
 
   print_type_fallacy: "Análise de falácia",
   print_type_factcheck: "Checagem de fatos",
@@ -2119,7 +2184,8 @@ const pt: Messages = {
           {
             feature: "Análise Live",
             unit: "Por janela de análise concluída",
-            estimate: "Reserva de até 3 créditos com as três lentes",
+            estimate:
+              "Até 4 créditos com todas as lentes; a busca final de contexto adiciona até 2 créditos",
           },
         ],
         note:
@@ -2271,7 +2337,7 @@ const pt: Messages = {
   finding_about_this_fallacy: "Sobre esta falácia",
 
   live_subtitle:
-    "Escute em tempo real e acompanhe falácias, afirmações verificáveis e sinais de parcialidade conforme a pessoa fala.",
+    "Acompanhe assuntos e termos desconhecidos enquanto o Jiddu identifica falácias, afirmações verificáveis e sinais de parcialidade em tempo real.",
   live_source_mic: "Microfone",
   live_source_tab: "Aba do navegador",
   live_source_tab_chrome_only: "Só no Chrome",
@@ -2280,6 +2346,7 @@ const pt: Messages = {
   live_language_follows_header: "O idioma segue o seletor no cabeçalho.",
   live_lenses_title: "Lentes ao vivo",
   live_lenses_hint: "Escolha o que o Jiddu deve acompanhar nesta sessão.",
+  live_lens_context: "Guia de contexto",
   live_lens_fallacy: "Falácias",
   live_lens_factcheck: "Afirmações para checagem",
   live_lens_neutrality: "Neutralidade",
@@ -2294,7 +2361,7 @@ const pt: Messages = {
   live_findings: "Falácias",
   live_running_score: "Nota parcial",
   live_privacy_note:
-    "O áudio é transmitido direto do seu navegador para a API Realtime da OpenAI via WebRTC. O áudio bruto não é armazenado — apenas a transcrição e os resultados das análises selecionadas ficam salvos e disponíveis em URLs compartilháveis quando você parar a sessão.",
+    "O áudio é transmitido direto do seu navegador para a API Realtime da OpenAI via WebRTC. O áudio bruto não é enviado nem armazenado pelo Jiddu. Uma cópia local temporária fica nesta aba para reprodução até você iniciar outra sessão ou fechá-la; apenas a transcrição e os resultados selecionados ficam salvos. Ao finalizar o Guia de contexto, a recapitulação e um trecho da transcrição são enviados via OpenRouter ao Perplexity Sonar para buscar fontes públicas relacionadas.",
   live_status_connecting: "Conectando…",
   live_status_live: "Ao vivo",
   live_status_analyzing: "Analisando",
@@ -2303,6 +2370,10 @@ const pt: Messages = {
   live_status_error: "Erro",
   live_transcript_listening: "Ouvindo… fale no microfone.",
   live_transcript_idle: "Clique em Iniciar para começar a transcrever.",
+  live_transcript_heading: "Transcrição da sessão",
+  live_local_recording: "Áudio da sessão",
+  live_local_recording_hint:
+    "Reprodução temporária nesta aba. Os links de contexto avançam até o trecho aproximado.",
   live_no_findings_yet:
     "Nenhuma falácia detectada ainda. Elas aparecerão aqui conforme a pessoa fala.",
   live_no_claims_yet:
@@ -2316,7 +2387,30 @@ const pt: Messages = {
   live_view_analysis: "Ver análise de falácias",
   live_view_factcheck: "Ver e checar afirmações",
   live_view_neutrality: "Ver avaliação de neutralidade",
+  live_view_context: "Ver recapitulação do contexto",
   live_start_new: "Nova gravação",
+  live_context_current_topics: "Assuntos atuais",
+  live_context_listening:
+    "As tags, os assuntos e as explicações aparecerão aqui conforme a pessoa fala.",
+  live_context_explaining: "Vale saber agora",
+  live_context_history: "Explicações anteriores",
+  live_context_known: "Já conheço",
+  live_context_recap: "Recapitulação da sessão",
+  live_context_summary: "Resumo",
+  live_context_tags: "Tags",
+  live_context_topics: "Assuntos discutidos",
+  live_context_glossary: "Glossário",
+  live_context_topic_changes: "Mudanças de assunto",
+  live_context_related_links: "Links relacionados",
+  live_context_related_links_hint:
+    "Fontes selecionadas pelo Perplexity Sonar quando esta sessão foi finalizada.",
+  live_context_jump: "Ir ao trecho",
+  live_context_terms_learned: (count) =>
+    `${count} termo${count === 1 ? "" : "s"} explicado${count === 1 ? "" : "s"}`,
+  live_context_kind_slang: "Gíria",
+  live_context_kind_acronym: "Sigla",
+  live_context_kind_jargon: "Jargão",
+  live_context_kind_cultural_reference: "Referência cultural",
 };
 
 const es: Messages = {
@@ -2327,7 +2421,7 @@ const es: Messages = {
   hero_subtitle:
     "Sube un PDF o screenshot, pega texto o una imagen, o suelta una URL. Jiddu resalta los pasajes con falacias lógicas y explica cada uno en un comentario — como un revisor en Word — y le da al texto entero una puntuación de falacia de 0 a 100.",
   home_hero_subtitle:
-    "Suelta un PDF o screenshot, pega texto o una imagen, o añade una URL — y elige una lente. O usa Live para monitorear falacias, afirmaciones verificables y señales de neutralidad mientras alguien habla.",
+    "Suelta un PDF o screenshot, pega texto o una imagen, o añade una URL — y elige una lente. O usa Live para seguir temas y términos desconocidos, además de falacias, afirmaciones verificables y señales de neutralidad mientras alguien habla.",
   home_origin_heading: "¿Por qué Jiddu?",
   home_origin_before_name: "El nombre es un guiño a",
   home_origin_after_name: ", quien declaró en 1929 que",
@@ -2354,7 +2448,7 @@ const es: Messages = {
   pipeline_neutrality_desc:
     "Expone patrones de encuadre, atribución y selección de fuentes que vuelven un texto partidario aun cuando nada es factualmente falso. Deliberadamente NO clasifica izquierda/derecha.",
   pipeline_live_desc:
-    "Escucha en tiempo real y monitorea falacias, afirmaciones verificables y señales de neutralidad mientras alguien habla.",
+    "Sigue temas, explica términos desconocidos y monitorea falacias, afirmaciones verificables y señales de neutralidad mientras alguien habla.",
   quality_card_heading: "Calidad medida contra humanos",
   quality_card_body:
     "Medimos el pipeline de fact-check contra 200 afirmaciones etiquetadas humanamente por PolitiFact. El veredicto de Jiddu coincidió con el veredicto humano en 81,3% de las afirmaciones inequívocas (true / false / pants-on-fire), con desacuerdo estricto en apenas 4,5% de los casos.",
@@ -2761,6 +2855,10 @@ const es: Messages = {
     },
   ],
   export_pdf: "Exportar PDF",
+  email_report: "Enviar a mi correo",
+  email_report_sending: "Enviando…",
+  email_report_sent: "Enviado",
+  email_report_failed: "Intentar de nuevo",
 
   print_type_fallacy: "Análisis de falacias",
   print_type_factcheck: "Verificación de hechos",
@@ -3023,7 +3121,8 @@ const es: Messages = {
           {
             feature: "Análisis Live",
             unit: "Por ventana de análisis completada",
-            estimate: "Reserva de hasta 3 créditos con las tres lentes",
+            estimate:
+              "Hasta 4 créditos con todas las lentes; la búsqueda final de contexto añade hasta 2 créditos",
           },
         ],
         note:
@@ -3175,7 +3274,7 @@ const es: Messages = {
   finding_about_this_fallacy: "Sobre esta falacia",
 
   live_subtitle:
-    "Escucha en tiempo real y sigue falacias, afirmaciones verificables y señales de parcialidad mientras la persona habla.",
+    "Sigue temas y términos desconocidos mientras Jiddu identifica falacias, afirmaciones verificables y señales de parcialidad en tiempo real.",
   live_source_mic: "Micrófono",
   live_source_tab: "Pestaña del navegador",
   live_source_tab_chrome_only: "Solo Chrome",
@@ -3184,6 +3283,7 @@ const es: Messages = {
   live_language_follows_header: "El idioma sigue el selector del encabezado.",
   live_lenses_title: "Lentes en vivo",
   live_lenses_hint: "Elige qué debe monitorear Jiddu durante esta sesión.",
+  live_lens_context: "Guía de contexto",
   live_lens_fallacy: "Falacias",
   live_lens_factcheck: "Afirmaciones para verificar",
   live_lens_neutrality: "Neutralidad",
@@ -3198,7 +3298,7 @@ const es: Messages = {
   live_findings: "Falacias",
   live_running_score: "Puntuación parcial",
   live_privacy_note:
-    "El audio se transmite directamente desde tu navegador a la API Realtime de OpenAI vía WebRTC. El audio en bruto no se almacena — solo se guardan la transcripción y los resultados seleccionados, disponibles en URLs compartibles cuando detengas la sesión.",
+    "El audio se transmite directamente desde tu navegador a la API Realtime de OpenAI vía WebRTC. Jiddu no sube ni almacena el audio en bruto. Una copia local temporal permanece en esta pestaña para reproducirla hasta que inicies otra sesión o la cierres; solo se guardan la transcripción y los resultados seleccionados. Al finalizar la Guía de contexto, la recapitulación y un fragmento de la transcripción se envían mediante OpenRouter a Perplexity Sonar para buscar fuentes públicas relacionadas.",
   live_status_connecting: "Conectando…",
   live_status_live: "En vivo",
   live_status_analyzing: "Analizando",
@@ -3207,6 +3307,10 @@ const es: Messages = {
   live_status_error: "Error",
   live_transcript_listening: "Escuchando… habla por el micrófono.",
   live_transcript_idle: "Haz clic en Iniciar para empezar a transcribir.",
+  live_transcript_heading: "Transcripción de la sesión",
+  live_local_recording: "Audio de la sesión",
+  live_local_recording_hint:
+    "Reproducción temporal en esta pestaña. Los enlaces de contexto avanzan al fragmento aproximado.",
   live_no_findings_yet:
     "Aún no se detectaron falacias. Aparecerán aquí mientras la persona habla.",
   live_no_claims_yet:
@@ -3220,7 +3324,30 @@ const es: Messages = {
   live_view_analysis: "Ver análisis de falacias",
   live_view_factcheck: "Ver y verificar afirmaciones",
   live_view_neutrality: "Ver evaluación de neutralidad",
+  live_view_context: "Ver recapitulación del contexto",
   live_start_new: "Nueva grabación",
+  live_context_current_topics: "Temas actuales",
+  live_context_listening:
+    "Las etiquetas, los temas y las explicaciones aparecerán aquí mientras la persona habla.",
+  live_context_explaining: "Conviene saberlo ahora",
+  live_context_history: "Explicaciones anteriores",
+  live_context_known: "Ya lo conozco",
+  live_context_recap: "Recapitulación de la sesión",
+  live_context_summary: "Resumen",
+  live_context_tags: "Etiquetas",
+  live_context_topics: "Temas tratados",
+  live_context_glossary: "Glosario",
+  live_context_topic_changes: "Cambios de tema",
+  live_context_related_links: "Enlaces relacionados",
+  live_context_related_links_hint:
+    "Fuentes seleccionadas por Perplexity Sonar al finalizar esta sesión.",
+  live_context_jump: "Ir al fragmento",
+  live_context_terms_learned: (count) =>
+    `${count} término${count === 1 ? "" : "s"} explicado${count === 1 ? "" : "s"}`,
+  live_context_kind_slang: "Jerga informal",
+  live_context_kind_acronym: "Sigla",
+  live_context_kind_jargon: "Jerga técnica",
+  live_context_kind_cultural_reference: "Referencia cultural",
 };
 
 export const MESSAGES: Record<Lang, Messages> = { en, pt, es };

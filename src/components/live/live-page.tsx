@@ -18,12 +18,17 @@ import { useLiveAnalysis } from "@/lib/live/use-live-analysis";
 import { useLiveClaimVerification } from "@/lib/live/use-live-claim-verification";
 import { useI18n } from "@/lib/i18n/provider";
 import type { Messages } from "@/lib/i18n/messages";
+import { splitSentences } from "@/lib/sentences";
+import { EMPTY_LIVE_CONTEXT } from "@/lib/live-context-schema";
 import {
   DEFAULT_LIVE_LENSES,
   type LiveLens,
 } from "@/lib/live-lenses";
 import { SourcePicker } from "./source-picker";
-import { TranscriptStream } from "./transcript-stream";
+import {
+  TranscriptStream,
+  type TranscriptStreamHandle,
+} from "./transcript-stream";
 import { FindingsList } from "./findings-list";
 import { LiveLensPicker } from "./lens-picker";
 import { LiveAnalysisIntervalPicker } from "./analysis-interval-picker";
@@ -31,6 +36,7 @@ import { LiveClaimsList } from "./claims-list";
 import { LiveNeutralityList } from "./neutrality-list";
 import { LiveAllResults } from "./all-results";
 import { LiveClaimVerificationPanel } from "./claim-verification-panel";
+import { LiveContextPanel } from "./context-panel";
 
 // Hard cap: stop the session after this many seconds to prevent runaway cost.
 // 60 minutes ≈ $1 of gpt-live-transcribe at $0.017/min, before LLM analysis.
@@ -52,6 +58,8 @@ export function LivePage() {
   const [activeLens, setActiveLens] = useState<LiveResultTab>("all");
   const [analysisIntervalMs, setAnalysisIntervalMs] = useState(30_000);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const transcriptStreamRef = useRef<TranscriptStreamHandle>(null);
+  const audioPlayerRef = useRef<HTMLAudioElement>(null);
 
   const session = useLiveSession({ language: lang });
   const analysis = useLiveAnalysis({
@@ -97,6 +105,23 @@ export function LivePage() {
     sessionLenses.includes("factcheck") &&
     analysis.claims.length > 0 &&
     (activeLens === "all" || activeLens === "factcheck");
+  const handleJumpToSentence = useCallback(
+    (sentenceId: string) => {
+      transcriptStreamRef.current?.focusSentence(sentenceId);
+      const sentence = splitSentences(session.transcript).find(
+        (candidate) => candidate.id === sentenceId,
+      );
+      const player = audioPlayerRef.current;
+      if (!sentence || !player || session.transcript.length === 0) return;
+      player.currentTime =
+        (sentence.start / session.transcript.length) *
+        (session.elapsedMs / 1000);
+      void player.play().catch(() => {
+        // Some browsers can still decline playback despite the user click.
+      });
+    },
+    [session.elapsedMs, session.transcript],
+  );
 
   const handleStart = () => {
     if (authLoading || verificationRunning) return;
@@ -240,6 +265,13 @@ export function LivePage() {
                 label={t.live_view_neutrality}
               />
             ) : null}
+            {sessionLenses.includes("context") &&
+            liveLensCount("context", analysis) > 0 ? (
+              <ResultLink
+                href={`/live/${analysis.sessionId}`}
+                label={t.live_view_context}
+              />
+            ) : null}
           </div>
         </div>
       )}
@@ -253,9 +285,28 @@ export function LivePage() {
       )}
 
       <TranscriptStream
+        ref={transcriptStreamRef}
         transcript={session.transcript}
         active={session.state === "live"}
       />
+
+      {hasConcludedSession && session.localAudioUrl ? (
+        <div className="mt-3 rounded-md border border-rule bg-paper px-3 py-3">
+          <div className="mb-2">
+            <p className="text-sm font-medium">{t.live_local_recording}</p>
+            <p className="mt-0.5 text-xs text-muted">
+              {t.live_local_recording_hint}
+            </p>
+          </div>
+          <audio
+            ref={audioPlayerRef}
+            controls
+            preload="metadata"
+            src={session.localAudioUrl}
+            className="h-10 w-full"
+          />
+        </div>
+      ) : null}
 
       <section className="mt-6">
         <div className="mb-4 flex flex-wrap items-center gap-2 border-b border-rule pb-3">
@@ -269,7 +320,7 @@ export function LivePage() {
                 : "border-rule text-muted hover:text-foreground"
             }`}
           >
-            {t.live_all} ({liveAllCount(analysis)})
+            {t.live_all} ({liveAllCount(analysis, resultLenses)})
           </button>
           {resultLenses.map((lens) => (
             <button
@@ -315,13 +366,38 @@ export function LivePage() {
 
         {activeLens === "all" ? (
           <LiveAllResults
-            findings={analysis.findings}
-            claims={analysis.claims}
-            neutralityFindings={analysis.neutralityFindings}
-            neutralityVerdict={analysis.neutralityVerdict}
+            findings={
+              resultLenses.includes("fallacy") ? analysis.findings : []
+            }
+            claims={resultLenses.includes("factcheck") ? analysis.claims : []}
+            neutralityFindings={
+              resultLenses.includes("neutrality")
+                ? analysis.neutralityFindings
+                : []
+            }
+            neutralityVerdict={
+              resultLenses.includes("neutrality")
+                ? analysis.neutralityVerdict
+                : null
+            }
+            context={
+              resultLenses.includes("context")
+                ? analysis.context
+                : EMPTY_LIVE_CONTEXT
+            }
             verdicts={claimVerification.verdicts}
             verifyingClaims={claimVerification.status === "running"}
             lang={lang}
+            active={session.state === "live"}
+            concluded={hasConcludedSession}
+            onJumpToSentence={handleJumpToSentence}
+          />
+        ) : activeLens === "context" ? (
+          <LiveContextPanel
+            context={analysis.context}
+            active={session.state === "live"}
+            concluded={hasConcludedSession}
+            onJumpToSentence={handleJumpToSentence}
           />
         ) : activeLens === "fallacy" ? (
           <FindingsList findings={analysis.findings} lang={lang} />
@@ -364,6 +440,7 @@ function ResultLink({ href, label }: { href: string; label: string }) {
 }
 
 function liveLensLabel(lens: LiveLens, t: Messages): string {
+  if (lens === "context") return t.live_lens_context;
   if (lens === "factcheck") return t.live_lens_factcheck;
   if (lens === "neutrality") return t.live_lens_neutrality;
   return t.live_lens_fallacy;
@@ -373,6 +450,15 @@ function liveLensCount(
   lens: LiveLens,
   analysis: ReturnType<typeof useLiveAnalysis>,
 ): number {
+  if (lens === "context") {
+    return (
+      (analysis.context.tags?.length ?? 0) +
+      (analysis.context.relatedLinks?.length ?? 0) +
+      analysis.context.topics.length +
+      analysis.context.terms.length +
+      analysis.context.segments.length
+    );
+  }
   if (lens === "factcheck") return analysis.claims.length;
   if (lens === "neutrality") {
     return (
@@ -383,12 +469,24 @@ function liveLensCount(
   return analysis.findings.length;
 }
 
-function liveAllCount(analysis: ReturnType<typeof useLiveAnalysis>): number {
+function liveAllCount(
+  analysis: ReturnType<typeof useLiveAnalysis>,
+  lenses: readonly LiveLens[],
+): number {
   return (
-    analysis.findings.length +
-    analysis.claims.length +
-    analysis.neutralityFindings.length +
-    (analysis.neutralityVerdict ? 1 : 0)
+    (lenses.includes("fallacy") ? analysis.findings.length : 0) +
+    (lenses.includes("factcheck") ? analysis.claims.length : 0) +
+    (lenses.includes("neutrality")
+      ? analysis.neutralityFindings.length +
+        (analysis.neutralityVerdict ? 1 : 0)
+      : 0) +
+    (lenses.includes("context")
+      ? (analysis.context.tags?.length ?? 0) +
+        (analysis.context.relatedLinks?.length ?? 0) +
+        analysis.context.topics.length +
+        analysis.context.terms.length +
+        analysis.context.segments.length
+      : 0)
   );
 }
 
@@ -419,6 +517,9 @@ const LIVE_ERROR_COPY = {
         : "Too many Live sessions were started in a short period. Please wait a moment and try again.",
     connectionTitle: "The connection was interrupted",
     connectionBody: "Check your internet connection and try again.",
+    analysisTitle: "The conversation couldn’t be analyzed",
+    analysisBody:
+      "The capture finished, but the results couldn’t be processed. Please try again.",
     genericTitle: "Jiddu Live couldn’t start",
     genericBody: "Please try again in a moment.",
   },
@@ -448,6 +549,9 @@ const LIVE_ERROR_COPY = {
         : "Muitas sessões do Live foram iniciadas em pouco tempo. Aguarde um momento e tente novamente.",
     connectionTitle: "A conexão foi interrompida",
     connectionBody: "Confira sua internet e tente novamente.",
+    analysisTitle: "Não foi possível analisar a conversa",
+    analysisBody:
+      "A captura foi concluída, mas os resultados não puderam ser processados. Tente novamente.",
     genericTitle: "Não foi possível iniciar o Jiddu Live",
     genericBody: "Tente novamente em alguns instantes.",
   },
@@ -477,6 +581,9 @@ const LIVE_ERROR_COPY = {
         : "Se iniciaron demasiadas sesiones de Live en poco tiempo. Espera un momento e inténtalo de nuevo.",
     connectionTitle: "Se interrumpió la conexión",
     connectionBody: "Comprueba tu conexión a internet e inténtalo de nuevo.",
+    analysisTitle: "No se pudo analizar la conversación",
+    analysisBody:
+      "La captura finalizó, pero los resultados no pudieron procesarse. Inténtalo de nuevo.",
     genericTitle: "No se pudo iniciar Jiddu Live",
     genericBody: "Inténtalo de nuevo en unos instantes.",
   },
@@ -522,8 +629,8 @@ function LiveErrorNotice({
     title = copy.connectionTitle;
     body = copy.connectionBody;
   } else if (hasAnalysisError) {
-    title = copy.genericTitle;
-    body = copy.genericBody;
+    title = copy.analysisTitle;
+    body = copy.analysisBody;
   }
 
   return (

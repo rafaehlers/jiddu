@@ -23,8 +23,8 @@ import type { Verdict, VerdictValue, SourceTier } from "@/lib/verdict-schema";
 import { readSse } from "@/lib/sse";
 import { cn } from "@/lib/utils";
 import { onActivate } from "@/lib/a11y";
+import { ReportDeliveryActions } from "@/components/report-delivery-actions";
 import { ShareLinkBar } from "@/components/share-link-bar";
-import { ExportPdfButton } from "@/components/export-pdf-button";
 import { StructuredDocumentText } from "@/components/structured-document-text";
 import { useI18n } from "@/lib/i18n/provider";
 import type { Messages } from "@/lib/i18n/messages";
@@ -33,6 +33,7 @@ import type { Block } from "@/lib/paragraphs";
 type ClaimWithId = Claim & { id: string };
 
 type Props = {
+  canEmail: boolean;
   id: string;
   title: string | null;
   sourceRef: string | null;
@@ -136,6 +137,7 @@ function statusLabel(t: Messages, s: string): string {
 }
 
 export function FactCheckView({
+  canEmail,
   id,
   title,
   sourceRef,
@@ -370,7 +372,16 @@ export function FactCheckView({
         </div>
       </header>
 
-      <ShareLinkBar rightSlot={<ExportPdfButton href={`/f/${id}/print`} />} />
+      <ShareLinkBar
+        rightSlot={
+          <ReportDeliveryActions
+            canEmail={canEmail}
+            id={id}
+            kind="f"
+            printHref={`/f/${id}/print`}
+          />
+        }
+      />
 
       {/* Verify action bar */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 bg-paper border border-rule rounded-lg p-4">

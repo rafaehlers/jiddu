@@ -1,18 +1,40 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useI18n } from "@/lib/i18n/provider";
+import { splitSentences } from "@/lib/sentences";
 
 type Props = {
   transcript: string;
   /** Pulse the cursor while audio is being captured. */
   active?: boolean;
   className?: string;
+  variant?: "live" | "report";
 };
 
-export function TranscriptStream({ transcript, active, className }: Props) {
+export type TranscriptStreamHandle = {
+  focusSentence: (sentenceId: string) => void;
+};
+
+export const TranscriptStream = forwardRef<TranscriptStreamHandle, Props>(
+  function TranscriptStream(
+    { transcript, active, className, variant = "live" },
+    ref,
+  ) {
   const { t } = useI18n();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const highlightTimeoutRef = useRef<number | null>(null);
+  const [highlightedSentenceId, setHighlightedSentenceId] = useState<
+    string | null
+  >(null);
+  const sentences = useMemo(() => splitSentences(transcript), [transcript]);
   // Auto-scroll to the bottom whenever transcript grows, unless the user
   // has scrolled away (within ~80px of the bottom = "following").
   const followingRef = useRef(true);
@@ -36,17 +58,52 @@ export function TranscriptStream({ transcript, active, className }: Props) {
     }
   }, [transcript]);
 
+  useEffect(
+    () => () => {
+      if (highlightTimeoutRef.current !== null) {
+        window.clearTimeout(highlightTimeoutRef.current);
+      }
+    },
+    [],
+  );
+
+  useImperativeHandle(ref, () => ({
+    focusSentence(sentenceId: string) {
+      const root = scrollRef.current;
+      const target = root?.querySelector<HTMLElement>(
+        `[data-sentence-id="${CSS.escape(sentenceId)}"]`,
+      );
+      if (!target) return;
+      followingRef.current = false;
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+      setHighlightedSentenceId(sentenceId);
+      if (highlightTimeoutRef.current !== null) {
+        window.clearTimeout(highlightTimeoutRef.current);
+      }
+      highlightTimeoutRef.current = window.setTimeout(
+        () => setHighlightedSentenceId(null),
+        2600,
+      );
+    },
+  }));
+
   return (
     <div
       ref={scrollRef}
       className={
-        "h-[25vh] overflow-y-auto rounded-md border border-rule bg-paper p-4 text-base leading-relaxed whitespace-pre-wrap " +
+        (variant === "report"
+          ? "text-base leading-relaxed whitespace-pre-wrap text-foreground/90 "
+          : "h-[25vh] overflow-y-auto rounded-md border border-rule bg-paper p-4 text-base leading-relaxed whitespace-pre-wrap ") +
         (className ?? "")
       }
     >
       {transcript ? (
         <>
-          {transcript}
+          {renderTranscript(
+            transcript,
+            sentences,
+            highlightedSentenceId,
+          )}
           {active && (
             <span
               aria-hidden
@@ -61,4 +118,35 @@ export function TranscriptStream({ transcript, active, className }: Props) {
       )}
     </div>
   );
+  },
+);
+
+function renderTranscript(
+  transcript: string,
+  sentences: ReturnType<typeof splitSentences>,
+  highlightedSentenceId: string | null,
+) {
+  const parts: React.ReactNode[] = [];
+  let cursor = 0;
+  for (const sentence of sentences) {
+    if (sentence.start > cursor) {
+      parts.push(transcript.slice(cursor, sentence.start));
+    }
+    parts.push(
+      <span
+        key={sentence.id}
+        data-sentence-id={sentence.id}
+        className={
+          highlightedSentenceId === sentence.id
+            ? "rounded-sm bg-accent/20 ring-2 ring-accent ring-offset-2 ring-offset-paper transition-colors"
+            : "transition-colors"
+        }
+      >
+        {transcript.slice(sentence.start, sentence.end)}
+      </span>,
+    );
+    cursor = sentence.end;
+  }
+  if (cursor < transcript.length) parts.push(transcript.slice(cursor));
+  return parts;
 }

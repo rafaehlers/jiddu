@@ -49,6 +49,8 @@ export type LiveSessionHandle = {
   transcript: string;
   error: LiveSessionError | null;
   billingReservationId: string | null;
+  /** Temporary in-browser recording for replay after this session. */
+  localAudioUrl: string | null;
   /** Milliseconds elapsed since the session went live. */
   elapsedMs: number;
   start: (source: LiveSource) => Promise<void>;
@@ -85,6 +87,7 @@ export function useLiveSession(opts: LiveSessionOptions = {}): LiveSessionHandle
   const [billingReservationId, setBillingReservationId] = useState<
     string | null
   >(null);
+  const [localAudioUrl, setLocalAudioUrl] = useState<string | null>(null);
 
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const dcRef = useRef<RTCDataChannel | null>(null);
@@ -96,6 +99,70 @@ export function useLiveSession(opts: LiveSessionOptions = {}): LiveSessionHandle
   // the final committed transcript even when deltas were never appended.
   const pendingItemsRef = useRef<Map<string, string>>(new Map());
   const completedItemsRef = useRef<Set<string>>(new Set());
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const localAudioUrlRef = useRef<string | null>(null);
+
+  const clearLocalRecording = useCallback(() => {
+    if (localAudioUrlRef.current) {
+      URL.revokeObjectURL(localAudioUrlRef.current);
+      localAudioUrlRef.current = null;
+    }
+    audioChunksRef.current = [];
+    setLocalAudioUrl(null);
+  }, []);
+
+  const startLocalRecording = useCallback((stream: MediaStream) => {
+    if (typeof MediaRecorder === "undefined") return;
+    try {
+      const recorder = new MediaRecorder(stream);
+      audioChunksRef.current = [];
+      recorder.addEventListener("dataavailable", (event) => {
+        if (event.data.size > 0) audioChunksRef.current.push(event.data);
+      });
+      recorder.start(1000);
+      mediaRecorderRef.current = recorder;
+    } catch (error) {
+      console.warn("[live] local replay recording is unavailable", error);
+    }
+  }, []);
+
+  const stopLocalRecording = useCallback(async (keepForReplay = true) => {
+    const recorder = mediaRecorderRef.current;
+    mediaRecorderRef.current = null;
+    if (!recorder || recorder.state === "inactive") return;
+    await new Promise<void>((resolve) => {
+      const timeout = window.setTimeout(resolve, 1500);
+      recorder.addEventListener(
+        "stop",
+        () => {
+          window.clearTimeout(timeout);
+          resolve();
+        },
+        { once: true },
+      );
+      try {
+        recorder.stop();
+      } catch {
+        window.clearTimeout(timeout);
+        resolve();
+      }
+    });
+    if (!keepForReplay) {
+      audioChunksRef.current = [];
+      return;
+    }
+    if (audioChunksRef.current.length === 0) return;
+    const blob = new Blob(audioChunksRef.current, {
+      type: recorder.mimeType || "audio/webm",
+    });
+    if (localAudioUrlRef.current) {
+      URL.revokeObjectURL(localAudioUrlRef.current);
+    }
+    const url = URL.createObjectURL(blob);
+    localAudioUrlRef.current = url;
+    setLocalAudioUrl(url);
+  }, []);
 
   const cleanupMedia = useCallback(() => {
     const dc = dcRef.current;
@@ -182,6 +249,7 @@ export function useLiveSession(opts: LiveSessionOptions = {}): LiveSessionHandle
     const finish = () => {
       const durationMs = currentDurationMs();
       finalDurationMsRef.current = durationMs;
+      void stopLocalRecording(false);
       cleanupMedia();
       startedAtRef.current = null;
       void settleBilling(durationMs, { keepalive: true });
@@ -191,7 +259,17 @@ export function useLiveSession(opts: LiveSessionOptions = {}): LiveSessionHandle
       window.removeEventListener("pagehide", finish);
       finish();
     };
-  }, [cleanupMedia, currentDurationMs, settleBilling]);
+  }, [cleanupMedia, currentDurationMs, settleBilling, stopLocalRecording]);
+
+  useEffect(
+    () => () => {
+      if (localAudioUrlRef.current) {
+        URL.revokeObjectURL(localAudioUrlRef.current);
+        localAudioUrlRef.current = null;
+      }
+    },
+    [],
+  );
 
   const handleEvent = useCallback(
     (ev: RealtimeEvent) => {
@@ -227,13 +305,20 @@ export function useLiveSession(opts: LiveSessionOptions = {}): LiveSessionHandle
         setElapsedMs(durationMs);
         setError({ code: "service_unavailable" });
         setState("error");
+        void stopLocalRecording();
         cleanupMedia();
         startedAtRef.current = null;
         finalDurationMsRef.current = durationMs;
         void settleBilling(durationMs, { keepalive: true });
       }
     },
-    [opts, cleanupMedia, currentDurationMs, settleBilling],
+    [
+      opts,
+      cleanupMedia,
+      currentDurationMs,
+      settleBilling,
+      stopLocalRecording,
+    ],
   );
 
   const start = useCallback(
@@ -246,6 +331,7 @@ export function useLiveSession(opts: LiveSessionOptions = {}): LiveSessionHandle
       setTranscript("");
       setElapsedMs(0);
       setBillingReservationId(null);
+      clearLocalRecording();
       finalDurationMsRef.current = 0;
       pendingItemsRef.current.clear();
       completedItemsRef.current.clear();
@@ -372,6 +458,7 @@ export function useLiveSession(opts: LiveSessionOptions = {}): LiveSessionHandle
               setElapsedMs(durationMs);
               setError({ code: "connection_lost" });
               setState("error");
+              void stopLocalRecording();
               cleanupMedia();
               startedAtRef.current = null;
               finalDurationMsRef.current = durationMs;
@@ -403,6 +490,7 @@ export function useLiveSession(opts: LiveSessionOptions = {}): LiveSessionHandle
         await pc.setRemoteDescription({ type: "answer", sdp: answerSdp });
 
         startedAtRef.current = Date.now();
+        startLocalRecording(stream);
         setState("live");
       } catch (err) {
         console.error("[live] session could not start", err);
@@ -410,6 +498,7 @@ export function useLiveSession(opts: LiveSessionOptions = {}): LiveSessionHandle
         setElapsedMs(durationMs);
         setError(toLiveSessionError(err));
         setState("error");
+        void stopLocalRecording();
         cleanupMedia();
         startedAtRef.current = null;
         finalDurationMsRef.current = durationMs;
@@ -419,10 +508,13 @@ export function useLiveSession(opts: LiveSessionOptions = {}): LiveSessionHandle
     [
       state,
       opts.language,
+      clearLocalRecording,
       cleanupMedia,
       currentDurationMs,
       handleEvent,
       settleBilling,
+      startLocalRecording,
+      stopLocalRecording,
     ],
   );
 
@@ -433,10 +525,17 @@ export function useLiveSession(opts: LiveSessionOptions = {}): LiveSessionHandle
     finalDurationMsRef.current = durationMs;
     setElapsedMs(durationMs);
     setState("stopping");
+    await stopLocalRecording();
     cleanupMedia();
     startedAtRef.current = null;
     return durationMs;
-  }, [state, elapsedMs, cleanupMedia, currentDurationMs]);
+  }, [
+    state,
+    elapsedMs,
+    cleanupMedia,
+    currentDurationMs,
+    stopLocalRecording,
+  ]);
 
   const finish = useCallback(
     async (resourceId?: string | null) => {
@@ -451,6 +550,7 @@ export function useLiveSession(opts: LiveSessionOptions = {}): LiveSessionHandle
     transcript,
     error,
     billingReservationId,
+    localAudioUrl,
     elapsedMs,
     start,
     stop,

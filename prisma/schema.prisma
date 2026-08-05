@@ -24,6 +24,7 @@ model Analysis {
   sentences         String    @default("[]") // JSON array of {id,start,end,text}
   findings          String    @default("[]") // JSON array of findings
   transcript        String? // raw transcript accumulated during a live session
+  liveContext       String? // JSON LiveContext recap for live sessions
   audioDurationMs   Int? // total audio duration captured (live mode)
   errorMessage      String?
   createdAt         DateTime  @default(now())

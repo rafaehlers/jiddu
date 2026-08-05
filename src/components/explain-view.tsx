@@ -32,12 +32,13 @@ import type {
 } from "@/lib/explain-schema";
 import { cn } from "@/lib/utils";
 import { onActivate } from "@/lib/a11y";
+import { ReportDeliveryActions } from "@/components/report-delivery-actions";
 import { ShareLinkBar } from "@/components/share-link-bar";
-import { ExportPdfButton } from "@/components/export-pdf-button";
 import { useI18n } from "@/lib/i18n/provider";
 import type { Messages } from "@/lib/i18n/messages";
 
 type Props = {
+  canEmail: boolean;
   id: string;
   title: string | null;
   sourceRef: string | null;
@@ -85,6 +86,7 @@ function levelLabelKey(level: ExplainLevel): keyof Messages {
 }
 
 export function ExplainView({
+  canEmail,
   id,
   title,
   sourceRef,
@@ -516,7 +518,16 @@ export function ExplainView({
         </div>
       </header>
 
-      <ShareLinkBar rightSlot={<ExportPdfButton href={`/e/${id}/print`} />} />
+      <ShareLinkBar
+        rightSlot={
+          <ReportDeliveryActions
+            canEmail={canEmail}
+            id={id}
+            kind="e"
+            printHref={`/e/${id}/print`}
+          />
+        }
+      />
 
       <nav
         aria-label={t.mode_explain}

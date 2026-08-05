@@ -10,8 +10,8 @@ import { cn } from "@/lib/utils";
 import { onActivate } from "@/lib/a11y";
 import { useI18n } from "@/lib/i18n/provider";
 import { MobileHintModal } from "@/components/mobile-hint-modal";
+import { ReportDeliveryActions } from "@/components/report-delivery-actions";
 import { ShareLinkBar } from "@/components/share-link-bar";
-import { ExportPdfButton } from "@/components/export-pdf-button";
 import { StructuredDocumentText } from "@/components/structured-document-text";
 import { useMobileHint } from "@/lib/mobile-hint";
 import type { Block } from "@/lib/paragraphs";
@@ -25,6 +25,7 @@ const MOBILE_BREAKPOINT = 1024; // matches Tailwind's `lg`
 // fallacy modals, which are hard-wired to FALLACY_BY_ID and the guide page.
 
 type Props = {
+  canEmail: boolean;
   id: string;
   title: string | null;
   sourceRef: string | null;
@@ -42,6 +43,7 @@ type Props = {
 type FindingWithKey = SlopFinding & { key: string };
 
 export function SlopView({
+  canEmail,
   id,
   title,
   sourceRef,
@@ -288,7 +290,16 @@ export function SlopView({
       </div>
 
       <div className="mx-auto max-w-5xl w-full px-4 sm:px-6 pb-16 grid grid-cols-1 lg:grid-cols-[1fr_22rem] gap-8">
-        <ShareLinkBar rightSlot={<ExportPdfButton href={`/s/${id}/print`} />} />
+        <ShareLinkBar
+          rightSlot={
+            <ReportDeliveryActions
+              canEmail={canEmail}
+              id={id}
+              kind="s"
+              printHref={`/s/${id}/print`}
+            />
+          }
+        />
       </div>
 
       <SlopPatternModal

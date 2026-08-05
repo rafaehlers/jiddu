@@ -57,6 +57,12 @@ import {
 } from "../slop-schema";
 import { SLOP_JSON_SCHEMA } from "./slopJsonSchema";
 import { buildSlopSystemPrompt, buildSlopUserPrompt } from "../slop-prompt";
+import { LiveContextWindowSchema } from "../live-context-schema";
+import {
+  buildLiveContextSystemPrompt,
+  buildLiveContextUserPrompt,
+} from "../live-context-prompt";
+import { LIVE_CONTEXT_JSON_SCHEMA } from "./liveContextJsonSchema";
 import type {
   AnalyzeInput,
   AnalyzeOutput,
@@ -65,6 +71,7 @@ import type {
   ImageTranscriptionOutput,
   LlmProvider,
   LlmStreamOptions,
+  LiveContextInput,
   ProviderId,
 } from "./types";
 import { readOpenRouterUsage } from "../openrouter-usage";
@@ -755,6 +762,65 @@ export class OpenRouterProvider implements LlmProvider {
 
     if (requestUsage) requestUsage.completed = true;
     return { model: opts?.model ?? this.defaultModel };
+  }
+
+  async analyzeLiveContext(
+    input: LiveContextInput,
+    opts?: LlmStreamOptions,
+  ): Promise<{
+    model: string;
+    result: ReturnType<typeof LiveContextWindowSchema.parse>;
+  }> {
+    const modelId = opts?.model ?? this.defaultModel;
+    const lang = input.lang ?? "en";
+    const response = await this.client.chat.completions.create(
+      {
+        model: this.slug(modelId),
+        messages: [
+          { role: "system", content: buildLiveContextSystemPrompt(lang) },
+          {
+            role: "user",
+            content: buildLiveContextUserPrompt({
+              sentences: input.sentences,
+              contextSentences: input.contextSentences,
+              previous: input.previous,
+              lang,
+              finalize: input.finalize,
+            }),
+          },
+        ],
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "report_live_context",
+              description:
+                "Report broad tags, current topics, unfamiliar terms, the current segment and cumulative recap.",
+              parameters: LIVE_CONTEXT_JSON_SCHEMA,
+            },
+          },
+        ],
+        tool_choice: this.toolChoiceFor("report_live_context", modelId),
+        ...this.openRouterExtras(modelId),
+      } as OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming,
+      opts?.signal ? { signal: opts.signal } : undefined,
+    );
+    const usage = readOpenRouterUsage(response, modelId);
+    if (usage) opts?.onUsage?.(usage);
+
+    const toolCall = response.choices[0]?.message?.tool_calls?.find(
+      (candidate) =>
+        candidate.type === "function" &&
+        candidate.function.name === "report_live_context",
+    );
+    if (!toolCall || toolCall.type !== "function") {
+      throw new Error("OpenRouter context response missing tool_call");
+    }
+    const result = LiveContextWindowSchema.parse(
+      JSON.parse(toolCall.function.arguments),
+    );
+    if (usage) usage.completed = true;
+    return { model: modelId, result };
   }
 
   async *analyzeSlopStream(
