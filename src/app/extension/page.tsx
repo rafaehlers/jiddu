@@ -4,6 +4,9 @@ import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { publicPageMetadata } from "@/lib/social-metadata";
 
+const CHROME_WEB_STORE_URL =
+  "https://chromewebstore.google.com/detail/jiddu-%E2%80%94-critical-reading/mjkfmfofghefpealomfibajfofoebnee";
+
 export const metadata: Metadata = publicPageMetadata({
   title: "Jiddu for Chrome — critical reading on any page",
   description:
@@ -17,7 +20,7 @@ export default function ExtensionPage() {
     "https://chromewebstore.google.com/",
   )
     ? configuredUrl
-    : null;
+    : CHROME_WEB_STORE_URL;
 
   return (
     <>
