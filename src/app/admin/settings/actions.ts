@@ -17,6 +17,25 @@ const KEYS = Object.keys(DEFAULT_SETTINGS) as SettingKey[];
 
 export async function saveSettingsAction(formData: FormData): Promise<void> {
   await assertAdminUser();
+  const inviteValues = {
+    globalLimit: Number(formData.get("invites.globalLimit")),
+    perUserLimit: Number(formData.get("invites.perUserLimit")),
+    acceptanceCredits: Number(formData.get("invites.acceptanceCredits")),
+  };
+  if (
+    !Object.values(inviteValues).every(
+      (value) => Number.isSafeInteger(value) && value >= 0,
+    )
+  ) {
+    redirect("/admin/settings?error=invalid_invites");
+  }
+  if (
+    inviteValues.globalLimit > 0 &&
+    (inviteValues.perUserLimit < 1 || inviteValues.acceptanceCredits < 1)
+  ) {
+    redirect("/admin/settings?error=incomplete_invites");
+  }
+
   for (const key of KEYS) {
     const raw = formData.get(key);
     if (raw == null) continue;
@@ -40,6 +59,12 @@ export async function saveSettingsAction(formData: FormData): Promise<void> {
       (key === "rate.liveToken.capacity" ||
         key === "rate.liveToken.perHour") &&
       (!Number.isSafeInteger(num) || num < 1)
+    ) {
+      continue;
+    }
+    if (
+      key.startsWith("invites.") &&
+      (!Number.isSafeInteger(num) || num < 0)
     ) {
       continue;
     }

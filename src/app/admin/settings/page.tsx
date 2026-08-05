@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AdminPage } from "@/components/admin/admin-page";
 import { CreditPricingSimulator } from "@/components/admin/credit-pricing-simulator";
+import { getInvitationAdminStats } from "@/lib/invitations";
 import {
   DEFAULT_SETTINGS,
   DEFAULT_STRING_SETTINGS,
@@ -69,6 +70,34 @@ const GROUPS: Group[] = [
           "Provider rate used to settle GPT Live Transcribe by actual session duration",
         min: 0.000001,
         step: 0.001,
+      },
+    ],
+  },
+  {
+    title: "Invitations",
+    description:
+      "Platform-wide invitation capacity, the allowance for each verified account and the bonus promised to each invited person. Set the global limit to zero to pause new invitations.",
+    keys: [
+      {
+        key: "invites.globalLimit",
+        label: "Global invitation limit",
+        help: "Maximum successfully queued or sent invitations across Jiddu",
+        min: 0,
+        step: 1,
+      },
+      {
+        key: "invites.perUserLimit",
+        label: "Invitations per user",
+        help: "Maximum invitations each verified WorkOS account may send",
+        min: 0,
+        step: 1,
+      },
+      {
+        key: "invites.acceptanceCredits",
+        label: "Credits on acceptance",
+        help: "Jiddu Credits granted once to the invited account",
+        min: 0,
+        step: 1,
       },
     ],
   },
@@ -214,12 +243,13 @@ const DELAY_LABELS: Record<
 export default async function AdminSettingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ saved?: string; reset?: string }>;
+  searchParams: Promise<{ error?: string; saved?: string; reset?: string }>;
 }) {
-  const { saved, reset } = await searchParams;
-  const [current, currentStrings] = await Promise.all([
+  const { error, saved, reset } = await searchParams;
+  const [current, currentStrings, invitationStats] = await Promise.all([
     loadSettings(),
     loadStringSettings(),
+    getInvitationAdminStats(),
   ]);
 
   return (
@@ -236,6 +266,13 @@ export default async function AdminSettingsPage({
         {reset && (
           <div className="mb-4 text-sm text-muted bg-paper border border-rule rounded-md p-3">
             All overrides cleared — defaults restored.
+          </div>
+        )}
+        {error && (
+          <div className="mb-4 rounded-md border border-[var(--severity-high)]/40 p-3 text-sm text-[var(--severity-high)]">
+            {error === "incomplete_invites"
+              ? "Set both the per-user limit and acceptance credits above zero before enabling invitations."
+              : "Invitation settings must be whole numbers greater than or equal to zero."}
           </div>
         )}
 
@@ -355,6 +392,26 @@ export default async function AdminSettingsPage({
                     <p className="mt-1 text-muted">
                       Recommended baseline: 5 immediate starts and 30 new
                       starts per hour.
+                    </p>
+                  </div>
+                )}
+                {g.keys.some(
+                  ({ key }) => key === "invites.globalLimit",
+                ) && (
+                  <div className="rounded-md border border-accent/25 bg-accent/5 p-3 text-xs sm:col-span-2">
+                    <p className="font-medium text-foreground">
+                      Current invitation usage
+                    </p>
+                    <p className="mt-1 text-foreground/85">
+                      {invitationStats.total} of{" "}
+                      {Math.floor(current["invites.globalLimit"])} global
+                      invitations used · {invitationStats.accepted} accepted ·{" "}
+                      {invitationStats.failed} failed deliveries
+                    </p>
+                    <p className="mt-1 text-muted">
+                      {current["invites.globalLimit"] > 0
+                        ? `${Math.max(0, Math.floor(current["invites.globalLimit"]) - invitationStats.total)} global invitations remain.`
+                        : "New invitations are currently disabled."}
                     </p>
                   </div>
                 )}

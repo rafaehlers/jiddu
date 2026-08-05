@@ -54,6 +54,28 @@ export async function findWorkOSUserByEmail(
     : null;
 }
 
+export async function findWorkOSUserByEmailStrict(
+  email: string,
+): Promise<{ id: string; email: string; emailVerified: boolean } | null> {
+  const apiKey = process.env.WORKOS_API_KEY;
+  if (!apiKey) throw new Error("WORKOS_API_KEY is not configured.");
+  const normalized = email.trim().toLowerCase();
+  const users = await new WorkOS(apiKey).userManagement.listUsers({
+    email: normalized,
+    limit: 10,
+  });
+  const user = users.data.find(
+    (candidate) => candidate.email.trim().toLowerCase() === normalized,
+  );
+  return user
+    ? {
+        id: user.id,
+        email: user.email,
+        emailVerified: user.emailVerified,
+      }
+    : null;
+}
+
 export async function getWorkOSUserById(
   userId: string,
 ): Promise<CachedWorkOSUser | null> {

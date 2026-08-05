@@ -38,6 +38,12 @@ export const DEFAULT_SETTINGS = {
     0.017,
   ),
 
+  // Invitations are disabled by default. An operator must explicitly set all
+  // three values before the account form permits new invitations.
+  "invites.globalLimit": 0,
+  "invites.perUserLimit": 0,
+  "invites.acceptanceCredits": 0,
+
   // Fallacy detector (POST /api/analyze)
   "rate.analyze.capacity": 10,
   "rate.analyze.perHour": 30,

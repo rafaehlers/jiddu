@@ -9,6 +9,7 @@ import {
 } from "@/components/account-api-keys";
 import { AccountAnalysisTable } from "@/components/account-analysis-table";
 import { AccountIdentity } from "@/components/account-identity";
+import { AccountInvites } from "@/components/account-invites";
 import { AccountReviewJobs } from "@/components/account-review-jobs";
 import { AccountSupportForm } from "@/components/account-support-form";
 import { CopyCode } from "@/components/copy-code";
@@ -27,6 +28,7 @@ import {
 } from "@/lib/openrouter-credits";
 import { listUserAnalyses } from "@/lib/user-analysis-history";
 import { getJidduCreditSnapshot } from "@/lib/jiddu-credits";
+import { getInvitationAccountOverview } from "@/lib/invitations";
 import { prisma } from "@/lib/db";
 import { loadSettings } from "@/lib/settings";
 import { fulfillStripeCheckoutSession } from "@/lib/stripe-billing";
@@ -82,9 +84,11 @@ export default async function AccountPage({
         ? "credits"
         : query.tab === "api"
           ? "api"
-          : query.tab === "support"
-            ? "support"
-            : "profile";
+          : query.tab === "invites"
+            ? "invites"
+            : query.tab === "support"
+              ? "support"
+              : "profile";
   const checkoutSessionId =
     typeof query.session_id === "string" ? query.session_id : null;
   let checkoutFulfilled = false;
@@ -132,6 +136,16 @@ export default async function AccountPage({
       : [];
   const creditSettings =
     activeTab === "credits" ? await loadSettings() : null;
+  const invitationSettings =
+    activeTab === "invites" ? await loadSettings() : null;
+  const invitationOverview = invitationSettings
+    ? await getInvitationAccountOverview({
+        globalLimit: invitationSettings["invites.globalLimit"],
+        perUserLimit: invitationSettings["invites.perUserLimit"],
+        rewardCredits: invitationSettings["invites.acceptanceCredits"],
+        workosUserId: user.id,
+      })
+    : null;
   const platformCredits =
     activeTab === "profile" && accessMode === "platform"
       ? await getOpenRouterCredits()
@@ -224,6 +238,12 @@ export default async function AccountPage({
             </AccountTab>
             <AccountTab href="/account?tab=api" active={activeTab === "api"}>
               API keys
+            </AccountTab>
+            <AccountTab
+              href="/account?tab=invites"
+              active={activeTab === "invites"}
+            >
+              Invites
             </AccountTab>
             <AccountTab
               href="/account?tab=support"
@@ -329,8 +349,18 @@ export default async function AccountPage({
             />
           ) : activeTab === "support" ? (
             <AccountSupportForm email={user.email} />
+          ) : activeTab === "invites" && invitationOverview ? (
+            <AccountInvites overview={invitationOverview} />
           ) : (
             <section className="flex flex-col gap-4">
+              {query.inviteAccepted === "1" && (
+                <div
+                  role="status"
+                  className="rounded-md border border-emerald-600/40 bg-emerald-600/10 px-4 py-3 text-sm"
+                >
+                  Invitation accepted. Your Jiddu Credits have been added.
+                </div>
+              )}
               {query.checkout === "success" && (
                 <div
                   role="status"

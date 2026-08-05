@@ -40,6 +40,32 @@ model AppSetting {
   updatedAt DateTime @updatedAt
 }
 
+model Invitation {
+  id                     String    @id @default(cuid())
+  inviterWorkosUserId    String
+  inviterEmail           String
+  inviterName            String?
+  inviteeEmail           String    @unique
+  message                String?
+  locale                 String    @default("en")
+  tokenHash              String    @unique
+  rewardCredits          Int
+  deliveryStatus         String    @default("queued") // queued | sent | failed
+  resendEmailId          String?
+  lastDeliveryError      String?
+  sentAt                 DateTime?
+  expiresAt              DateTime
+  acceptedAt             DateTime?
+  acceptedByWorkosUserId String?   @unique
+  rewardTransactionId    String?   @unique
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  @@index([inviterWorkosUserId, createdAt])
+  @@index([deliveryStatus, createdAt])
+  @@index([expiresAt, acceptedAt])
+}
+
 model ApiKey {
   id                String    @id // nanoid(12) — public identifier, safe to log
   keyHash           String    @unique // sha256("jiddu-api:" + secret) — the secret itself is never stored
@@ -102,7 +128,7 @@ model JidduCreditTransaction {
   workosUserId       String
   amount             Int
   balanceAfter       Int
-  kind               String // grant | adjustment | purchase | usage | included_usage
+  kind               String // grant | adjustment | purchase | usage | included_usage | invite_bonus
   feature            String?
   resourceId         String?
   rateVersion        String?
