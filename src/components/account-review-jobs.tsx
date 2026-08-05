@@ -3,9 +3,14 @@
 import { CheckCircle2, Loader2, TriangleAlert, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useI18n } from "@/lib/i18n/provider";
 import type { PaperReviewStageTiming } from "@/lib/paper-review-telemetry";
+import {
+  addDismissedReviewJobId,
+  parseDismissedReviewJobIds,
+  REVIEW_JOB_DISMISSALS_STORAGE_KEY,
+} from "@/lib/review-job-dismissals";
 
 type ReviewJob = {
   id: string;
@@ -55,6 +60,46 @@ const COPY = {
   },
 } as const;
 
+const REVIEW_JOB_DISMISSALS_UPDATED_EVENT =
+  "jiddu:review-job-dismissals-updated";
+
+function subscribeToReviewJobDismissals(onStoreChange: () => void) {
+  const handleStorage = (event: StorageEvent) => {
+    if (
+      event.key !== null &&
+      event.key !== REVIEW_JOB_DISMISSALS_STORAGE_KEY
+    ) {
+      return;
+    }
+    onStoreChange();
+  };
+
+  window.addEventListener("storage", handleStorage);
+  window.addEventListener(
+    REVIEW_JOB_DISMISSALS_UPDATED_EVENT,
+    onStoreChange,
+  );
+  return () => {
+    window.removeEventListener("storage", handleStorage);
+    window.removeEventListener(
+      REVIEW_JOB_DISMISSALS_UPDATED_EVENT,
+      onStoreChange,
+    );
+  };
+}
+
+function getReviewJobDismissalsSnapshot(): string | null {
+  try {
+    return window.localStorage.getItem(REVIEW_JOB_DISMISSALS_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function getServerReviewJobDismissalsSnapshot(): undefined {
+  return undefined;
+}
+
 export function AccountReviewJobs({
   initialJobs,
 }: {
@@ -64,7 +109,20 @@ export function AccountReviewJobs({
   const { lang } = useI18n();
   const copy = COPY[lang];
   const [jobs, setJobs] = useState(initialJobs);
-  const [dismissed, setDismissed] = useState<string[]>([]);
+  const [sessionDismissed, setSessionDismissed] = useState<string[]>([]);
+  const dismissalSnapshot = useSyncExternalStore(
+    subscribeToReviewJobDismissals,
+    getReviewJobDismissalsSnapshot,
+    getServerReviewJobDismissalsSnapshot,
+  );
+  const persistedDismissed = useMemo(
+    () => parseDismissedReviewJobIds(dismissalSnapshot ?? null),
+    [dismissalSnapshot],
+  );
+  const dismissed = useMemo(
+    () => Array.from(new Set([...persistedDismissed, ...sessionDismissed])),
+    [persistedDismissed, sessionDismissed],
+  );
   const [now, setNow] = useState(() =>
     initialJobs[0]
       ? new Date(initialJobs[0].observedAt).getTime()
@@ -129,7 +187,21 @@ export function AccountReviewJobs({
     );
   }, [dismissed, jobs]);
 
-  if (notices.length === 0) return null;
+  if (dismissalSnapshot === undefined || notices.length === 0) return null;
+
+  const dismiss = (jobId: string) => {
+    const next = addDismissedReviewJobId(dismissed, jobId);
+    try {
+      window.localStorage.setItem(
+        REVIEW_JOB_DISMISSALS_STORAGE_KEY,
+        JSON.stringify(next),
+      );
+      window.dispatchEvent(new Event(REVIEW_JOB_DISMISSALS_UPDATED_EVENT));
+    } catch {
+      // Keep the dismissal for this page view when storage is unavailable.
+      setSessionDismissed((ids) => addDismissedReviewJobId(ids, jobId));
+    }
+  };
 
   return (
     <section aria-label="Adversarial review jobs" className="flex flex-col gap-3">
@@ -185,7 +257,7 @@ export function AccountReviewJobs({
             {!running && (
               <button
                 type="button"
-                onClick={() => setDismissed((ids) => [...ids, job.id])}
+                onClick={() => dismiss(job.id)}
                 className="rounded p-1 text-muted hover:text-foreground"
                 aria-label={copy.dismiss}
                 title={copy.dismiss}
