@@ -53,7 +53,7 @@ const GROUPS: Group[] = [
         help:
           "Defines the accounting value of a Jiddu Credit. Lower values charge more credits for the same provider cost",
         min: 0.000001,
-        step: 0.001,
+        step: 0.000001,
       },
       {
         key: "credits.liveTranscription",
@@ -69,7 +69,7 @@ const GROUPS: Group[] = [
         help:
           "Provider rate used to settle GPT Live Transcribe by actual session duration",
         min: 0.000001,
-        step: 0.001,
+        step: 0.000001,
       },
     ],
   },
