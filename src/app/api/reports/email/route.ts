@@ -1,8 +1,10 @@
 import { withAuth } from "@workos-inc/authkit-nextjs";
 import { NextRequest } from "next/server";
 import { z } from "zod";
+import { appBaseUrl } from "@/lib/auth-config";
 import { consume } from "@/lib/rate-limit";
 import { REPORT_KINDS, sendOwnedReportEmail } from "@/lib/report-email";
+import { isAllowedReportEmailOrigin } from "@/lib/report-email-origin";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -15,7 +17,9 @@ const BodySchema = z.object({
 
 export async function POST(request: NextRequest) {
   const origin = request.headers.get("origin");
-  if (origin && safeOrigin(origin) !== request.nextUrl.origin) {
+  // Behind the production reverse proxy, request.nextUrl can contain the
+  // container's internal origin. Compare against the canonical public URL.
+  if (!isAllowedReportEmailOrigin(origin, appBaseUrl(request.url))) {
     return Response.json({ error: "Invalid origin" }, { status: 403 });
   }
 
@@ -60,13 +64,5 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Could not email report:", error);
     return Response.json({ error: "Could not email report" }, { status: 500 });
-  }
-}
-
-function safeOrigin(value: string): string | null {
-  try {
-    return new URL(value).origin;
-  } catch {
-    return null;
   }
 }
