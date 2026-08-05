@@ -378,7 +378,11 @@ export function useLiveSession(opts: LiveSessionOptions = {}): LiveSessionHandle
             .json()
             .catch(() => ({}))) as TokenErrorPayload;
           console.error("[live] token request failed", tokenRes.status, payload);
-          if (payload.code === "insufficient_jiddu_credits") {
+          if (
+            payload.code === "insufficient_jiddu_credits" ||
+            payload.code === "jiddu_credits_required" ||
+            tokenRes.status === 402
+          ) {
             throw new LiveSessionStartError(
               {
                 code: "insufficient_jiddu_credits",
