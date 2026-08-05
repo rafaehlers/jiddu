@@ -175,15 +175,18 @@ model JidduCreditReservation {
 }
 
 model JidduCreditPackage {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  credits     Int
-  priceCents  Int
-  active      Boolean  @default(true)
-  sortOrder   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  name          String
+  descriptionEn String?
+  descriptionPt String?
+  descriptionEs String?
+  credits       Int
+  priceUsdCents Int?
+  priceBrlCents Int?
+  active        Boolean  @default(true)
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@index([active, sortOrder])
 }

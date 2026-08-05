@@ -3,14 +3,21 @@
 import { useAuth } from "@workos-inc/authkit-nextjs/components";
 import Link from "next/link";
 import { useState } from "react";
+import {
+  creditCurrencyForLanguage,
+  packagePriceCents,
+} from "@/lib/credit-package-pricing";
 import { useI18n } from "@/lib/i18n/provider";
 
 export type PublicCreditPackage = {
   id: string;
   name: string;
-  description: string | null;
+  descriptionEn: string | null;
+  descriptionPt: string | null;
+  descriptionEs: string | null;
   credits: number;
-  priceCents: number;
+  priceUsdCents: number | null;
+  priceBrlCents: number | null;
 };
 
 const COPY = {
@@ -83,12 +90,23 @@ export function PricingBody({
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const copy = COPY[lang];
   const locale = lang === "pt" ? "pt-BR" : lang === "es" ? "es" : "en-US";
+  const currency = creditCurrencyForLanguage(lang);
   const integer = new Intl.NumberFormat(locale);
-  const usd = new Intl.NumberFormat(locale, {
+  const money = new Intl.NumberFormat(locale, {
     style: "currency",
-    currency: "USD",
+    currency: currency.toUpperCase(),
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
+  });
+  const availablePackages = packages.flatMap((item) => {
+    const priceCents = packagePriceCents(item, currency);
+    const description =
+      lang === "pt"
+        ? (item.descriptionPt ?? item.descriptionEn ?? item.descriptionEs)
+        : lang === "es"
+          ? (item.descriptionEs ?? item.descriptionEn ?? item.descriptionPt)
+          : (item.descriptionEn ?? item.descriptionPt ?? item.descriptionEs);
+    return priceCents === null ? [] : [{ ...item, priceCents, description }];
   });
 
   async function openCheckout(packageId: string) {
@@ -158,14 +176,20 @@ export function PricingBody({
         </p>
       )}
 
-      {packages.length === 0 ? (
+      {availablePackages.length === 0 ? (
         <div className="mt-10 rounded-lg border border-rule bg-paper p-6">
           <h2 className="font-serif text-2xl">{copy.emptyTitle}</h2>
           <p className="mt-2 text-sm text-muted">{copy.emptyBody}</p>
         </div>
       ) : (
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {packages.map((item) => {
+        <div
+          className={`mt-10 grid gap-4 sm:grid-cols-2 ${
+            availablePackages.length >= 5
+              ? "lg:grid-cols-3 xl:grid-cols-5"
+              : "lg:grid-cols-4"
+          }`}
+        >
+          {availablePackages.map((item) => {
             const price = item.priceCents / 100;
             const pricePerHundred = (price / item.credits) * 100;
             return (
@@ -175,7 +199,7 @@ export function PricingBody({
               >
                 <h2 className="font-serif text-2xl">{item.name}</h2>
                 <p className="mt-4 font-serif text-4xl leading-none">
-                  {usd.format(price)}
+                  {money.format(price)}
                 </p>
                 <p className="mt-5 text-lg font-medium tabular-nums">
                   {integer.format(item.credits)}
@@ -198,7 +222,7 @@ export function PricingBody({
                     {purchasingId === item.id ? copy.buying : copy.buy}
                   </button>
                   <p className="mt-3 text-center text-xs text-muted">
-                    {copy.perHundred(usd.format(pricePerHundred))}
+                    {copy.perHundred(money.format(pricePerHundred))}
                   </p>
                 </div>
               </article>

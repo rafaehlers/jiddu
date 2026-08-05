@@ -22,6 +22,10 @@ const USD = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "USD",
 });
+const BRL = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+});
 
 export default async function CreditPackagesPage({
   searchParams,
@@ -30,7 +34,7 @@ export default async function CreditPackagesPage({
 }) {
   const [packages, query] = await Promise.all([
     prisma.jidduCreditPackage.findMany({
-      orderBy: [{ sortOrder: "asc" }, { priceCents: "asc" }],
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     }),
     searchParams,
   ]);
@@ -43,13 +47,13 @@ export default async function CreditPackagesPage({
         : query.error === "not_found"
           ? "That package no longer exists."
           : query.error
-            ? "Check the package name, whole-credit amount and USD price."
+            ? "Check the package name, whole-credit amount and at least one currency price."
             : null;
 
   return (
     <AdminPage
       title="Credit packages"
-      description="Manage the offers sold on the pricing page. Starter, Plus, Pro and Studio map to their server-side Stripe Price IDs."
+      description="Manage the USD and BRL offers sold on the pricing page. Portuguese uses BRL; English and Spanish use USD."
       breadcrumbs={[{ label: "Credits", href: "/admin/credits" }]}
       actions={
         <Link
@@ -70,8 +74,8 @@ export default async function CreditPackagesPage({
         <AdminPanel>
           <h2 className="font-serif text-2xl">Create a package</h2>
           <p className="mt-1 text-sm text-muted">
-            Example offers: 1,000 credits for $10; 5,500 for $50; or 12,000 for
-            $100. Bonus value is expressed directly in the total credit amount.
+            Add a USD price, a BRL price, or both. Packages without a USD price
+            appear only when Portuguese and BRL are selected.
           </p>
           <PackageForm action={createCreditPackageAction} className="mt-5" />
         </AdminPanel>
@@ -93,27 +97,24 @@ export default async function CreditPackagesPage({
                     item={{
                       id: item.id,
                       name: item.name,
-                      description: item.description ?? "",
+                      descriptionEn: item.descriptionEn ?? "",
+                      descriptionPt: item.descriptionPt ?? "",
+                      descriptionEs: item.descriptionEs ?? "",
                       credits: item.credits,
-                      priceUsd: (item.priceCents / 100).toFixed(2),
+                      priceUsd:
+                        item.priceUsdCents === null
+                          ? ""
+                          : (item.priceUsdCents / 100).toFixed(2),
+                      priceBrl:
+                        item.priceBrlCents === null
+                          ? ""
+                          : (item.priceBrlCents / 100).toFixed(2),
                       active: item.active,
                       sortOrder: item.sortOrder,
                     }}
                   />
                   <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-rule pt-4 text-xs text-muted">
-                    <span>
-                      {USD.format(item.priceCents / 100)} ·{" "}
-                      {(item.priceCents / 100 / item.credits).toLocaleString(
-                        "en-US",
-                        {
-                          style: "currency",
-                          currency: "USD",
-                          minimumFractionDigits: 4,
-                          maximumFractionDigits: 6,
-                        },
-                      )}{" "}
-                      per credit
-                    </span>
+                    <span>{packagePriceSummary(item)}</span>
                     <DeleteCreditPackageForm
                       id={item.id}
                       name={item.name}
@@ -137,9 +138,12 @@ export default async function CreditPackagesPage({
 type PackageFormValue = {
   id: string;
   name: string;
-  description: string;
+  descriptionEn: string;
+  descriptionPt: string;
+  descriptionEs: string;
   credits: number;
   priceUsd: string;
+  priceBrl: string;
   active: boolean;
   sortOrder: number;
 };
@@ -178,11 +182,19 @@ function PackageForm({
         label="Price (USD)"
         name="priceUsd"
         type="number"
-        required
         min={0.01}
         step={0.01}
         defaultValue={item?.priceUsd}
         placeholder="10.00"
+      />
+      <PackageInput
+        label="Price (BRL)"
+        name="priceBrl"
+        type="number"
+        min={0.01}
+        step={0.01}
+        defaultValue={item?.priceBrl}
+        placeholder="50.00"
       />
       <PackageInput
         label="Display order"
@@ -191,16 +203,21 @@ function PackageForm({
         step={1}
         defaultValue={item?.sortOrder ?? 0}
       />
-      <label className="flex flex-col gap-1 text-sm sm:col-span-2">
-        <span className="font-medium">Description</span>
-        <textarea
-          name="description"
-          maxLength={500}
-          defaultValue={item?.description}
-          placeholder="Optional internal or customer-facing description"
-          className="min-h-20 rounded-md border border-rule bg-background px-3 py-2"
-        />
-      </label>
+      <PackageTextarea
+        label="Description (English)"
+        name="descriptionEn"
+        defaultValue={item?.descriptionEn}
+      />
+      <PackageTextarea
+        label="Description (Portuguese)"
+        name="descriptionPt"
+        defaultValue={item?.descriptionPt}
+      />
+      <PackageTextarea
+        label="Description (Spanish)"
+        name="descriptionEs"
+        defaultValue={item?.descriptionEs}
+      />
       <div className="flex items-center justify-between gap-4 sm:col-span-2">
         <label className="inline-flex items-center gap-2 text-sm">
           <input
@@ -219,6 +236,50 @@ function PackageForm({
       </div>
     </form>
   );
+}
+
+function PackageTextarea({
+  label,
+  name,
+  defaultValue,
+}: {
+  label: string;
+  name: string;
+  defaultValue?: string;
+}) {
+  return (
+    <label className="flex flex-col gap-1 text-sm sm:col-span-2">
+      <span className="font-medium">{label}</span>
+      <textarea
+        name={name}
+        maxLength={500}
+        defaultValue={defaultValue}
+        placeholder="Optional customer-facing description"
+        className="min-h-20 rounded-md border border-rule bg-background px-3 py-2"
+      />
+    </label>
+  );
+}
+
+function packagePriceSummary(item: {
+  credits: number;
+  priceUsdCents: number | null;
+  priceBrlCents: number | null;
+}) {
+  const prices = [
+    item.priceUsdCents === null
+      ? null
+      : `${USD.format(item.priceUsdCents / 100)} · ${USD.format(
+          item.priceUsdCents / 100 / item.credits,
+        )} per credit`,
+    item.priceBrlCents === null
+      ? null
+      : `${BRL.format(item.priceBrlCents / 100)} · ${BRL.format(
+          item.priceBrlCents / 100 / item.credits,
+        )} per credit`,
+  ].filter((value): value is string => value !== null);
+
+  return prices.join(" · ");
 }
 
 function PackageInput({

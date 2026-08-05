@@ -1,6 +1,11 @@
 import { withAuth } from "@workos-inc/authkit-nextjs";
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { appBaseUrl } from "@/lib/auth-config";
+import {
+  creditCurrencyForLanguage,
+  packagePriceCents,
+} from "@/lib/credit-package-pricing";
 import { prisma } from "@/lib/db";
 import {
   checkoutMetadata,
@@ -47,10 +52,21 @@ export async function POST(request: Request) {
   }
 
   try {
-    const priceId = stripePriceIdForPackage(creditPackage.name);
+    const language = (await cookies()).get("jiddu_lang")?.value;
+    const currency = creditCurrencyForLanguage(language);
+    const expectedPriceCents = packagePriceCents(creditPackage, currency);
+    if (!expectedPriceCents) {
+      return NextResponse.json(
+        { error: "This credit package is unavailable in the selected currency." },
+        { status: 404 },
+      );
+    }
+
+    const priceId = stripePriceIdForPackage(creditPackage.name, currency);
     await validateStripePrice({
       priceId,
-      expectedPriceCents: creditPackage.priceCents,
+      expectedPriceCents,
+      expectedCurrency: currency,
     });
 
     const baseUrl = appBaseUrl(request.url);
@@ -65,7 +81,8 @@ export async function POST(request: Request) {
         packageId: creditPackage.id,
         packageName: creditPackage.name,
         credits: creditPackage.credits,
-        expectedPriceCents: creditPackage.priceCents,
+        expectedPriceCents,
+        expectedCurrency: currency,
       }),
       success_url: `${baseUrl}/account?tab=credits&checkout=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/pricing?checkout=cancelled`,

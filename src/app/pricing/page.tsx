@@ -26,13 +26,16 @@ export default async function PricingPage({
   const packages: PublicCreditPackage[] =
     await prisma.jidduCreditPackage.findMany({
       where: { active: true },
-      orderBy: [{ sortOrder: "asc" }, { priceCents: "asc" }],
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
       select: {
         id: true,
         name: true,
-        description: true,
+        descriptionEn: true,
+        descriptionPt: true,
+        descriptionEs: true,
         credits: true,
-        priceCents: true,
+        priceUsdCents: true,
+        priceBrlCents: true,
       },
     });
 

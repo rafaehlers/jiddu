@@ -1,16 +1,25 @@
 import "server-only";
 
+import type { CreditCurrency } from "@/lib/credit-package-pricing";
 import { prisma } from "@/lib/db";
 import { getStripe } from "@/lib/stripe";
 
 const PRICE_ENV_KEYS = {
-  starter: "STRIPE_PRICE_STARTER",
-  plus: "STRIPE_PRICE_PLUS",
-  pro: "STRIPE_PRICE_PRO",
-  studio: "STRIPE_PRICE_STUDIO",
+  lite: { brl: "STRIPE_PRICE_BRL_LITE" },
+  starter: {
+    usd: "STRIPE_PRICE_STARTER",
+    brl: "STRIPE_PRICE_BRL_STARTER",
+  },
+  plus: { usd: "STRIPE_PRICE_PLUS", brl: "STRIPE_PRICE_BRL_PLUS" },
+  pro: { usd: "STRIPE_PRICE_PRO", brl: "STRIPE_PRICE_BRL_PRO" },
+  studio: {
+    usd: "STRIPE_PRICE_STUDIO",
+    brl: "STRIPE_PRICE_BRL_STUDIO",
+  },
 } as const;
 
 export type StripePackageKey = keyof typeof PRICE_ENV_KEYS;
+export type StripeCurrency = CreditCurrency;
 
 type CheckoutMetadata = {
   workosUserId: string;
@@ -19,22 +28,36 @@ type CheckoutMetadata = {
   packageName: string;
   credits: number;
   expectedPriceCents: number;
+  expectedCurrency: StripeCurrency;
 };
 
 export function stripePackageKey(name: string): StripePackageKey | null {
-  const normalized = name.trim().toLocaleLowerCase("en-US");
+  const normalized = name
+    .trim()
+    .toLocaleLowerCase("en-US")
+    .replace(/^jiddu\s+/, "");
   return normalized in PRICE_ENV_KEYS
     ? (normalized as StripePackageKey)
     : null;
 }
 
-export function stripePriceIdForPackage(name: string): string {
+export function stripePriceIdForPackage(
+  name: string,
+  currency: StripeCurrency,
+): string {
   const packageKey = stripePackageKey(name);
   if (!packageKey) {
     throw new Error(`No Stripe Price mapping exists for package "${name}".`);
   }
 
-  const envKey = PRICE_ENV_KEYS[packageKey];
+  const currencyMap: Partial<Record<StripeCurrency, string>> =
+    PRICE_ENV_KEYS[packageKey];
+  const envKey = currencyMap[currency];
+  if (!envKey) {
+    throw new Error(
+      `Package "${name}" is not available in ${currency.toUpperCase()}.`,
+    );
+  }
   const priceId = process.env[envKey]?.trim();
   if (!priceId) {
     throw new Error(`${envKey} is not configured.`);
@@ -52,7 +75,12 @@ export function checkoutMetadata(input: CheckoutMetadata) {
     packageName: input.packageName,
     credits: String(input.credits),
     expectedPriceCents: String(input.expectedPriceCents),
+    currency: input.expectedCurrency,
   };
+}
+
+function isStripeCurrency(value: string): value is StripeCurrency {
+  return value === "usd" || value === "brl";
 }
 
 function parseCheckoutMetadata(
@@ -64,6 +92,9 @@ function parseCheckoutMetadata(
   const packageName = metadata?.packageName?.trim();
   const credits = Number(metadata?.credits);
   const expectedPriceCents = Number(metadata?.expectedPriceCents);
+  // Checkout Sessions created before BRL support did not carry a currency
+  // field. Treat those in-flight purchases as the original USD offering.
+  const expectedCurrency = (metadata?.currency ?? "usd").toLowerCase();
 
   if (
     metadata?.integration !== "jiddu_credit_purchase" ||
@@ -74,7 +105,8 @@ function parseCheckoutMetadata(
     !Number.isSafeInteger(credits) ||
     credits <= 0 ||
     !Number.isSafeInteger(expectedPriceCents) ||
-    expectedPriceCents <= 0
+    expectedPriceCents <= 0 ||
+    !isStripeCurrency(expectedCurrency)
   ) {
     throw new Error("Checkout Session metadata is incomplete or invalid.");
   }
@@ -86,6 +118,7 @@ function parseCheckoutMetadata(
     packageName,
     credits,
     expectedPriceCents,
+    expectedCurrency,
   };
 }
 
@@ -106,6 +139,7 @@ function isUniqueConstraintError(error: unknown): boolean {
 export async function validateStripePrice(input: {
   priceId: string;
   expectedPriceCents: number;
+  expectedCurrency: StripeCurrency;
 }) {
   const price = await getStripe().prices.retrieve(input.priceId);
 
@@ -115,8 +149,10 @@ export async function validateStripePrice(input: {
   if (price.type !== "one_time") {
     throw new Error(`Stripe Price ${price.id} must be a one-time price.`);
   }
-  if (price.currency !== "usd") {
-    throw new Error(`Stripe Price ${price.id} must use USD.`);
+  if (price.currency !== input.expectedCurrency) {
+    throw new Error(
+      `Stripe Price ${price.id} must use ${input.expectedCurrency.toUpperCase()}.`,
+    );
   }
   if (price.unit_amount !== input.expectedPriceCents) {
     throw new Error(
@@ -179,14 +215,17 @@ export async function fulfillStripeCheckoutSession(
     throw new Error("Checkout Session Price was not expanded.");
   }
 
-  const expectedPriceId = stripePriceIdForPackage(metadata.packageName);
+  const expectedPriceId = stripePriceIdForPackage(
+    metadata.packageName,
+    metadata.expectedCurrency,
+  );
   if (
     price.id !== expectedPriceId ||
     price.type !== "one_time" ||
-    price.currency !== "usd" ||
+    price.currency !== metadata.expectedCurrency ||
     price.unit_amount !== metadata.expectedPriceCents ||
     session.amount_total !== metadata.expectedPriceCents ||
-    session.currency !== "usd"
+    session.currency !== metadata.expectedCurrency
   ) {
     throw new Error("Checkout Session amount or Price validation failed.");
   }

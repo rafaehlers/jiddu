@@ -51,12 +51,16 @@ export async function deleteCreditPackageAction(
 
 function parsePackage(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim().slice(0, 100);
-  const description =
-    String(formData.get("description") ?? "").trim().slice(0, 500) || null;
+  const descriptionEn = parseDescription(formData, "descriptionEn");
+  const descriptionPt = parseDescription(formData, "descriptionPt");
+  const descriptionEs = parseDescription(formData, "descriptionEs");
   const credits = Number(String(formData.get("credits") ?? ""));
   const sortOrder = Number(String(formData.get("sortOrder") ?? "0"));
-  const priceCents = parseUsdToCents(
+  const priceUsdCents = parseOptionalPriceToCents(
     String(formData.get("priceUsd") ?? "").trim(),
+  );
+  const priceBrlCents = parseOptionalPriceToCents(
+    String(formData.get("priceBrl") ?? "").trim(),
   );
 
   if (
@@ -66,27 +70,41 @@ function parsePackage(formData: FormData) {
     credits > 100_000_000 ||
     !Number.isSafeInteger(sortOrder) ||
     Math.abs(sortOrder) > 1_000_000 ||
-    priceCents === null ||
-    priceCents < 1 ||
-    priceCents > 100_000_000
+    priceUsdCents === undefined ||
+    priceBrlCents === undefined ||
+    (priceUsdCents === null && priceBrlCents === null) ||
+    (priceUsdCents !== null &&
+      (priceUsdCents < 1 || priceUsdCents > 100_000_000)) ||
+    (priceBrlCents !== null &&
+      (priceBrlCents < 1 || priceBrlCents > 100_000_000))
   ) {
     return null;
   }
 
   return {
     name,
-    description,
+    descriptionEn,
+    descriptionPt,
+    descriptionEs,
     credits,
-    priceCents,
+    priceUsdCents,
+    priceBrlCents,
     active: formData.get("active") === "on",
     sortOrder,
   };
 }
 
-function parseUsdToCents(value: string): number | null {
-  if (!/^\d+(?:\.\d{1,2})?$/.test(value)) return null;
+function parseDescription(formData: FormData, field: string): string | null {
+  return String(formData.get(field) ?? "").trim().slice(0, 500) || null;
+}
+
+function parseOptionalPriceToCents(
+  value: string,
+): number | null | undefined {
+  if (!value) return null;
+  if (!/^\d+(?:\.\d{1,2})?$/.test(value)) return undefined;
   const [whole, fraction = ""] = value.split(".");
   const cents =
     Number(whole) * 100 + Number(fraction.padEnd(2, "0").slice(0, 2));
-  return Number.isSafeInteger(cents) ? cents : null;
+  return Number.isSafeInteger(cents) ? cents : undefined;
 }
