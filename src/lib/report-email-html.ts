@@ -1,4 +1,5 @@
 import { load } from "cheerio";
+import { emailBrandHeader } from "@/lib/email-brand-header";
 
 type Input = {
   cta: string;
@@ -38,15 +39,20 @@ export function buildReportEmailHtml(input: Input): string {
     <style>
       ${styles}
       body { margin: 0; background: #f7f4ee; color: #111; }
-      .email-intro { box-sizing: border-box; max-width: 720px; margin: 0 auto; padding: 24px 24px 0; font: 14px/1.5 Arial, sans-serif; color: #4b4740; }
+      .email-header { box-sizing: border-box; max-width: 720px; margin: 24px auto 0; padding: 24px 24px 0; background: #fff; }
+      .email-intro { box-sizing: border-box; max-width: 720px; margin: 0 auto; padding: 20px 24px 0; background: #fff; font: 14px/1.5 Arial, sans-serif; color: #4b4740; }
       .email-cta { display: inline-block; margin-top: 12px; padding: 9px 14px; border-radius: 6px; background: #4737d2; color: #fff !important; font-weight: 600; text-decoration: none; }
       @media (max-width: 600px) {
         .print-root { padding: 24px 16px 36px !important; }
+        .email-header { margin-top: 0 !important; padding: 20px 16px 0 !important; }
         .email-intro { padding: 20px 16px 0 !important; }
       }
     </style>
   </head>
   <body>
+    <div class="email-header">
+      ${emailBrandHeader()}
+    </div>
     <div class="email-intro">
       <p style="margin:0;">${escapeHtml(input.intro)}</p>
       <a class="email-cta" href="${escapeHtml(input.reportUrl)}">${escapeHtml(input.cta)}</a>

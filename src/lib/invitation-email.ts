@@ -1,5 +1,6 @@
 import "server-only";
 
+import { emailBrandHeader } from "@/lib/email-brand-header";
 import type { Lang } from "@/lib/fallacies";
 import {
   escapeEmailHtml,
@@ -106,8 +107,8 @@ export async function sendInvitationEmail(
   <body style="margin:0;background:#f7f4ee;color:#211f1b;font-family:Arial,sans-serif;">
     <div style="max-width:640px;margin:0 auto;padding:32px 20px;">
       <div style="background:#fff;border:1px solid #ded8ce;border-radius:10px;padding:28px;line-height:1.6;">
-        <p style="margin:0 0 20px;font-family:Georgia,serif;font-size:28px;">Jiddu</p>
-        <h1 style="margin:0 0 20px;font-size:20px;">${escapeEmailHtml(copy.title)}</h1>
+        ${emailBrandHeader()}
+        <h1 style="margin:24px 0 20px;font-size:20px;">${escapeEmailHtml(copy.title)}</h1>
         <p>${escapeEmailHtml(copy.intro(inviterName))}</p>
         ${personalMessage}
         <p>${escapeEmailHtml(copy.reward(input.rewardCredits))}</p>

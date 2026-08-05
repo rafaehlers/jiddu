@@ -32,6 +32,8 @@ test("extracts the printable report and makes links email-safe", () => {
   assert.match(html, /href="https:\/\/jiddu\.app\/legal"/);
   assert.match(html, /Requested &lt;report&gt;/);
   assert.match(html, /<title>Title &lt;unsafe&gt;<\/title>/);
+  assert.match(html, /jiddu_logo_email\.png/);
+  assert.match(html, />Critical reading<\/span>/);
   assert.match(html, /<ul class="email-tag-list"/);
   assert.match(html, /list-style:disc outside/);
   assert.match(html, /<li style="display:list-item;/);
