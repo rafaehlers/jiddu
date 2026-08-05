@@ -2,6 +2,8 @@ import "server-only";
 
 import Stripe from "stripe";
 
+const STRIPE_API_VERSION = "2026-07-29.dahlia" as const;
+
 let stripeClient: Stripe | null = null;
 
 export function getStripe(): Stripe {
@@ -12,6 +14,7 @@ export function getStripe(): Stripe {
 
   if (!stripeClient) {
     stripeClient = new Stripe(secretKey, {
+      apiVersion: STRIPE_API_VERSION,
       maxNetworkRetries: 2,
     });
   }
