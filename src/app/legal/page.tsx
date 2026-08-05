@@ -5,9 +5,9 @@ import { LegalBody } from "@/components/legal-body";
 import { publicPageMetadata } from "@/lib/social-metadata";
 
 export const metadata: Metadata = publicPageMetadata({
-  title: "Jiddu — terms and disclaimers",
+  title: "Jiddu — legal notices and disclaimers",
   description:
-    "Terms, privacy notes and automated-analysis disclaimers for Jiddu, including confidential-paper and adversarial-review guidance.",
+    "Automated-analysis limitations, methodology, confidential-paper guidance, and legal notices for Jiddu.",
   path: "/legal",
 });
 

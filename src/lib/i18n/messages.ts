@@ -404,6 +404,8 @@ export type Messages = {
   legal_last_updated: string;
   legal_sections: Array<{ title: string; paragraphs: string[] }>;
   nav_legal: string;
+  nav_privacy: string;
+  nav_terms: string;
 
   // How-it-works page — technical walkthrough of every pipeline
   how_it_works_title: string;
@@ -929,7 +931,9 @@ const en: Messages = {
   review_form_hint:
     "A complete review can take several minutes. It runs as a background job, so you can close this page after it starts.",
 
-  nav_legal: "Terms",
+  nav_legal: "Legal",
+  nav_privacy: "Privacy",
+  nav_terms: "Terms",
   nav_how_it_works: "How it works",
   nav_api: "API",
   api_access_title: "Jiddu API & MCP",
@@ -1004,25 +1008,25 @@ const en: Messages = {
   print_no_claims: "No verifiable claims extracted.",
   print_no_findings: "No issues flagged.",
   print_footer_fallacy:
-    "This is an automated report. The labels may be wrong — always read the source text and judge for yourself. See https://jiddu.app/legal for the full terms.",
+    "This is an automated report. The labels may be wrong — always read the source text and judge for yourself. See https://jiddu.app/terms for the full terms.",
   print_footer_factcheck:
-    "This is an automated report. The verdicts may be wrong — always read the cited sources and judge for yourself. See https://jiddu.app/legal for the full terms.",
+    "This is an automated report. The verdicts may be wrong — always read the cited sources and judge for yourself. See https://jiddu.app/terms for the full terms.",
   print_footer_neutrality:
-    "This is an automated report. Neutrality is a property of framing; the labels may be wrong — read the source text and the flagged passages. Jiddu does not classify partisan direction. See https://jiddu.app/legal for the full terms.",
+    "This is an automated report. Neutrality is a property of framing; the labels may be wrong — read the source text and the flagged passages. Jiddu does not classify partisan direction. See https://jiddu.app/terms for the full terms.",
   print_type_explain: "Paper explanation",
   print_meta_level: "Level",
   print_section_explanations: "Explanations",
   print_no_explanations: "No explanations were produced.",
   print_footer_explain:
-    "This is an automated explanation. It can misread or oversimplify the paper — always read the source text and the cited work yourself. See https://jiddu.app/legal for the full terms.",
+    "This is an automated explanation. It can misread or oversimplify the paper — always read the source text and the cited work yourself. See https://jiddu.app/terms for the full terms.",
   print_type_slop: "Slop check",
   print_footer_slop:
-    "This is an automated report. It flags writing patterns, never authorship — humans write slop too, and the labels may be wrong. Read the quoted passages and judge for yourself. See https://jiddu.app/legal for the full terms.",
+    "This is an automated report. It flags writing patterns, never authorship — humans write slop too, and the labels may be wrong. Read the quoted passages and judge for yourself. See https://jiddu.app/terms for the full terms.",
   print_generated_at: (when) => `Generated ${when} · jiddu.app`,
-  legal_title: "Terms, privacy and disclaimers",
+  legal_title: "Legal notices and disclaimers",
   legal_subtitle:
-    "Read this before using Jiddu, especially before sharing an analysis publicly.",
-  legal_last_updated: "Last updated: 2026-07-28",
+    "Limitations and methodology for Jiddu's automated analyses. See the [Terms of service](/terms) and [Privacy policy](/privacy) for the service rules and data practices.",
+  legal_last_updated: "Last updated: 2026-08-05",
   legal_sections: [
     {
       title: "1. What Jiddu does",
@@ -1056,17 +1060,7 @@ const en: Messages = {
       ],
     },
     {
-      title: "5. Privacy",
-      paragraphs: [
-        "Each completed analysis or paper review receives an unlisted share URL and is stored on a server in Brazil. Anyone with the URL can view the final result, but these pages are not enumerated in the public sitemap. Signed-in users can see analyses associated with their account, but the share URL itself remains accessible to anyone who has it; private intermediate review stages are not exposed in the public viewer.",
-        "Authentication is provided by WorkOS AuthKit. Jiddu receives the account identity needed to maintain the session, authorize MCP clients and associate account-owned REST keys, credit balances and usage with the correct account. REST secrets are shown once and stored only as hashes. Model-provider credentials are managed by Jiddu and are never exposed to browser JavaScript, REST clients or MCP clients.",
-        "Venue autocomplete sends only the venue query — not the manuscript — to the public [DBLP](https://dblp.org) venue search. The literature-research stage searches public scholarly sources using technical claims from the manuscript; prompts prohibit searching by paper title, author name or other manuscripts by the same authors.",
-        "We log the request IP for rate-limiting and abuse detection. We do not sell or share that information.",
-        "Page traffic is measured via Google Analytics (gtag.js).",
-      ],
-    },
-    {
-      title: "6. Methodology",
+      title: "5. Methodology",
       paragraphs: [
         "Our claim extraction and verification pipeline is inspired by [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson, MSR 2025) for the extraction stage, and by the evaluation framework described in [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) (Goldfarb, Hall, Fisher, Salam, Wilde — Forum AI / Stanford, 2025) for the verdict assessment, source-quality tiers and neutrality dimension. Our choice of 4 verdict classes (supported / contradicted / mixed / unverified) rather than the 5- or 6-class schemes used by some fact-checking outlets is informed by [Sahitaj et al. 2025](https://arxiv.org/abs/2502.08909), who found that 3-class labeling outperforms 5-class for LLM-based fact-checking — the additional categories in the middle introduce ambiguity without improving accuracy.",
         "Adversarial paper review adapts the SPECS dimensions and staged synthesis/self-critique pattern described in [AI-Assisted Peer Review at Scale: The AAAI-26 AI Review Pilot](https://arxiv.org/abs/2604.13940). Jiddu is an independent implementation with its own page-tagged claim/evidence ledger, literature research, arithmetic checks, venue calibration, source validation and finding-retention gate; it does not reproduce the AAAI-26 system.",
@@ -1077,9 +1071,9 @@ const en: Messages = {
       ],
     },
     {
-      title: "7. Contact",
+      title: "6. Contact",
       paragraphs: [
-        "Operator: Rafael de Menezes Ehlers. For takedown requests, corrections, or other concerns, use the contact form at [rafaelmehlers.com.br](https://rafaelmehlers.com.br).",
+        "Operator: Rafael de Menezes Ehlers. For takedown requests, corrections, or other concerns, use the [Jiddu contact form](/contact).",
       ],
     },
   ],
@@ -1865,7 +1859,9 @@ const pt: Messages = {
   review_form_hint:
     "Uma revisão completa pode levar alguns minutos. Ela roda como job em segundo plano, então você pode fechar esta página depois que começar.",
 
-  nav_legal: "Termos",
+  nav_legal: "Legal",
+  nav_privacy: "Privacidade",
+  nav_terms: "Termos",
   nav_how_it_works: "Como funciona",
   nav_api: "API",
   api_access_title: "API & MCP do Jiddu",
@@ -1940,26 +1936,26 @@ const pt: Messages = {
   print_no_claims: "Nenhuma afirmação verificável extraída.",
   print_no_findings: "Nenhum padrão sinalizado.",
   print_footer_fallacy:
-    "Este é um relatório automatizado. Os rótulos podem estar errados — sempre leia o texto original e julgue por conta própria. Termos completos em https://jiddu.app/legal.",
+    "Este é um relatório automatizado. Os rótulos podem estar errados — sempre leia o texto original e julgue por conta própria. Termos completos em https://jiddu.app/terms.",
   print_footer_factcheck:
-    "Este é um relatório automatizado. Os vereditos podem estar errados — sempre leia as fontes citadas e julgue por conta própria. Termos completos em https://jiddu.app/legal.",
+    "Este é um relatório automatizado. Os vereditos podem estar errados — sempre leia as fontes citadas e julgue por conta própria. Termos completos em https://jiddu.app/terms.",
   print_footer_neutrality:
-    "Este é um relatório automatizado. Imparcialidade é uma propriedade do enquadramento; os rótulos podem estar errados — leia o texto original e os trechos sinalizados. O Jiddu não classifica direção partidária. Termos completos em https://jiddu.app/legal.",
+    "Este é um relatório automatizado. Imparcialidade é uma propriedade do enquadramento; os rótulos podem estar errados — leia o texto original e os trechos sinalizados. O Jiddu não classifica direção partidária. Termos completos em https://jiddu.app/terms.",
   print_type_explain: "Explicação de paper",
   print_meta_level: "Nível",
   print_section_explanations: "Explicações",
   print_no_explanations: "Nenhuma explicação foi gerada.",
   print_footer_explain:
-    "Esta é uma explicação automatizada. Ela pode interpretar mal ou simplificar demais o paper — sempre leia o texto original e os trabalhos citados. Termos completos em https://jiddu.app/legal.",
+    "Esta é uma explicação automatizada. Ela pode interpretar mal ou simplificar demais o paper — sempre leia o texto original e os trabalhos citados. Termos completos em https://jiddu.app/terms.",
   print_type_slop: "Detecção de slop",
   print_footer_slop:
-    "Este é um relatório automatizado. Ele sinaliza padrões de escrita, nunca autoria — humanos também escrevem slop, e os rótulos podem estar errados. Leia os trechos citados e julgue por conta própria. Termos completos em https://jiddu.app/legal.",
+    "Este é um relatório automatizado. Ele sinaliza padrões de escrita, nunca autoria — humanos também escrevem slop, e os rótulos podem estar errados. Leia os trechos citados e julgue por conta própria. Termos completos em https://jiddu.app/terms.",
   print_generated_at: (when) => `Gerado em ${when} · jiddu.app`,
 
-  legal_title: "Termos, privacidade e isenções",
+  legal_title: "Avisos legais e isenções",
   legal_subtitle:
-    "Leia antes de usar o Jiddu, especialmente antes de compartilhar uma análise publicamente.",
-  legal_last_updated: "Atualizado em: 2026-07-28",
+    "Limitações e metodologia das análises automatizadas do Jiddu. Consulte os [Termos de serviço](/terms) e a [Política de privacidade](/privacy) para as regras do serviço e o tratamento de dados.",
+  legal_last_updated: "Atualizado em: 2026-08-05",
   legal_sections: [
     {
       title: "1. O que o Jiddu faz",
@@ -1993,17 +1989,7 @@ const pt: Messages = {
       ],
     },
     {
-      title: "5. Privacidade",
-      paragraphs: [
-        "Cada análise ou revisão de paper concluída recebe uma URL compartilhável não listada e fica armazenada em um servidor no Brasil. Quem tem a URL pode ver o resultado final, mas essas páginas não são enumeradas no sitemap público. Usuários logados veem as análises associadas à conta, porém a URL compartilhável continua acessível a quem a possuir; as etapas intermediárias privadas da revisão não aparecem no viewer público.",
-        "A autenticação é fornecida pelo WorkOS AuthKit. O Jiddu recebe a identidade necessária para manter a sessão, autorizar clientes MCP e associar chaves REST, saldos e uso à conta correta. Segredos REST são mostrados uma vez e armazenados apenas como hash. As credenciais dos provedores de modelo são administradas pelo Jiddu e nunca são expostas ao JavaScript da página, clientes REST ou clientes MCP.",
-        "O autocomplete de venue envia apenas a consulta da venue — nunca o manuscrito — à busca pública de venues do [DBLP](https://dblp.org). A etapa de pesquisa de literatura consulta fontes acadêmicas públicas usando afirmações técnicas do manuscrito; os prompts proíbem buscas pelo título do paper, nome dos autores ou outros manuscritos dos mesmos autores.",
-        "Registramos o IP da requisição para limites de taxa e detecção de abuso. Não vendemos nem compartilhamos essa informação.",
-        "O tráfego das páginas é medido via Google Analytics (gtag.js).",
-      ],
-    },
-    {
-      title: "6. Metodologia",
+      title: "5. Metodologia",
       paragraphs: [
         "O pipeline de extração e verificação de afirmações é inspirado em [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson, MSR 2025) para a etapa de extração, e no framework de avaliação descrito em [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) (Goldfarb, Hall, Fisher, Salam, Wilde — Forum AI / Stanford, 2025) para a avaliação de veredito, os tiers de qualidade de fonte e a dimensão de imparcialidade. Nossa escolha de 4 classes de veredito (sustentado / contradito / misto / não verificado) em vez dos esquemas de 5 ou 6 classes usados por alguns outlets de fact-check é baseada em [Sahitaj et al. 2025](https://arxiv.org/abs/2502.08909), que mostraram empiricamente que rotulagem 3-classes supera 5-classes para fact-check com LLMs — as categorias adicionais no meio criam ambiguidade sem ganho de acurácia.",
         "A revisão adversarial adapta as dimensões SPECS e o padrão de síntese e autocrítica por etapas descrito em [AI-Assisted Peer Review at Scale: The AAAI-26 AI Review Pilot](https://arxiv.org/abs/2604.13940). O Jiddu é uma implementação independente, com ledger paginado de afirmações e evidências, pesquisa de literatura, verificações aritméticas, calibração por venue, validação de fontes e gate de retenção de achados próprios; não reproduz o sistema da AAAI-26.",
@@ -2014,9 +2000,9 @@ const pt: Messages = {
       ],
     },
     {
-      title: "7. Contato",
+      title: "6. Contato",
       paragraphs: [
-        "Operador: Rafael de Menezes Ehlers. Para solicitações de remoção, correções ou outras dúvidas, use o formulário de contato em [rafaelmehlers.com.br](https://rafaelmehlers.com.br).",
+        "Operador: Rafael de Menezes Ehlers. Para solicitações de remoção, correções ou outras dúvidas, use o [formulário de contato do Jiddu](/contact).",
       ],
     },
   ],
@@ -2802,7 +2788,9 @@ const es: Messages = {
   review_form_hint:
     "Una revisión completa puede tardar varios minutos. Se ejecuta como job en segundo plano, así que puedes cerrar esta página después de que comience.",
 
-  nav_legal: "Términos",
+  nav_legal: "Legal",
+  nav_privacy: "Privacidad",
+  nav_terms: "Términos",
   nav_how_it_works: "Cómo funciona",
   nav_api: "API",
   api_access_title: "API y MCP de Jiddu",
@@ -2877,26 +2865,26 @@ const es: Messages = {
   print_no_claims: "No se extrajeron afirmaciones verificables.",
   print_no_findings: "Ningún patrón señalado.",
   print_footer_fallacy:
-    "Este es un informe automatizado. Las etiquetas pueden estar equivocadas — siempre lee el texto original y juzga por tu cuenta. Términos completos en https://jiddu.app/legal.",
+    "Este es un informe automatizado. Las etiquetas pueden estar equivocadas — siempre lee el texto original y juzga por tu cuenta. Términos completos en https://jiddu.app/terms.",
   print_footer_factcheck:
-    "Este es un informe automatizado. Los veredictos pueden estar equivocados — siempre lee las fuentes citadas y juzga por tu cuenta. Términos completos en https://jiddu.app/legal.",
+    "Este es un informe automatizado. Los veredictos pueden estar equivocados — siempre lee las fuentes citadas y juzga por tu cuenta. Términos completos en https://jiddu.app/terms.",
   print_footer_neutrality:
-    "Este es un informe automatizado. La imparcialidad es una propiedad del encuadre; las etiquetas pueden estar equivocadas — lee el texto original y los pasajes señalados. Jiddu no clasifica dirección partidaria. Términos completos en https://jiddu.app/legal.",
+    "Este es un informe automatizado. La imparcialidad es una propiedad del encuadre; las etiquetas pueden estar equivocadas — lee el texto original y los pasajes señalados. Jiddu no clasifica dirección partidaria. Términos completos en https://jiddu.app/terms.",
   print_type_explain: "Explicación de paper",
   print_meta_level: "Nivel",
   print_section_explanations: "Explicaciones",
   print_no_explanations: "No se generaron explicaciones.",
   print_footer_explain:
-    "Esta es una explicación automatizada. Puede malinterpretar o simplificar en exceso el paper — lee siempre el texto original y los trabajos citados. Términos completos en https://jiddu.app/legal.",
+    "Esta es una explicación automatizada. Puede malinterpretar o simplificar en exceso el paper — lee siempre el texto original y los trabajos citados. Términos completos en https://jiddu.app/terms.",
   print_type_slop: "Detección de slop",
   print_footer_slop:
-    "Este es un informe automatizado. Señala patrones de escritura, nunca autoría — los humanos también escriben slop, y las etiquetas pueden estar equivocadas. Lee los pasajes citados y juzga por tu cuenta. Términos completos en https://jiddu.app/legal.",
+    "Este es un informe automatizado. Señala patrones de escritura, nunca autoría — los humanos también escriben slop, y las etiquetas pueden estar equivocadas. Lee los pasajes citados y juzga por tu cuenta. Términos completos en https://jiddu.app/terms.",
   print_generated_at: (when) => `Generado ${when} · jiddu.app`,
 
-  legal_title: "Términos, privacidad y descargos",
+  legal_title: "Avisos legales y descargos",
   legal_subtitle:
-    "Lee esto antes de usar Jiddu, especialmente antes de compartir un análisis públicamente.",
-  legal_last_updated: "Actualizado: 2026-07-28",
+    "Limitaciones y metodología de los análisis automatizados de Jiddu. Consulta los [Términos de servicio](/terms) y la [Política de privacidad](/privacy) para las reglas del servicio y el tratamiento de datos.",
+  legal_last_updated: "Actualizado: 2026-08-05",
   legal_sections: [
     {
       title: "1. Qué hace Jiddu",
@@ -2930,17 +2918,7 @@ const es: Messages = {
       ],
     },
     {
-      title: "5. Privacidad",
-      paragraphs: [
-        "Cada análisis o revisión de paper completado recibe una URL compartible no listada y se almacena en un servidor en Brasil. Quien tenga la URL puede ver el resultado final, pero esas páginas no se enumeran en el sitemap público. Los usuarios que iniciaron sesión ven los análisis asociados a su cuenta, pero la URL compartible sigue accesible para quien la tenga; las etapas intermedias privadas de la revisión no aparecen en el visor público.",
-        "La autenticación la proporciona WorkOS AuthKit. Jiddu recibe la identidad necesaria para mantener la sesión, autorizar clientes MCP y asociar claves REST, saldos y uso con la cuenta correcta. Los secretos REST se muestran una vez y se almacenan solo como hashes. Las credenciales de los proveedores de modelos son administradas por Jiddu y nunca se exponen al JavaScript de la página, clientes REST o clientes MCP.",
-        "El autocompletado de venue envía solo la consulta del venue — nunca el manuscrito — a la búsqueda pública de venues de [DBLP](https://dblp.org). La etapa de investigación de literatura consulta fuentes académicas públicas usando afirmaciones técnicas del manuscrito; los prompts prohíben buscar por el título del paper, el nombre de los autores u otros manuscritos de los mismos autores.",
-        "Registramos el IP de la solicitud para límites de tasa y detección de abuso. No vendemos ni compartimos esa información.",
-        "El tráfico de las páginas se mide vía Google Analytics (gtag.js).",
-      ],
-    },
-    {
-      title: "6. Metodología",
+      title: "5. Metodología",
       paragraphs: [
         "Nuestro pipeline de extracción y verificación de afirmaciones se inspira en [Claimify](http://arxiv.org/pdf/2502.10855) (Metropolitansky & Larson, MSR 2025) para la etapa de extracción, y en el framework de evaluación descrito en [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) (Goldfarb, Hall, Fisher, Salam, Wilde — Forum AI / Stanford, 2025) para la evaluación de veredicto, los niveles de calidad de fuente y la dimensión de imparcialidad. Nuestra elección de 4 clases de veredicto (respaldado / contradicho / mixto / no verificado) en lugar de los esquemas de 5 o 6 clases usados por algunos outlets de fact-check se basa en [Sahitaj et al. 2025](https://arxiv.org/abs/2502.08909), que mostraron empíricamente que el etiquetado de 3 clases supera al de 5 clases para fact-check con LLMs — las categorías adicionales en el medio introducen ambigüedad sin mejorar la precisión.",
         "La revisión adversarial adapta las dimensiones SPECS y el patrón de síntesis y autocrítica por etapas descrito en [AI-Assisted Peer Review at Scale: The AAAI-26 AI Review Pilot](https://arxiv.org/abs/2604.13940). Jiddu es una implementación independiente, con ledger paginado de afirmaciones y evidencias, investigación de literatura, comprobaciones aritméticas, calibración por venue, validación de fuentes y gate de retención de hallazgos propios; no reproduce el sistema de AAAI-26.",
@@ -2951,9 +2929,9 @@ const es: Messages = {
       ],
     },
     {
-      title: "7. Contacto",
+      title: "6. Contacto",
       paragraphs: [
-        "Operador: Rafael de Menezes Ehlers. Para solicitudes de remoción, correcciones u otras consultas, usa el formulario de contacto en [rafaelmehlers.com.br](https://rafaelmehlers.com.br).",
+        "Operador: Rafael de Menezes Ehlers. Para solicitudes de remoción, correcciones u otras consultas, usa el [formulario de contacto de Jiddu](/contact).",
       ],
     },
   ],

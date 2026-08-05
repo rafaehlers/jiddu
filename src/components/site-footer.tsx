@@ -41,7 +41,10 @@ export function SiteFooter() {
             J. Krishnamurti
           </a>
         </span>
-        <span className="flex items-center justify-center gap-3 flex-wrap">
+        <nav
+          aria-label="Footer"
+          className="flex flex-wrap items-center justify-center gap-3"
+        >
           <Link
             href="/blog"
             className="hover:text-accent-hi transition-colors"
@@ -92,6 +95,28 @@ export function SiteFooter() {
           </Link>
           <span aria-hidden>·</span>
           <Link
+            href="/extension"
+            className="hover:text-accent-hi transition-colors"
+          >
+            {extensionLabel}
+          </Link>
+        </nav>
+        <nav
+          aria-label="Footer secondary"
+          className="flex flex-wrap items-center justify-center gap-3 text-xs"
+        >
+          {authEnabled && !loading && (
+            <>
+              <Link
+                href={user ? "/account" : "/signup"}
+                className="hover:text-accent-hi transition-colors"
+              >
+                {user ? accountLabel : signUpLabel}
+              </Link>
+              <span aria-hidden>·</span>
+            </>
+          )}
+          <Link
             href="/contact"
             className="hover:text-accent-hi transition-colors"
           >
@@ -99,22 +124,18 @@ export function SiteFooter() {
           </Link>
           <span aria-hidden>·</span>
           <Link
-            href="/extension"
+            href="/privacy"
             className="hover:text-accent-hi transition-colors"
           >
-            {extensionLabel}
+            {t.nav_privacy}
           </Link>
-          {authEnabled && !loading && (
-            <>
-              <span aria-hidden>·</span>
-              <Link
-                href={user ? "/account" : "/signup"}
-                className="hover:text-accent-hi transition-colors"
-              >
-                {user ? accountLabel : signUpLabel}
-              </Link>
-            </>
-          )}
+          <span aria-hidden>·</span>
+          <Link
+            href="/terms"
+            className="hover:text-accent-hi transition-colors"
+          >
+            {t.nav_terms}
+          </Link>
           <span aria-hidden>·</span>
           <Link
             href="/legal"
@@ -134,7 +155,7 @@ export function SiteFooter() {
               Rafael M. Ehlers
             </a>
           </span>
-        </span>
+        </nav>
       </div>
     </footer>
   );

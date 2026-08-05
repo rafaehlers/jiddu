@@ -6,7 +6,7 @@ const BASE_URL = "https://jiddu.app";
 // Demo analyses are stable, seeded ids (scripts/seed-*.mjs) — one per
 // pipeline per locale — so they're safe to enumerate. Arbitrary /a/[id] etc.
 // are NOT listed here: those are user-submitted analyses shared "unlisted by
-// URL" (see /legal §5 Privacy — "anyone with the URL can view it"), and
+// URL" (see /privacy §5 — "anyone with the URL can view it"), and
 // enumerating them in a public sitemap would defeat that expectation.
 const DEMO_PREFIXES = ["a", "f", "n", "e", "s"] as const;
 const LANGS = ["en", "pt", "es"] as const;
@@ -34,6 +34,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${BASE_URL}/extension/privacy`, changeFrequency: "yearly", priority: 0.3 },
     { url: `${BASE_URL}/benchmark`, changeFrequency: "monthly", priority: 0.6 },
     { url: `${BASE_URL}/blog`, changeFrequency: "weekly", priority: 0.7 },
+    { url: `${BASE_URL}/privacy`, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${BASE_URL}/terms`, changeFrequency: "yearly", priority: 0.3 },
     { url: `${BASE_URL}/legal`, changeFrequency: "yearly", priority: 0.3 },
   ];
 
