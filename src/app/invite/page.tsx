@@ -8,6 +8,7 @@ import {
 } from "./actions";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { PageTitle } from "@/components/page-title";
 import { isWorkOSConfigured } from "@/lib/auth-config";
 import {
   getInvitationClaim,
@@ -84,7 +85,7 @@ function InvitationContent({
   if (!configured) {
     return (
       <>
-        <h1 className="font-serif text-3xl">Invitations are unavailable</h1>
+        <PageTitle>Invitations are unavailable</PageTitle>
         <p className="mt-3 text-muted">
           Authentication is not configured in this environment.
         </p>
@@ -94,7 +95,7 @@ function InvitationContent({
   if (!invitation) {
     return (
       <>
-        <h1 className="font-serif text-3xl">Invitation not found</h1>
+        <PageTitle>Invitation not found</PageTitle>
         <p className="mt-3 text-muted">
           {errorMessage ?? "Open the original invitation link and try again."}
         </p>
@@ -121,9 +122,9 @@ function InvitationContent({
 
   return (
     <>
-      <h1 className="font-serif text-3xl sm:text-4xl">
+      <PageTitle>
         You have been invited to Jiddu
-      </h1>
+      </PageTitle>
       <p className="mt-4 text-foreground/85">
         {invitation.inviterName || "A Jiddu member"} invited {" "}
         {maskInvitationEmail(invitation.inviteeEmail)} to join Jiddu.

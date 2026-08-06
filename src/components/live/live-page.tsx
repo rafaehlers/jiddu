@@ -12,6 +12,7 @@ import {
   Square,
 } from "lucide-react";
 import { AnalysisAuthModal } from "@/components/analysis-auth-modal";
+import { PageTitle } from "@/components/page-title";
 import { useLiveSession, type LiveSource } from "@/lib/live/use-live-session";
 import type { LiveSessionError } from "@/lib/live/use-live-session";
 import { useLiveAnalysis } from "@/lib/live/use-live-analysis";
@@ -164,9 +165,7 @@ export function LivePage() {
     <div className="mx-auto max-w-5xl px-4 sm:px-6 py-8 sm:py-12 flex-1 w-full">
       <header className="mb-6">
         <div className="flex items-baseline gap-3">
-          <h1 className="font-serif text-3xl sm:text-4xl tracking-tight">
-            Jiddu Live
-          </h1>
+          <PageTitle>Jiddu Live</PageTitle>
           <span className="text-xs uppercase tracking-wider text-accent border border-accent/40 rounded px-1.5 py-0.5">
             beta
           </span>

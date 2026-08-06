@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { PageTitle } from "@/components/page-title";
 import { useI18n } from "@/lib/i18n/provider";
 
 // Adapted from the 404 page at rafaelmehlers.com.br (same author) — the
@@ -23,9 +24,9 @@ export function NotFoundBody() {
       <p className="text-xs font-medium uppercase tracking-[0.15em] text-muted mb-4">
         {t.not_found_label}
       </p>
-      <h1 className="font-serif text-4xl sm:text-5xl leading-tight mb-5 text-balance">
+      <PageTitle className="mb-5">
         {t.not_found_title}
-      </h1>
+      </PageTitle>
       <p className="text-lg leading-relaxed text-muted max-w-md mb-8">
         {t.not_found_subtitle}
       </p>

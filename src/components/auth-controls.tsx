@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@workos-inc/authkit-nextjs/components";
+import { UserPlus } from "lucide-react";
 import Link from "next/link";
 import { createContext, useContext } from "react";
 import { signOutAction } from "@/app/auth-actions";
@@ -50,12 +51,6 @@ export function AuthControls({
 
   const signIn =
     lang === "pt" ? "Entrar" : lang === "es" ? "Ingresar" : "Sign in";
-  const signUp =
-    lang === "pt"
-      ? "Criar conta"
-      : lang === "es"
-        ? "Crear cuenta"
-        : "Create account";
   const account = lang === "pt" ? "Conta" : lang === "es" ? "Cuenta" : "Account";
   const signOutLabel =
     lang === "pt" ? "Sair" : lang === "es" ? "Cerrar sesión" : "Sign out";
@@ -74,12 +69,6 @@ export function AuthControls({
           className="text-sm text-muted hover:text-accent-hi transition-colors"
         >
           {signIn}
-        </Link>
-        <Link
-          href="/signup"
-          className="rounded-md bg-accent px-3 py-1.5 text-sm text-white hover:opacity-90 transition-opacity whitespace-nowrap"
-        >
-          {signUp}
         </Link>
       </div>
     );
@@ -123,6 +112,31 @@ export function AuthControls({
         </button>
       </form>
     </div>
+  );
+}
+
+export function SignupCta() {
+  const { user, loading } = useAuth();
+  const { lang } = useI18n();
+  const { enabled } = useContext(AuthControlsContext);
+
+  if (!enabled || loading || user) return null;
+
+  const label =
+    lang === "pt"
+      ? "Criar conta"
+      : lang === "es"
+        ? "Crear cuenta"
+        : "Create account";
+
+  return (
+    <Link
+      href="/signup"
+      className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-accent px-5 py-3 font-semibold text-white transition-opacity hover:opacity-90"
+    >
+      <UserPlus className="size-4" aria-hidden />
+      {label}
+    </Link>
   );
 }
 

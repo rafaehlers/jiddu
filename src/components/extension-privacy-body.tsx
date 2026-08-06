@@ -2,6 +2,7 @@
 
 import { ArrowLeft, ShieldCheck } from "lucide-react";
 import Link from "next/link";
+import { PageTitle } from "@/components/page-title";
 import { EXTENSION_PAGES_COPY } from "@/lib/extension-pages-copy";
 import { useI18n } from "@/lib/i18n/provider";
 
@@ -41,7 +42,7 @@ export function ExtensionPrivacyBody() {
         {copy.back}
       </Link>
       <header className="mt-12 border-b border-rule pb-10">
-        <h1 className="font-serif text-5xl sm:text-6xl">{copy.title}</h1>
+        <PageTitle>{copy.title}</PageTitle>
         <p className="mt-5 max-w-2xl text-lg leading-8 text-muted">
           {copy.subtitle}
         </p>

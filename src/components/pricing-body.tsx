@@ -3,6 +3,7 @@
 import { useAuth } from "@workos-inc/authkit-nextjs/components";
 import Link from "next/link";
 import { useState } from "react";
+import { PageTitle } from "@/components/page-title";
 import {
   creditCurrencyForLanguage,
   packagePriceCents,
@@ -22,7 +23,6 @@ export type PublicCreditPackage = {
 
 const COPY = {
   en: {
-    eyebrow: "Jiddu Credits",
     title: "Simple credit packs for every kind of reading.",
     subtitle:
       "Pay only for the analyses you run. Every package is a one-time purchase with secure checkout by Stripe.",
@@ -40,7 +40,6 @@ const COPY = {
     learnMore: "Read the billing details",
   },
   pt: {
-    eyebrow: "Créditos Jiddu",
     title: "Pacotes simples para todo tipo de leitura.",
     subtitle:
       "Pague apenas pelas análises que executar. Cada pacote é uma compra única com checkout seguro pelo Stripe.",
@@ -58,7 +57,6 @@ const COPY = {
     learnMore: "Ver os detalhes de cobrança",
   },
   es: {
-    eyebrow: "Créditos Jiddu",
     title: "Paquetes simples para todo tipo de lectura.",
     subtitle:
       "Paga solo por los análisis que ejecutes. Cada paquete es una compra única con pago seguro mediante Stripe.",
@@ -148,12 +146,7 @@ export function PricingBody({
   return (
     <section className="mx-auto w-full max-w-5xl px-6 py-12 sm:py-16">
       <div className="max-w-3xl">
-        <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted">
-          {copy.eyebrow}
-        </p>
-        <h1 className="mt-3 font-serif text-4xl leading-tight sm:text-5xl">
-          {copy.title}
-        </h1>
+        <PageTitle>{copy.title}</PageTitle>
         <p className="mt-4 max-w-2xl text-base leading-relaxed text-muted sm:text-lg">
           {copy.subtitle}
         </p>

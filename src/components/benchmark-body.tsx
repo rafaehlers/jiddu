@@ -3,6 +3,7 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { ComponentProps } from "react";
+import { PageTitle } from "@/components/page-title";
 import { useI18n } from "@/lib/i18n/provider";
 
 // Renders the PolitiFact benchmark report (docs/benchmark-politifact*.md)
@@ -44,10 +45,7 @@ export function BenchmarkBody({
 // rather than markdown noise.
 const MD_COMPONENTS: ComponentProps<typeof ReactMarkdown>["components"] = {
   h1: (props) => (
-    <h1
-      className="font-serif text-3xl sm:text-4xl mt-2 mb-2 leading-tight"
-      {...props}
-    />
+    <PageTitle className="mb-2 mt-2" {...props} />
   ),
   h2: (props) => (
     <h2

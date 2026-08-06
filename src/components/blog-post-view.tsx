@@ -5,6 +5,7 @@ import Link from "next/link";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { JsonLd } from "@/components/json-ld";
+import { PageTitle } from "@/components/page-title";
 import type { BlogPost } from "@/lib/blog";
 import {
   BLOG_COPY,
@@ -175,9 +176,7 @@ export function BlogPostView({ post }: { post: BlogPost }) {
         </nav>
 
         <header className="space-y-5">
-          <h1 className="text-balance font-serif text-4xl leading-[1.08] sm:text-5xl">
-            {content.title}
-          </h1>
+          <PageTitle>{content.title}</PageTitle>
           <p className="text-lg leading-relaxed text-muted sm:text-xl">
             {content.excerpt}
           </p>

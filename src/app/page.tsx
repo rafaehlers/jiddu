@@ -17,8 +17,8 @@ export const metadata: Metadata = publicPageMetadata({
 export default function Home() {
   return (
     <main className="flex-1 flex flex-col">
-      <SiteHeader showLogo={false} />
-      <HomeComposer initialMode="detector" showOriginNote />
+      <SiteHeader />
+      <HomeComposer initialMode="detector" showOriginNote showSignupCta />
       <SiteFooter />
     </main>
   );

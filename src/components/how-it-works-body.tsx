@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment } from "react";
+import { PageTitle } from "@/components/page-title";
 import { useI18n } from "@/lib/i18n/provider";
 import {
   DEFAULT_LIVE_MINIMUM_CREDITS,
@@ -20,9 +21,7 @@ export function HowItWorksBody() {
   return (
     <article className="mx-auto max-w-5xl w-full px-4 sm:px-6 py-10 sm:py-16 flex flex-col gap-8">
       <header className="flex flex-col gap-2">
-        <h1 className="font-serif text-3xl sm:text-4xl">
-          {t.how_it_works_title}
-        </h1>
+        <PageTitle>{t.how_it_works_title}</PageTitle>
         <p className="text-base text-muted">{t.how_it_works_subtitle}</p>
       </header>
 

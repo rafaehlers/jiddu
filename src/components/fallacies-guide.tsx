@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { PageTitle } from "@/components/page-title";
 import { CATEGORY_LABELS, FALLACIES, type FallacyDef } from "@/lib/fallacies";
 import { useI18n } from "@/lib/i18n/provider";
 
@@ -28,9 +29,7 @@ export function FallaciesGuide() {
   return (
     <article className="mx-auto max-w-5xl w-full px-6 py-12 flex flex-col gap-10">
       <header className="flex flex-col gap-3">
-        <h1 className="font-serif text-4xl md:text-5xl leading-tight">
-          {t.guide_title}
-        </h1>
+        <PageTitle>{t.guide_title}</PageTitle>
         <p className="text-muted text-lg max-w-2xl">{t.guide_subtitle}</p>
       </header>
 

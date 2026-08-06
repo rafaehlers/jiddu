@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { BlogPostCard } from "@/components/blog-post-card";
 import { JsonLd } from "@/components/json-ld";
+import { PageTitle } from "@/components/page-title";
 import type { BlogTag } from "@/lib/blog";
 import {
   BLOG_COPY,
@@ -55,9 +56,7 @@ export function BlogTagView({ tag }: { tag: BlogTag }) {
         <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent-hi">
           {copy.tagEyebrow}
         </p>
-        <h1 className="font-serif text-4xl leading-tight sm:text-5xl">
-          {tagContent.label}
-        </h1>
+        <PageTitle>{tagContent.label}</PageTitle>
         <p className="text-base leading-relaxed text-muted sm:text-lg">
           {tagContent.description}
         </p>

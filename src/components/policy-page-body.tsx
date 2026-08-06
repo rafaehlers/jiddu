@@ -2,6 +2,7 @@
 
 import { Fragment } from "react";
 import Link from "next/link";
+import { PageTitle } from "@/components/page-title";
 import {
   POLICY_PAGES_COPY,
   type PolicyPageCopy,
@@ -17,7 +18,7 @@ export function PolicyPageBody({ kind }: { kind: PolicyKind }) {
   return (
     <article className="mx-auto w-full max-w-5xl px-6 py-14 sm:py-20">
       <header className="border-b border-rule pb-10">
-        <h1 className="font-serif text-4xl sm:text-6xl">{copy.title}</h1>
+        <PageTitle>{copy.title}</PageTitle>
         <p className="mt-5 max-w-3xl text-lg leading-8 text-muted">
           {copy.subtitle}
         </p>

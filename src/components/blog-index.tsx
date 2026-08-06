@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { BlogPostCard } from "@/components/blog-post-card";
 import { JsonLd } from "@/components/json-ld";
+import { PageTitle } from "@/components/page-title";
 import {
   BLOG_COPY,
   blogLanguageTag,
@@ -56,7 +57,7 @@ export function BlogIndex() {
     >
       <JsonLd data={jsonLd} />
       <header className="max-w-3xl space-y-3">
-        <h1 className="font-serif text-4xl leading-tight sm:text-5xl">Blog</h1>
+        <PageTitle>Blog</PageTitle>
         <p className="text-base leading-relaxed text-muted sm:text-lg">
           {copy.description}
         </p>

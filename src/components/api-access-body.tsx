@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment } from "react";
+import { PageTitle } from "@/components/page-title";
 import { useI18n } from "@/lib/i18n/provider";
 
 // Public API / MCP docs page. Same structured-content pattern as LegalBody and
@@ -13,7 +14,7 @@ export function ApiAccessBody() {
   return (
     <article className="mx-auto max-w-5xl w-full px-4 sm:px-6 py-10 sm:py-16 flex flex-col gap-8">
       <header className="flex flex-col gap-2">
-        <h1 className="font-serif text-3xl sm:text-4xl">{t.api_access_title}</h1>
+        <PageTitle>{t.api_access_title}</PageTitle>
         <p className="text-muted text-base sm:text-lg">{t.api_access_subtitle}</p>
       </header>
 

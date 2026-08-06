@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { PageTitle } from "@/components/page-title";
 import type { Lang } from "@/lib/fallacies";
 import { EXTENSION_PAGES_COPY } from "@/lib/extension-pages-copy";
 import { useI18n } from "@/lib/i18n/provider";
@@ -89,9 +90,9 @@ export function ExtensionLanding({ storeUrl }: Props) {
     <div className="overflow-hidden">
       <section className="mx-auto max-w-5xl px-6 py-16 sm:py-20">
         <div className="max-w-3xl">
-          <h1 className="max-w-2xl text-balance font-serif text-5xl leading-[0.96] tracking-tight sm:text-6xl">
+          <PageTitle className="max-w-2xl">
             {copy.title}
-          </h1>
+          </PageTitle>
           <p className="mt-6 max-w-xl text-lg leading-8 text-muted">
             {copy.description}
           </p>

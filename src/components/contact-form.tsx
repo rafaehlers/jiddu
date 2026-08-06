@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useRef } from "react";
 import { sendPublicContactAction } from "@/app/contact/actions";
+import { PageTitle } from "@/components/page-title";
 import {
   INITIAL_EMAIL_FORM_STATE,
   type EmailFormErrorCode,
@@ -113,7 +114,7 @@ export function ContactForm() {
   return (
     <article className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-10 sm:px-6 sm:py-16">
       <header className="flex flex-col gap-2">
-        <h1 className="font-serif text-4xl sm:text-5xl">{copy.title}</h1>
+        <PageTitle>{copy.title}</PageTitle>
         <p className="max-w-2xl text-sm leading-relaxed text-muted">
           {copy.intro}
         </p>

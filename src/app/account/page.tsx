@@ -18,6 +18,7 @@ import {
   type AccountCreditActivityGridRow,
 } from "@/components/data-grid/account-credit-activity-grid";
 import { JidduCreditRateTable } from "@/components/jiddu-credit-rate-table";
+import { PageTitle } from "@/components/page-title";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { effectiveAnalysisAccessMode } from "@/lib/analysis-access";
@@ -63,7 +64,7 @@ export default async function AccountPage({
       <>
         <SiteHeader variant="guide" />
         <main className="flex-1 mx-auto w-full max-w-5xl px-4 sm:px-6 py-12">
-          <h1 className="font-serif text-4xl mb-4">Account</h1>
+          <PageTitle className="mb-4">Account</PageTitle>
           <p className="text-muted">
             Authentication is ready in the codebase but still needs the WorkOS
             and session secrets in this environment.
@@ -214,7 +215,7 @@ export default async function AccountPage({
         <div className="flex flex-col gap-8">
           <div>
             <p className="text-sm text-muted mb-2">Signed in as {user.email}</p>
-            <h1 className="font-serif text-4xl sm:text-5xl">Your account</h1>
+            <PageTitle>Your account</PageTitle>
           </div>
 
           <nav

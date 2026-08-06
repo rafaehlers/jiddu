@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { PageTitle } from "@/components/page-title";
 import { SLOP_CATEGORY_LABELS, SLOP_PATTERNS, type SlopDef } from "@/lib/slop";
 import { useI18n } from "@/lib/i18n/provider";
 
@@ -30,9 +31,7 @@ export function SlopGuide() {
   return (
     <article className="mx-auto max-w-5xl w-full px-6 py-12 flex flex-col gap-10">
       <header className="flex flex-col gap-3">
-        <h1 className="font-serif text-4xl md:text-5xl leading-tight">
-          {t.slop_guide_title}
-        </h1>
+        <PageTitle>{t.slop_guide_title}</PageTitle>
         <p className="text-muted text-lg max-w-2xl">{t.slop_guide_subtitle}</p>
       </header>
 

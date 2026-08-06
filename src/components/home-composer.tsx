@@ -4,13 +4,15 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { CornerRightUp, Loader2 } from "lucide-react";
 import {
   UploadForm,
   type UploadSourceType,
 } from "@/components/upload-form";
 import { ModeCards } from "@/components/mode-cards";
 import { AnalysisSkeleton } from "@/components/analysis-skeleton";
+import { SignupCta } from "@/components/auth-controls";
+import { PageTitle } from "@/components/page-title";
 import { readSse } from "@/lib/sse";
 import { useI18n } from "@/lib/i18n/provider";
 import type { Messages } from "@/lib/i18n/messages";
@@ -157,9 +159,11 @@ const MODE_CONFIG: Record<
 export function HomeComposer({
   initialMode = "detector",
   showOriginNote = false,
+  showSignupCta = false,
 }: {
   initialMode?: Mode;
   showOriginNote?: boolean;
+  showSignupCta?: boolean;
 }) {
   const router = useRouter();
   const { t, lang } = useI18n();
@@ -315,34 +319,36 @@ export function HomeComposer({
         {/* Standard hero — the same for all lenses, so switching a
             lens never reflows the top of the page. */}
         <div className="flex items-center justify-between gap-4 sm:gap-8 md:gap-12">
-          <span
-            className="relative size-20 shrink-0 sm:size-28 md:size-40"
-            aria-hidden="true"
-          >
-            <Image
-              src="/brand/jiddu_logo_inverted_256.webp"
-              alt=""
-              fill
-              sizes="(min-width: 768px) 160px, (min-width: 640px) 112px, 80px"
-              className="jiddu-brand-logo jiddu-brand-logo-inverted object-cover mix-blend-lighten"
-              priority
-            />
-            <Image
-              src="/brand/jiddu_logo_256.webp"
-              alt=""
-              fill
-              sizes="(min-width: 768px) 160px, (min-width: 640px) 112px, 80px"
-              className="jiddu-brand-logo jiddu-brand-logo-default object-cover mix-blend-darken"
-              priority
-            />
-          </span>
-          <div className="flex min-w-0 flex-1 flex-col gap-3 sm:gap-4">
-            <p className="font-serif italic text-sm sm:text-base text-muted">
+          <div className="flex w-24 shrink-0 flex-col items-center gap-2 sm:w-28 md:w-40">
+            <span
+              className="relative size-20 shrink-0 sm:size-28 md:size-40"
+              aria-hidden="true"
+            >
+              <Image
+                src="/brand/jiddu_logo_inverted_256.webp"
+                alt=""
+                fill
+                sizes="(min-width: 768px) 160px, (min-width: 640px) 112px, 80px"
+                className="jiddu-brand-logo jiddu-brand-logo-inverted object-cover mix-blend-lighten"
+                priority
+              />
+              <Image
+                src="/brand/jiddu_logo_256.webp"
+                alt=""
+                fill
+                sizes="(min-width: 768px) 160px, (min-width: 640px) 112px, 80px"
+                className="jiddu-brand-logo jiddu-brand-logo-default object-cover mix-blend-darken"
+                priority
+              />
+            </span>
+            <p className="text-center font-serif text-xs italic leading-snug text-muted sm:text-sm">
               “{t.hero_quote}”
             </p>
-            <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl leading-tight text-balance">
+          </div>
+          <div className="flex min-w-0 flex-1 flex-col gap-3 sm:gap-4">
+            <PageTitle>
               {t.hero_title}
-            </h1>
+            </PageTitle>
             <p className="text-foreground/85 text-base sm:text-lg max-w-3xl leading-relaxed">
               {t.home_hero_subtitle}
             </p>
@@ -351,15 +357,33 @@ export function HomeComposer({
 
         <ModeCards mode={mode} onChange={switchMode} />
 
-        <div className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="text-muted">{t.see_demo_hint}</span>
-          <Link
-            href={`${cfg.resultPrefix}/demo-${lang}`}
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md border border-rule hover:border-foreground transition-colors"
-          >
-            {t.see_demo_for(modeLabel[mode])} <span aria-hidden>→</span>
-          </Link>
-        </div>
+        {showSignupCta ? (
+          <div className="max-w-3xl">
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <SignupCta />
+              <Link
+                href={`${cfg.resultPrefix}/demo-${lang}`}
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md border border-rule bg-paper px-5 py-3 font-semibold text-foreground transition-colors hover:border-accent-edge"
+              >
+                {t.see_demo_for(modeLabel[mode])} <span aria-hidden>→</span>
+              </Link>
+            </div>
+            <p className="mt-3 flex items-center gap-1.5 text-sm text-muted">
+              {t.see_demo_hint}
+              <CornerRightUp className="size-4 shrink-0" aria-hidden />
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            <span className="text-muted">{t.see_demo_hint}</span>
+            <Link
+              href={`${cfg.resultPrefix}/demo-${lang}`}
+              className="inline-flex items-center gap-1 rounded-md border border-rule px-3 py-1.5 transition-colors hover:border-foreground"
+            >
+              {t.see_demo_for(modeLabel[mode])} <span aria-hidden>→</span>
+            </Link>
+          </div>
+        )}
 
         <UploadForm
           key={mode}
@@ -404,16 +428,16 @@ export function HomeComposer({
 
         {showOriginNote && (
           <aside
-            className="grid gap-3 border-t border-rule pt-6 sm:grid-cols-[10rem_1fr] sm:gap-8 sm:pt-8"
+            className="rounded-lg border border-rule p-5"
             aria-labelledby="home-origin-heading"
           >
             <h2
               id="home-origin-heading"
-              className="font-serif text-xl text-foreground"
+              className="font-serif text-2xl text-foreground"
             >
               {t.home_origin_heading}
             </h2>
-            <p className="max-w-3xl text-sm leading-relaxed text-foreground/80 sm:text-base">
+            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted">
               {t.home_origin_before_name}{" "}
               <a
                 href="https://en.wikipedia.org/wiki/Jiddu_Krishnamurti"

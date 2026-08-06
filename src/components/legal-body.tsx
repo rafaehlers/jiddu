@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment } from "react";
+import { PageTitle } from "@/components/page-title";
 import { useI18n } from "@/lib/i18n/provider";
 
 // Plain-text legal/disclaimer page. Content lives in i18n so the three
@@ -16,7 +17,7 @@ export function LegalBody() {
   return (
     <article className="mx-auto max-w-5xl w-full px-4 sm:px-6 py-10 sm:py-16 flex flex-col gap-8">
       <header className="flex flex-col gap-2">
-        <h1 className="font-serif text-3xl sm:text-4xl">{t.legal_title}</h1>
+        <PageTitle>{t.legal_title}</PageTitle>
         <p className="text-sm text-muted">{t.legal_subtitle}</p>
         <p className="text-xs text-muted mt-2">{t.legal_last_updated}</p>
       </header>
