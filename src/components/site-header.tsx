@@ -38,11 +38,11 @@ export function SiteHeader({
                 priority
               />
             )}
-            <span className="hidden min-w-0 flex-col pt-2 leading-none sm:flex">
+            <span className="flex min-w-0 flex-col pt-2 leading-none">
               <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#d5533b] sm:text-xs">
                 JIDDU
               </span>
-              <span className="hidden font-serif font-semibold text-foreground sm:block sm:text-xl">
+              <span className="font-serif font-semibold text-foreground sm:text-xl">
                 {t.tagline}
               </span>
             </span>

@@ -318,8 +318,8 @@ export function HomeComposer({
       <section className="mx-auto max-w-5xl w-full px-4 sm:px-6 py-8 sm:py-14 flex flex-col gap-8 sm:gap-10">
         {/* Standard hero — the same for all lenses, so switching a
             lens never reflows the top of the page. */}
-        <div className="flex items-center justify-between gap-4 sm:gap-8 md:gap-12">
-          <div className="flex w-24 shrink-0 flex-col items-center gap-2 sm:w-28 md:w-40">
+        <div className="grid grid-cols-[6rem_minmax(0,1fr)] items-center gap-x-4 gap-y-4 sm:grid-cols-[7rem_minmax(0,1fr)] sm:gap-x-8 md:grid-cols-[10rem_minmax(0,1fr)] md:gap-x-12">
+          <div className="col-start-1 row-start-1 flex w-24 flex-col items-center gap-2 sm:row-span-2 sm:w-28 md:w-40">
             <span
               className="relative size-20 shrink-0 sm:size-28 md:size-40"
               aria-hidden="true"
@@ -345,14 +345,12 @@ export function HomeComposer({
               “{t.hero_quote}”
             </p>
           </div>
-          <div className="flex min-w-0 flex-1 flex-col gap-3 sm:gap-4">
-            <PageTitle>
-              {t.hero_title}
-            </PageTitle>
-            <p className="text-foreground/85 text-base sm:text-lg max-w-3xl leading-relaxed">
-              {t.home_hero_subtitle}
-            </p>
-          </div>
+          <PageTitle className="col-start-2 row-start-1">
+            {t.hero_title}
+          </PageTitle>
+          <p className="col-span-2 row-start-2 max-w-3xl text-base leading-relaxed text-foreground/85 sm:col-span-1 sm:col-start-2 sm:text-lg">
+            {t.home_hero_subtitle}
+          </p>
         </div>
 
         <ModeCards mode={mode} onChange={switchMode} />
