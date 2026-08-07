@@ -212,18 +212,25 @@ export function ContextWorkspace() {
                 aria-label={statusLabel}
               />
             ) : (
-              <Image
-                src={
-                  contextTheme === "dark"
-                    ? "/brand/jiddu_logo_inverted_128.webp"
-                    : "/brand/jiddu_logo_128.webp"
-                }
-                alt="Jiddu"
-                width={64}
-                height={64}
-                priority
-                className={`size-16 object-cover ${contextTheme === "dark" ? "mix-blend-lighten" : "mix-blend-darken"}`}
-              />
+              <Link
+                href="/"
+                aria-label={copy.exit}
+                title={copy.exit}
+                className="rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              >
+                <Image
+                  src={
+                    contextTheme === "dark"
+                      ? "/brand/jiddu_logo_inverted_128.webp"
+                      : "/brand/jiddu_logo_128.webp"
+                  }
+                  alt="Jiddu"
+                  width={64}
+                  height={64}
+                  priority
+                  className={`size-16 object-cover ${contextTheme === "dark" ? "mix-blend-lighten" : "mix-blend-darken"}`}
+                />
+              </Link>
             )}
           </div>
           <div className="mr-auto min-w-0">
