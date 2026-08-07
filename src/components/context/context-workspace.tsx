@@ -196,7 +196,7 @@ export function ContextWorkspace() {
     >
       <header
         data-context-controls
-        className="relative z-50 bg-background/95 py-2 pl-3 pr-14 shadow-sm backdrop-blur sm:pl-4 sm:pr-16"
+        className="relative z-50 bg-background/95 px-3 py-2 shadow-sm backdrop-blur sm:px-4"
       >
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           <div
@@ -233,16 +233,22 @@ export function ContextWorkspace() {
               </Link>
             )}
           </div>
-          <div className="mr-auto min-w-0">
-            <div className="flex items-baseline gap-2">
-              <h1 className="truncate font-serif text-lg font-semibold sm:text-xl">
-                {copy.title}
+          <div className="mr-auto flex min-w-0 flex-col justify-center leading-none">
+            <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#d5533b] sm:text-xs">
+              Jiddu
+            </span>
+            <div className="mt-0.5 flex items-baseline gap-2">
+              <h1
+                aria-label={copy.title}
+                className="truncate font-serif text-2xl font-semibold leading-none sm:text-3xl"
+              >
+                Context
               </h1>
               <span className="rounded border border-accent/40 px-1.5 py-0.5 text-[9px] uppercase tracking-wider text-accent">
                 beta
               </span>
             </div>
-            <p className="hidden truncate text-xs text-muted lg:block">
+            <p className="mt-1 hidden truncate text-xs leading-normal text-muted xl:block">
               {copy.subtitle}
             </p>
           </div>
@@ -348,15 +354,14 @@ export function ContextWorkspace() {
             final={concluded}
             copy={copy}
           />
-        </div>
-
-        <div className="absolute right-3 top-2 z-[60] sm:right-4">
-          <ContextSettingsButton
-            control={contextSettings}
-            copy={copy}
-            showCaptureSettings
-            captureSettingsLocked={controlsLocked}
-          />
+          <div className="shrink-0">
+            <ContextSettingsButton
+              control={contextSettings}
+              copy={copy}
+              showCaptureSettings
+              captureSettingsLocked={controlsLocked}
+            />
+          </div>
         </div>
 
         {hasError ? (

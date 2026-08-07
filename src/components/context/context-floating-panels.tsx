@@ -6,6 +6,8 @@ import {
   EyeOff,
   GripHorizontal,
   Minus,
+  MoveDiagonal,
+  MoveDiagonal2,
   RotateCcw,
   X,
 } from "lucide-react";
@@ -46,11 +48,13 @@ type Bounds = { width: number; height: number };
 
 export type ContextFloatingPanelsState = {
   visibility: PanelVisibility;
+  activePanel: ContextPanelId;
   visibleCount: number;
   anyVisible: boolean;
   resetVersion: number;
   toggleAll: () => void;
   togglePanel: (id: ContextPanelId) => void;
+  selectPanel: (id: ContextPanelId) => void;
   resetPanels: () => void;
 };
 
@@ -63,9 +67,10 @@ export type ContextFloatingPanelDefinition = {
 };
 
 const VISIBILITY_STORAGE_KEY = "jiddu_context_panel_visibility_v1";
-const LAYOUT_STORAGE_KEY = "jiddu_context_floating_panels_v1";
+const LAYOUT_STORAGE_KEY = "jiddu_context_floating_panels_v2";
 const VIEWPORT_GAP = 12;
 const PANEL_HEADER_HEIGHT = 40;
+const STACK_GAP = 8;
 const MIN_PANEL_WIDTH = 240;
 const MIN_PANEL_HEIGHT = 160;
 
@@ -79,6 +84,7 @@ const ALL_VISIBLE: PanelVisibility = {
 
 export function useContextFloatingPanels(): ContextFloatingPanelsState {
   const [visibility, setVisibility] = useState<PanelVisibility>(ALL_VISIBLE);
+  const [activePanel, setActivePanel] = useState<ContextPanelId>("facts");
   const [loaded, setLoaded] = useState(false);
   const [resetVersion, setResetVersion] = useState(0);
 
@@ -122,18 +128,28 @@ export function useContextFloatingPanels(): ContextFloatingPanelsState {
     setVisibility((current) => ({ ...current, [id]: !current[id] }));
   }, []);
 
+  const selectPanel = useCallback((id: ContextPanelId) => {
+    setActivePanel(id);
+    setVisibility((current) =>
+      current[id] ? current : { ...current, [id]: true },
+    );
+  }, []);
+
   const resetPanels = useCallback(() => {
     setVisibility(ALL_VISIBLE);
+    setActivePanel("facts");
     setResetVersion((current) => current + 1);
   }, []);
 
   return {
     visibility,
+    activePanel,
     visibleCount,
     anyVisible,
     resetVersion,
     toggleAll,
     togglePanel,
+    selectPanel,
     resetPanels,
   };
 }
@@ -147,6 +163,26 @@ export function ContextPanelsControl({
   labels: Record<ContextPanelId, string>;
   copy: ContextCopy;
 }) {
+  const detailsRef = useRef<HTMLDetailsElement>(null);
+  const [compactMode, setCompactMode] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 767px)");
+    const update = () => setCompactMode(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+
+  const handlePanelAction = (id: ContextPanelId) => {
+    if (compactMode) {
+      state.selectPanel(id);
+      detailsRef.current?.removeAttribute("open");
+      return;
+    }
+    state.togglePanel(id);
+  };
+
   return (
     <div className="relative inline-flex shrink-0 items-stretch rounded-md border border-rule bg-paper text-xs">
       <button
@@ -167,7 +203,7 @@ export function ContextPanelsControl({
           {state.visibleCount}/5
         </span>
       </button>
-      <details className="group relative border-l border-rule">
+      <details ref={detailsRef} className="group relative border-l border-rule">
         <summary
           aria-label={copy.panelSettings}
           title={copy.panelSettings}
@@ -175,7 +211,7 @@ export function ContextPanelsControl({
         >
           <ChevronDown className="size-3.5 transition-transform group-open:rotate-180" />
         </summary>
-        <div className="absolute right-0 top-full z-[70] mt-2 w-56 rounded-lg border border-rule bg-background p-2 shadow-2xl">
+        <div className="absolute left-0 top-full z-[70] mt-2 w-56 max-w-[calc(100vw-1rem)] rounded-lg border border-rule bg-background p-2 shadow-2xl sm:left-auto sm:right-0">
           <p className="px-2 pb-1.5 text-[9px] font-semibold uppercase tracking-wider text-muted">
             {copy.panelSettings}
           </p>
@@ -183,16 +219,24 @@ export function ContextPanelsControl({
             <button
               key={id}
               type="button"
-              aria-pressed={state.visibility[id]}
-              onClick={() => state.togglePanel(id)}
+              aria-pressed={
+                compactMode ? state.activePanel === id : state.visibility[id]
+              }
+              onClick={() => handlePanelAction(id)}
               className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left hover:bg-paper"
             >
-              {state.visibility[id] ? (
+              {(
+                compactMode ? state.activePanel === id : state.visibility[id]
+              ) ? (
                 <Eye className="size-3.5 text-foreground" />
               ) : (
                 <EyeOff className="size-3.5 text-muted" />
               )}
-              <span className={state.visibility[id] ? "" : "text-muted"}>
+              <span
+                className={
+                  compactMode || state.visibility[id] ? "" : "text-muted"
+                }
+              >
                 {labels[id]}
               </span>
             </button>
@@ -227,7 +271,6 @@ export function ContextFloatingPanels({
   const [loaded, setLoaded] = useState(false);
   const [frontPanel, setFrontPanel] = useState<ContextPanelId>("facts");
   const [compactMode, setCompactMode] = useState(false);
-  const [mobilePanel, setMobilePanel] = useState<ContextPanelId>("facts");
   const [mobileMinimized, setMobileMinimized] = useState(false);
 
   useEffect(() => {
@@ -348,10 +391,7 @@ export function ContextFloatingPanels({
           const deltaX = moveEvent.clientX - startX;
           const deltaY = moveEvent.clientY - startY;
           if (corner === "southwest") {
-            const maximumWidth = Math.max(
-              160,
-              bounds.width - VIEWPORT_GAP * 2,
-            );
+            const maximumWidth = Math.max(160, bounds.width - VIEWPORT_GAP * 2);
             const minimumWidth = Math.min(MIN_PANEL_WIDTH, maximumWidth);
             const width = clamp(
               initial.width - deltaX,
@@ -377,9 +417,10 @@ export function ContextFloatingPanels({
     [bounds.width, layouts, updatePanel],
   );
 
-  const activeMobilePanel = state.visibility[mobilePanel]
-    ? mobilePanel
-    : (CONTEXT_PANEL_IDS.find((id) => state.visibility[id]) ?? mobilePanel);
+  const activeMobilePanel = state.visibility[state.activePanel]
+    ? state.activePanel
+    : (CONTEXT_PANEL_IDS.find((id) => state.visibility[id]) ??
+      state.activePanel);
   const mobileDefinition = panels[activeMobilePanel];
 
   return (
@@ -404,7 +445,7 @@ export function ContextFloatingPanels({
               aria-label={copy.panelSettings}
               value={activeMobilePanel}
               onChange={(event) =>
-                setMobilePanel(event.target.value as ContextPanelId)
+                state.selectPanel(event.target.value as ContextPanelId)
               }
               className="min-w-0 flex-1 bg-transparent text-[11px] font-semibold uppercase tracking-wider outline-none"
             >
@@ -549,8 +590,10 @@ export function ContextFloatingPanels({
                       onPointerDown={(event) =>
                         startResize(id, "southwest", event)
                       }
-                      className="absolute bottom-0 left-0 size-5 cursor-sw-resize touch-none border-0 bg-transparent before:absolute before:bottom-1 before:left-1 before:size-2 before:border-b before:border-l before:border-muted before:content-['']"
-                    />
+                      className="absolute bottom-1 left-1 grid size-6 cursor-sw-resize touch-none place-items-center rounded-md border border-rule bg-background/85 text-muted shadow-sm transition-colors hover:border-accent hover:text-accent"
+                    >
+                      <MoveDiagonal className="size-3.5" />
+                    </button>
                     <button
                       type="button"
                       aria-label={copy.resizePanel}
@@ -558,8 +601,10 @@ export function ContextFloatingPanels({
                       onPointerDown={(event) =>
                         startResize(id, "southeast", event)
                       }
-                      className="absolute bottom-0 right-0 size-5 cursor-se-resize touch-none border-0 bg-transparent before:absolute before:bottom-1 before:right-1 before:size-2 before:border-b before:border-r before:border-muted before:content-['']"
-                    />
+                      className="absolute bottom-1 right-1 grid size-6 cursor-se-resize touch-none place-items-center rounded-md border border-rule bg-background/85 text-muted shadow-sm transition-colors hover:border-accent hover:text-accent"
+                    >
+                      <MoveDiagonal2 className="size-3.5" />
+                    </button>
                   </>
                 ) : null}
               </section>
@@ -571,44 +616,25 @@ export function ContextFloatingPanels({
 }
 
 function defaultLayouts(bounds: Bounds): PanelLayouts {
-  const sideWidth = clamp(bounds.width * 0.27, MIN_PANEL_WIDTH, 360);
-  const centerWidth = clamp(bounds.width * 0.31, MIN_PANEL_WIDTH, 420);
-  const sideHeight = clamp(bounds.height * 0.4, 190, 320);
-  const centerHeight = clamp(bounds.height * 0.46, 210, 360);
+  const width = clamp(bounds.width * 0.27, MIN_PANEL_WIDTH, 360);
+  const expandedHeight = clamp(bounds.height * 0.4, 190, 320);
   const top = 54;
-  const sideBottom = Math.max(
-    VIEWPORT_GAP,
-    bounds.height - sideHeight - VIEWPORT_GAP,
-  );
-  const centerBottom = Math.max(
-    VIEWPORT_GAP,
-    bounds.height - centerHeight - VIEWPORT_GAP,
-  );
-  const right = Math.max(VIEWPORT_GAP, bounds.width - sideWidth - VIEWPORT_GAP);
-  const center = Math.max(VIEWPORT_GAP, (bounds.width - centerWidth) / 2);
 
-  return {
-    transcript: clampPanelLayout(
-      panelLayout(VIEWPORT_GAP, sideBottom, sideWidth, sideHeight),
-      bounds,
-    ),
-    fallacies: clampPanelLayout(
-      panelLayout(VIEWPORT_GAP, top, sideWidth, sideHeight),
-      bounds,
-    ),
-    facts: clampPanelLayout(
-      panelLayout(center, centerBottom, centerWidth, centerHeight),
-      bounds,
-    ),
-    topics: clampPanelLayout(
-      panelLayout(right, sideBottom, sideWidth, sideHeight),
-      bounds,
-    ),
-    neutrality: clampPanelLayout(
-      panelLayout(right, top, sideWidth, sideHeight),
-      bounds,
-    ),
-  };
+  return Object.fromEntries(
+    CONTEXT_PANEL_IDS.map((id, index) => [
+      id,
+      clampPanelLayout(
+        panelLayout(
+          VIEWPORT_GAP,
+          top + index * (PANEL_HEADER_HEIGHT + STACK_GAP),
+          width,
+          expandedHeight,
+          true,
+        ),
+        bounds,
+      ),
+    ]),
+  ) as PanelLayouts;
 }
 
 function panelLayout(
@@ -616,8 +642,9 @@ function panelLayout(
   y: number,
   width: number,
   height: number,
+  minimized = false,
 ): PanelLayout {
-  return { x, y, width, height, minimized: false };
+  return { x, y, width, height, minimized };
 }
 
 function clampPanelLayout(layout: PanelLayout, bounds: Bounds): PanelLayout {
