@@ -9,6 +9,16 @@ export const LIVE_CONTEXT_TERM_KINDS = [
 
 export type LiveContextTermKind = (typeof LIVE_CONTEXT_TERM_KINDS)[number];
 
+export const LIVE_CONTEXT_ENTITY_KINDS = [
+  "person",
+  "institution",
+  "organization",
+  "country",
+  "event",
+] as const;
+
+export type LiveContextEntityKind = (typeof LIVE_CONTEXT_ENTITY_KINDS)[number];
+
 const ConfidenceSchema = z.number().min(0).max(1);
 const HttpUrlSchema = z
   .string()
@@ -54,11 +64,33 @@ export const LiveContextWindowSegmentSchema = z.object({
   sentenceIds: z.array(z.string()).min(1),
 });
 
+export const LiveContextWindowEntitySchema = z.object({
+  name: z.string().trim().min(1),
+  kind: z.enum(LIVE_CONTEXT_ENTITY_KINDS),
+  description: z.string().trim().min(1),
+  aliases: z.array(z.string().trim().min(1)).default([]),
+  sentenceIds: z.array(z.string()).min(1),
+  confidence: ConfidenceSchema,
+  importance: ConfidenceSchema,
+});
+
+export const LiveContextWindowRelationSchema = z.object({
+  sourceName: z.string().trim().min(1),
+  targetName: z.string().trim().min(1),
+  label: z.string().trim().min(1),
+  description: z.string().trim().min(1),
+  sentenceIds: z.array(z.string()).min(1),
+  confidence: ConfidenceSchema,
+  importance: ConfidenceSchema,
+});
+
 export const LiveContextWindowSchema = z.object({
   language: z.string().nullable().optional(),
   tags: z.array(LiveContextWindowTagSchema),
   topics: z.array(LiveContextWindowTopicSchema),
   terms: z.array(LiveContextWindowTermSchema),
+  entities: z.array(LiveContextWindowEntitySchema).default([]),
+  relations: z.array(LiveContextWindowRelationSchema).default([]),
   segment: LiveContextWindowSegmentSchema,
   summary: z.string(),
 });
@@ -81,12 +113,36 @@ export const LiveContextSegmentSchema = LiveContextWindowSegmentSchema.extend({
   id: z.string(),
 });
 
+export const LiveContextEntitySchema = LiveContextWindowEntitySchema.extend({
+  id: z.string(),
+  // Manual session-level corrections are authoritative over later model
+  // windows, while remaining private to the analysis that produced them.
+  userCorrectedName: z.boolean().optional(),
+  userCorrectedAt: z.string().datetime().optional(),
+});
+
+export const LiveContextRelationSchema = z.object({
+  id: z.string(),
+  sourceEntityId: z.string(),
+  targetEntityId: z.string(),
+  label: z.string().trim().min(1),
+  description: z.string().trim().min(1),
+  sentenceIds: z.array(z.string()).min(1),
+  confidence: ConfidenceSchema,
+  importance: ConfidenceSchema,
+});
+
 export const LiveContextSchema = z.object({
   // `default` keeps recaps created before broad tags were introduced valid.
   tags: z.array(LiveContextTagSchema).default([]),
   relatedLinks: z.array(LiveRelatedLinkSchema).default([]),
+  // Listener-dismissed names are private session state. Keeping a tombstone
+  // prevents a later analysis window from recreating the same wrong card.
+  dismissedEntityNames: z.array(z.string().trim().min(1)).max(100).default([]),
   topics: z.array(LiveContextTopicSchema),
   terms: z.array(LiveContextTermSchema),
+  entities: z.array(LiveContextEntitySchema).default([]),
+  relations: z.array(LiveContextRelationSchema).default([]),
   segments: z.array(LiveContextSegmentSchema),
   summary: z.string(),
 });
@@ -96,13 +152,18 @@ export type LiveContextTag = z.infer<typeof LiveContextTagSchema>;
 export type LiveContextTopic = z.infer<typeof LiveContextTopicSchema>;
 export type LiveContextTerm = z.infer<typeof LiveContextTermSchema>;
 export type LiveContextSegment = z.infer<typeof LiveContextSegmentSchema>;
+export type LiveContextEntity = z.infer<typeof LiveContextEntitySchema>;
+export type LiveContextRelation = z.infer<typeof LiveContextRelationSchema>;
 export type LiveContext = z.infer<typeof LiveContextSchema>;
 
 export const EMPTY_LIVE_CONTEXT: LiveContext = {
   tags: [],
   relatedLinks: [],
+  dismissedEntityNames: [],
   topics: [],
   terms: [],
+  entities: [],
+  relations: [],
   segments: [],
   summary: "",
 };
@@ -124,9 +185,12 @@ export function mergeLiveContext(
   window: LiveContextWindow,
 ): LiveContext {
   const relatedLinks = current.relatedLinks.map((link) => ({ ...link }));
+  const dismissedEntityNames = [...current.dismissedEntityNames];
   const tags = current.tags.map(cloneTag);
   const topics = current.topics.map(cloneTopic);
   const terms = current.terms.map(cloneTerm);
+  const entities = current.entities.map(cloneEntity);
+  const relations = current.relations.map(cloneRelation);
   const segments = current.segments.map(cloneSegment);
 
   for (const candidate of window.tags.slice(0, 6)) {
@@ -141,7 +205,10 @@ export function mergeLiveContext(
       continue;
     }
     tags.push({
-      id: `tag${nextCounter(tags.map((tag) => tag.id), "tag")}`,
+      id: `tag${nextCounter(
+        tags.map((tag) => tag.id),
+        "tag",
+      )}`,
       ...candidate,
       sentenceIds: [...candidate.sentenceIds],
     });
@@ -149,7 +216,9 @@ export function mergeLiveContext(
 
   for (const candidate of window.topics.slice(0, 4)) {
     const key = normalizeLabel(candidate.label);
-    const existing = topics.find((topic) => normalizeLabel(topic.label) === key);
+    const existing = topics.find(
+      (topic) => normalizeLabel(topic.label) === key,
+    );
     if (existing) {
       existing.sentenceIds = union(existing.sentenceIds, candidate.sentenceIds);
       if (candidate.confidence >= existing.confidence) {
@@ -159,7 +228,10 @@ export function mergeLiveContext(
       continue;
     }
     topics.push({
-      id: `topic${nextCounter(topics.map((topic) => topic.id), "topic")}`,
+      id: `topic${nextCounter(
+        topics.map((topic) => topic.id),
+        "topic",
+      )}`,
       ...candidate,
       sentenceIds: [...candidate.sentenceIds],
     });
@@ -179,9 +251,79 @@ export function mergeLiveContext(
       continue;
     }
     terms.push({
-      id: `term${nextCounter(terms.map((term) => term.id), "term")}`,
+      id: `term${nextCounter(
+        terms.map((term) => term.id),
+        "term",
+      )}`,
       ...candidate,
       sentenceIds: [...candidate.sentenceIds],
+    });
+  }
+
+  for (const candidate of window.entities.slice(0, 8)) {
+    if (isDismissedEntityCandidate(candidate, dismissedEntityNames)) continue;
+    const existing = findMatchingEntity(entities, candidate);
+    if (existing) {
+      existing.sentenceIds = union(existing.sentenceIds, candidate.sentenceIds);
+      existing.aliases = unionLabels(
+        existing.aliases,
+        existing.userCorrectedName
+          ? [candidate.name, ...candidate.aliases]
+          : candidate.aliases,
+      );
+      existing.importance = Math.max(existing.importance, candidate.importance);
+      if (candidate.confidence >= existing.confidence) {
+        if (!existing.userCorrectedName) existing.name = candidate.name;
+        existing.kind = candidate.kind;
+        existing.description = candidate.description;
+        existing.confidence = candidate.confidence;
+      }
+      continue;
+    }
+    entities.push({
+      id: `entity${nextCounter(
+        entities.map((entity) => entity.id),
+        "entity",
+      )}`,
+      ...candidate,
+      aliases: [...candidate.aliases],
+      sentenceIds: [...candidate.sentenceIds],
+    });
+  }
+
+  for (const candidate of window.relations.slice(0, 10)) {
+    const source = findEntityByName(entities, candidate.sourceName);
+    const target = findEntityByName(entities, candidate.targetName);
+    if (!source || !target || source.id === target.id) continue;
+    const relationKey = normalizeLabel(candidate.label);
+    const existing = relations.find(
+      (relation) =>
+        relation.sourceEntityId === source.id &&
+        relation.targetEntityId === target.id &&
+        normalizeLabel(relation.label) === relationKey,
+    );
+    if (existing) {
+      existing.sentenceIds = union(existing.sentenceIds, candidate.sentenceIds);
+      existing.importance = Math.max(existing.importance, candidate.importance);
+      if (candidate.confidence >= existing.confidence) {
+        existing.label = candidate.label;
+        existing.description = candidate.description;
+        existing.confidence = candidate.confidence;
+      }
+      continue;
+    }
+    relations.push({
+      id: `relation${nextCounter(
+        relations.map((relation) => relation.id),
+        "relation",
+      )}`,
+      sourceEntityId: source.id,
+      targetEntityId: target.id,
+      label: candidate.label,
+      description: candidate.description,
+      sentenceIds: [...candidate.sentenceIds],
+      confidence: candidate.confidence,
+      importance: candidate.importance,
     });
   }
 
@@ -211,12 +353,25 @@ export function mergeLiveContext(
 
   return {
     relatedLinks,
+    dismissedEntityNames,
     tags,
     topics,
     terms,
+    entities,
+    relations,
     segments,
     summary: window.summary.trim() || current.summary,
   };
+}
+
+function isDismissedEntityCandidate(
+  candidate: z.infer<typeof LiveContextWindowEntitySchema>,
+  dismissedEntityNames: string[],
+): boolean {
+  const dismissed = new Set(dismissedEntityNames.map(normalizeLabel));
+  return [candidate.name, ...candidate.aliases]
+    .map(normalizeLabel)
+    .some((name) => dismissed.has(name));
 }
 
 export function sanitizeLiveContextWindow(
@@ -227,6 +382,15 @@ export function sanitizeLiveContextWindow(
     ids.length > 0 && ids.every((id) => allowedSentenceIds.has(id));
   if (!anchored(value.segment.sentenceIds)) return null;
 
+  const entities = value.entities.filter(
+    (entity) => entity.confidence >= 0.72 && anchored(entity.sentenceIds),
+  );
+  const windowEntityNames = new Set(
+    entities.flatMap((entity) =>
+      [entity.name, ...entity.aliases].map(normalizeLabel),
+    ),
+  );
+
   return {
     ...value,
     tags: value.tags.filter(
@@ -235,6 +399,14 @@ export function sanitizeLiveContextWindow(
     topics: value.topics.filter((topic) => anchored(topic.sentenceIds)),
     terms: value.terms.filter(
       (term) => term.confidence >= 0.72 && anchored(term.sentenceIds),
+    ),
+    entities,
+    relations: value.relations.filter(
+      (relation) =>
+        relation.confidence >= 0.74 &&
+        anchored(relation.sentenceIds) &&
+        windowEntityNames.has(normalizeLabel(relation.sourceName)) &&
+        windowEntityNames.has(normalizeLabel(relation.targetName)),
     ),
   };
 }
@@ -253,11 +425,50 @@ function union(left: string[], right: string[]): string[] {
   return [...new Set([...left, ...right])];
 }
 
+function unionLabels(left: string[], right: string[]): string[] {
+  const result = [...left];
+  const keys = new Set(left.map(normalizeLabel));
+  for (const value of right) {
+    const key = normalizeLabel(value);
+    if (!key || keys.has(key)) continue;
+    keys.add(key);
+    result.push(value);
+  }
+  return result;
+}
+
+function findMatchingEntity(
+  entities: LiveContextEntity[],
+  candidate: z.infer<typeof LiveContextWindowEntitySchema>,
+): LiveContextEntity | undefined {
+  const candidateNames = new Set(
+    [candidate.name, ...candidate.aliases].map(normalizeLabel).filter(Boolean),
+  );
+  return entities.find((entity) => {
+    if (entity.kind !== candidate.kind) return false;
+    return [entity.name, ...entity.aliases]
+      .map(normalizeLabel)
+      .some((name) => candidateNames.has(name));
+  });
+}
+
+function findEntityByName(
+  entities: LiveContextEntity[],
+  name: string,
+): LiveContextEntity | undefined {
+  const key = normalizeLabel(name);
+  return entities.find((entity) =>
+    [entity.name, ...entity.aliases].map(normalizeLabel).includes(key),
+  );
+}
+
 function nextCounter(ids: string[], prefix: string): number {
-  return ids.reduce((highest, id) => {
-    const match = new RegExp(`^${prefix}(\\d+)$`).exec(id);
-    return match ? Math.max(highest, Number(match[1])) : highest;
-  }, 0) + 1;
+  return (
+    ids.reduce((highest, id) => {
+      const match = new RegExp(`^${prefix}(\\d+)$`).exec(id);
+      return match ? Math.max(highest, Number(match[1])) : highest;
+    }, 0) + 1
+  );
 }
 
 function mergeSummary(previous: string, next: string): string {
@@ -282,4 +493,16 @@ function cloneTerm(term: LiveContextTerm): LiveContextTerm {
 
 function cloneSegment(segment: LiveContextSegment): LiveContextSegment {
   return { ...segment, sentenceIds: [...segment.sentenceIds] };
+}
+
+function cloneEntity(entity: LiveContextEntity): LiveContextEntity {
+  return {
+    ...entity,
+    aliases: [...entity.aliases],
+    sentenceIds: [...entity.sentenceIds],
+  };
+}
+
+function cloneRelation(relation: LiveContextRelation): LiveContextRelation {
+  return { ...relation, sentenceIds: [...relation.sentenceIds] };
 }

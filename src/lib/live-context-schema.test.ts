@@ -24,6 +24,8 @@ const firstWindow: LiveContextWindow = {
       confidence: 0.94,
     },
   ],
+  entities: [],
+  relations: [],
   segment: {
     title: "Aquisição de clientes",
     summary: "A conversa trata do custo de aquisição.",
@@ -132,4 +134,217 @@ test("rejects a context window whose segment is not anchored", () => {
     ),
     null,
   );
+});
+
+test("deduplicates entity aliases and preserves stable relation endpoints", () => {
+  const first = mergeLiveContext(EMPTY_LIVE_CONTEXT, {
+    ...firstWindow,
+    entities: [
+      {
+        name: "Luiz Inácio Lula da Silva",
+        kind: "person",
+        description: "Presidente citado na conversa.",
+        aliases: ["Lula"],
+        sentenceIds: ["s1"],
+        confidence: 0.96,
+        importance: 0.91,
+      },
+      {
+        name: "Petrobras",
+        kind: "organization",
+        description: "Empresa mencionada.",
+        aliases: [],
+        sentenceIds: ["s1"],
+        confidence: 0.95,
+        importance: 0.88,
+      },
+    ],
+  });
+  const second = mergeLiveContext(first, {
+    ...firstWindow,
+    entities: [
+      {
+        name: "Lula",
+        kind: "person",
+        description: "O interlocutor volta a mencionar Lula.",
+        aliases: ["Luiz Inácio Lula da Silva"],
+        sentenceIds: ["s2"],
+        confidence: 0.98,
+        importance: 0.94,
+      },
+      {
+        name: "Petrobras",
+        kind: "organization",
+        description: "Empresa mencionada novamente.",
+        aliases: [],
+        sentenceIds: ["s2"],
+        confidence: 0.97,
+        importance: 0.9,
+      },
+    ],
+    relations: [
+      {
+        sourceName: "Lula",
+        targetName: "Petrobras",
+        label: "comentou sobre",
+        description: "A conversa associa Lula a um comentário sobre a empresa.",
+        sentenceIds: ["s2"],
+        confidence: 0.9,
+        importance: 0.86,
+      },
+    ],
+    segment: { ...firstWindow.segment, sentenceIds: ["s2"] },
+  });
+
+  assert.equal(second.entities.length, 2);
+  assert.equal(second.entities[0].id, "entity1");
+  assert.deepEqual(second.entities[0].sentenceIds, ["s1", "s2"]);
+  assert.equal(second.relations.length, 1);
+  assert.equal(second.relations[0].sourceEntityId, "entity1");
+  assert.equal(second.relations[0].targetEntityId, "entity2");
+
+  const third = mergeLiveContext(second, {
+    ...firstWindow,
+    entities: [
+      {
+        name: "Lula",
+        kind: "person",
+        description: "Pessoa já resolvida.",
+        aliases: ["Luiz Inácio Lula da Silva"],
+        sentenceIds: ["s3"],
+        confidence: 0.96,
+        importance: 0.9,
+      },
+      {
+        name: "Petrobras",
+        kind: "organization",
+        description: "Empresa já resolvida.",
+        aliases: [],
+        sentenceIds: ["s3"],
+        confidence: 0.96,
+        importance: 0.9,
+      },
+    ],
+    relations: [
+      {
+        sourceName: "Lula",
+        targetName: "Petrobras",
+        label: "comentou sobre",
+        description: "A relação volta a ser mencionada.",
+        sentenceIds: ["s3"],
+        confidence: 0.95,
+        importance: 0.9,
+      },
+    ],
+    segment: { ...firstWindow.segment, sentenceIds: ["s3"] },
+  });
+  assert.equal(third.relations.length, 1);
+  assert.deepEqual(third.relations[0].sentenceIds, ["s2", "s3"]);
+});
+
+test("drops entity relations that are weak, unanchored or missing endpoints", () => {
+  const sanitized = sanitizeLiveContextWindow(
+    {
+      ...firstWindow,
+      entities: [
+        {
+          name: "Organização A",
+          kind: "organization",
+          description: "Entidade válida.",
+          aliases: [],
+          sentenceIds: ["s1"],
+          confidence: 0.9,
+          importance: 0.8,
+        },
+        {
+          name: "Pessoa B",
+          kind: "person",
+          description: "Pessoa válida.",
+          aliases: [],
+          sentenceIds: ["s1"],
+          confidence: 0.91,
+          importance: 0.8,
+        },
+      ],
+      relations: [
+        {
+          sourceName: "Organização A",
+          targetName: "Pessoa B",
+          label: "contratou",
+          description: "Relação ancorada.",
+          sentenceIds: ["s1"],
+          confidence: 0.9,
+          importance: 0.8,
+        },
+        {
+          sourceName: "Organização A",
+          targetName: "Pessoa B",
+          label: "talvez conheça",
+          description: "Relação fraca.",
+          sentenceIds: ["s1"],
+          confidence: 0.4,
+          importance: 0.3,
+        },
+        {
+          sourceName: "Organização A",
+          targetName: "Pessoa inexistente",
+          label: "citou",
+          description: "Endpoint ausente.",
+          sentenceIds: ["s1"],
+          confidence: 0.99,
+          importance: 0.9,
+        },
+      ],
+    },
+    new Set(["s1"]),
+  );
+
+  assert.ok(sanitized);
+  assert.deepEqual(sanitized.relations.map((relation) => relation.label), [
+    "contratou",
+  ]);
+});
+
+test("keeps a listener-corrected entity name across later analysis windows", () => {
+  const corrected = mergeLiveContext(EMPTY_LIVE_CONTEXT, {
+    ...firstWindow,
+    entities: [
+      {
+        name: "Emily Chow",
+        kind: "person",
+        description: "Pessoa apresentada na conversa.",
+        aliases: [],
+        sentenceIds: ["s1"],
+        confidence: 0.9,
+        importance: 0.9,
+      },
+    ],
+  });
+  corrected.entities[0] = {
+    ...corrected.entities[0],
+    name: "Emily Zhao",
+    aliases: ["Emily Chow"],
+    userCorrectedName: true,
+  };
+
+  const next = mergeLiveContext(corrected, {
+    ...firstWindow,
+    entities: [
+      {
+        name: "Emily Chow",
+        kind: "person",
+        description: "A pessoa volta a ser citada.",
+        aliases: [],
+        sentenceIds: ["s2"],
+        confidence: 0.99,
+        importance: 0.95,
+      },
+    ],
+    segment: { ...firstWindow.segment, sentenceIds: ["s2"] },
+  });
+
+  assert.equal(next.entities.length, 1);
+  assert.equal(next.entities[0].name, "Emily Zhao");
+  assert.equal(next.entities[0].userCorrectedName, true);
+  assert.deepEqual(next.entities[0].sentenceIds, ["s1", "s2"]);
 });

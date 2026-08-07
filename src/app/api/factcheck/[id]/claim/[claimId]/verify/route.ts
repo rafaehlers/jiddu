@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { recordContextSessionEvents } from "@/lib/context-session-events";
 import { prisma } from "@/lib/db";
 import { verifyClaim, VERIFY_MODEL } from "@/lib/llm/verifyClaim";
 import { consume, ipFromRequest, rateLimitResponse } from "@/lib/rate-limit";
@@ -43,6 +44,15 @@ export async function POST(
   );
 
   const { id, claimId } = await ctx.params;
+  const requestBody = (await req.json().catch(() => null)) as {
+    elapsedMs?: unknown;
+  } | null;
+  const suppliedElapsedMs =
+    typeof requestBody?.elapsedMs === "number" &&
+    Number.isFinite(requestBody.elapsedMs) &&
+    requestBody.elapsedMs >= 0
+      ? Math.floor(requestBody.elapsedMs)
+      : null;
 
   const fc = await prisma.factCheck.findUnique({ where: { id } });
   if (!fc) return jsonError("Not found", 404);
@@ -90,6 +100,7 @@ export async function POST(
       lang,
       force: true,
       apiKey: access.apiKey,
+      sourceUrl: fc.sourceRef,
     });
   } catch (err) {
     await releaseJidduCreditReservation(reservation);
@@ -121,6 +132,26 @@ export async function POST(
         verifyFinishedAt: new Date(),
       },
     });
+    try {
+      const analysis = await prisma.analysis.findUnique({
+        where: { id },
+        select: { audioDurationMs: true },
+      });
+      await recordContextSessionEvents({
+        analysisId: id,
+        ownerWorkosUserId: fc.ownerWorkosUserId,
+        events: [
+          {
+            kind: "claim_verified",
+            elapsedMs: suppliedElapsedMs ?? analysis?.audioDurationMs ?? 0,
+            sentenceIds: claim.sentenceIds,
+            payload: verdictRecord,
+          },
+        ],
+      });
+    } catch (eventError) {
+      console.error("[factcheck/claim] replay event failed", eventError);
+    }
   } finally {
     await settleUsage({
       usages: usage ? [usage] : [],

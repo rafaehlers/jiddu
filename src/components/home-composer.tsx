@@ -5,10 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CornerRightUp, Loader2 } from "lucide-react";
-import {
-  UploadForm,
-  type UploadSourceType,
-} from "@/components/upload-form";
+import { UploadForm, type UploadSourceType } from "@/components/upload-form";
 import { ModeCards } from "@/components/mode-cards";
 import { AnalysisSkeleton } from "@/components/analysis-skeleton";
 import { SignupCta } from "@/components/auth-controls";
@@ -18,12 +15,7 @@ import { useI18n } from "@/lib/i18n/provider";
 import type { Messages } from "@/lib/i18n/messages";
 
 type Mode =
-  | "detector"
-  | "factcheck"
-  | "neutrality"
-  | "explain"
-  | "slop"
-  | "review";
+  "detector" | "factcheck" | "neutrality" | "explain" | "slop" | "review";
 
 type StreamingState = {
   id: string | null;
@@ -76,10 +68,10 @@ const MODE_CONFIG: Record<
         sourceType === "image"
           ? t.loader_image
           : sourceType === "url"
-          ? t.loader_url
-          : sourceType === "file"
-            ? t.loader_file
-            : t.loader_paste,
+            ? t.loader_url
+            : sourceType === "file"
+              ? t.loader_file
+              : t.loader_paste,
       analysis: t.loader_analysis,
     }),
   },
@@ -92,7 +84,8 @@ const MODE_CONFIG: Record<
     failedTitle: (t) => t.factcheck_failed,
     countLabels: (t) => [t.claims_found_one, t.claims_found_many],
     pools: (t, sourceType) => ({
-      preMeta: sourceType === "image" ? t.loader_image : [t.loader_factcheck[0]],
+      preMeta:
+        sourceType === "image" ? t.loader_image : [t.loader_factcheck[0]],
       analysis: t.loader_factcheck,
     }),
   },
@@ -105,7 +98,8 @@ const MODE_CONFIG: Record<
     failedTitle: (t) => t.neutrality_failed,
     countLabels: (t) => [t.findings_found_one, t.findings_found_many],
     pools: (t, sourceType) => ({
-      preMeta: sourceType === "image" ? t.loader_image : [t.loader_neutrality[0]],
+      preMeta:
+        sourceType === "image" ? t.loader_image : [t.loader_neutrality[0]],
       analysis: t.loader_neutrality,
     }),
   },
@@ -151,9 +145,9 @@ const MODE_CONFIG: Record<
 };
 
 /**
- * Unified home — one hero, six lens cards as the form mode selector, plus a
- * dedicated Live card. Switching form lenses is pure client state (no
- * navigation); the URL is kept in sync via history.replaceState so the
+ * Unified home — one hero, six lens cards as the form mode selector, plus
+ * dedicated Live and Context cards. Switching form lenses is pure client
+ * state (no navigation); the URL is kept in sync via history.replaceState so the
  * feature routes still work as deep links and SEO entry points.
  */
 export function HomeComposer({
@@ -233,9 +227,10 @@ export function HomeComposer({
       return;
     }
     if (!res.ok || !res.body) {
-      const data = (await res.json().catch(() => null)) as
-        | { error?: string; code?: string }
-        | null;
+      const data = (await res.json().catch(() => null)) as {
+        error?: string;
+        code?: string;
+      } | null;
       setLive(null);
       setSubmitError({
         message: data?.error ?? `Request failed (${res.status})`,
@@ -269,7 +264,11 @@ export function HomeComposer({
           prev?.status === "streaming"
             ? {
                 status: "streaming",
-                data: { ...prev.data, id: meta.id, chunkCount: meta.chunkCount },
+                data: {
+                  ...prev.data,
+                  id: meta.id,
+                  chunkCount: meta.chunkCount,
+                },
               }
             : prev,
         );
@@ -445,8 +444,7 @@ export function HomeComposer({
               >
                 Jiddu Krishnamurti
               </a>
-              {t.home_origin_after_name}{" "}
-              <em>{t.home_origin_quote}</em>{" "}
+              {t.home_origin_after_name} <em>{t.home_origin_quote}</em>{" "}
               {t.home_origin_explanation}
             </p>
           </aside>

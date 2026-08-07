@@ -31,6 +31,28 @@ model Analysis {
   finishedAt        DateTime?
   reviewedAt        DateTime? // null = not yet human-reviewed; viewer shows a warning banner until set
 
+  knowledgeEntityMentions   KnowledgeEntityMention[]
+  knowledgeRelationMentions KnowledgeRelationMention[]
+  contextSessionEvents      ContextSessionEvent[]
+
+  @@index([ownerWorkosUserId, createdAt])
+}
+
+// Private, append-only replay log for Context sessions. Payloads may contain
+// transcript-derived data and must only be read through the owning Analysis.
+model ContextSessionEvent {
+  id                String   @id @default(cuid())
+  analysisId        String
+  ownerWorkosUserId String?
+  kind              String
+  elapsedMs         Int
+  sentenceIds       String   @default("[]")
+  payload           String   @default("{}")
+  createdAt         DateTime @default(now())
+
+  analysis Analysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+
+  @@index([analysisId, elapsedMs, createdAt])
   @@index([ownerWorkosUserId, createdAt])
 }
 
@@ -386,4 +408,221 @@ model FactCheck {
   reviewedAt        DateTime? // null = not yet human-reviewed; viewer shows a warning banner until set
 
   @@index([ownerWorkosUserId, createdAt])
+}
+
+// Reusable entity handles become public knowledge only after attributed
+// enrichment. Full private transcript data stays in the *Mention models.
+model KnowledgeEntity {
+  id                 String    @id @default(cuid())
+  canonicalKey       String    @unique
+  canonicalName      String
+  type               String // person | institution | organization | country | event
+  description        String?
+  imageUrl           String?
+  wikipediaUrl       String?
+  wikidataId         String?   @unique
+  profileLanguage    String?
+  profileStatus      String    @default("pending") // pending | ready | not_found | failed
+  profileFetchedAt   DateTime?
+  profileExpiresAt   DateTime?
+  publiclyEnrichedAt DateTime? // null means this is only a private-session candidate handle
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  aliases                  KnowledgeEntityAlias[]
+  snapshots                KnowledgeEntitySnapshot[]
+  sources                  KnowledgeEntitySource[]
+  outgoingRelations        KnowledgeRelation[]        @relation("KnowledgeRelationSourceEntity")
+  incomingRelations        KnowledgeRelation[]        @relation("KnowledgeRelationTargetEntity")
+  mentions                 KnowledgeEntityMention[]
+  relationMentionsAsSource KnowledgeRelationMention[] @relation("KnowledgeMentionSourceEntity")
+  relationMentionsAsTarget KnowledgeRelationMention[] @relation("KnowledgeMentionTargetEntity")
+  enrichmentJobs           KnowledgeEnrichmentJob[]
+
+  @@index([type, canonicalName])
+  @@index([profileExpiresAt])
+  @@index([publiclyEnrichedAt])
+}
+
+model KnowledgeEntityAlias {
+  id             String   @id @default(cuid())
+  entityId       String
+  displayName    String
+  normalizedName String
+  language       String   @default("und")
+  createdAt      DateTime @default(now())
+
+  entity KnowledgeEntity @relation(fields: [entityId], references: [id], onDelete: Cascade)
+
+  @@unique([entityId, normalizedName, language])
+  @@index([normalizedName, language])
+}
+
+model KnowledgeSource {
+  id          String    @id @default(cuid())
+  url         String    @unique
+  title       String
+  publisher   String
+  sourceType  String // wikipedia | official | news | reference
+  publishedAt DateTime?
+  retrievedAt DateTime  @default(now())
+  metadata    String    @default("{}")
+
+  entitySnapshots KnowledgeEntitySnapshot[]
+  entityLinks     KnowledgeEntitySource[]
+  relationLinks   KnowledgeRelationSource[]
+
+  @@index([sourceType, retrievedAt])
+  @@index([publishedAt])
+}
+
+model KnowledgeEntitySnapshot {
+  id        String   @id @default(cuid())
+  entityId  String
+  sourceId  String
+  language  String
+  summary   String
+  payload   String   @default("{}")
+  fetchedAt DateTime @default(now())
+  expiresAt DateTime
+
+  entity KnowledgeEntity @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  source KnowledgeSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@unique([entityId, sourceId, language])
+  @@index([entityId, expiresAt])
+}
+
+model KnowledgeEntitySource {
+  id           String   @id @default(cuid())
+  entityId     String
+  sourceId     String
+  relevance    Float    @default(0)
+  summary      String?
+  discoveredAt DateTime @default(now())
+  expiresAt    DateTime
+
+  entity KnowledgeEntity @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  source KnowledgeSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@unique([entityId, sourceId])
+  @@index([entityId, expiresAt])
+}
+
+model KnowledgeRelation {
+  id              String   @id @default(cuid())
+  sourceEntityId  String
+  targetEntityId  String
+  normalizedLabel String
+  label           String
+  description     String?
+  status          String   @default("related_coverage") // related_coverage | official | disputed
+  confidence      Float    @default(0)
+  firstObservedAt DateTime @default(now())
+  lastObservedAt  DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  sourceEntity KnowledgeEntity            @relation("KnowledgeRelationSourceEntity", fields: [sourceEntityId], references: [id], onDelete: Cascade)
+  targetEntity KnowledgeEntity            @relation("KnowledgeRelationTargetEntity", fields: [targetEntityId], references: [id], onDelete: Cascade)
+  sources      KnowledgeRelationSource[]
+  mentions     KnowledgeRelationMention[]
+  jobs         KnowledgeEnrichmentJob[]
+
+  @@unique([sourceEntityId, targetEntityId, normalizedLabel])
+  @@index([sourceEntityId, lastObservedAt])
+  @@index([targetEntityId, lastObservedAt])
+}
+
+model KnowledgeRelationSource {
+  id           String   @id @default(cuid())
+  relationId   String
+  sourceId     String
+  relevance    Float    @default(0)
+  summary      String?
+  discoveredAt DateTime @default(now())
+  expiresAt    DateTime
+
+  relation KnowledgeRelation @relation(fields: [relationId], references: [id], onDelete: Cascade)
+  source   KnowledgeSource   @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@unique([relationId, sourceId])
+  @@index([relationId, expiresAt])
+}
+
+// These rows are private session indexes. They must never be exposed through
+// the public/global knowledge cache without an ownership check.
+model KnowledgeEntityMention {
+  id                String   @id @default(cuid())
+  analysisId        String
+  ownerWorkosUserId String
+  entityId          String
+  localEntityId     String
+  name              String
+  kind              String
+  description       String
+  aliases           String   @default("[]")
+  sentenceIds       String   @default("[]")
+  confidence        Float
+  importance        Float
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  analysis Analysis        @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  entity   KnowledgeEntity @relation(fields: [entityId], references: [id], onDelete: Cascade)
+
+  @@unique([analysisId, entityId])
+  @@index([analysisId, localEntityId])
+  @@index([ownerWorkosUserId, createdAt])
+}
+
+model KnowledgeRelationMention {
+  id                  String   @id @default(cuid())
+  analysisId          String
+  ownerWorkosUserId   String
+  relationId          String?
+  sourceEntityId      String
+  targetEntityId      String
+  sourceLocalEntityId String
+  targetLocalEntityId String
+  localRelationId     String
+  label               String
+  description         String
+  normalizedLabel     String
+  sentenceIds         String   @default("[]")
+  confidence          Float
+  importance          Float
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  analysis     Analysis           @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  relation     KnowledgeRelation? @relation(fields: [relationId], references: [id], onDelete: SetNull)
+  sourceEntity KnowledgeEntity    @relation("KnowledgeMentionSourceEntity", fields: [sourceEntityId], references: [id], onDelete: Cascade)
+  targetEntity KnowledgeEntity    @relation("KnowledgeMentionTargetEntity", fields: [targetEntityId], references: [id], onDelete: Cascade)
+
+  @@unique([analysisId, sourceEntityId, targetEntityId, normalizedLabel])
+  @@index([analysisId, localRelationId])
+  @@index([ownerWorkosUserId, createdAt])
+}
+
+model KnowledgeEnrichmentJob {
+  id          String    @id @default(cuid())
+  targetKey   String
+  kind        String // entity_profile | entity_news | relation_news
+  status      String    @default("pending") // pending | running | complete | failed
+  entityId    String?
+  relationId  String?
+  attempts    Int       @default(0)
+  lastError   String?
+  runAfter    DateTime  @default(now())
+  lockedAt    DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  entity   KnowledgeEntity?   @relation(fields: [entityId], references: [id], onDelete: SetNull)
+  relation KnowledgeRelation? @relation(fields: [relationId], references: [id], onDelete: SetNull)
+
+  @@unique([targetKey, kind])
+  @@index([status, runAfter])
 }

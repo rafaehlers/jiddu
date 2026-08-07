@@ -1,4 +1,7 @@
-import { LIVE_CONTEXT_TERM_KINDS } from "../live-context-schema";
+import {
+  LIVE_CONTEXT_ENTITY_KINDS,
+  LIVE_CONTEXT_TERM_KINDS,
+} from "../live-context-schema";
 
 const sentenceIds = {
   type: "array",
@@ -10,7 +13,16 @@ const sentenceIds = {
 export const LIVE_CONTEXT_JSON_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["language", "tags", "topics", "terms", "segment", "summary"],
+  required: [
+    "language",
+    "tags",
+    "topics",
+    "terms",
+    "entities",
+    "relations",
+    "segment",
+    "summary",
+  ],
   properties: {
     language: { type: ["string", "null"] },
     tags: {
@@ -57,6 +69,56 @@ export const LIVE_CONTEXT_JSON_SCHEMA = {
           explanation: { type: "string" },
           sentenceIds,
           confidence: { type: "number" },
+        },
+      },
+    },
+    entities: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: [
+          "name",
+          "kind",
+          "description",
+          "aliases",
+          "sentenceIds",
+          "confidence",
+          "importance",
+        ],
+        properties: {
+          name: { type: "string" },
+          kind: { type: "string", enum: LIVE_CONTEXT_ENTITY_KINDS },
+          description: { type: "string" },
+          aliases: { type: "array", items: { type: "string" } },
+          sentenceIds,
+          confidence: { type: "number" },
+          importance: { type: "number" },
+        },
+      },
+    },
+    relations: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: [
+          "sourceName",
+          "targetName",
+          "label",
+          "description",
+          "sentenceIds",
+          "confidence",
+          "importance",
+        ],
+        properties: {
+          sourceName: { type: "string" },
+          targetName: { type: "string" },
+          label: { type: "string" },
+          description: { type: "string" },
+          sentenceIds,
+          confidence: { type: "number" },
+          importance: { type: "number" },
         },
       },
     },

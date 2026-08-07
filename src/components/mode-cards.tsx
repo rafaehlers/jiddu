@@ -3,18 +3,14 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n/provider";
+import { contextCopy } from "@/components/context/context-copy";
 
 type Mode =
-  | "detector"
-  | "factcheck"
-  | "neutrality"
-  | "explain"
-  | "slop"
-  | "review";
+  "detector" | "factcheck" | "neutrality" | "explain" | "slop" | "review";
 
 /**
  * The six lens cards double as the mode selector for the unified home. Live
- * is the seventh card and links to its dedicated real-time experience.
+ * and Context link to their dedicated real-time experiences.
  * Replaces both the PipelineSidebar (informational cards) and the mode tab
  * row inside UploadForm (navigation links) — one click switches the mode
  * in place, no page load.
@@ -26,12 +22,21 @@ export function ModeCards({
   mode: Mode;
   onChange: (mode: Mode) => void;
 }) {
-  const { t } = useI18n();
+  const { lang, t } = useI18n();
+  const context = contextCopy(lang);
 
   const cards: { key: Mode; name: string; desc: string }[] = [
     { key: "detector", name: t.mode_detector, desc: t.pipeline_fallacy_desc },
-    { key: "factcheck", name: t.mode_factcheck, desc: t.pipeline_factcheck_desc },
-    { key: "neutrality", name: t.mode_neutrality, desc: t.pipeline_neutrality_desc },
+    {
+      key: "factcheck",
+      name: t.mode_factcheck,
+      desc: t.pipeline_factcheck_desc,
+    },
+    {
+      key: "neutrality",
+      name: t.mode_neutrality,
+      desc: t.pipeline_neutrality_desc,
+    },
     { key: "explain", name: t.mode_explain, desc: t.pipeline_explain_desc },
     { key: "slop", name: t.mode_slop, desc: t.pipeline_slop_desc },
     { key: "review", name: t.mode_review, desc: t.pipeline_review_desc },
@@ -97,6 +102,23 @@ export function ModeCards({
         </div>
         <p className="hidden text-sm leading-snug text-muted sm:block">
           {t.pipeline_live_desc}
+        </p>
+      </Link>
+
+      <Link
+        href="/context"
+        className="flex cursor-pointer flex-col gap-1.5 rounded-lg border border-rule bg-paper p-3 text-left transition-colors hover:border-foreground/40 sm:p-4"
+      >
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="font-serif text-base font-medium text-foreground">
+            {context.title}
+          </h3>
+          <span className="rounded-full border border-accent/40 bg-accent/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent-hi">
+            Beta
+          </span>
+        </div>
+        <p className="hidden text-sm leading-snug text-muted sm:block">
+          {context.subtitle}
         </p>
       </Link>
     </div>

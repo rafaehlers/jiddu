@@ -7,6 +7,7 @@ import {
   ExternalLink,
   HelpCircle,
   Loader2,
+  ShieldCheck,
   X,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n/provider";
@@ -21,6 +22,16 @@ type Props = {
   verdicts?: ReadonlyMap<string, Verdict>;
   verifying?: boolean;
   showLensBadge?: boolean;
+  maxSources?: number;
+  sourcesInitiallyOpen?: boolean;
+  verificationActions?: {
+    onVerify: (claimId: string) => void;
+    verifyingClaimIds: ReadonlySet<string>;
+    errors: ReadonlyMap<string, string>;
+    verifyLabel: string;
+    reverifyLabel: string;
+    verifyingLabel: string;
+  };
 };
 
 const CLAIM_LABEL: Record<ClaimType, keyof Messages> = {
@@ -66,23 +77,44 @@ export function LiveClaimsList({
   verdicts = new Map(),
   verifying = false,
   showLensBadge = false,
+  maxSources = Number.POSITIVE_INFINITY,
+  sourcesInitiallyOpen = false,
+  verificationActions,
 }: Props) {
   const { t } = useI18n();
   if (claims.length === 0) {
-    return <div className="text-sm italic text-muted">{t.live_no_claims_yet}</div>;
+    return (
+      <div className="text-sm italic text-muted">{t.live_no_claims_yet}</div>
+    );
   }
 
   return (
     <ul className="space-y-2">
       {claims.map((claim) => {
         const verdict = verdicts.get(claim.id) ?? null;
+        const verifyingThisClaim =
+          (verifying && !verdict) ||
+          verificationActions?.verifyingClaimIds.has(claim.id) === true;
         return (
           <LiveClaimCard
-            key={claim.id}
+            key={`${claim.id}:${sourcesInitiallyOpen ? "open" : "closed"}`}
             claim={claim}
             verdict={verdict}
-            verifying={verifying && !verdict}
+            verifying={verifyingThisClaim}
             showLensBadge={showLensBadge}
+            maxSources={maxSources}
+            sourcesInitiallyOpen={sourcesInitiallyOpen}
+            verificationActions={
+              verificationActions
+                ? {
+                    onVerify: verificationActions.onVerify,
+                    error: verificationActions.errors.get(claim.id) ?? null,
+                    verifyLabel: verificationActions.verifyLabel,
+                    reverifyLabel: verificationActions.reverifyLabel,
+                    verifyingLabel: verificationActions.verifyingLabel,
+                  }
+                : null
+            }
           />
         );
       })}
@@ -95,24 +127,37 @@ function LiveClaimCard({
   verdict,
   verifying,
   showLensBadge,
+  maxSources,
+  sourcesInitiallyOpen,
+  verificationActions,
 }: {
   claim: LiveClaim;
   verdict: Verdict | null;
   verifying: boolean;
   showLensBadge: boolean;
+  maxSources: number;
+  sourcesInitiallyOpen: boolean;
+  verificationActions: {
+    onVerify: (claimId: string) => void;
+    error: string | null;
+    verifyLabel: string;
+    reverifyLabel: string;
+    verifyingLabel: string;
+  } | null;
 }) {
   const { t } = useI18n();
-  const [sourcesOpen, setSourcesOpen] = useState(false);
+  const [sourcesOpen, setSourcesOpen] = useState(sourcesInitiallyOpen);
   const verdictMeta = verdict ? VERDICT_META[verdict.verdict] : null;
   const VerdictIcon = verdictMeta?.icon;
+  const visibleSources = verdict
+    ? verdict.sources.slice(0, normalizeSourceLimit(maxSources))
+    : [];
 
   return (
     <li className="rounded-md border border-rule bg-paper p-3">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-1.5">
-          {showLensBadge ? (
-            <LiveResultTypeBadge lens="factcheck" />
-          ) : null}
+          {showLensBadge ? <LiveResultTypeBadge lens="factcheck" /> : null}
           <span className="rounded border border-blue-500/40 px-2 py-0.5 text-xs text-blue-500">
             {t[CLAIM_LABEL[claim.type]] as string}
           </span>
@@ -143,7 +188,36 @@ function LiveClaimCard({
         {verdict?.rationale ?? claim.rationale}
       </p>
 
-      {verdict && verdict.sources.length > 0 ? (
+      {verificationActions ? (
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-rule pt-2">
+          {verificationActions.error ? (
+            <p className="min-w-0 flex-1 text-xs text-red-500">
+              {verificationActions.error}
+            </p>
+          ) : (
+            <span />
+          )}
+          <button
+            type="button"
+            onClick={() => verificationActions.onVerify(claim.id)}
+            disabled={verifying}
+            className="inline-flex shrink-0 items-center gap-1 rounded-md border border-blue-500/40 px-2 py-1 text-xs font-medium text-blue-500 transition-colors hover:bg-blue-500/10 disabled:cursor-wait disabled:opacity-60"
+          >
+            {verifying ? (
+              <Loader2 className="size-3 animate-spin" />
+            ) : (
+              <ShieldCheck className="size-3" />
+            )}
+            {verifying
+              ? verificationActions.verifyingLabel
+              : verdict
+                ? verificationActions.reverifyLabel
+                : verificationActions.verifyLabel}
+          </button>
+        </div>
+      ) : null}
+
+      {verdict && visibleSources.length > 0 ? (
         <div className="mt-2">
           <button
             type="button"
@@ -151,12 +225,12 @@ function LiveClaimCard({
             className="text-xs text-muted transition-colors hover:text-foreground"
           >
             {sourcesOpen
-              ? t.fc_hide_sources(verdict.sources.length)
-              : t.fc_show_sources(verdict.sources.length)}
+              ? t.fc_hide_sources(visibleSources.length)
+              : t.fc_show_sources(visibleSources.length)}
           </button>
           {sourcesOpen ? (
             <ul className="mt-2 space-y-2">
-              {verdict.sources.map((source, index) => (
+              {visibleSources.map((source, index) => (
                 <li key={`${source.url}-${index}`} className="text-xs">
                   <a
                     href={source.url}
@@ -175,4 +249,8 @@ function LiveClaimCard({
       ) : null}
     </li>
   );
+}
+
+function normalizeSourceLimit(value: number): number {
+  return Number.isFinite(value) ? Math.max(1, Math.floor(value)) : 10_000;
 }

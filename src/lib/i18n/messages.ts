@@ -595,7 +595,8 @@ const en: Messages = {
   url_placeholder: "https://example.com/article",
   paste_placeholder: "Paste the text you want to analyze…",
   file_drop_hint: "Drop a PDF, TXT, or image — or paste a screenshot",
-  file_size_hint: "⌘V / Ctrl+V · images up to 10 MB · text up to ~200k characters",
+  file_size_hint:
+    "⌘V / Ctrl+V · images up to 10 MB · text up to ~200k characters",
   model: "Model",
   model_anthropic: "Claude (Anthropic)",
   model_openai: "GPT (OpenAI)",
@@ -723,7 +724,8 @@ const en: Messages = {
 
   mode_neutrality: "Neutrality",
   tab_neutrality: "Neutrality",
-  neutrality_hero_title: "Spot framing, attribution and source-selection patterns.",
+  neutrality_hero_title:
+    "Spot framing, attribution and source-selection patterns.",
   neutrality_hero_subtitle:
     "Drop a URL, paste text, or upload a PDF. Jiddu flags loaded language, asymmetric attribution, false equivalence and other framing patterns — without trying to label a partisan direction.",
   assess_neutrality: "Assess neutrality",
@@ -848,7 +850,8 @@ const en: Messages = {
     "References remain available for consultation, but Jiddu does not analyze them as paper content.",
   explain_previous_section: "Previous section",
   explain_next_section: "Next section",
-  explain_section_progress: (current, total) => `Section ${current} of ${total}`,
+  explain_section_progress: (current, total) =>
+    `Section ${current} of ${total}`,
   explanations_count_one: "explanation",
   explanations_count_many: "explanations",
   explain_empty: "No explanations were produced for this document.",
@@ -904,7 +907,8 @@ const en: Messages = {
   ],
   review_venue: "Target venue (optional)",
   review_venue_placeholder: "Search NeurIPS, ICML, ICLR, AAAI…",
-  review_venue_help: "Verified profiles apply official, edition-specific criteria. Other DBLP venues use a general scholarly standard.",
+  review_venue_help:
+    "Verified profiles apply official, edition-specific criteria. Other DBLP venues use a general scholarly standard.",
   review_venue_searching: "Searching DBLP…",
   review_venue_verified: "Verified rubric",
   review_venue_catalog_only: "Catalog match · general rubric",
@@ -952,7 +956,7 @@ const en: Messages = {
       title: "Adversarial paper review",
       paragraphs: [
         "Adversarial review uses a persisted asynchronous job contract. Start with multipart `POST /api/v1/adversarial-reviews` and one `file`, or JSON with a public `pdf_url`. Choose `depth=standard` for the economical pipeline or `depth=deep` for stronger reasoning and critic models. The `202` response returns an id, a status URL and `retry_after_seconds`; poll `GET /api/v1/adversarial-reviews/{id}` until `status` is `complete` or `failed`.",
-        "```\ncurl -X POST https://jiddu.app/api/v1/adversarial-reviews \\\n  -H \"X-Jiddu-Key: YOUR_KEY\" \\\n  -F \"file=@paper.pdf\" \\\n  -F \"lang=en\" \\\n  -F \"depth=deep\" \\\n  -F \"venue_profile_id=neurips-2026-main\"\n\ncurl -H \"X-Jiddu-Key: YOUR_KEY\" \\\n  https://jiddu.app/api/v1/adversarial-reviews/JOB_ID\n```",
+        '```\ncurl -X POST https://jiddu.app/api/v1/adversarial-reviews \\\n  -H "X-Jiddu-Key: YOUR_KEY" \\\n  -F "file=@paper.pdf" \\\n  -F "lang=en" \\\n  -F "depth=deep" \\\n  -F "venue_profile_id=neurips-2026-main"\n\ncurl -H "X-Jiddu-Key: YOUR_KEY" \\\n  https://jiddu.app/api/v1/adversarial-reviews/JOB_ID\n```',
         "A completed job returns the structured review, a public methodology audit and source-verification metadata, plus links to its viewer, deterministic Markdown, and print/PDF view. Optional fields are `lang`, `depth`, `venue_profile_id`, `venue`, `venue_year`, `venue_track`, `paper_type`, and `review_date`. PDFs are capped at 25 MB and 300,000 extracted characters.",
       ],
     },
@@ -960,14 +964,14 @@ const en: Messages = {
       title: "REST API authentication",
       paragraphs: [
         "The REST API is separate from MCP OAuth. Send its API key in the `X-Jiddu-Key` header. Every key belongs to one verified WorkOS account and follows that account's funding: included platform access or Jiddu Credits. Generate and manage your keys from [your account](/account?tab=api).",
-        "```\ncurl -X POST https://jiddu.app/api/v1/detect-fallacies \\\n  -H \"content-type: application/json\" \\\n  -H \"X-Jiddu-Key: YOUR_KEY\" \\\n  -d '{\"text\": \"Everyone agrees this is best, so critics must be fools.\"}'\n```",
+        '```\ncurl -X POST https://jiddu.app/api/v1/detect-fallacies \\\n  -H "content-type: application/json" \\\n  -H "X-Jiddu-Key: YOUR_KEY" \\\n  -d \'{"text": "Everyone agrees this is best, so critics must be fools."}\'\n```',
       ],
     },
     {
       title: "MCP server",
       paragraphs: [
         "For agents, connect directly to `https://jiddu.app/api/mcp`. The server exposes the five text tools plus `start_adversarial_review` and `get_adversarial_review`. Compatible MCP clients discover WorkOS AuthKit, open Jiddu sign-in and receive a resource-scoped OAuth token automatically. Accounts on the platform allowlist receive included access; every other tool call reserves and spends Jiddu Credits from the signed-in account.",
-        "Clients that still require a local stdio bridge can use `mcp-remote` without a custom authentication header; it handles the OAuth redirect:\n```\n{\n  \"mcpServers\": {\n    \"jiddu\": {\n      \"command\": \"npx\",\n      \"args\": [\"-y\", \"mcp-remote\", \"https://jiddu.app/api/mcp\"]\n    }\n  }\n}\n```",
+        'Clients that still require a local stdio bridge can use `mcp-remote` without a custom authentication header; it handles the OAuth redirect:\n```\n{\n  "mcpServers": {\n    "jiddu": {\n      "command": "npx",\n      "args": ["-y", "mcp-remote", "https://jiddu.app/api/mcp"]\n    }\n  }\n}\n```',
         "Machine-oriented setup guidance, response contracts and chaining examples are included on this page.",
       ],
     },
@@ -1038,7 +1042,7 @@ const en: Messages = {
     {
       title: "2. Automated output can be wrong",
       paragraphs: [
-        "The verdicts (\"supported\", \"contradicted\", \"mixed\", \"unverified\") and the fallacy labels are best-effort automated judgements. They can be wrong — sometimes confidently wrong.",
+        'The verdicts ("supported", "contradicted", "mixed", "unverified") and the fallacy labels are best-effort automated judgements. They can be wrong — sometimes confidently wrong.',
         "Jiddu does not assert that any statement, person, or document is true, false, lying, or deceitful. The labels are signals to prompt your own verification. Always read the cited sources and form your own conclusion.",
         "Neutrality scores, Paper Maps and paragraph-by-paragraph explanations are likewise automated interpretations, not statements of fact — the explainer describes what a text says and how it is structured, never whether its claims are correct. Audience level changes only the prose; document classifications, map statements and section-role tags are best-effort readings.",
         "Paper-review findings, novelty comparisons, severity labels, venue fit and the final recommendation are also automated judgements. They are not an official peer review, an acceptance prediction, or a substitute for a qualified human reviewer.",
@@ -1055,8 +1059,8 @@ const en: Messages = {
     {
       title: "4. Persons and public figures",
       paragraphs: [
-        "Analyses about named persons (politicians, journalists, executives) are produced by software searching public web sources. The language Jiddu uses is intentionally cautious (\"evidence does not support\", \"we could not find\") — never adopt a stronger framing than the tool emits.",
-        "If you believe a verdict is unfair or unsupported, use the \"report wrong verdict\" button on the relevant claim. The operator reviews submitted reports; abusive or repetitive reports may be discarded.",
+        'Analyses about named persons (politicians, journalists, executives) are produced by software searching public web sources. The language Jiddu uses is intentionally cautious ("evidence does not support", "we could not find") — never adopt a stronger framing than the tool emits.',
+        'If you believe a verdict is unfair or unsupported, use the "report wrong verdict" button on the relevant claim. The operator reviews submitted reports; abusive or repetitive reports may be discarded.',
       ],
     },
     {
@@ -1245,8 +1249,7 @@ const en: Messages = {
               "Up to 4 credits with all lenses; final Context search adds up to 2 credits",
           },
         ],
-        note:
-          "Rate card {rateVersion}. Unused reservations are released. Estimates can change as routing and provider prices evolve; completed usage is always visible in the account credit ledger.",
+        note: "Rate card {rateVersion}. Unused reservations are released. Estimates can change as routing and provider prices evolve; completed usage is always visible in the account credit ledger.",
       },
     },
     {
@@ -1437,7 +1440,7 @@ const en: Messages = {
     "No check-worthy claims detected yet. They will appear here as the speaker talks.",
   live_no_neutrality_yet:
     "No neutrality signals detected yet. The running assessment will appear here.",
-  live_claim_detected: "Detected live · verify after finalizing",
+  live_claim_detected: "Detected live · not yet verified",
   live_partial_verdict: "Running assessment",
   live_confidence: "Confidence",
   live_session_saved: "Session saved.",
@@ -1523,13 +1526,15 @@ const pt: Messages = {
   url_placeholder: "https://exemplo.com/artigo",
   paste_placeholder: "Cole o texto que você quer analisar…",
   file_drop_hint: "Solte PDF, TXT ou imagem — ou cole um screenshot",
-  file_size_hint: "⌘V / Ctrl+V · imagens até 10 MB · texto até ~200 mil caracteres",
+  file_size_hint:
+    "⌘V / Ctrl+V · imagens até 10 MB · texto até ~200 mil caracteres",
   model: "Modelo",
   model_anthropic: "Claude (Anthropic)",
   model_openai: "GPT (OpenAI)",
   analyze: "Analisar",
   starting: "Iniciando…",
-  form_hint: "Os comentários aparecem à medida que a análise roda. Não feche a página.",
+  form_hint:
+    "Os comentários aparecem à medida que a análise roda. Não feche a página.",
   auth_required_title: "É necessário entrar",
   auth_required_hint:
     "Crie uma conta no Jiddu ou entre para continuar. Contas conectadas usam créditos Jiddu ou o acesso incluído à plataforma.",
@@ -1593,7 +1598,8 @@ const pt: Messages = {
     "Redigindo a justificativa",
   ],
 
-  factcheck_hero_title: "Extraia todas as afirmações verificáveis de qualquer texto.",
+  factcheck_hero_title:
+    "Extraia todas as afirmações verificáveis de qualquer texto.",
   factcheck_hero_subtitle:
     "Solte uma URL, cole texto ou envie um PDF. O Jiddu separa os números, datas, citações e afirmações factuais que valem a pena conferir — pra você saber exatamente o que verificar.",
   extract_claims: "Extrair afirmações",
@@ -1651,7 +1657,8 @@ const pt: Messages = {
 
   mode_neutrality: "Imparcialidade",
   tab_neutrality: "Imparcialidade",
-  neutrality_hero_title: "Identifique padrões de enquadramento, atribuição e seleção de fontes.",
+  neutrality_hero_title:
+    "Identifique padrões de enquadramento, atribuição e seleção de fontes.",
   neutrality_hero_subtitle:
     "Solte uma URL, cole texto ou envie um PDF. O Jiddu sinaliza palavras carregadas, atribuição assimétrica, falsa equivalência e outros padrões de enquadramento — sem tentar rotular direção partidária.",
   assess_neutrality: "Avaliar imparcialidade",
@@ -1832,7 +1839,8 @@ const pt: Messages = {
   ],
   review_venue: "Venue-alvo (opcional)",
   review_venue_placeholder: "Busque NeurIPS, ICML, ICLR, AAAI…",
-  review_venue_help: "Perfis verificados aplicam critérios oficiais da edição. Outros venues do DBLP usam um padrão acadêmico geral.",
+  review_venue_help:
+    "Perfis verificados aplicam critérios oficiais da edição. Outros venues do DBLP usam um padrão acadêmico geral.",
   review_venue_searching: "Buscando no DBLP…",
   review_venue_verified: "Rubrica verificada",
   review_venue_catalog_only: "Resultado do catálogo · rubrica geral",
@@ -1855,7 +1863,8 @@ const pt: Messages = {
   review_type_negative_results: "Resultados negativos",
   review_date: "Data da revisão (opcional)",
   review_pdf_hint: "Solte exatamente um PDF final, ou clique para escolher",
-  review_file_size_hint: "Somente PDF · leitura integral · até ~300 mil caracteres",
+  review_file_size_hint:
+    "Somente PDF · leitura integral · até ~300 mil caracteres",
   review_form_hint:
     "Uma revisão completa pode levar alguns minutos. Ela roda como job em segundo plano, então você pode fechar esta página depois que começar.",
 
@@ -1880,7 +1889,7 @@ const pt: Messages = {
       title: "Revisão adversarial de paper",
       paragraphs: [
         "A revisão adversarial usa um contrato de jobs assíncronos persistidos. Inicie com `POST /api/v1/adversarial-reviews` multipart e um `file`, ou JSON com uma `pdf_url` pública. Escolha `depth=standard` para o pipeline econômico ou `depth=deep` para modelos mais fortes de raciocínio e crítica. A resposta `202` traz id, URL de status e `retry_after_seconds`; consulte `GET /api/v1/adversarial-reviews/{id}` até `status` ser `complete` ou `failed`.",
-        "```\ncurl -X POST https://jiddu.app/api/v1/adversarial-reviews \\\n  -H \"X-Jiddu-Key: SUA_CHAVE\" \\\n  -F \"file=@paper.pdf\" \\\n  -F \"lang=pt\" \\\n  -F \"depth=deep\" \\\n  -F \"venue_profile_id=neurips-2026-main\"\n\ncurl -H \"X-Jiddu-Key: SUA_CHAVE\" \\\n  https://jiddu.app/api/v1/adversarial-reviews/JOB_ID\n```",
+        '```\ncurl -X POST https://jiddu.app/api/v1/adversarial-reviews \\\n  -H "X-Jiddu-Key: SUA_CHAVE" \\\n  -F "file=@paper.pdf" \\\n  -F "lang=pt" \\\n  -F "depth=deep" \\\n  -F "venue_profile_id=neurips-2026-main"\n\ncurl -H "X-Jiddu-Key: SUA_CHAVE" \\\n  https://jiddu.app/api/v1/adversarial-reviews/JOB_ID\n```',
         "Um job concluído retorna a revisão estruturada, auditoria pública da metodologia e metadados de verificação das fontes, além de links para viewer, Markdown determinístico e impressão/PDF. Campos opcionais: `lang`, `depth`, `venue_profile_id`, `venue`, `venue_year`, `venue_track`, `paper_type` e `review_date`. PDFs têm limite de 25 MB e 300 mil caracteres extraídos.",
       ],
     },
@@ -1888,14 +1897,14 @@ const pt: Messages = {
       title: "Autenticação da REST API",
       paragraphs: [
         "A REST API é separada do OAuth do MCP. Envie a chave no cabeçalho `X-Jiddu-Key`. Cada chave pertence a uma conta WorkOS verificada e segue o financiamento dessa conta: acesso incluído da plataforma ou créditos Jiddu. Gere e administre suas chaves em [sua conta](/account?tab=api).",
-        "```\ncurl -X POST https://jiddu.app/api/v1/detect-fallacies \\\n  -H \"content-type: application/json\" \\\n  -H \"X-Jiddu-Key: SUA_CHAVE\" \\\n  -d '{\"text\": \"Todo mundo concorda que isso é o melhor, então quem critica é tolo.\"}'\n```",
+        '```\ncurl -X POST https://jiddu.app/api/v1/detect-fallacies \\\n  -H "content-type: application/json" \\\n  -H "X-Jiddu-Key: SUA_CHAVE" \\\n  -d \'{"text": "Todo mundo concorda que isso é o melhor, então quem critica é tolo."}\'\n```',
       ],
     },
     {
       title: "Servidor MCP",
       paragraphs: [
         "Para agentes, conecte-se diretamente a `https://jiddu.app/api/mcp`. O servidor expõe as cinco ferramentas de texto mais `start_adversarial_review` e `get_adversarial_review`. Clientes MCP compatíveis descobrem o WorkOS AuthKit, abrem o login do Jiddu e recebem automaticamente um token OAuth restrito ao recurso. Contas na allowlist da plataforma recebem acesso incluído; cada chamada das demais contas reserva e gasta créditos Jiddu.",
-        "Clientes que ainda exigem uma ponte stdio local podem usar `mcp-remote` sem cabeçalho de autenticação personalizado; ele conduz o redirecionamento OAuth:\n```\n{\n  \"mcpServers\": {\n    \"jiddu\": {\n      \"command\": \"npx\",\n      \"args\": [\"-y\", \"mcp-remote\", \"https://jiddu.app/api/mcp\"]\n    }\n  }\n}\n```",
+        'Clientes que ainda exigem uma ponte stdio local podem usar `mcp-remote` sem cabeçalho de autenticação personalizado; ele conduz o redirecionamento OAuth:\n```\n{\n  "mcpServers": {\n    "jiddu": {\n      "command": "npx",\n      "args": ["-y", "mcp-remote", "https://jiddu.app/api/mcp"]\n    }\n  }\n}\n```',
         "As orientações de configuração para agentes, os contratos de resposta e os exemplos de encadeamento estão incluídos nesta página.",
       ],
     },
@@ -1984,8 +1993,8 @@ const pt: Messages = {
     {
       title: "4. Pessoas e figuras públicas",
       paragraphs: [
-        "Análises sobre pessoas nomeadas (políticos, jornalistas, executivos) são produzidas por software que pesquisa fontes públicas na web. A linguagem que o Jiddu usa é intencionalmente cuidadosa (\"a evidência não sustenta\", \"não encontramos\") — não adote uma formulação mais forte do que a ferramenta emite.",
-        "Se você acha que um veredito é injusto ou sem suporte, use o botão \"reportar veredito errado\" na afirmação correspondente. O operador revisa os relatos enviados; relatos abusivos ou repetitivos podem ser descartados.",
+        'Análises sobre pessoas nomeadas (políticos, jornalistas, executivos) são produzidas por software que pesquisa fontes públicas na web. A linguagem que o Jiddu usa é intencionalmente cuidadosa ("a evidência não sustenta", "não encontramos") — não adote uma formulação mais forte do que a ferramenta emite.',
+        'Se você acha que um veredito é injusto ou sem suporte, use o botão "reportar veredito errado" na afirmação correspondente. O operador revisa os relatos enviados; relatos abusivos ou repetitivos podem ser descartados.',
       ],
     },
     {
@@ -2174,8 +2183,7 @@ const pt: Messages = {
               "Até 4 créditos com todas as lentes; a busca final de contexto adiciona até 2 créditos",
           },
         ],
-        note:
-          "Tabela {rateVersion}. Reservas não utilizadas são liberadas. As estimativas podem mudar com o roteamento e os preços dos provedores; o consumo concluído permanece visível no ledger de créditos da conta.",
+        note: "Tabela {rateVersion}. Reservas não utilizadas são liberadas. As estimativas podem mudar com o roteamento e os preços dos provedores; o consumo concluído permanece visível no ledger de créditos da conta.",
       },
     },
     {
@@ -2366,7 +2374,7 @@ const pt: Messages = {
     "Nenhuma afirmação verificável detectada ainda. Elas aparecerão aqui conforme a pessoa fala.",
   live_no_neutrality_yet:
     "Nenhum sinal de parcialidade detectado ainda. A avaliação parcial aparecerá aqui.",
-  live_claim_detected: "Detectada ao vivo · verifique após finalizar",
+  live_claim_detected: "Detectada ao vivo · ainda não verificada",
   live_partial_verdict: "Avaliação parcial",
   live_confidence: "Confiança",
   live_session_saved: "Sessão salva.",
@@ -2452,13 +2460,15 @@ const es: Messages = {
   url_placeholder: "https://ejemplo.com/articulo",
   paste_placeholder: "Pega el texto que quieres analizar…",
   file_drop_hint: "Suelta PDF, TXT o imagen — o pega un screenshot",
-  file_size_hint: "⌘V / Ctrl+V · imágenes hasta 10 MB · texto hasta ~200 mil caracteres",
+  file_size_hint:
+    "⌘V / Ctrl+V · imágenes hasta 10 MB · texto hasta ~200 mil caracteres",
   model: "Modelo",
   model_anthropic: "Claude (Anthropic)",
   model_openai: "GPT (OpenAI)",
   analyze: "Analizar",
   starting: "Iniciando…",
-  form_hint: "Los comentarios aparecen mientras corre el análisis. No cierres la página.",
+  form_hint:
+    "Los comentarios aparecen mientras corre el análisis. No cierres la página.",
   auth_required_title: "Debes iniciar sesión",
   auth_required_hint:
     "Crea una cuenta de Jiddu o inicia sesión para continuar. Las cuentas conectadas usan créditos Jiddu o el acceso incluido a la plataforma.",
@@ -2522,7 +2532,8 @@ const es: Messages = {
     "Redactando la justificación",
   ],
 
-  factcheck_hero_title: "Extrae cada afirmación verificable de cualquier texto.",
+  factcheck_hero_title:
+    "Extrae cada afirmación verificable de cualquier texto.",
   factcheck_hero_subtitle:
     "Pega una URL, escribe el texto o sube un PDF. Jiddu separa los números, fechas, citas y afirmaciones factuales que vale la pena verificar — para que sepas exactamente qué chequear.",
   extract_claims: "Extraer afirmaciones",
@@ -2580,7 +2591,8 @@ const es: Messages = {
 
   mode_neutrality: "Imparcialidad",
   tab_neutrality: "Imparcialidad",
-  neutrality_hero_title: "Identifica patrones de encuadre, atribución y selección de fuentes.",
+  neutrality_hero_title:
+    "Identifica patrones de encuadre, atribución y selección de fuentes.",
   neutrality_hero_subtitle:
     "Pega una URL, escribe el texto o sube un PDF. Jiddu marca palabras cargadas, atribución asimétrica, falsa equivalencia y otros patrones de encuadre — sin intentar etiquetar dirección partidaria.",
   assess_neutrality: "Evaluar imparcialidad",
@@ -2637,7 +2649,8 @@ const es: Messages = {
     "Conectando el argumento",
   ],
   loader_explain_map: "Construyendo el mapa del paper",
-  loader_explain_evidence: "Leyendo métodos y resultados de forma independiente",
+  loader_explain_evidence:
+    "Leyendo métodos y resultados de forma independiente",
   explain_level: "Nivel de explicación",
   level_eli5: "Niño",
   level_high_school: "Secundaria",
@@ -2705,7 +2718,8 @@ const es: Messages = {
     "Las referencias siguen disponibles para consulta, pero Jiddu no las analiza como contenido del paper.",
   explain_previous_section: "Sección anterior",
   explain_next_section: "Siguiente sección",
-  explain_section_progress: (current, total) => `Sección ${current} de ${total}`,
+  explain_section_progress: (current, total) =>
+    `Sección ${current} de ${total}`,
   explanations_count_one: "explicación",
   explanations_count_many: "explicaciones",
   explain_empty: "No se generaron explicaciones para este documento.",
@@ -2761,7 +2775,8 @@ const es: Messages = {
   ],
   review_venue: "Venue objetivo (opcional)",
   review_venue_placeholder: "Busca NeurIPS, ICML, ICLR, AAAI…",
-  review_venue_help: "Los perfiles verificados aplican criterios oficiales de la edición. Otros venues de DBLP usan un estándar académico general.",
+  review_venue_help:
+    "Los perfiles verificados aplican criterios oficiales de la edición. Otros venues de DBLP usan un estándar académico general.",
   review_venue_searching: "Buscando en DBLP…",
   review_venue_verified: "Rúbrica verificada",
   review_venue_catalog_only: "Resultado del catálogo · rúbrica general",
@@ -2784,7 +2799,8 @@ const es: Messages = {
   review_type_negative_results: "Resultados negativos",
   review_date: "Fecha de revisión (opcional)",
   review_pdf_hint: "Suelta exactamente un PDF final, o haz clic para elegir",
-  review_file_size_hint: "Solo PDF · lectura completa · hasta ~300 mil caracteres",
+  review_file_size_hint:
+    "Solo PDF · lectura completa · hasta ~300 mil caracteres",
   review_form_hint:
     "Una revisión completa puede tardar varios minutos. Se ejecuta como job en segundo plano, así que puedes cerrar esta página después de que comience.",
 
@@ -2809,7 +2825,7 @@ const es: Messages = {
       title: "Revisión adversarial de papers",
       paragraphs: [
         "La revisión adversarial usa un contrato de jobs asíncronos persistidos. Inicia con `POST /api/v1/adversarial-reviews` multipart y un `file`, o JSON con una `pdf_url` pública. Elige `depth=standard` para el pipeline económico o `depth=deep` para modelos más fuertes de razonamiento y crítica. La respuesta `202` devuelve id, URL de estado y `retry_after_seconds`; consulta `GET /api/v1/adversarial-reviews/{id}` hasta que `status` sea `complete` o `failed`.",
-        "```\ncurl -X POST https://jiddu.app/api/v1/adversarial-reviews \\\n  -H \"X-Jiddu-Key: TU_CLAVE\" \\\n  -F \"file=@paper.pdf\" \\\n  -F \"lang=es\" \\\n  -F \"depth=deep\" \\\n  -F \"venue_profile_id=neurips-2026-main\"\n\ncurl -H \"X-Jiddu-Key: TU_CLAVE\" \\\n  https://jiddu.app/api/v1/adversarial-reviews/JOB_ID\n```",
+        '```\ncurl -X POST https://jiddu.app/api/v1/adversarial-reviews \\\n  -H "X-Jiddu-Key: TU_CLAVE" \\\n  -F "file=@paper.pdf" \\\n  -F "lang=es" \\\n  -F "depth=deep" \\\n  -F "venue_profile_id=neurips-2026-main"\n\ncurl -H "X-Jiddu-Key: TU_CLAVE" \\\n  https://jiddu.app/api/v1/adversarial-reviews/JOB_ID\n```',
         "Un job completado devuelve la revisión estructurada, una auditoría pública de la metodología y metadatos de verificación de fuentes, además de enlaces al visor, Markdown determinista e impresión/PDF. Campos opcionales: `lang`, `depth`, `venue_profile_id`, `venue`, `venue_year`, `venue_track`, `paper_type` y `review_date`. Los PDF tienen un límite de 25 MB y 300.000 caracteres extraídos.",
       ],
     },
@@ -2817,14 +2833,14 @@ const es: Messages = {
       title: "Autenticación de la REST API",
       paragraphs: [
         "La REST API está separada del OAuth de MCP. Envía la clave en el encabezado `X-Jiddu-Key`. Cada clave pertenece a una cuenta WorkOS verificada y sigue la financiación de esa cuenta: acceso incluido de plataforma o créditos Jiddu. Genera y administra tus claves desde [tu cuenta](/account?tab=api).",
-        "```\ncurl -X POST https://jiddu.app/api/v1/detect-fallacies \\\n  -H \"content-type: application/json\" \\\n  -H \"X-Jiddu-Key: TU_CLAVE\" \\\n  -d '{\"text\": \"Todos están de acuerdo en que esto es lo mejor, así que quien critica es un tonto.\"}'\n```",
+        '```\ncurl -X POST https://jiddu.app/api/v1/detect-fallacies \\\n  -H "content-type: application/json" \\\n  -H "X-Jiddu-Key: TU_CLAVE" \\\n  -d \'{"text": "Todos están de acuerdo en que esto es lo mejor, así que quien critica es un tonto."}\'\n```',
       ],
     },
     {
       title: "Servidor MCP",
       paragraphs: [
         "Para agentes, conéctate directamente a `https://jiddu.app/api/mcp`. El servidor expone las cinco herramientas de texto más `start_adversarial_review` y `get_adversarial_review`. Los clientes MCP compatibles descubren WorkOS AuthKit, abren el inicio de sesión de Jiddu y reciben automáticamente un token OAuth limitado al recurso. Las cuentas en la allowlist de la plataforma reciben acceso incluido; cada llamada de las demás cuentas reserva y gasta créditos Jiddu.",
-        "Los clientes que aún necesitan un puente stdio local pueden usar `mcp-remote` sin un encabezado de autenticación personalizado; este gestiona la redirección OAuth:\n```\n{\n  \"mcpServers\": {\n    \"jiddu\": {\n      \"command\": \"npx\",\n      \"args\": [\"-y\", \"mcp-remote\", \"https://jiddu.app/api/mcp\"]\n    }\n  }\n}\n```",
+        'Los clientes que aún necesitan un puente stdio local pueden usar `mcp-remote` sin un encabezado de autenticación personalizado; este gestiona la redirección OAuth:\n```\n{\n  "mcpServers": {\n    "jiddu": {\n      "command": "npx",\n      "args": ["-y", "mcp-remote", "https://jiddu.app/api/mcp"]\n    }\n  }\n}\n```',
         "Las orientaciones de configuración para agentes, los contratos de respuesta y los ejemplos de encadenamiento están incluidos en esta página.",
       ],
     },
@@ -2913,8 +2929,8 @@ const es: Messages = {
     {
       title: "4. Personas y figuras públicas",
       paragraphs: [
-        "Los análisis sobre personas nombradas (políticos, periodistas, ejecutivos) son producidos por software que busca en fuentes públicas en la web. El lenguaje que usa Jiddu es intencionalmente cauto (\"la evidencia no respalda\", \"no encontramos\") — no adoptes una formulación más fuerte de la que emite la herramienta.",
-        "Si crees que un veredicto es injusto o sin sustento, usa el botón \"reportar veredicto incorrecto\" en la afirmación correspondiente. El operador revisa los reportes enviados; los reportes abusivos o repetitivos pueden descartarse.",
+        'Los análisis sobre personas nombradas (políticos, periodistas, ejecutivos) son producidos por software que busca en fuentes públicas en la web. El lenguaje que usa Jiddu es intencionalmente cauto ("la evidencia no respalda", "no encontramos") — no adoptes una formulación más fuerte de la que emite la herramienta.',
+        'Si crees que un veredicto es injusto o sin sustento, usa el botón "reportar veredicto incorrecto" en la afirmación correspondiente. El operador revisa los reportes enviados; los reportes abusivos o repetitivos pueden descartarse.',
       ],
     },
     {
@@ -3103,8 +3119,7 @@ const es: Messages = {
               "Hasta 4 créditos con todas las lentes; la búsqueda final de contexto añade hasta 2 créditos",
           },
         ],
-        note:
-          "Tabla {rateVersion}. Las reservas no utilizadas se liberan. Las estimaciones pueden cambiar con el enrutamiento y los precios de los proveedores; el consumo completado siempre aparece en el ledger de créditos de la cuenta.",
+        note: "Tabla {rateVersion}. Las reservas no utilizadas se liberan. Las estimaciones pueden cambiar con el enrutamiento y los precios de los proveedores; el consumo completado siempre aparece en el ledger de créditos de la cuenta.",
       },
     },
     {
@@ -3225,7 +3240,8 @@ const es: Messages = {
   guide_example: "Ejemplo",
   guide_back: "Volver al inicio",
   guide_credit_prefix: "Selección de falacias basada en",
-  guide_credit_suffix: "— todas las descripciones y ejemplos son propios de Jiddu.",
+  guide_credit_suffix:
+    "— todas las descripciones y ejemplos son propios de Jiddu.",
 
   nav_fallacies: "Guía de falacias",
   nav_slop_patterns: "Patrones de slop",
@@ -3295,7 +3311,7 @@ const es: Messages = {
     "Aún no se detectaron afirmaciones verificables. Aparecerán aquí mientras la persona habla.",
   live_no_neutrality_yet:
     "Aún no se detectaron señales de parcialidad. La evaluación parcial aparecerá aquí.",
-  live_claim_detected: "Detectada en vivo · verifica después de finalizar",
+  live_claim_detected: "Detectada en vivo · aún no verificada",
   live_partial_verdict: "Evaluación parcial",
   live_confidence: "Confianza",
   live_session_saved: "Sesión guardada.",

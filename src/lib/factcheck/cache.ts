@@ -35,9 +35,20 @@ export function normalizeForHash(s: string): string {
     .trim();
 }
 
-export function claimCacheKey(statement: string, lang: string): string {
+export function claimCacheKey(
+  statement: string,
+  lang: string,
+  contextKey?: string | null,
+): string {
   const normalized = normalizeForHash(statement);
-  return createHash("sha256").update(`${lang}:${normalized}`).digest("hex");
+  const normalizedContext = contextKey?.trim().toLocaleLowerCase() ?? "";
+  return createHash("sha256")
+    .update(
+      normalizedContext
+        ? `${lang}:${normalized}:${normalizedContext}`
+        : `${lang}:${normalized}`,
+    )
+    .digest("hex");
 }
 
 export type CachedVerdict = Verdict & { cached: true; cachedAt: Date };

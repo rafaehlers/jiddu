@@ -32,6 +32,8 @@ export type AnalyzeInput = {
    * emit them, but we filter defensively).
    */
   contextSentences?: Sentence[];
+  /** Listener-supplied page used only to disambiguate captured media. */
+  sourceUrl?: string | null;
 };
 
 export type AnalyzeOutput = {
@@ -67,6 +69,7 @@ export type ImageTranscriptionOutput = {
 export type LiveContextInput = AnalyzeInput & {
   previous: LiveContext;
   finalize?: boolean;
+  sourceUrl?: string | null;
 };
 
 export interface LlmProvider {

@@ -1,6 +1,6 @@
 import type { JidduCreditSettlement } from "@/lib/openrouter-usage";
 
-export const LIVE_TRANSCRIPTION_MODEL = "gpt-live-transcribe";
+export { LIVE_TRANSCRIPTION_MODEL } from "@/lib/model-ids";
 export const LIVE_TRANSCRIPTION_MAX_DURATION_MS = 60 * 60 * 1000;
 export const DEFAULT_LIVE_TRANSCRIPTION_USD_PER_MINUTE = 0.017;
 
@@ -43,18 +43,13 @@ export function addLiveAnalysisUsage(
     providerCostMicros:
       current.providerCostMicros + settlement.providerCostMicros,
     promptTokens: current.promptTokens + settlement.promptTokens,
-    completionTokens:
-      current.completionTokens + settlement.completionTokens,
+    completionTokens: current.completionTokens + settlement.completionTokens,
     totalTokens: current.totalTokens + settlement.totalTokens,
     reasoningTokens: current.reasoningTokens + settlement.reasoningTokens,
     cachedTokens: current.cachedTokens + settlement.cachedTokens,
     fallbackCredits: current.fallbackCredits + settlement.fallbackCredits,
-    fallbackModels: [
-      ...current.fallbackModels,
-      ...settlement.fallbackModels,
-    ],
-    analysisWindows:
-      current.analysisWindows + (hasBillableUsage ? 1 : 0),
+    fallbackModels: [...current.fallbackModels, ...settlement.fallbackModels],
+    analysisWindows: current.analysisWindows + (hasBillableUsage ? 1 : 0),
   };
 }
 

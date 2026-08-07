@@ -6,9 +6,7 @@ import { getProvider, resolveModel } from "@/lib/llm";
 import { FindingSchema, type Finding, type Sentence } from "@/lib/schema";
 import { ClaimSchema, type Claim } from "@/lib/claims-schema";
 import {
-  NEUTRALITY_VERDICTS,
   NeutralityFindingSchema,
-  TEXT_TYPES,
   type NeutralityFinding,
   type NeutralityVerdictValue,
   type TextType,
@@ -18,10 +16,7 @@ import {
   isAccessResponse,
   requireWebAnalysisAccess,
 } from "@/lib/web-analysis-access";
-import {
-  maxCreditsForCalls,
-  modelCreditRate,
-} from "@/lib/jiddu-credit-rates";
+import { maxCreditsForCalls } from "@/lib/jiddu-credit-rates";
 import {
   recordIncludedJidduCreditUsage,
   releaseJidduCreditReservation,
@@ -38,14 +33,7 @@ import { consume, rateLimitResponse } from "@/lib/rate-limit";
 import { bucketFromSettings, loadSettings } from "@/lib/settings";
 import { buildLiveAnalysisTitle } from "@/lib/live-title";
 import { normalizeLiveDurationMs } from "@/lib/live-billing";
-import {
-  normalizeLiveLenses,
-  type LiveLens,
-} from "@/lib/live-lenses";
-import {
-  findLiveRelatedLinks,
-  RELATED_LINKS_MODEL,
-} from "@/lib/llm/live-related-links";
+import { normalizeLiveLenses, type LiveLens } from "@/lib/live-lenses";
 import {
   EMPTY_LIVE_CONTEXT,
   mergeLiveContext,
@@ -53,6 +41,10 @@ import {
   sanitizeLiveContextWindow,
   type LiveContext,
 } from "@/lib/live-context-schema";
+import { syncContextKnowledgeMentions } from "@/lib/context-knowledge";
+import { recordContextSessionEvents } from "@/lib/context-session-events";
+import { normalizeCapturedSourceUrl } from "@/lib/live-source-context";
+import { resolveLiveNeutrality } from "@/lib/live-neutrality";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -65,12 +57,14 @@ type Body = {
   billingReservationId?: string;
   sessionId?: string;
   text?: string;
+  sourceUrl?: unknown;
   lang?: string;
   model?: string;
   lenses?: string[];
   timeZone?: string;
   finalize?: boolean;
   audioDurationMs?: number;
+  elapsedMs?: number;
 };
 
 type ClaimWithId = Claim & { id: string };
@@ -83,6 +77,18 @@ export async function POST(req: NextRequest) {
   if (!body) return jsonError("Invalid JSON", 400);
 
   const text = typeof body.text === "string" ? body.text : "";
+  const sourceUrlWasSupplied = Object.prototype.hasOwnProperty.call(
+    body,
+    "sourceUrl",
+  );
+  const suppliedSourceUrl = normalizeCapturedSourceUrl(body.sourceUrl);
+  if (
+    typeof body.sourceUrl === "string" &&
+    body.sourceUrl.trim() &&
+    !suppliedSourceUrl
+  ) {
+    return jsonError("Invalid captured source URL", 400);
+  }
   const lang = normalizeLang(body.lang);
   const lenses = normalizeLiveLenses(body.lenses);
   const finalize = body.finalize === true;
@@ -93,6 +99,9 @@ export async function POST(req: NextRequest) {
   const audioDurationMs = finalize
     ? normalizeLiveDurationMs(body.audioDurationMs)
     : undefined;
+  const captureElapsedMs = normalizeLiveDurationMs(
+    finalize ? body.audioDurationMs : body.elapsedMs,
+  );
 
   if (text.length > MAX_TRANSCRIPT_CHARS) {
     return jsonError("Transcript too long", 413);
@@ -107,10 +116,7 @@ export async function POST(req: NextRequest) {
   if (body.sessionId) {
     row = await prisma.analysis.findUnique({ where: { id: body.sessionId } });
     if (!row) return jsonError("Session not found", 404);
-    if (
-      access.userId &&
-      row.ownerWorkosUserId !== access.userId
-    ) {
+    if (access.userId && row.ownerWorkosUserId !== access.userId) {
       return jsonError("Session not found", 404);
     }
     if (row.source !== "live") return jsonError("Not a live session", 400);
@@ -123,7 +129,10 @@ export async function POST(req: NextRequest) {
     try {
       llm = getProvider(chosenModel.id, access.apiKey);
     } catch (err) {
-      return jsonError(err instanceof Error ? err.message : "Provider error", 400);
+      return jsonError(
+        err instanceof Error ? err.message : "Provider error",
+        400,
+      );
     }
     const id = nanoid(10);
     row = await prisma.analysis.create({
@@ -132,7 +141,7 @@ export async function POST(req: NextRequest) {
         ownerWorkosUserId: access.userId ?? null,
         status: "running",
         source: "live",
-        sourceRef: null,
+        sourceRef: suppliedSourceUrl,
         title: null,
         text: "",
         transcript: "",
@@ -147,7 +156,27 @@ export async function POST(req: NextRequest) {
       },
     });
     isNew = true;
+    try {
+      await recordContextSessionEvents({
+        analysisId: row.id,
+        ownerWorkosUserId: row.ownerWorkosUserId,
+        events: [
+          {
+            kind: "context_snapshot",
+            elapsedMs: 0,
+            sentenceIds: [],
+            payload: EMPTY_LIVE_CONTEXT,
+          },
+        ],
+      });
+    } catch (eventError) {
+      console.error("[live/analyze] initial replay event failed", eventError);
+    }
   }
+
+  const capturedSourceUrl = sourceUrlWasSupplied
+    ? suppliedSourceUrl
+    : normalizeCapturedSourceUrl(row.sourceRef);
 
   // ── Compute what's new and worth analyzing ───────────────────────────
   const existingSentences = safeJsonArray<Sentence>(row.sentences);
@@ -169,13 +198,14 @@ export async function POST(req: NextRequest) {
 
   // Skip LLM if there's not enough new content (except on finalize).
   const shouldAnalyze =
-    toAnalyze.length > 0 && (finalize || newCharCount >= MIN_NEW_CHARS_TO_ANALYZE);
-  const shouldSearchRelated =
-    finalize &&
-    lenses.includes("context") &&
-    text.trim().length > 0 &&
-    existingLiveContext.relatedLinks.length === 0;
-  const shouldCallProvider = shouldAnalyze || shouldSearchRelated;
+    toAnalyze.length > 0 &&
+    (finalize || newCharCount >= MIN_NEW_CHARS_TO_ANALYZE);
+  const shouldFinalizeNeutrality =
+    finalize && lenses.includes("neutrality") && allSentences.length > 0;
+  // Related-news discovery is intentionally absent from finalization. Public
+  // enrichment may run while capture is live, but stopping must not wait for
+  // an external news provider before the workspace can be saved.
+  const shouldCallProvider = shouldAnalyze || shouldFinalizeNeutrality;
 
   const contextSentences = existingSentences.slice(-CONTEXT_SENTENCE_COUNT);
 
@@ -211,24 +241,26 @@ export async function POST(req: NextRequest) {
     llm = getProvider(chosenModel.id, access.apiKey);
   } catch (err) {
     permit?.release();
-    return jsonError(err instanceof Error ? err.message : "Provider error", 400);
+    return jsonError(
+      err instanceof Error ? err.message : "Provider error",
+      400,
+    );
   }
 
   let reservation: JidduCreditReservationHandle | null | Response;
   try {
     reservation = shouldCallProvider
       ? await reserveWebAnalysisCredits(access, {
-          amount:
-            (shouldAnalyze
-              ? maxCreditsForCalls([chosenModel.id], lenses.length)
-              : 0) +
-            (shouldSearchRelated ? modelCreditRate(RELATED_LINKS_MODEL) : 0),
+          amount: shouldAnalyze
+            ? maxCreditsForCalls([chosenModel.id], lenses.length)
+            : shouldFinalizeNeutrality
+              ? maxCreditsForCalls([chosenModel.id], 1)
+              : 0,
           feature: "live_analysis",
           resourceId: row.id,
           metadata: {
             model: chosenModel.id,
             lenses,
-            relatedLinks: shouldSearchRelated,
           },
         })
       : null;
@@ -244,24 +276,22 @@ export async function POST(req: NextRequest) {
     return reservation;
   }
 
-  let factCheckRow: Awaited<
-    ReturnType<typeof prisma.factCheck.findUnique>
-  > = null;
-  let neutralityRow: Awaited<
-    ReturnType<typeof prisma.neutrality.findUnique>
-  > = null;
+  let factCheckRow: Awaited<ReturnType<typeof prisma.factCheck.findUnique>> =
+    null;
+  let neutralityRow: Awaited<ReturnType<typeof prisma.neutrality.findUnique>> =
+    null;
   try {
     [factCheckRow, neutralityRow] = await Promise.all([
       lenses.includes("factcheck")
         ? prisma.factCheck.upsert({
             where: { id: row.id },
-            update: {},
+            update: { sourceRef: capturedSourceUrl },
             create: {
               id: row.id,
               ownerWorkosUserId: row.ownerWorkosUserId,
               status: "running",
               source: "live",
-              sourceRef: null,
+              sourceRef: capturedSourceUrl,
               title: row.title,
               text: row.text,
               language: row.language ?? lang,
@@ -275,13 +305,13 @@ export async function POST(req: NextRequest) {
       lenses.includes("neutrality")
         ? prisma.neutrality.upsert({
             where: { id: row.id },
-            update: {},
+            update: { sourceRef: capturedSourceUrl },
             create: {
               id: row.id,
               ownerWorkosUserId: row.ownerWorkosUserId,
               status: "running",
               source: "live",
-              sourceRef: null,
+              sourceRef: capturedSourceUrl,
               title: row.title,
               text: row.text,
               language: row.language ?? lang,
@@ -302,7 +332,9 @@ export async function POST(req: NextRequest) {
     throw error;
   }
 
-  const existingClaims = safeJsonArray<ClaimWithId>(factCheckRow?.claims ?? "[]");
+  const existingClaims = safeJsonArray<ClaimWithId>(
+    factCheckRow?.claims ?? "[]",
+  );
   const existingNeutralityFindings = safeJsonArray<NeutralityFinding>(
     neutralityRow?.findings ?? "[]",
   );
@@ -324,9 +356,7 @@ export async function POST(req: NextRequest) {
         resourceId: row.id,
         metadata: { model: chosenModel.id, lenses },
         aggregateIntoLive:
-          billingReservationId &&
-          access.billing === "jiddu" &&
-          access.userId
+          billingReservationId && access.billing === "jiddu" && access.userId
             ? {
                 reservationId: billingReservationId,
                 workosUserId: access.userId,
@@ -385,11 +415,12 @@ export async function POST(req: NextRequest) {
           let windowNeutralityConfidence = 0;
           let windowNeutralityRationale = "";
           let windowTextType: TextType | null = null;
+          let finalNeutralityRecalculated = false;
 
-          if (shouldAnalyze) {
+          if (shouldAnalyze || shouldFinalizeNeutrality) {
             const tasks: Promise<void>[] = [];
 
-            if (lenses.includes("context")) {
+            if (shouldAnalyze && lenses.includes("context")) {
               tasks.push(
                 (async () => {
                   try {
@@ -400,6 +431,7 @@ export async function POST(req: NextRequest) {
                         contextSentences,
                         previous: existingLiveContext,
                         finalize,
+                        sourceUrl: capturedSourceUrl,
                       },
                       {
                         signal: abortController.signal,
@@ -417,20 +449,61 @@ export async function POST(req: NextRequest) {
                       sanitized,
                     );
                     windowLanguage ??= sanitized.language ?? null;
+                    // Persist the graph before exposing it to the browser so
+                    // rename, merge and removal controls are safe to use as
+                    // soon as the card appears. Complete the private mention
+                    // index first as well, avoiding a stale sync racing a
+                    // listener mutation from this same analysis window.
+                    await prisma.analysis.update({
+                      where: { id: row.id },
+                      data: {
+                        liveContext: JSON.stringify(nextLiveContext),
+                      },
+                    });
+                    if (row.ownerWorkosUserId) {
+                      try {
+                        await syncContextKnowledgeMentions({
+                          analysisId: row.id,
+                          ownerWorkosUserId: row.ownerWorkosUserId,
+                          context: nextLiveContext,
+                        });
+                      } catch (knowledgeError) {
+                        // Public indexing is additive; the saved private graph
+                        // remains usable even if enrichment is unavailable.
+                        console.error(
+                          "[live/analyze] knowledge sync failed",
+                          knowledgeError,
+                        );
+                      }
+                    }
+                    try {
+                      await recordContextSessionEvents({
+                        analysisId: row.id,
+                        ownerWorkosUserId: row.ownerWorkosUserId,
+                        events: [
+                          {
+                            kind: "context_snapshot",
+                            elapsedMs: captureElapsedMs,
+                            sentenceIds: contextSentenceIds(nextLiveContext),
+                            payload: nextLiveContext,
+                          },
+                        ],
+                      });
+                    } catch (eventError) {
+                      console.error(
+                        "[live/analyze] context replay event failed",
+                        eventError,
+                      );
+                    }
                     send("context", nextLiveContext);
                   } catch (err) {
-                    sendLensError(
-                      send,
-                      "context",
-                      err,
-                      abortController.signal,
-                    );
+                    sendLensError(send, "context", err, abortController.signal);
                   }
                 })(),
               );
             }
 
-            if (lenses.includes("fallacy")) {
+            if (shouldAnalyze && lenses.includes("fallacy")) {
               tasks.push(
                 (async () => {
                   let observedModelOutput = false;
@@ -475,7 +548,7 @@ export async function POST(req: NextRequest) {
               );
             }
 
-            if (lenses.includes("factcheck") && factCheckRow) {
+            if (shouldAnalyze && lenses.includes("factcheck") && factCheckRow) {
               tasks.push(
                 (async () => {
                   let observedModelOutput = false;
@@ -487,7 +560,12 @@ export async function POST(req: NextRequest) {
                   );
                   try {
                     for await (const event of llm.extractClaimsStream(
-                      { sentences: toAnalyze, lang, contextSentences },
+                      {
+                        sentences: toAnalyze,
+                        lang,
+                        contextSentences,
+                        sourceUrl: capturedSourceUrl,
+                      },
                       {
                         signal: abortController.signal,
                         onUsage: (usage) => usages.push(usage),
@@ -518,6 +596,19 @@ export async function POST(req: NextRequest) {
                         ...parsed.data,
                       };
                       newClaims.push(stored);
+                      // Make the individual verification action usable the
+                      // instant the claim reaches the browser. Persist first
+                      // so a fast click cannot race the end-of-window update
+                      // and receive "Claim not found".
+                      await prisma.factCheck.update({
+                        where: { id: row.id },
+                        data: {
+                          claims: JSON.stringify([
+                            ...existingClaims,
+                            ...newClaims,
+                          ]),
+                        },
+                      });
                       send("claim", stored);
                     }
                   } catch (err) {
@@ -532,16 +623,35 @@ export async function POST(req: NextRequest) {
               );
             }
 
-            if (lenses.includes("neutrality") && neutralityRow) {
+            if (
+              (shouldAnalyze || shouldFinalizeNeutrality) &&
+              lenses.includes("neutrality") &&
+              neutralityRow
+            ) {
               tasks.push(
                 (async () => {
                   let observedModelOutput = false;
+                  let finalResetSent = false;
+                  const neutralitySentences = finalize
+                    ? allSentences
+                    : toAnalyze;
                   const seen = new Set(
-                    existingNeutralityFindings.map(neutralityFindingKey),
+                    finalize
+                      ? []
+                      : existingNeutralityFindings.map(neutralityFindingKey),
                   );
+                  const beginFinalAssessment = () => {
+                    if (!finalize || finalResetSent) return;
+                    finalResetSent = true;
+                    send("neutralityReset", {});
+                  };
                   try {
                     for await (const event of llm.analyzeNeutralityStream(
-                      { sentences: toAnalyze, lang, contextSentences },
+                      {
+                        sentences: neutralitySentences,
+                        lang,
+                        contextSentences: finalize ? [] : contextSentences,
+                      },
                       {
                         signal: abortController.signal,
                         onUsage: (usage) => usages.push(usage),
@@ -552,7 +662,12 @@ export async function POST(req: NextRequest) {
                         observedModelOutput = true;
                       }
                       if (event.type === "finding") {
-                        if (!isAnchoredToWindow(event.finding, toAnalyze)) {
+                        if (
+                          !isAnchoredToWindow(
+                            event.finding,
+                            neutralitySentences,
+                          )
+                        ) {
                           continue;
                         }
                         const parsed = NeutralityFindingSchema.safeParse(
@@ -561,10 +676,13 @@ export async function POST(req: NextRequest) {
                         if (!parsed.success) continue;
                         const key = neutralityFindingKey(parsed.data);
                         if (seen.has(key)) continue;
+                        beginFinalAssessment();
                         seen.add(key);
                         newNeutralityFindings.push(parsed.data);
                         send("neutralityFinding", parsed.data);
                       } else if (event.type === "verdict") {
+                        beginFinalAssessment();
+                        if (finalize) finalNeutralityRecalculated = true;
                         windowNeutralityVerdict = event.verdict;
                         windowNeutralityConfidence = event.confidence;
                         windowNeutralityRationale = event.rationale;
@@ -592,29 +710,54 @@ export async function POST(req: NextRequest) {
             }
 
             await Promise.all(tasks);
-          }
 
-          if (shouldSearchRelated) {
+            const replayEvents = [
+              ...newFindings.map((finding) => ({
+                kind: "finding_detected" as const,
+                elapsedMs: captureElapsedMs,
+                sentenceIds: finding.sentenceIds,
+                payload: finding,
+              })),
+              ...newClaims.map((claim) => ({
+                kind: "claim_detected" as const,
+                elapsedMs: captureElapsedMs,
+                sentenceIds: claim.sentenceIds,
+                payload: claim,
+              })),
+              ...newNeutralityFindings.map((finding) => ({
+                kind: "neutrality_finding_detected" as const,
+                elapsedMs: captureElapsedMs,
+                sentenceIds: finding.sentenceIds,
+                payload: finding,
+              })),
+              ...(windowNeutralityVerdict
+                ? [
+                    {
+                      kind: "neutrality_assessed" as const,
+                      elapsedMs: captureElapsedMs,
+                      sentenceIds: toAnalyze.flatMap(
+                        (sentence) => sentence.id,
+                      ),
+                      payload: {
+                        verdict: windowNeutralityVerdict,
+                        confidence: windowNeutralityConfidence,
+                        rationale: windowNeutralityRationale,
+                      },
+                    },
+                  ]
+                : []),
+            ];
             try {
-              const relatedLinks = await findLiveRelatedLinks(
-                {
-                  context: nextLiveContext,
-                  transcript: text,
-                  lang,
-                },
-                {
-                  signal: abortController.signal,
-                  apiKey: access.apiKey,
-                  onUsage: (usage) => usages.push(usage),
-                },
-              );
-              fallbackModels.push(RELATED_LINKS_MODEL);
-              nextLiveContext = { ...nextLiveContext, relatedLinks };
-              send("context", nextLiveContext);
-            } catch (err) {
-              sendLensError(send, "context", err, abortController.signal);
+              await recordContextSessionEvents({
+                analysisId: row.id,
+                ownerWorkosUserId: row.ownerWorkosUserId,
+                events: replayEvents,
+              });
+            } catch (eventError) {
+              console.error("[live/analyze] replay events failed", eventError);
             }
           }
+
           await settle();
 
           // ── Persist ────────────────────────────────────────────────────
@@ -628,17 +771,22 @@ export async function POST(req: NextRequest) {
               : allSentences.slice(0, committedCount);
           const allFindings = [...existingFindings, ...newFindings];
           const allClaims = [...existingClaims, ...newClaims];
-          const allNeutralityFindings = [
-            ...existingNeutralityFindings,
-            ...newNeutralityFindings,
-          ];
+          const allNeutralityFindings = finalize
+            ? finalNeutralityRecalculated
+              ? newNeutralityFindings
+              : existingNeutralityFindings
+            : [...existingNeutralityFindings, ...newNeutralityFindings];
           const neutrality = neutralityRow
-            ? mergeNeutralityVerdict(neutralityRow, {
-                verdict: windowNeutralityVerdict,
-                confidence: windowNeutralityConfidence,
-                rationale: windowNeutralityRationale,
-                textType: windowTextType,
-              })
+            ? resolveLiveNeutrality(
+                neutralityRow,
+                {
+                  verdict: windowNeutralityVerdict,
+                  confidence: windowNeutralityConfidence,
+                  rationale: windowNeutralityRationale,
+                  textType: windowTextType,
+                },
+                finalize && finalNeutralityRecalculated,
+              )
             : null;
 
           // On finalize, derive score from density and severity. Otherwise let
@@ -664,6 +812,7 @@ export async function POST(req: NextRequest) {
               where: { id: row.id },
               data: {
                 status: finalize ? "complete" : "running",
+                sourceRef: capturedSourceUrl,
                 text,
                 transcript: text,
                 sentences: JSON.stringify(persistedSentences),
@@ -671,7 +820,6 @@ export async function POST(req: NextRequest) {
                 score: aggregateScore,
                 title,
                 summary: aggregateSummary || null,
-                liveContext: JSON.stringify(nextLiveContext),
                 language: windowLanguage ?? row.language ?? lang,
                 finishedAt,
                 audioDurationMs,
@@ -682,6 +830,7 @@ export async function POST(req: NextRequest) {
                   where: { id: row.id },
                   data: {
                     status: finalize ? "complete" : "running",
+                    sourceRef: capturedSourceUrl,
                     text,
                     title,
                     language: windowLanguage ?? factCheckRow.language ?? lang,
@@ -696,6 +845,7 @@ export async function POST(req: NextRequest) {
                   where: { id: row.id },
                   data: {
                     status: finalize ? "complete" : "running",
+                    sourceRef: capturedSourceUrl,
                     text,
                     title,
                     language: windowLanguage ?? neutralityRow.language ?? lang,
@@ -720,7 +870,7 @@ export async function POST(req: NextRequest) {
             totalClaims: allClaims.length,
             newNeutralityFindings: newNeutralityFindings.length,
             totalNeutralityFindings: allNeutralityFindings.length,
-            context: nextLiveContext,
+            neutralityFindings: allNeutralityFindings,
             ...(neutrality ? { neutrality } : {}),
             lenses,
             score: aggregateScore,
@@ -799,6 +949,19 @@ function neutralityFindingKey(finding: NeutralityFinding): string {
   return `${[...finding.sentenceIds].sort().join(",")}::${finding.issue}`;
 }
 
+function contextSentenceIds(context: LiveContext): string[] {
+  return Array.from(
+    new Set([
+      ...context.tags.flatMap((tag) => tag.sentenceIds),
+      ...context.topics.flatMap((topic) => topic.sentenceIds),
+      ...context.terms.flatMap((term) => term.sentenceIds),
+      ...context.entities.flatMap((entity) => entity.sentenceIds),
+      ...context.relations.flatMap((relation) => relation.sentenceIds),
+      ...context.segments.flatMap((segment) => segment.sentenceIds),
+    ]),
+  );
+}
+
 function isAnchoredToWindow(
   value: { sentenceIds: string[] },
   sentences: Sentence[],
@@ -821,66 +984,6 @@ function sendLensError(
   send("lensError", { lens, error: message });
 }
 
-const NEUTRALITY_RANK: Record<NeutralityVerdictValue, number> = {
-  neutral: 0,
-  partisan_lean: 1,
-  explicitly_partisan: 2,
-  manipulation: 3,
-};
-
-function mergeNeutralityVerdict(
-  current:
-    | {
-        verdict: string;
-        confidence: number;
-        rationale: string | null;
-        textType: string | null;
-      }
-    | null,
-  window: {
-    verdict: NeutralityVerdictValue | null;
-    confidence: number;
-    rationale: string;
-    textType: TextType | null;
-  },
-): {
-  verdict: NeutralityVerdictValue;
-  confidence: number;
-  rationale: string;
-  textType: TextType;
-} {
-  const currentVerdict = normalizeNeutralityVerdict(current?.verdict);
-  const useWindow =
-    window.verdict !== null &&
-    (current?.verdict === "pending" ||
-      NEUTRALITY_RANK[window.verdict] > NEUTRALITY_RANK[currentVerdict] ||
-      (window.verdict === currentVerdict &&
-        window.confidence >= (current?.confidence ?? 0)));
-
-  return {
-    verdict: useWindow ? window.verdict! : currentVerdict,
-    confidence: useWindow
-      ? window.confidence
-      : Math.max(0, current?.confidence ?? 0),
-    rationale: useWindow
-      ? window.rationale
-      : current?.rationale ?? window.rationale,
-    textType: window.textType ?? normalizeTextType(current?.textType),
-  };
-}
-
-function normalizeNeutralityVerdict(value: unknown): NeutralityVerdictValue {
-  return NEUTRALITY_VERDICTS.includes(value as NeutralityVerdictValue)
-    ? (value as NeutralityVerdictValue)
-    : "neutral";
-}
-
-function normalizeTextType(value: unknown): TextType {
-  return TEXT_TYPES.includes(value as TextType)
-    ? (value as TextType)
-    : "informational";
-}
-
 async function deleteLiveRows(id: string): Promise<void> {
   await prisma.$transaction([
     prisma.factCheck.deleteMany({ where: { id } }),
@@ -895,7 +998,10 @@ async function deleteLiveRows(id: string): Promise<void> {
  * sentences are still "the same" sentence after a re-split (the trailing
  * partial can absorb new text and change between calls).
  */
-function countMatchingPrefix(existing: Sentence[], current: Sentence[]): number {
+function countMatchingPrefix(
+  existing: Sentence[],
+  current: Sentence[],
+): number {
   const max = Math.min(existing.length, current.length);
   let i = 0;
   while (i < max && existing[i].text === current[i].text) i++;

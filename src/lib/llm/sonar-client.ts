@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 
-export const SONAR_MODEL = "perplexity/sonar-reasoning-pro";
+export { SONAR_MODEL } from "@/lib/model-ids";
 
 const OPENROUTER_BASE = "https://openrouter.ai/api/v1";
 const REFERER = process.env.OPENROUTER_REFERER || "https://jiddu.app";

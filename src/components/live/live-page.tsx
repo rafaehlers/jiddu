@@ -68,12 +68,14 @@ export function LivePage() {
     transcript: session.transcript,
     active: session.state === "live",
     language: lang,
+    elapsedMs: session.elapsedMs,
     lenses: sessionLenses,
     intervalMs: analysisIntervalMs,
   });
   const claimVerification = useLiveClaimVerification(
     analysis.sessionId,
     analysis.claims,
+    session.elapsedMs,
   );
 
   const isRunning =

@@ -24,6 +24,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${BASE_URL}/slop`, changeFrequency: "weekly", priority: 0.9 },
     { url: `${BASE_URL}/review`, changeFrequency: "weekly", priority: 0.9 },
     { url: `${BASE_URL}/live`, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${BASE_URL}/context`, changeFrequency: "weekly", priority: 0.8 },
     { url: `${BASE_URL}/fallacies`, changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE_URL}/slop-patterns`, changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE_URL}/how-it-works`, changeFrequency: "monthly", priority: 0.7 },

@@ -159,6 +159,7 @@ export async function POST(
               lang,
               signal: abortController.signal,
               apiKey: access.apiKey,
+              sourceUrl: fc.sourceRef,
             });
             localRefreshCounts[claim.id] = (localRefreshCounts[claim.id] ?? 0) + 1;
             if (result.cached) cacheHits++;

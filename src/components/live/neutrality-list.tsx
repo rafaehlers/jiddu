@@ -14,12 +14,14 @@ type Props = {
   findings: NeutralityFinding[];
   verdict: LiveNeutralityVerdict | null;
   showLensBadge?: boolean;
+  verdictLabel?: string;
 };
 
 export function LiveNeutralityList({
   findings,
   verdict,
   showLensBadge = false,
+  verdictLabel,
 }: Props) {
   const { t } = useI18n();
   if (findings.length === 0 && !verdict) {
@@ -48,7 +50,7 @@ export function LiveNeutralityList({
                     <LiveResultTypeBadge lens="neutrality" />
                   ) : null}
                   <span className="text-xs font-semibold uppercase tracking-wide">
-                    {t.live_partial_verdict}
+                    {verdictLabel ?? t.live_partial_verdict}
                   </span>
                 </div>
                 <span className="text-sm font-medium">

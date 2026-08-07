@@ -31,6 +31,10 @@ type Options = {
   /** Whether the live session is currently active (true → run the timer). */
   active: boolean;
   language: "en" | "pt" | "es";
+  /** Listener-supplied page whose tab audio is being captured. */
+  sourceUrl?: string | null;
+  /** Current capture playhead, used to persist Context replay events. */
+  elapsedMs?: number;
   lenses: LiveLens[];
   /** Minimum new text for the periodic slow-growth fallback. */
   timerMinDeltaChars?: number;
@@ -46,6 +50,9 @@ type Result = {
   context: LiveContext;
   score: number | null;
   sessionId: string | null;
+  /** Model metadata reported by the active analysis pipeline. */
+  model: string | null;
+  provider: string | null;
   /** True between firing an analyze call and getting the `done` event. */
   isAnalyzing: boolean;
   /** Last error from analyze; cleared on next successful call. */
@@ -56,6 +63,8 @@ type Result = {
    * session id (so the caller can redirect to the persisted analysis view).
    */
   finalize: (audioDurationMs?: number) => Promise<string | null>;
+  /** Apply an owner-authored correction returned by the context session API. */
+  applyContextMutation: (context: LiveContext, claims: LiveClaim[]) => void;
 };
 
 export function useLiveAnalysis({
@@ -63,6 +72,8 @@ export function useLiveAnalysis({
   transcript,
   active,
   language,
+  sourceUrl = null,
+  elapsedMs = 0,
   lenses,
   timerMinDeltaChars = 120,
   intervalMs = 30_000,
@@ -77,6 +88,8 @@ export function useLiveAnalysis({
   const [context, setContext] = useState<LiveContext>(EMPTY_LIVE_CONTEXT);
   const [score, setScore] = useState<number | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [model, setModel] = useState<string | null>(null);
+  const [provider, setProvider] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lensErrors, setLensErrors] = useState<
@@ -88,11 +101,15 @@ export function useLiveAnalysis({
   // synced via an effect (assigning during render trips React 19's lint).
   const transcriptRef = useRef(transcript);
   const languageRef = useRef(language);
+  const sourceUrlRef = useRef(sourceUrl);
+  const elapsedMsRef = useRef(elapsedMs);
   const lensesRef = useRef(lenses);
   const billingReservationIdRef = useRef(billingReservationId);
   useEffect(() => {
     transcriptRef.current = transcript;
     languageRef.current = language;
+    sourceUrlRef.current = sourceUrl;
+    elapsedMsRef.current = elapsedMs;
     lensesRef.current = lenses;
     billingReservationIdRef.current = billingReservationId;
   });
@@ -112,6 +129,8 @@ export function useLiveAnalysis({
       setContext(EMPTY_LIVE_CONTEXT);
       setScore(null);
       setSessionId(null);
+      setModel(null);
+      setProvider(null);
       sessionIdRef.current = null;
       lastAnalyzedLengthRef.current = 0;
       setError(null);
@@ -151,9 +170,11 @@ export function useLiveAnalysis({
             billingReservationId: billingReservationIdRef.current,
             sessionId: sessionIdRef.current,
             text,
+            sourceUrl: sourceUrlRef.current,
             lang: languageRef.current,
             lenses: lensesRef.current,
             timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            elapsedMs: elapsedMsRef.current,
             finalize,
             audioDurationMs: finalize ? audioDurationMs : undefined,
           }),
@@ -169,11 +190,17 @@ export function useLiveAnalysis({
         for await (const ev of readSse(res, ctrl.signal)) {
           if (ev.event === "meta") {
             try {
-              const meta = JSON.parse(ev.data) as { id: string };
+              const meta = JSON.parse(ev.data) as {
+                id: string;
+                model?: string;
+                provider?: string;
+              };
               if (meta.id) {
                 sessionIdRef.current = meta.id;
                 setSessionId(meta.id);
               }
+              if (meta.model) setModel(meta.model);
+              if (meta.provider) setProvider(meta.provider);
             } catch {
               /* ignore parse */
             }
@@ -219,6 +246,8 @@ export function useLiveAnalysis({
             } catch {
               /* ignore */
             }
+          } else if (ev.event === "neutralityReset") {
+            setNeutralityFindings([]);
           } else if (ev.event === "neutralityVerdict") {
             try {
               setNeutralityVerdict(
@@ -242,7 +271,7 @@ export function useLiveAnalysis({
                 analyzed?: boolean;
                 finalize?: boolean;
                 neutrality?: LiveNeutralityVerdict;
-                context?: unknown;
+                neutralityFindings?: NeutralityFinding[];
               };
               if (data.id) {
                 sessionIdRef.current = data.id;
@@ -252,8 +281,9 @@ export function useLiveAnalysis({
               if (data.neutrality) {
                 setNeutralityVerdict(data.neutrality);
               }
-              const parsedContext = LiveContextSchema.safeParse(data.context);
-              if (parsedContext.success) setContext(parsedContext.data);
+              if (Array.isArray(data.neutralityFindings)) {
+                setNeutralityFindings(data.neutralityFindings);
+              }
               if (data.analyzed || data.finalize) {
                 lastAnalyzedLengthRef.current = text.length;
               }
@@ -318,9 +348,20 @@ export function useLiveAnalysis({
     return () => window.clearInterval(id);
   }, [active, intervalMs, timerMinDeltaChars, runAnalyze]);
 
-  const finalize = useCallback(async (audioDurationMs?: number) => {
-    return runAnalyze(true, audioDurationMs);
-  }, [runAnalyze]);
+  const finalize = useCallback(
+    async (audioDurationMs?: number) => {
+      return runAnalyze(true, audioDurationMs);
+    },
+    [runAnalyze],
+  );
+
+  const applyContextMutation = useCallback(
+    (nextContext: LiveContext, nextClaims: LiveClaim[]) => {
+      setContext(nextContext);
+      setClaims(nextClaims);
+    },
+    [],
+  );
 
   return {
     findings,
@@ -330,10 +371,13 @@ export function useLiveAnalysis({
     context,
     score,
     sessionId,
+    model,
+    provider,
     isAnalyzing,
     error,
     lensErrors,
     finalize,
+    applyContextMutation,
   };
 }
 

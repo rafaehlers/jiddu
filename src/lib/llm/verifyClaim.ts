@@ -15,6 +15,7 @@ import {
 } from "../verify-claim-prompt";
 import type { Claim } from "../claims-schema";
 import type { Lang } from "../fallacies";
+import { normalizeCapturedSourceUrl } from "../live-source-context";
 import {
   claimCacheKey,
   getCachedVerdict,
@@ -44,13 +45,15 @@ export async function verifyClaim(
     signal?: AbortSignal;
     force?: boolean;
     apiKey?: string;
+    sourceUrl?: string | null;
     onUsage?: (usage: OpenRouterUsage) => void;
   },
 ): Promise<Verdict & { cached: boolean; usage?: OpenRouterUsage }> {
   // Cache lookup first. Hash is keyed on language so identical statements
   // in different languages don't collide. When `force` is set we skip the
   // read but still write the fresh result back so subsequent calls hit.
-  const hash = claimCacheKey(claim.statement, opts.lang);
+  const sourceUrl = normalizeCapturedSourceUrl(opts.sourceUrl);
+  const hash = claimCacheKey(claim.statement, opts.lang, sourceUrl);
   if (!opts.force) {
     const cached = await getCachedVerdict(hash);
     if (cached) {
@@ -68,7 +71,14 @@ export async function verifyClaim(
       model: VERIFY_MODEL,
       messages: [
         { role: "system", content: buildVerifySystemPrompt(opts.lang) },
-        { role: "user", content: buildVerifyUserPrompt(claim.statement, claim.type) },
+        {
+          role: "user",
+          content: buildVerifyUserPrompt(
+            claim.statement,
+            claim.type,
+            sourceUrl,
+          ),
+        },
       ],
       // Sonar's provider default can reserve its full 65K output window.
       // Verdict JSON is compact; cap it so OpenRouter does not reject a

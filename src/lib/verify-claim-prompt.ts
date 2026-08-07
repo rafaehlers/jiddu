@@ -48,8 +48,17 @@ STATE-CONTROLLED (stateControlled boolean) — set to true ONLY for outlets whos
 When in doubt about a verdict, return "unverified" with a low confidence. Do not invent.`;
 }
 
-export function buildVerifyUserPrompt(statement: string, type: string): string {
+export function buildVerifyUserPrompt(
+  statement: string,
+  type: string,
+  sourceUrl?: string | null,
+): string {
   return `Fact-check the following claim. The claim is of type "${type}".
+
+Listener-supplied captured source page:
+${sourceUrl || "(none supplied)"}
+
+Use the publisher, URL path and page topic only to disambiguate the speaker, event and intended entities. The supplied URL is not proof. Treat it as evidence only if web search retrieves the page contents and those contents directly support or contradict the claim.
 
 Claim:
 ${statement}`;
