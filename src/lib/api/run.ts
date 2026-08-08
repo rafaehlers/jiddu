@@ -10,7 +10,9 @@
 
 import { getProvider } from "@/lib/llm";
 import { DEFAULT_MODEL_CHAIN, withModelFallback } from "@/lib/llm/fallback";
-import { verifyClaim, VERIFY_MODEL } from "@/lib/llm/verifyClaim";
+import { verifyClaim } from "@/lib/llm/verifyClaim";
+import { FACTCHECK_FAST_MODEL } from "@/lib/model-ids";
+import type { PerplexitySearchModelSetting } from "@/lib/settings";
 import { ingestText } from "@/lib/ingest/text";
 import { splitSentences } from "@/lib/sentences";
 import { splitBlocks } from "@/lib/paragraphs";
@@ -43,6 +45,7 @@ export type RunOpts = {
     cached: boolean;
     usage?: OpenRouterUsage;
   }) => void;
+  factCheckModel?: PerplexitySearchModelSetting;
 };
 
 const VERIFY_CONCURRENCY = 6;
@@ -268,6 +271,7 @@ export async function runFactCheck(
   const { text: clean } = prep(text);
   const lang = opts?.lang ?? "en";
   const maxClaims = Math.max(1, Math.floor(opts?.maxClaims ?? 10));
+  const verifyModel = opts?.factCheckModel ?? FACTCHECK_FAST_MODEL;
   const sentences = splitSentences(clean);
   if (sentences.length === 0) throw new NoUnitsError();
 
@@ -311,10 +315,11 @@ export async function runFactCheck(
           lang,
           signal: opts?.signal,
           apiKey: opts?.apiKey,
+          model: verifyModel,
           onUsage: opts?.onUsage,
         });
         opts?.onVerificationUsed?.({
-          model: VERIFY_MODEL,
+          model: r.model,
           cached: r.cached,
         });
         verdicts[idx] = {
@@ -333,7 +338,7 @@ export async function runFactCheck(
           rationale:
             err instanceof Error ? `Verification failed: ${err.message}` : "Verification failed.",
           sources: [],
-          model: VERIFY_MODEL,
+          model: verifyModel,
         };
       }
     }

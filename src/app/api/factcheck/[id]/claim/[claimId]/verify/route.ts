@@ -1,9 +1,14 @@
 import { NextRequest } from "next/server";
 import { recordContextSessionEvents } from "@/lib/context-session-events";
 import { prisma } from "@/lib/db";
-import { verifyClaim, VERIFY_MODEL } from "@/lib/llm/verifyClaim";
+import { verifyClaim } from "@/lib/llm/verifyClaim";
 import { consume, ipFromRequest, rateLimitResponse } from "@/lib/rate-limit";
-import { bucketFromSettings, loadSettings } from "@/lib/settings";
+import {
+  bucketFromSettings,
+  factCheckModelForAttempt,
+  loadSettings,
+  loadStringSettings,
+} from "@/lib/settings";
 import type { Claim } from "@/lib/claims-schema";
 import type { Verdict } from "@/lib/verdict-schema";
 import type { Lang } from "@/lib/fallacies";
@@ -31,7 +36,10 @@ export async function POST(
   const access = await requireWebAnalysisAccess();
   if (isAccessResponse(access)) return access;
 
-  const settings = await loadSettings();
+  const [settings, stringSettings] = await Promise.all([
+    loadSettings(),
+    loadStringSettings(),
+  ]);
   const rl = consume(
     `verify1:${ipFromRequest(req)}`,
     bucketFromSettings(settings, "rate.singleVerify"),
@@ -78,18 +86,19 @@ export async function POST(
   const lang = (fc.language && ["en", "pt", "es"].includes(fc.language)
     ? fc.language
     : "en") as Lang;
+  const verifyModel = factCheckModelForAttempt(stringSettings, currentCount);
 
   const reservation = await reserveWebAnalysisCredits(access, {
-    amount: modelCreditRate(VERIFY_MODEL),
+    amount: modelCreditRate(verifyModel),
     feature: "factcheck_verify",
     resourceId: id,
-    metadata: { claimId, forcedRefresh: true },
+    metadata: { claimId, forcedRefresh: true, model: verifyModel },
   });
   if (isCreditResponse(reservation)) return reservation;
   const settleUsage = createWebAnalysisUsageSettlement(access, reservation, {
     feature: "factcheck_verify",
     resourceId: id,
-    metadata: { claimId, forcedRefresh: true },
+    metadata: { claimId, forcedRefresh: true, model: verifyModel },
   });
 
   // Force a fresh Sonar call — the per-claim refresh button is the user
@@ -101,6 +110,7 @@ export async function POST(
       force: true,
       apiKey: access.apiKey,
       sourceUrl: fc.sourceRef,
+      model: verifyModel,
     });
   } catch (err) {
     await releaseJidduCreditReservation(reservation);
@@ -130,6 +140,7 @@ export async function POST(
         verifyStatus:
           fc.verifyStatus === "none" ? "complete" : fc.verifyStatus,
         verifyFinishedAt: new Date(),
+        verifyModel,
       },
     });
     try {
@@ -155,7 +166,7 @@ export async function POST(
   } finally {
     await settleUsage({
       usages: usage ? [usage] : [],
-      fallbackModels: [VERIFY_MODEL],
+      fallbackModels: [verifyModel],
     });
   }
 

@@ -39,15 +39,13 @@ export function claimCacheKey(
   statement: string,
   lang: string,
   contextKey?: string | null,
+  model?: string | null,
 ): string {
   const normalized = normalizeForHash(statement);
   const normalizedContext = contextKey?.trim().toLocaleLowerCase() ?? "";
+  const normalizedModel = model?.trim().toLocaleLowerCase() ?? "";
   return createHash("sha256")
-    .update(
-      normalizedContext
-        ? `${lang}:${normalized}:${normalizedContext}`
-        : `${lang}:${normalized}`,
-    )
+    .update([lang, normalized, normalizedContext, normalizedModel].join(":"))
     .digest("hex");
 }
 

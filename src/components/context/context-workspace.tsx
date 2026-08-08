@@ -51,7 +51,11 @@ import { ContextActivityLog } from "./context-activity-log";
 
 const MAX_SESSION_MS = 60 * 60 * 1_000;
 
-export function ContextWorkspace() {
+export function ContextWorkspace({
+  searchModels,
+}: {
+  searchModels: { news: string; factCheck: string };
+}) {
   const { lang, setLang } = useI18n();
   const copy = contextCopy(lang);
   const { user, loading: authLoading } = useAuth();
@@ -495,6 +499,8 @@ export function ContextWorkspace() {
           profileRequests={enrichment.activity.profileRequests}
           newsRequests={enrichment.activity.newsRequests}
           verificationRequests={verificationRequestCount}
+          newsModel={searchModels.news}
+          verificationModel={searchModels.factCheck}
         />
       ) : null}
 

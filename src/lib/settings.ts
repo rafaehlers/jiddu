@@ -1,5 +1,11 @@
 import { prisma } from "@/lib/db";
 import { DEFAULT_LIVE_MINIMUM_CREDITS } from "@/lib/jiddu-credit-rates";
+import {
+  CONTEXT_NEWS_MODEL,
+  FACTCHECK_DEEP_MODEL,
+  FACTCHECK_FAST_MODEL,
+  RELATED_LINKS_MODEL,
+} from "@/lib/model-ids";
 
 function positiveEnvironmentNumber(
   value: string | undefined,
@@ -111,10 +117,17 @@ export const LIVE_TRANSCRIPTION_DELAY_OPTIONS = [
   "xhigh",
 ] as const;
 
+export const PERPLEXITY_SEARCH_MODEL_OPTIONS = [
+  "perplexity/sonar",
+  "perplexity/sonar-reasoning-pro",
+] as const;
+
 export type PaperReviewModelSetting =
   (typeof PAPER_REVIEW_MODEL_OPTIONS)[number];
 export type LiveTranscriptionDelaySetting =
   (typeof LIVE_TRANSCRIPTION_DELAY_OPTIONS)[number];
+export type PerplexitySearchModelSetting =
+  (typeof PERPLEXITY_SEARCH_MODEL_OPTIONS)[number];
 
 function supportedStringDefault<T extends readonly string[]>(
   value: string | undefined,
@@ -141,6 +154,26 @@ export const DEFAULT_STRING_SETTINGS = {
     LIVE_TRANSCRIPTION_DELAY_OPTIONS,
     "medium",
   ),
+  "factcheck.fastModel": supportedStringDefault(
+    process.env.JIDDU_FACTCHECK_FAST_MODEL,
+    PERPLEXITY_SEARCH_MODEL_OPTIONS,
+    FACTCHECK_FAST_MODEL,
+  ),
+  "factcheck.deepModel": supportedStringDefault(
+    process.env.JIDDU_FACTCHECK_DEEP_MODEL,
+    PERPLEXITY_SEARCH_MODEL_OPTIONS,
+    FACTCHECK_DEEP_MODEL,
+  ),
+  "context.newsModel": supportedStringDefault(
+    process.env.JIDDU_CONTEXT_NEWS_MODEL,
+    PERPLEXITY_SEARCH_MODEL_OPTIONS,
+    CONTEXT_NEWS_MODEL,
+  ),
+  "live.relatedLinksModel": supportedStringDefault(
+    process.env.JIDDU_RELATED_LINKS_MODEL,
+    PERPLEXITY_SEARCH_MODEL_OPTIONS,
+    RELATED_LINKS_MODEL,
+  ),
 } as const;
 
 export type StringSettingKey = keyof typeof DEFAULT_STRING_SETTINGS;
@@ -148,6 +181,10 @@ export type StringSettings = {
   "paperReview.deepModel": PaperReviewModelSetting;
   "paperReview.criticModel": PaperReviewModelSetting;
   "live.transcriptionDelay": LiveTranscriptionDelaySetting;
+  "factcheck.fastModel": PerplexitySearchModelSetting;
+  "factcheck.deepModel": PerplexitySearchModelSetting;
+  "context.newsModel": PerplexitySearchModelSetting;
+  "live.relatedLinksModel": PerplexitySearchModelSetting;
 };
 
 const STRING_KEYS = Object.keys(
@@ -228,6 +265,26 @@ export async function loadStringSettings(): Promise<StringSettings> {
       LIVE_TRANSCRIPTION_DELAY_OPTIONS,
       DEFAULT_STRING_SETTINGS["live.transcriptionDelay"],
     ),
+    "factcheck.fastModel": supportedStringDefault(
+      overrides.get("factcheck.fastModel"),
+      PERPLEXITY_SEARCH_MODEL_OPTIONS,
+      DEFAULT_STRING_SETTINGS["factcheck.fastModel"],
+    ),
+    "factcheck.deepModel": supportedStringDefault(
+      overrides.get("factcheck.deepModel"),
+      PERPLEXITY_SEARCH_MODEL_OPTIONS,
+      DEFAULT_STRING_SETTINGS["factcheck.deepModel"],
+    ),
+    "context.newsModel": supportedStringDefault(
+      overrides.get("context.newsModel"),
+      PERPLEXITY_SEARCH_MODEL_OPTIONS,
+      DEFAULT_STRING_SETTINGS["context.newsModel"],
+    ),
+    "live.relatedLinksModel": supportedStringDefault(
+      overrides.get("live.relatedLinksModel"),
+      PERPLEXITY_SEARCH_MODEL_OPTIONS,
+      DEFAULT_STRING_SETTINGS["live.relatedLinksModel"],
+    ),
   };
   cachedStringSnapshot = snap;
   cachedStringsAt = now;
@@ -267,6 +324,24 @@ export function isLiveTranscriptionDelaySetting(
   return LIVE_TRANSCRIPTION_DELAY_OPTIONS.some(
     (option) => option === value,
   );
+}
+
+export function isPerplexitySearchModelSetting(
+  value: string,
+): value is PerplexitySearchModelSetting {
+  return PERPLEXITY_SEARCH_MODEL_OPTIONS.some((option) => option === value);
+}
+
+export function factCheckModelForAttempt(
+  settings: Pick<
+    StringSettings,
+    "factcheck.fastModel" | "factcheck.deepModel"
+  >,
+  completedAttempts: number,
+): PerplexitySearchModelSetting {
+  return completedAttempts > 0
+    ? settings["factcheck.deepModel"]
+    : settings["factcheck.fastModel"];
 }
 
 export async function setStringSetting(

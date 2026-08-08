@@ -1108,7 +1108,7 @@ const en: Messages = {
       paragraphs: [
         "Two model families are exposed in the picker: [🇺🇸 GPT-5.6 Luna](https://openrouter.ai/openai/gpt-5.6-luna) (default) and [🇨🇳 MiniMax M3](https://openrouter.ai/minimax/minimax-m3). Offering both lets users compare borderline interpretations and avoids making every analysis depend on one provider.",
         "Jiddu can fall back to the other model family when the selected provider is unavailable. Work already returned is preserved rather than discarded, so a visibly partial result should be treated as partial.",
-        "Sonar Reasoning Pro is used exclusively for fact-check verdicts (because it has built-in web search). It is never exposed in the model picker.",
+        "Perplexity Sonar is used exclusively for fact-check verdicts because it has built-in web search. Operators can route fast and deep checks separately in Admin Settings; it is never exposed in the public model picker.",
       ],
     },
     {
@@ -1143,11 +1143,11 @@ const en: Messages = {
     {
       title: "7. Fact-check — per-claim verdict",
       paragraphs: [
-        "Verification is opt-in. When the user chooses **Verify claims**, each claim is independently researched with [Perplexity Sonar Reasoning Pro](https://openrouter.ai/perplexity/sonar-reasoning-pro).",
+        "Verification is opt-in. When the user chooses **Verify claims**, each claim is independently researched with the Perplexity Sonar model configured by the operator through OpenRouter.",
         "The result is `supported`, `contradicted`, `mixed` or `unverified`, accompanied by confidence, rationale and cited sources. Low-confidence evidence is handled conservatively rather than forced into a polar verdict.",
         "Every cited source is classified into one of six tiers (per Goldfarb et al. 2025): `primary` (official data agencies, court rulings, peer-reviewed papers), `scholarly`, `think_tank`, `journalistic`, `commercial_content`, `informal`. A separate boolean flag marks `state-controlled` outlets (RT, CGTN, Xinhua, etc. — but not BBC/NPR/Deutsche Welle, which are state-FUNDED but editorially independent).",
         "Verdict language is intentionally cautious about named people and describes what the available evidence supports rather than accusing someone of dishonesty.",
-        "**Model and why.** Sonar Reasoning Pro is used because verification needs current web retrieval and source annotations. Source tiers describe the kind of source, not an automatic truth score.",
+        "**Model and why.** All fact-check passes use Sonar by default. Operators can select Sonar Reasoning Pro for rechecks when a deeper second opinion is worth the extra latency and cost. Both provide current web retrieval and source annotations. Source tiers describe the kind of source, not an automatic truth score.",
         "How accurate is this in practice? We benchmarked the pipeline against [PolitiFact's human-labeled corpus](/benchmark). On 200 claims drawn from PolitiFact's four polar buckets (true / mostly-true / false / pants-on-fire, 2020-onward), Jiddu's verdict matched the human polar verdict in 67.5% of cases overall and 81.3% on the unambiguous true / false / pants-on-fire buckets. Strict polar disagreement — Jiddu calling a claim the opposite of the human — happened in only 4.5% of cases (9 of 200). The remaining ~28% were Jiddu returning `mixed` or `unverified` instead of a polar verdict, concentrated on PolitiFact's `mostly_true` bucket (where 58% became `mixed` — a structural overlap, not a miss, since both labels describe partial truth). Full methodology, confusion matrix and disagreement analysis at the link.",
       ],
     },
@@ -2042,7 +2042,7 @@ const pt: Messages = {
       paragraphs: [
         "Duas famílias de modelos aparecem no seletor: [🇺🇸 GPT-5.6 Luna](https://openrouter.ai/openai/gpt-5.6-luna) (padrão) e [🇨🇳 MiniMax M3](https://openrouter.ai/minimax/minimax-m3). Ter ambas permite comparar interpretações limítrofes e evita que toda análise dependa de um único provedor.",
         "O Jiddu pode recorrer à outra família de modelos quando o provedor selecionado está indisponível. O trabalho já retornado é preservado, portanto um resultado visivelmente parcial deve ser tratado como parcial.",
-        "Sonar Reasoning Pro é usado exclusivamente pros vereditos de fact-check (porque tem busca web embutida). Nunca aparece no seletor de modelo.",
+        "Perplexity Sonar é usado exclusivamente pros vereditos de fact-check porque tem busca web embutida. Operadores podem separar o modelo rápido e o aprofundado nas Configurações do Admin; ele nunca aparece no seletor público de modelo.",
       ],
     },
     {
@@ -2077,11 +2077,11 @@ const pt: Messages = {
     {
       title: "7. Checagem de fatos — veredito por afirmação",
       paragraphs: [
-        "A verificação é opcional. Quando o usuário escolhe **Verificar afirmações**, cada uma é pesquisada de forma independente pelo [Perplexity Sonar Reasoning Pro](https://openrouter.ai/perplexity/sonar-reasoning-pro).",
+        "A verificação é opcional. Quando o usuário escolhe **Verificar afirmações**, cada uma é pesquisada de forma independente pelo modelo Perplexity Sonar configurado pelo operador via OpenRouter.",
         "O resultado é `sustentado`, `contradito`, `misto` ou `não verificado`, acompanhado de confiança, justificativa e fontes citadas. Evidências de baixa confiança são tratadas de forma conservadora, sem forçar um veredito polar.",
         "Toda fonte citada é classificada em um de seis tiers (segundo Goldfarb et al. 2025): `primary` (órgãos oficiais de dados, decisões judiciais, papers peer-reviewed), `scholarly`, `think_tank`, `journalistic`, `commercial_content`, `informal`. Uma flag boolean separada marca veículos `state-controlled` (RT, CGTN, Xinhua etc. — mas não BBC/NPR/Deutsche Welle, que são state-FUNDED mas editorialmente independentes).",
         "A linguagem é deliberadamente cuidadosa com pessoas nomeadas e descreve o que a evidência disponível sustenta, em vez de acusar alguém de desonestidade.",
-        "**Modelo e por quê.** Sonar Reasoning Pro é usado porque a verificação exige busca web atual e fontes citadas. Os tiers descrevem o tipo de fonte, não uma nota automática de verdade.",
+        "**Modelo e por quê.** Todas as verificações usam Sonar por padrão. Operadores podem selecionar Sonar Reasoning Pro para reverificações quando uma segunda opinião mais profunda justificar a latência e o custo adicionais. Ambos oferecem busca web atual e fontes citadas. Os tiers descrevem o tipo de fonte, não uma nota automática de verdade.",
         "Qual a accuracy disso na prática? A gente rodou um [benchmark contra o corpus humano do PolitiFact](/benchmark). Em 200 afirmações puxadas das quatro categorias polares do PolitiFact (true / mostly-true / false / pants-on-fire, de 2020 pra cá), o veredito do Jiddu coincidiu com o veredito humano polar em 67.5% dos casos no total e 81.3% nas categorias menos ambíguas (true / false / pants-on-fire). Discordância estrita — Jiddu dizer o oposto polar do humano — aconteceu em só 4.5% dos casos (9 de 200). Os ~28% restantes foram Jiddu devolvendo `mixed` ou `unverified` no lugar de um veredito polar, concentrados no bucket `mostly_true` do PolitiFact (58% viraram `mixed` — sobreposição estrutural, não erro, já que ambos os rótulos descrevem verdade parcial). Metodologia, matriz de confusão e análise das discordâncias no link.",
       ],
     },
@@ -2978,7 +2978,7 @@ const es: Messages = {
       paragraphs: [
         "Dos familias de modelos aparecen en el selector: [🇺🇸 GPT-5.6 Luna](https://openrouter.ai/openai/gpt-5.6-luna) (por defecto) y [🇨🇳 MiniMax M3](https://openrouter.ai/minimax/minimax-m3). Tener ambas permite comparar interpretaciones limítrofes y evita que todo análisis dependa de un solo proveedor.",
         "Jiddu puede recurrir a la otra familia de modelos cuando el proveedor seleccionado no está disponible. El trabajo ya devuelto se conserva, por lo que un resultado visiblemente parcial debe tratarse como parcial.",
-        "Sonar Reasoning Pro se usa exclusivamente para los veredictos de fact-check (porque tiene búsqueda web incorporada). Nunca aparece en el selector de modelo.",
+        "Perplexity Sonar se usa exclusivamente para los veredictos de fact-check porque tiene búsqueda web incorporada. Los operadores pueden separar el modelo rápido y el profundo en Configuración del administrador; nunca aparece en el selector público de modelo.",
       ],
     },
     {
@@ -3013,11 +3013,11 @@ const es: Messages = {
     {
       title: "7. Fact-check — veredicto por afirmación",
       paragraphs: [
-        "La verificación es opcional. Cuando el usuario elige **Verificar afirmaciones**, cada una es investigada de forma independiente por [Perplexity Sonar Reasoning Pro](https://openrouter.ai/perplexity/sonar-reasoning-pro).",
+        "La verificación es opcional. Cuando el usuario elige **Verificar afirmaciones**, cada una es investigada de forma independiente por el modelo Perplexity Sonar configurado por el operador mediante OpenRouter.",
         "El resultado es `respaldado`, `contradicho`, `mixto` o `no verificado`, acompañado de confianza, justificación y fuentes citadas. La evidencia de baja confianza se trata de forma conservadora, sin forzar un veredicto polar.",
         "Cada fuente citada se clasifica en uno de seis tiers (según Goldfarb et al. 2025): `primary` (agencias oficiales de datos, decisiones judiciales, papers peer-reviewed), `scholarly`, `think_tank`, `journalistic`, `commercial_content`, `informal`. Una flag booleana aparte marca medios `state-controlled` (RT, CGTN, Xinhua, etc. — pero no BBC/NPR/Deutsche Welle, que son state-FUNDED pero editorialmente independientes).",
         "El lenguaje es deliberadamente cuidadoso con las personas nombradas y describe lo que respalda la evidencia disponible, en lugar de acusar a alguien de deshonestidad.",
-        "**Modelo y por qué.** Sonar Reasoning Pro se utiliza porque la verificación requiere búsqueda web actual y fuentes citadas. Los tiers describen el tipo de fuente, no una puntuación automática de verdad.",
+        "**Modelo y por qué.** Todas las verificaciones usan Sonar de forma predeterminada. Los operadores pueden seleccionar Sonar Reasoning Pro para nuevas verificaciones cuando una segunda opinión más profunda justifique la latencia y el coste adicionales. Ambos ofrecen búsqueda web actual y fuentes citadas. Los tiers describen el tipo de fuente, no una puntuación automática de verdad.",
         "¿Qué tan preciso es esto en la práctica? Corrimos un [benchmark contra el corpus humano de PolitiFact](/benchmark). En 200 afirmaciones tomadas de las cuatro categorías polares de PolitiFact (true / mostly-true / false / pants-on-fire, desde 2020), el veredicto de Jiddu coincidió con el veredicto humano polar en 67.5% de los casos en total y 81.3% en las categorías menos ambiguas (true / false / pants-on-fire). Desacuerdo estricto — Jiddu diciendo lo opuesto polar del humano — ocurrió solo en 4.5% de los casos (9 de 200). El ~28% restante fue Jiddu devolviendo `mixed` o `unverified` en lugar de un veredicto polar, concentrado en el bucket `mostly_true` de PolitiFact (58% se volvieron `mixed` — solapamiento estructural, no error, ya que ambas etiquetas describen verdad parcial). Metodología, matriz de confusión y análisis de desacuerdos en el enlace.",
       ],
     },

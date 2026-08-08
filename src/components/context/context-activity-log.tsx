@@ -1,7 +1,7 @@
 "use client";
 
 import { Activity, Bot, Cpu, Radio, Waypoints } from "lucide-react";
-import { LIVE_TRANSCRIPTION_MODEL, SONAR_MODEL } from "@/lib/model-ids";
+import { LIVE_TRANSCRIPTION_MODEL } from "@/lib/model-ids";
 import type { ContextCopy } from "./context-copy";
 
 type Props = {
@@ -14,6 +14,8 @@ type Props = {
   profileRequests: number;
   newsRequests: number;
   verificationRequests: number;
+  newsModel: string;
+  verificationModel: string;
 };
 
 type ActiveAgent = {
@@ -33,6 +35,8 @@ export function ContextActivityLog({
   profileRequests,
   newsRequests,
   verificationRequests,
+  newsModel,
+  verificationModel,
 }: Props) {
   const agents: ActiveAgent[] = [];
   if (captureActive) {
@@ -89,8 +93,11 @@ export function ContextActivityLog({
     analysisActive && analysisModel
       ? { id: analysisModel, provider: analysisProvider }
       : null,
-    newsRequests > 0 || verificationRequests > 0
-      ? { id: SONAR_MODEL, provider: "OpenRouter" }
+    newsRequests > 0
+      ? { id: newsModel, provider: "OpenRouter" }
+      : null,
+    verificationRequests > 0
+      ? { id: verificationModel, provider: "OpenRouter" }
       : null,
   ]);
 

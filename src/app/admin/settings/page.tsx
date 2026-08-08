@@ -7,6 +7,7 @@ import {
   DEFAULT_STRING_SETTINGS,
   LIVE_TRANSCRIPTION_DELAY_OPTIONS,
   PAPER_REVIEW_MODEL_OPTIONS,
+  PERPLEXITY_SEARCH_MODEL_OPTIONS,
   loadSettings,
   loadStringSettings,
   type SettingKey,
@@ -240,6 +241,14 @@ const DELAY_LABELS: Record<
   xhigh: "Extra high — most context",
 };
 
+const PERPLEXITY_MODEL_LABELS: Record<
+  (typeof PERPLEXITY_SEARCH_MODEL_OPTIONS)[number],
+  string
+> = {
+  "perplexity/sonar": "Sonar — fast",
+  "perplexity/sonar-reasoning-pro": "Sonar Reasoning Pro — deep",
+};
+
 export default async function AdminSettingsPage({
   searchParams,
 }: {
@@ -350,6 +359,43 @@ export default async function AdminSettingsPage({
             </div>
           </fieldset>
 
+          <fieldset className="flex flex-col gap-4 rounded-lg border border-rule bg-paper p-5">
+            <legend className="flex flex-col gap-1">
+              <span className="font-medium">Perplexity search routing</span>
+              <span className="text-xs text-muted">
+                Models used for web-backed fact verification and Context
+                enrichment through OpenRouter. A model change creates a
+                separate fact-check cache namespace.
+              </span>
+            </legend>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <SearchModelField
+                name="factcheck.fastModel"
+                label="Fast fact-check model"
+                help="First verification, bulk fact-checks and API/MCP requests"
+                current={currentStrings["factcheck.fastModel"]}
+              />
+              <SearchModelField
+                name="factcheck.deepModel"
+                label="Fact-check recheck model"
+                help="Explicit ‘verify again’ requests; defaults to Sonar, with Reasoning Pro available as an operator override"
+                current={currentStrings["factcheck.deepModel"]}
+              />
+              <SearchModelField
+                name="context.newsModel"
+                label="Context news model"
+                help="Recent coverage attached asynchronously to Context entities and relations"
+                current={currentStrings["context.newsModel"]}
+              />
+              <SearchModelField
+                name="live.relatedLinksModel"
+                label="Related-links model"
+                help="Public sources suggested for completed Live sessions"
+                current={currentStrings["live.relatedLinksModel"]}
+              />
+            </div>
+          </fieldset>
+
           {GROUPS.map((g) => (
             <fieldset
               key={g.title}
@@ -448,6 +494,58 @@ export default async function AdminSettingsPage({
           <Link href="/admin/credits/packages">Manage credit packages →</Link>
         </div>
     </AdminPage>
+  );
+}
+
+function SearchModelField({
+  name,
+  label,
+  help,
+  current,
+}: {
+  name:
+    | "factcheck.fastModel"
+    | "factcheck.deepModel"
+    | "context.newsModel"
+    | "live.relatedLinksModel";
+  label: string;
+  help: string;
+  current: (typeof PERPLEXITY_SEARCH_MODEL_OPTIONS)[number];
+}) {
+  return (
+    <label className="flex flex-col gap-1 text-sm">
+      <span className="font-medium">{label}</span>
+      <select
+        name={name}
+        defaultValue={current}
+        className="bg-background border border-rule rounded-md px-3 py-2 outline-none focus:border-accent"
+      >
+        {PERPLEXITY_SEARCH_MODEL_OPTIONS.map((model) => (
+          <option key={model} value={model}>
+            {PERPLEXITY_MODEL_LABELS[model]} ({model})
+          </option>
+        ))}
+      </select>
+      <dl className="mt-1 space-y-1 rounded-md border border-rule bg-background/50 p-2.5 text-xs text-muted">
+        <div>
+          <dt className="inline font-medium text-foreground">Sonar:</dt>{" "}
+          <dd className="inline">
+            web search with citations optimized for lower latency and cost.
+          </dd>
+        </div>
+        <div>
+          <dt className="inline font-medium text-foreground">
+            Sonar Reasoning Pro:
+          </dt>{" "}
+          <dd className="inline">
+            deeper reasoning for complex checks, with higher latency and cost.
+          </dd>
+        </div>
+      </dl>
+      <span className="text-xs text-muted">
+        {help} · default {DEFAULT_STRING_SETTINGS[name]}
+      </span>
+    </label>
   );
 }
 

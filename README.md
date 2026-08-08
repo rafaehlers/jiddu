@@ -25,7 +25,7 @@ Choose the lens that fits the reading: logical fallacies, factual claims, neutra
 
 ### Fact-check
 - **Claim extraction** at `/factcheck` — Claimify-inspired 4-stage pipeline (selection → disambiguation → decomposition → decontextualization). Opinions, hypotheticals and rhetorical questions get dropped.
-- **Per-claim verdict** at `/f/[id]` — opt-in "Verify claims" button. Each claim goes through Perplexity Sonar Reasoning Pro with web search, returns `supported` / `contradicted` / `mixed` / `unverified` + confidence + citation list.
+- **Per-claim verdict** at `/f/[id]` — opt-in "Verify claims" button. Each claim goes through Perplexity Sonar with web search, returning `supported` / `contradicted` / `mixed` / `unverified` + confidence + citations. Reasoning Pro remains an admin-selectable override.
 - **Source-quality tier per citation** — every cited source is classified into one of six tiers (primary / scholarly / think tank / journalistic / commercial / informal) with a separate state-controlled flag, and rendered as coloured pills in the viewer.
 - **Verdict cache** — claims are hashed (lang-prefixed sha256 of normalized statement) and persisted in a `ClaimVerdict` table. TTL by type: `numeric` 30 days, `quote/causal` 90 days, `date/categorical` 365 days. Re-verification is free for cached claims; expired rows are swept on the cache-miss path.
 - **Per-claim refresh** — a per-card refresh button bypasses the cache when the user disagrees with a stored verdict. Capped by an admin-configurable per-claim refresh quota (default 2).
@@ -70,7 +70,7 @@ Choose the lens that fits the reading: logical fallacies, factual claims, neutra
 
 ### Across the product
 - **One reading interface** — the first five modes accept URL, pasted text, PDF or TXT; adversarial review accepts one complete PDF so the manuscript can be assessed as a self-contained submission.
-- **Model choice and fallback** — GPT-5.6 Luna with high reasoning is the default, MiniMax M3 is available for comparison, and requests fall back only when the first model fails before emitting output. Deep review uses GPT-5.6 Luna Pro with xhigh reasoning, while Sonar Reasoning Pro is reserved for evidence-backed fact-check verdicts.
+- **Model choice and fallback** — GPT-5.6 Luna with high reasoning is the default, MiniMax M3 is available for comparison, and requests fall back only when the first model fails before emitting output. Deep review uses GPT-5.6 Luna Pro with xhigh reasoning, while evidence-backed fact-check verdicts use Sonar by default.
 - **Inspectable output** — findings quote the source and stay anchored to the relevant sentence, paragraph or paper page. Automated results are marked as unreviewed unless they receive an operator spot-check.
 - **Share and export** — every completed analysis gets an unlisted share URL and a print-ready PDF view. Adversarial reviews also export deterministic Markdown.
 - **English, Portuguese and Spanish** — the interface and model output follow the selected language.
@@ -149,7 +149,15 @@ Open <http://localhost:3000>. Try `/a/demo-en`, `/e/demo-en`, or `/r/demo-en`
 | `OPENAI_LIVE_TRANSCRIPTION_USD_PER_MINUTE` | Installation default for GPT Live Transcribe provider cost per audio minute. Defaults to `0.017`; the admin can override it at runtime. |
 | `PAPER_REVIEW_DEEP_MODEL` | Optional internal model id for Deep specialist/synthesis stages. Defaults to `gpt-5.6-luna-pro`. |
 | `PAPER_REVIEW_CRITIC_MODEL` | Optional independent Deep critic model id. Defaults to `claude-opus-4.8`. |
+| `JIDDU_FACTCHECK_FAST_MODEL` | Installation default for first-pass, bulk and API/MCP fact verification. Defaults to `perplexity/sonar`; the admin can override it at runtime. |
+| `JIDDU_FACTCHECK_DEEP_MODEL` | Installation default for explicit fact rechecks. Defaults to `perplexity/sonar`; the admin can select Reasoning Pro at runtime. |
+| `JIDDU_CONTEXT_NEWS_MODEL` | Installation default for Context news enrichment. Defaults to `perplexity/sonar`; the admin can override it at runtime. |
+| `JIDDU_RELATED_LINKS_MODEL` | Installation default for Live related-source discovery. Defaults to `perplexity/sonar`; the admin can override it at runtime. |
 | `OPENAI_LIVE_TRANSCRIBE_DELAY` | GPT Live Transcribe latency/accuracy profile: `minimal`, `low`, `medium`, `high`, or `xhigh`. Defaults to `medium`. |
+
+To compare the fast and deep Perplexity fact-check routes against the exact
+same 24 human-labeled claims, run `OPENROUTER_API_KEY=... npm run
+eval:factcheck-models`. See [the A/B benchmark guide](docs/benchmark-factcheck-models.md).
 
 For AuthKit, register `<origin>/callback` as a redirect URI, `<origin>/login`
 as the sign-in endpoint and `<origin>/` as the logout URI in WorkOS. Register

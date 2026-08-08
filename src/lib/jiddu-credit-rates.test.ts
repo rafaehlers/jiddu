@@ -12,6 +12,8 @@ test("prices economical, reasoning and critic models distinctly", () => {
   assert.equal(modelCreditRate("minimax-m3"), 1);
   assert.equal(modelCreditRate("gpt-5.6-luna"), 1);
   assert.equal(modelCreditRate("gpt-5.6-luna-pro"), 3);
+  assert.equal(modelCreditRate("perplexity/sonar"), 1);
+  assert.equal(modelCreditRate("perplexity/sonar-reasoning-pro"), 2);
   assert.equal(modelCreditRate("claude-opus-4.8"), 18);
 });
 

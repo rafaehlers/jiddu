@@ -1,7 +1,5 @@
 import OpenAI from "openai";
 
-export { SONAR_MODEL } from "@/lib/model-ids";
-
 const OPENROUTER_BASE = "https://openrouter.ai/api/v1";
 const REFERER = process.env.OPENROUTER_REFERER || "https://jiddu.app";
 

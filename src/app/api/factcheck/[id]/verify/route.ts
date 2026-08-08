@@ -1,8 +1,12 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
-import { verifyClaim, VERIFY_MODEL } from "@/lib/llm/verifyClaim";
+import { verifyClaim } from "@/lib/llm/verifyClaim";
 import { consume, ipFromRequest, rateLimitResponse } from "@/lib/rate-limit";
-import { bucketFromSettings, loadSettings } from "@/lib/settings";
+import {
+  bucketFromSettings,
+  loadSettings,
+  loadStringSettings,
+} from "@/lib/settings";
 import type { Claim } from "@/lib/claims-schema";
 import type { Verdict } from "@/lib/verdict-schema";
 import type { Lang } from "@/lib/fallacies";
@@ -37,7 +41,11 @@ export async function POST(
   const access = await requireWebAnalysisAccess();
   if (isAccessResponse(access)) return access;
 
-  const settings = await loadSettings();
+  const [settings, stringSettings] = await Promise.all([
+    loadSettings(),
+    loadStringSettings(),
+  ]);
+  const verifyModel = stringSettings["factcheck.fastModel"];
   const rl = consume(
     `verify:${ipFromRequest(req)}`,
     bucketFromSettings(settings, "rate.verify"),
@@ -79,10 +87,10 @@ export async function POST(
   }
 
   const reservation = await reserveWebAnalysisCredits(access, {
-    amount: eligibleClaims.length * modelCreditRate(VERIFY_MODEL),
+    amount: eligibleClaims.length * modelCreditRate(verifyModel),
     feature: "factcheck_verify",
     resourceId: id,
-    metadata: { eligibleClaimCount: eligibleClaims.length },
+    metadata: { eligibleClaimCount: eligibleClaims.length, model: verifyModel },
   });
   if (isCreditResponse(reservation)) return reservation;
 
@@ -95,7 +103,7 @@ export async function POST(
       where: { id },
       data: {
         verifyStatus: "running",
-        verifyModel: VERIFY_MODEL,
+        verifyModel,
         verifyStartedAt: new Date(),
         verifyFinishedAt: null,
         verdicts: JSON.stringify([]),
@@ -113,14 +121,14 @@ export async function POST(
   const settleUsage = createWebAnalysisUsageSettlement(access, reservation, {
     feature: "factcheck_verify",
     resourceId: id,
-    metadata: { eligibleClaimCount: eligibleClaims.length },
+    metadata: { eligibleClaimCount: eligibleClaims.length, model: verifyModel },
   });
   const settle = () =>
     settleUsage({
       usages,
       fallbackModels: Array.from(
         { length: billableCacheMisses },
-        () => VERIFY_MODEL,
+        () => verifyModel,
       ),
       metadata: { uncachedClaimCalls: billableCacheMisses },
     });
@@ -135,7 +143,7 @@ export async function POST(
 
       send("meta", {
         id,
-        model: VERIFY_MODEL,
+        model: verifyModel,
         claimCount: eligibleClaims.length,
         skippedCount: claims.length - eligibleClaims.length,
         language: lang,
@@ -160,6 +168,7 @@ export async function POST(
               signal: abortController.signal,
               apiKey: access.apiKey,
               sourceUrl: fc.sourceRef,
+              model: verifyModel,
             });
             localRefreshCounts[claim.id] = (localRefreshCounts[claim.id] ?? 0) + 1;
             if (result.cached) cacheHits++;

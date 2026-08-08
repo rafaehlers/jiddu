@@ -1,7 +1,11 @@
 import { NextRequest } from "next/server";
 import { requireApiKey } from "@/lib/api/auth";
 import { consume, rateLimitResponse } from "@/lib/rate-limit";
-import { loadSettings, bucketFor } from "@/lib/settings";
+import {
+  loadSettings,
+  loadStringSettings,
+  bucketFor,
+} from "@/lib/settings";
 import {
   MAX_FACT_CHECK_TEXT_CHARS,
   jsonError,
@@ -21,7 +25,6 @@ import {
   modelCreditRate,
 } from "@/lib/jiddu-credit-rates";
 import { DEFAULT_MODEL_CHAIN } from "@/lib/llm/fallback";
-import { VERIFY_MODEL } from "@/lib/llm/verifyClaim";
 
 export const runtime = "nodejs";
 // Fact-check extracts claims AND verifies each via Perplexity Sonar (web
@@ -32,7 +35,11 @@ export async function POST(req: NextRequest) {
   const auth = await requireApiKey(req);
   if (auth instanceof Response) return auth;
 
-  const settings = await loadSettings();
+  const [settings, stringSettings] = await Promise.all([
+    loadSettings(),
+    loadStringSettings(),
+  ]);
+  const verifyModel = stringSettings["factcheck.fastModel"];
   // Tighter, dedicated bucket — each claim is a paid Sonar call.
   const rl = consume(`v1:factcheck:${auth.id}`, bucketFor(settings, "rate.apiFactcheck", auth));
   if (!rl.allowed) return rateLimitResponse(rl.retryAfterSec);
@@ -45,7 +52,7 @@ export async function POST(req: NextRequest) {
   const meter = await createApiCreditMeter(auth, {
     amount:
       maxCreditsForCalls(DEFAULT_MODEL_CHAIN, 1) +
-      maxClaims * modelCreditRate(VERIFY_MODEL),
+      maxClaims * modelCreditRate(verifyModel),
     feature: "factcheck_api",
     metadata: { apiKeyId: auth.id, maxClaims },
   });
@@ -58,6 +65,7 @@ export async function POST(req: NextRequest) {
     sourceLabel: auth.label,
     text,
     lang,
+    verifyModel,
   });
 
   try {
@@ -66,6 +74,7 @@ export async function POST(req: NextRequest) {
       maxClaims,
       signal: req.signal,
       apiKey: auth.apiKey,
+      factCheckModel: verifyModel,
       onModelUsed(model) {
         meter.recordModel(model);
         history.recordModel(model);

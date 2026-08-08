@@ -9,7 +9,7 @@ import { ingestText } from "@/lib/ingest/text";
 import { briefTopic } from "@/lib/live-title";
 import { resolveModel } from "@/lib/llm";
 import { DEFAULT_MODEL_CHAIN } from "@/lib/llm/fallback";
-import { VERIFY_MODEL } from "@/lib/llm/verifyClaim";
+import { FACTCHECK_FAST_MODEL } from "@/lib/model-ids";
 import { splitBlocks } from "@/lib/paragraphs";
 import { splitSentences } from "@/lib/sentences";
 import type {
@@ -44,6 +44,7 @@ type StartApiAnalysisInput = {
   text: string;
   lang?: Lang;
   level?: ExplainLevel;
+  verifyModel?: string;
 };
 
 export type ApiAnalysisHistory = {
@@ -63,6 +64,7 @@ export async function startApiAnalysisHistory(
   const title = briefTopic(document.text) || `${input.transport} analysis`;
   const blocks = splitBlocks(document.text);
   const sentences = splitSentences(document.text);
+  const verifyModel = input.verifyModel ?? FACTCHECK_FAST_MODEL;
   let model = initialModel;
   let status: "running" | "complete" | "failed" = "running";
 
@@ -97,7 +99,7 @@ export async function startApiAnalysisHistory(
         claims: "[]",
         verdicts: "[]",
         verifyStatus: "running",
-        verifyModel: VERIFY_MODEL,
+        verifyModel,
         verifyStartedAt: new Date(),
       },
     });
@@ -168,7 +170,7 @@ export async function startApiAnalysisHistory(
             claims: JSON.stringify(aggregate.claims),
             verdicts: JSON.stringify(aggregate.verdicts),
             verifyStatus: "complete",
-            verifyModel: VERIFY_MODEL,
+            verifyModel,
             verifyFinishedAt: finishedAt,
             finishedAt,
           },

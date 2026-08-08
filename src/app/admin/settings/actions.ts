@@ -8,6 +8,7 @@ import {
   invalidateSettingsCache,
   isLiveTranscriptionDelaySetting,
   isPaperReviewModelSetting,
+  isPerplexitySearchModelSetting,
   setSetting,
   setStringSetting,
   type SettingKey,
@@ -93,6 +94,18 @@ export async function saveSettingsAction(formData: FormData): Promise<void> {
       "live.transcriptionDelay",
       transcriptionDelay,
     );
+  }
+
+  for (const key of [
+    "factcheck.fastModel",
+    "factcheck.deepModel",
+    "context.newsModel",
+    "live.relatedLinksModel",
+  ] as const) {
+    const model = String(formData.get(key) ?? "").trim();
+    if (isPerplexitySearchModelSetting(model)) {
+      await setStringSetting(key, model);
+    }
   }
 
   redirect("/admin/settings?saved=1");

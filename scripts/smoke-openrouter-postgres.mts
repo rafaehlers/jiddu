@@ -191,7 +191,9 @@ async function smokeFactCheck() {
   assert.ok(extractedClaim, "fact-check extraction returned no claim");
 
   const claim = { ...extractedClaim, id: "smoke-claim-1" };
-  claimCacheHashes.add(claimCacheKey(claim.statement, "en"));
+  claimCacheHashes.add(
+    claimCacheKey(claim.statement, "en", null, "perplexity/sonar"),
+  );
   const verifyUsages: OpenRouterUsage[] = [];
   const verificationStartedAt = Date.now();
   const verdict = await withTransientRetry("fact-check verification", () =>
@@ -201,7 +203,7 @@ async function smokeFactCheck() {
       onUsage: (usage) => verifyUsages.push(usage),
     }),
   );
-  assert.equal(verdict.model, "perplexity/sonar-reasoning-pro");
+  assert.equal(verdict.model, "perplexity/sonar");
   assert.ok(verdict.sources.length > 0, "Sonar returned no cited sources");
 
   const id = nanoid(10);

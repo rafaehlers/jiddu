@@ -11,10 +11,7 @@ import {
   upsertKnowledgeRelationFromCoverage,
   upsertKnowledgeRelationMention,
 } from "@/lib/context-knowledge";
-import {
-  CONTEXT_NEWS_MODEL,
-  findContextNews,
-} from "@/lib/llm/context-news";
+import { findContextNews } from "@/lib/llm/context-news";
 import {
   isAccessResponse,
   requireWebAnalysisAccess,
@@ -27,7 +24,12 @@ import {
 } from "@/lib/web-credit-billing";
 import { modelCreditRate } from "@/lib/jiddu-credit-rates";
 import { consume, rateLimitResponse } from "@/lib/rate-limit";
-import { bucketFromSettings, loadSettings } from "@/lib/settings";
+import {
+  bucketFromSettings,
+  loadSettings,
+  loadStringSettings,
+  type PerplexitySearchModelSetting,
+} from "@/lib/settings";
 import type { OpenRouterUsage } from "@/lib/openrouter-usage";
 import {
   hasFreshKnowledgeSource,
@@ -53,7 +55,11 @@ export async function POST(request: NextRequest) {
   );
   if (!session) return Response.json({ error: "Not found" }, { status: 404 });
 
-  const settings = await loadSettings();
+  const [settings, stringSettings] = await Promise.all([
+    loadSettings(),
+    loadStringSettings(),
+  ]);
+  const newsModel = stringSettings["context.newsModel"];
   const rate = consume(
     `context:news:${access.userId}`,
     bucketFromSettings(settings, "rate.liveAnalyze"),
@@ -82,7 +88,7 @@ export async function POST(request: NextRequest) {
           lang: entityRequest.language,
           sourceUrl: session.sourceRef,
         },
-        { apiKey: access.apiKey, onUsage },
+        { apiKey: access.apiKey, model: newsModel, onUsage },
       );
       const entity = await attachNewsToEntity(stored.id, results);
       return { target: "entity" as const, entity, cached: false };
@@ -97,11 +103,12 @@ export async function POST(request: NextRequest) {
       return scheduleBillableNews(
         access,
         session.id,
+        newsModel,
         refreshEntity,
         { target: "entity", entity: cached, cached: true },
       );
     }
-    return runBillableNews(access, session.id, refreshEntity);
+    return runBillableNews(access, session.id, newsModel, refreshEntity);
   }
 
   const relationRequest = body.data;
@@ -152,7 +159,7 @@ export async function POST(request: NextRequest) {
         lang: relationRequest.language,
         sourceUrl: session.sourceRef,
       },
-      { apiKey: access.apiKey, onUsage },
+      { apiKey: access.apiKey, model: newsModel, onUsage },
     );
     const relation =
       results.length > 0
@@ -187,11 +194,12 @@ export async function POST(request: NextRequest) {
     return scheduleBillableNews(
       access,
       session.id,
+      newsModel,
       refreshRelation,
       { target: "relation", relation: cachedRelation, cached: true },
     );
   }
-  return runBillableNews(access, session.id, refreshRelation);
+  return runBillableNews(access, session.id, newsModel, refreshRelation);
 }
 
 async function scheduleBillableNews<
@@ -200,14 +208,15 @@ async function scheduleBillableNews<
 >(
   access: WebAnalysisAccess,
   sessionId: string,
+  model: PerplexitySearchModelSetting,
   operation: (onUsage: (usage: OpenRouterUsage) => void) => Promise<T>,
   cachedResult: C,
 ): Promise<Response> {
   const reservation = await reserveWebAnalysisCredits(access, {
-    amount: modelCreditRate(CONTEXT_NEWS_MODEL),
+    amount: modelCreditRate(model),
     feature: "live_analysis",
     resourceId: sessionId,
-    metadata: { stage: "context_news", model: CONTEXT_NEWS_MODEL },
+    metadata: { stage: "context_news", model },
   });
   if (isCreditResponse(reservation)) {
     return Response.json({
@@ -220,7 +229,7 @@ async function scheduleBillableNews<
   const settle = createWebAnalysisUsageSettlement(access, reservation, {
     feature: "live_analysis",
     resourceId: sessionId,
-    metadata: { stage: "context_news", model: CONTEXT_NEWS_MODEL },
+    metadata: { stage: "context_news", model },
   });
   after(async () => {
     try {
@@ -228,7 +237,7 @@ async function scheduleBillableNews<
     } catch (error) {
       console.error("[/api/context/news] background refresh failed", error);
     } finally {
-      await settle({ usages, fallbackModels: [CONTEXT_NEWS_MODEL] });
+      await settle({ usages, fallbackModels: [model] });
     }
   });
   return Response.json({
@@ -241,27 +250,28 @@ async function scheduleBillableNews<
 async function runBillableNews<T>(
   access: WebAnalysisAccess,
   sessionId: string,
+  model: PerplexitySearchModelSetting,
   operation: (onUsage: (usage: OpenRouterUsage) => void) => Promise<T>,
 ): Promise<Response> {
   const reservation = await reserveWebAnalysisCredits(access, {
-    amount: modelCreditRate(CONTEXT_NEWS_MODEL),
+    amount: modelCreditRate(model),
     feature: "live_analysis",
     resourceId: sessionId,
-    metadata: { stage: "context_news", model: CONTEXT_NEWS_MODEL },
+    metadata: { stage: "context_news", model },
   });
   if (isCreditResponse(reservation)) return reservation;
   const usages: OpenRouterUsage[] = [];
   const settle = createWebAnalysisUsageSettlement(access, reservation, {
     feature: "live_analysis",
     resourceId: sessionId,
-    metadata: { stage: "context_news", model: CONTEXT_NEWS_MODEL },
+    metadata: { stage: "context_news", model },
   });
   try {
     const result = await operation((usage) => usages.push(usage));
-    await settle({ usages, fallbackModels: [CONTEXT_NEWS_MODEL] });
+    await settle({ usages, fallbackModels: [model] });
     return Response.json(result);
   } catch (error) {
-    await settle({ usages, fallbackModels: [CONTEXT_NEWS_MODEL] });
+    await settle({ usages, fallbackModels: [model] });
     console.error("[/api/context/news] enrichment failed", error);
     return Response.json(
       { error: "Recent coverage could not be loaded." },

@@ -70,7 +70,6 @@ import {
   type JidduCreditFeature,
 } from "@/lib/jiddu-credit-rates";
 import { DEFAULT_MODEL_CHAIN } from "@/lib/llm/fallback";
-import { VERIFY_MODEL } from "@/lib/llm/verifyClaim";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -154,6 +153,7 @@ async function startMcpAnalysisHistory(input: {
   text: string;
   lang?: "en" | "pt" | "es";
   level?: "eli5" | "high_school" | "undergrad" | "expert";
+  verifyModel?: string;
 }) {
   const auth = currentMcpAuth();
   return startApiAnalysisHistory({
@@ -245,7 +245,11 @@ const mcpHandler = createMcpHandler(
         let history: ApiAnalysisHistory | null = null;
         try {
           const auth = currentMcpAuth();
-          const settings = await loadSettings();
+          const [settings, stringSettings] = await Promise.all([
+            loadSettings(),
+            loadStringSettings(),
+          ]);
+          const verifyModel = stringSettings["factcheck.fastModel"];
           const maxClaims = Math.max(
             1,
             Math.floor(settings["api.maxClaims"]),
@@ -253,7 +257,7 @@ const mcpHandler = createMcpHandler(
           meter = await createMcpCreditMeter({
             amount:
               maxCreditsForCalls(DEFAULT_MODEL_CHAIN, 1) +
-              maxClaims * modelCreditRate(VERIFY_MODEL),
+              maxClaims * modelCreditRate(verifyModel),
             feature: "factcheck_api",
             metadata: { maxClaims },
           });
@@ -261,11 +265,13 @@ const mcpHandler = createMcpHandler(
             kind: "factcheck",
             text,
             lang,
+            verifyModel,
           });
           const result = await runFactCheck(text, {
             lang,
             maxClaims,
             apiKey: auth.apiKey,
+            factCheckModel: verifyModel,
             onModelUsed(model) {
               meter?.recordModel(model);
               history?.recordModel(model);

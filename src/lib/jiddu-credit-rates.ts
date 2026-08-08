@@ -1,4 +1,4 @@
-export const JIDDU_CREDIT_RATE_VERSION = "2026-08-04.v12";
+export const JIDDU_CREDIT_RATE_VERSION = "2026-08-08.v13";
 export const DEFAULT_LIVE_MINIMUM_CREDITS = 20;
 
 export const MODEL_CREDIT_RATES = {
@@ -7,6 +7,7 @@ export const MODEL_CREDIT_RATES = {
   "gpt-5.6-luna-pro": 3,
   // Legacy rates remain available for historical jobs and usage records.
   "gpt-5.4-mini": 2,
+  "perplexity/sonar": 1,
   "perplexity/sonar-reasoning-pro": 2,
   "gpt-5.5": 10,
   "claude-opus-4.8": 18,
@@ -48,7 +49,7 @@ export const JIDDU_CREDIT_RATE_TABLE: CreditRateRow[] = [
     feature: "Fact-check — verification",
     unit: "Per eligible claim search",
     detail:
-      "2 credits reserved per claim. Cache hits settle at 0; an uncached call without cost data falls back to 2 credits.",
+      "1 credit is reserved for the default Sonar fast pass and 2 for Sonar Reasoning Pro. Cache hits settle at 0; uncached calls settle against the configured model.",
   },
   {
     feature: "Neutrality",
@@ -95,7 +96,7 @@ export const JIDDU_CREDIT_RATE_TABLE: CreditRateRow[] = [
     feature: "Live analysis",
     unit: "Per selected lens and completed analysis window",
     detail:
-      "1 credit reserved per selected lens with GPT-5.6 Luna or MiniMax M3, up to 4 with all lenses. Finalizing the Context guide adds one Perplexity Sonar source search, reserved at 2 credits. Completed costs are accumulated with transcription and the Live session is rounded once at settlement.",
+      "1 credit reserved per selected lens with GPT-5.6 Luna or MiniMax M3, up to 4 with all lenses. Context enrichment uses its configured Perplexity model (1 credit for Sonar, 2 for Reasoning Pro). Completed costs are accumulated with transcription and the Live session is rounded once at settlement.",
   },
 ];
 

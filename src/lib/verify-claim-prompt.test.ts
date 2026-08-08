@@ -26,3 +26,21 @@ test("scopes cached verdicts to the captured source URL", () => {
   assert.notEqual(first, second);
   assert.equal(first, repeated);
 });
+
+test("scopes cached verdicts to the verification model", () => {
+  const statement = "A named participant holds a specific role.";
+  const fast = claimCacheKey(
+    statement,
+    "en",
+    null,
+    "perplexity/sonar",
+  );
+  const deep = claimCacheKey(
+    statement,
+    "en",
+    null,
+    "perplexity/sonar-reasoning-pro",
+  );
+
+  assert.notEqual(fast, deep);
+});

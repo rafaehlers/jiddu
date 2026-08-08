@@ -27,14 +27,10 @@ import {
 } from "../openrouter-usage";
 import {
   getSonarClient,
-  SONAR_MODEL,
   type SonarMessage,
 } from "./sonar-client";
-
-// Sonar variant used for verification. Reasoning Pro: built-in web search,
-// returns citations via message.annotations, ~$0.005 per search request.
-// Not exposed in the user-facing model dropdown.
-export const VERIFY_MODEL = SONAR_MODEL;
+import { FACTCHECK_FAST_MODEL } from "../model-ids";
+import type { PerplexitySearchModelSetting } from "../settings";
 
 type ClaimWithId = Claim & { id: string };
 
@@ -44,8 +40,10 @@ export async function verifyClaim(
     lang: Lang;
     signal?: AbortSignal;
     force?: boolean;
+    persistCache?: boolean;
     apiKey?: string;
     sourceUrl?: string | null;
+    model?: PerplexitySearchModelSetting;
     onUsage?: (usage: OpenRouterUsage) => void;
   },
 ): Promise<Verdict & { cached: boolean; usage?: OpenRouterUsage }> {
@@ -53,7 +51,8 @@ export async function verifyClaim(
   // in different languages don't collide. When `force` is set we skip the
   // read but still write the fresh result back so subsequent calls hit.
   const sourceUrl = normalizeCapturedSourceUrl(opts.sourceUrl);
-  const hash = claimCacheKey(claim.statement, opts.lang, sourceUrl);
+  const model = opts.model ?? FACTCHECK_FAST_MODEL;
+  const hash = claimCacheKey(claim.statement, opts.lang, sourceUrl, model);
   if (!opts.force) {
     const cached = await getCachedVerdict(hash);
     if (cached) {
@@ -68,7 +67,7 @@ export async function verifyClaim(
   const client = getSonarClient(opts.apiKey);
   const res = await client.chat.completions.create(
     {
-      model: VERIFY_MODEL,
+      model,
       messages: [
         { role: "system", content: buildVerifySystemPrompt(opts.lang) },
         {
@@ -87,7 +86,7 @@ export async function verifyClaim(
     },
     opts.signal ? { signal: opts.signal } : undefined,
   );
-  const usage = readOpenRouterUsage(res, VERIFY_MODEL);
+  const usage = readOpenRouterUsage(res, model);
   if (usage) opts.onUsage?.(usage);
 
   const choice = res.choices?.[0];
@@ -134,18 +133,20 @@ export async function verifyClaim(
   const verdict: Verdict = {
     ...normalized,
     sources,
-    model: VERIFY_MODEL,
+    model,
   };
   if (usage) usage.completed = true;
 
   // Cache the result. Failures are non-fatal — we'd rather return a fresh
   // verdict than fail the request on a write error.
-  putCachedVerdict(hash, claim, verdict, opts.lang).catch((err) => {
-    console.warn(
-      `[verifyClaim] failed to cache verdict for claim ${claim.id}:`,
-      err instanceof Error ? err.message : err,
-    );
-  });
+  if (opts.persistCache !== false) {
+    putCachedVerdict(hash, claim, verdict, opts.lang).catch((err) => {
+      console.warn(
+        `[verifyClaim] failed to cache verdict for claim ${claim.id}:`,
+        err instanceof Error ? err.message : err,
+      );
+    });
+  }
 
   return {
     ...verdict,
