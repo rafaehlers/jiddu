@@ -29,6 +29,12 @@ import { StructuredDocumentText } from "@/components/structured-document-text";
 import { useI18n } from "@/lib/i18n/provider";
 import type { Messages } from "@/lib/i18n/messages";
 import type { Block } from "@/lib/paragraphs";
+import {
+  FACTCHECK_STATUS_FILTERS,
+  factCheckClaimMatchesStatus,
+  factCheckStatusCounts,
+  type FactCheckStatusFilter,
+} from "@/lib/factcheck-status-filter";
 
 type ClaimWithId = Claim & { id: string };
 
@@ -123,6 +129,27 @@ const VERDICT_META: Record<
   },
 };
 
+const FILTER_META: Record<
+  FactCheckStatusFilter,
+  { labelKey: keyof Messages; dotClass: string }
+> = {
+  all: { labelKey: "fc_filter_all", dotClass: "bg-foreground" },
+  supported: {
+    labelKey: "fc_filter_supported",
+    dotClass: "bg-emerald-500",
+  },
+  contradicted: {
+    labelKey: "fc_filter_contradicted",
+    dotClass: "bg-red-500",
+  },
+  mixed: { labelKey: "fc_filter_mixed", dotClass: "bg-amber-500" },
+  unverified: {
+    labelKey: "fc_filter_unverified",
+    dotClass: "bg-zinc-400",
+  },
+  pending: { labelKey: "fc_filter_pending", dotClass: "bg-blue-500" },
+};
+
 function statusLabel(t: Messages, s: string): string {
   switch (s) {
     case "complete":
@@ -167,6 +194,8 @@ export function FactCheckView({
   }, [claims]);
 
   const [active, setActive] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] =
+    useState<FactCheckStatusFilter>("all");
   const [verdicts, setVerdicts] = useState<Map<string, Verdict>>(() => {
     const m = new Map<string, Verdict>();
     for (const v of initialVerdicts) m.set(v.claimId, v);
@@ -331,6 +360,19 @@ export function FactCheckView({
     claims.length > 0 &&
     (verifyStatus === "none" || verifyStatus === "complete" || verifyStatus === "failed");
   const verifyRunning = verifyStatus === "running";
+  const statusCounts = useMemo(
+    () => factCheckStatusCounts(claims.map((claim) => claim.id), verdicts),
+    [claims, verdicts],
+  );
+  const visibleClaims = useMemo(
+    () =>
+      claims
+        .map((claim, index) => ({ claim, index }))
+        .filter(({ claim }) =>
+          factCheckClaimMatchesStatus(claim.id, verdicts, statusFilter),
+        ),
+    [claims, verdicts, statusFilter],
+  );
 
   return (
     <div className="mx-auto max-w-5xl w-full px-4 sm:px-6 py-6 sm:py-8 flex flex-col gap-6">
@@ -435,16 +477,62 @@ export function FactCheckView({
 
         {/* Right: claim list */}
         <aside className="flex flex-col gap-4">
-          <h2 className="font-medium text-sm text-muted uppercase tracking-wide">
-            {t.fc_claims_header} ({claims.length})
-          </h2>
+          <div className="flex flex-col gap-3">
+            <h2 className="font-medium text-sm text-muted uppercase tracking-wide">
+              {t.fc_claims_header} ({claims.length})
+            </h2>
+            {claims.length > 0 && (
+              <div
+                className="flex flex-wrap gap-1.5"
+                role="group"
+                aria-label={t.fc_filter_label}
+              >
+                {FACTCHECK_STATUS_FILTERS.map((filter) => {
+                  const meta = FILTER_META[filter];
+                  const selected = statusFilter === filter;
+                  return (
+                    <button
+                      key={filter}
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => setStatusFilter(filter)}
+                      className={cn(
+                        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+                        selected
+                          ? "border-foreground bg-foreground text-background"
+                          : "border-rule bg-paper text-muted hover:border-foreground/40 hover:text-foreground",
+                      )}
+                    >
+                      <span
+                        aria-hidden="true"
+                        className={cn("size-1.5 rounded-full", meta.dotClass)}
+                      />
+                      <span>{String(t[meta.labelKey])}</span>
+                      <span
+                        className={cn(
+                          "inline-flex min-w-5 items-center justify-center rounded-full px-1 tabular-nums",
+                          selected ? "bg-background/15" : "bg-foreground/5",
+                        )}
+                      >
+                        {statusCounts[filter]}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
           {claims.length === 0 ? (
             <div className="text-sm text-muted bg-paper border border-rule rounded-lg p-6">
               {status === "running" ? t.fc_extracting : t.fc_no_claims}
             </div>
+          ) : visibleClaims.length === 0 ? (
+            <div className="text-sm text-muted bg-paper border border-rule rounded-lg p-6">
+              {t.fc_filter_empty}
+            </div>
           ) : (
             <ol className="flex flex-col gap-3">
-              {claims.map((c, idx) => {
+              {visibleClaims.map(({ claim: c, index: idx }) => {
                 const used = refreshCounts[c.id] ?? 0;
                 // Refresh button is shown both for claims with an existing
                 // verdict (re-verify) and for claims without one (verify
