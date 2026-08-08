@@ -6,6 +6,10 @@ export const SentenceSchema = z.object({
   start: z.number().int().nonnegative(),
   end: z.number().int().nonnegative(),
   text: z.string(),
+  editorialKind: z.enum(["paragraph", "quote", "list_item"]).optional(),
+  containsQuotation: z.boolean().optional(),
+  section: z.string().nullable().optional(),
+  quoteAttribution: z.string().nullable().optional(),
 });
 export type Sentence = z.infer<typeof SentenceSchema>;
 

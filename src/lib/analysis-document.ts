@@ -29,16 +29,32 @@ export function prepareAnalysisDocument(
   for (const block of blocks) {
     if ((block.kind ?? "content") !== "content") continue;
     for (const sentence of splitSentences(block.text)) {
+      const containsQuotation =
+        block.editorialKind === "quote" || hasQuotation(sentence.text);
       sentences.push({
         id: `s${sentences.length}`,
         start: block.start + sentence.start,
         end: block.start + sentence.end,
         text: sentence.text,
+        ...(block.editorialKind
+          ? { editorialKind: block.editorialKind }
+          : {}),
+        ...(containsQuotation
+          ? { containsQuotation: true }
+          : {}),
+        ...(block.section !== undefined ? { section: block.section } : {}),
+        ...(block.quoteAttribution
+          ? { quoteAttribution: block.quoteAttribution }
+          : {}),
       });
     }
   }
 
   return { text, blocks, sentences };
+}
+
+function hasQuotation(text: string): boolean {
+  return /(?:“[^”]{2,}”|"[^"]{2,}"|‘[^’]{2,}’|'[^']{2,}')/.test(text);
 }
 
 /** Existing rows have no persisted blocks. Recover conservative paragraph and

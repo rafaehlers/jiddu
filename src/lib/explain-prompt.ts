@@ -1,6 +1,8 @@
 import type { Lang } from "./fallacies";
 import type { ExplainLevel } from "./explain-schema";
 import type { ExplainInputSection } from "./explain-units";
+import type { EditorialMetadata } from "./ingest/url";
+import { buildEditorialContextBlock } from "./editorial-prompt";
 
 const LANG_NAME: Record<Lang, string> = {
   en: "English",
@@ -50,12 +52,24 @@ export const EXPLAIN_SYSTEM_PROMPT = buildExplainSystemPrompt("en", "undergrad")
 export function buildExplainUserPrompt(
   sections: ExplainInputSection[],
   lang: Lang = "en",
+  documentMetadata?: EditorialMetadata,
 ): string {
   const content = sections
     .map((section) => {
       const ids = section.blocks.map((block) => block.id);
       const paragraphs = section.blocks
-        .map((block) => `[${block.id}]\n${escapeXml(block.text)}`)
+        .map((block) => {
+          const annotations = [
+            block.editorialKind ? `kind=${block.editorialKind}` : null,
+            block.containsQuotation ? "contains_quotation=true" : null,
+            block.quoteAttribution
+              ? `attributed_to=&quot;${escapeXml(block.quoteAttribution)}&quot;`
+              : null,
+          ].filter(Boolean);
+          const suffix =
+            annotations.length > 0 ? `[${annotations.join(";")}]` : "";
+          return `[${block.id}]${suffix}\n${escapeXml(block.text)}`;
+        })
         .join("\n\n");
       return `<section id="${escapeXml(section.id)}" title="${escapeXml(
         section.title ?? "Untitled section",
@@ -64,8 +78,9 @@ export function buildExplainUserPrompt(
       )}" path="${escapeXml(section.path.join(" › "))}" block_ids="${ids.join(",")}">\n${paragraphs}\n</section>`;
     })
     .join("\n\n");
+  const documentContext = buildEditorialContextBlock(documentMetadata);
 
-  return `Explain every section inside <paper_sections>. Return one JSON tool call containing an overview and exactly one finding per section. Each finding must copy all of that section's block_ids and explain the section as one coherent unit, in ${LANG_NAME[lang]}.
+  return `Explain every section inside <paper_sections>. Return one JSON tool call containing an overview and exactly one finding per section. Each finding must copy all of that section's block_ids and explain the section as one coherent unit, in ${LANG_NAME[lang]}.${documentContext}
 
 <paper_sections>
 ${content}
