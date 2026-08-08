@@ -20,7 +20,7 @@ import {
 import type { Sentence } from "@/lib/schema";
 import type { Claim, ClaimType } from "@/lib/claims-schema";
 import type { Verdict, VerdictValue, SourceTier } from "@/lib/verdict-schema";
-import { readSse } from "@/lib/sse";
+import { prematureSseEndMessage, readSse } from "@/lib/sse";
 import { cn } from "@/lib/utils";
 import { onActivate } from "@/lib/a11y";
 import { ReportDeliveryActions } from "@/components/report-delivery-actions";
@@ -181,7 +181,7 @@ export function FactCheckView({
   initialRefreshCounts,
   maxRefreshPerClaim,
 }: Props) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const claimsBySentence = useMemo(() => {
     const m = new Map<string, ClaimWithId[]>();
     for (const c of claims) {
@@ -288,7 +288,11 @@ export function FactCheckView({
       return;
     }
 
-    for await (const ev of readSse(res, ctrl.signal)) {
+    for await (const ev of readSse(
+      res,
+      ctrl.signal,
+      prematureSseEndMessage(lang),
+    )) {
       if (ev.event === "meta") {
         const m = JSON.parse(ev.data) as { claimCount: number };
         setVerifyProgress({ done: 0, total: m.claimCount });

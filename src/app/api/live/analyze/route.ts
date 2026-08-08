@@ -48,6 +48,10 @@ import { recordContextSessionEvents } from "@/lib/context-session-events";
 import { normalizeCapturedSourceUrl } from "@/lib/live-source-context";
 import { resolveLiveNeutrality } from "@/lib/live-neutrality";
 import { replaceEntityNamesInClaims } from "@/lib/context-session-mutations";
+import {
+  createServerSseWriter,
+  type ServerSseWriter,
+} from "@/lib/server-sse";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -344,8 +348,8 @@ export async function POST(req: NextRequest) {
   );
 
   // ── Stream ───────────────────────────────────────────────────────────
-  const encoder = new TextEncoder();
   const abortController = new AbortController();
+  let sseWriter: ServerSseWriter | null = null;
   const fallbackModels: string[] = [];
   const usages: OpenRouterUsage[] = [];
   let settled = false;
@@ -391,13 +395,9 @@ export async function POST(req: NextRequest) {
     stream = new ReadableStream<Uint8Array>({
       async start(controller) {
         try {
-          const send = (event: string, data: unknown) => {
-            controller.enqueue(
-              encoder.encode(
-                `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`,
-              ),
-            );
-          };
+          const writer = createServerSseWriter(controller);
+          sseWriter = writer;
+          const send = writer.send;
 
           if (isNew) {
             send("meta", {
@@ -954,12 +954,13 @@ export async function POST(req: NextRequest) {
             title,
             finalize,
           });
-          controller.close();
+          writer.close();
         } finally {
           permit?.release();
         }
       },
       async cancel() {
+        sseWriter?.cancel();
         abortController.abort();
         try {
           await settle();

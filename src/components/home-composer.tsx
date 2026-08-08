@@ -10,7 +10,7 @@ import { ModeCards } from "@/components/mode-cards";
 import { AnalysisSkeleton } from "@/components/analysis-skeleton";
 import { SignupCta } from "@/components/auth-controls";
 import { PageTitle } from "@/components/page-title";
-import { readSse } from "@/lib/sse";
+import { prematureSseEndMessage, readSse } from "@/lib/sse";
 import { useI18n } from "@/lib/i18n/provider";
 import type { Messages } from "@/lib/i18n/messages";
 
@@ -257,7 +257,11 @@ export function HomeComposer({
       return;
     }
 
-    for await (const ev of readSse(res, ctrl.signal)) {
+    for await (const ev of readSse(
+      res,
+      ctrl.signal,
+      prematureSseEndMessage(lang),
+    )) {
       if (ev.event === "meta") {
         const meta = JSON.parse(ev.data) as { id: string; chunkCount: number };
         setLive((prev) =>

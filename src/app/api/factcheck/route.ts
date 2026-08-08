@@ -28,6 +28,10 @@ import {
   maxCreditsForCalls,
 } from "@/lib/jiddu-credit-rates";
 import type { OpenRouterUsage } from "@/lib/openrouter-usage";
+import {
+  createServerSseWriter,
+  type ServerSseWriter,
+} from "@/lib/server-sse";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -36,6 +40,8 @@ const MAX_TEXT_CHARS = 200_000;
 const CHUNK_CONCURRENCY = 4;
 const MAX_TITLE_CHARS = 500;
 const MAX_SOURCE_REF_CHARS = 2_000;
+const STREAM_DISCONNECTED_ERROR =
+  "The analysis connection ended before claim extraction completed.";
 
 export async function POST(req: NextRequest) {
   const access = await requireWebAnalysisAccess();
@@ -158,16 +164,15 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  const encoder = new TextEncoder();
   const abortController = new AbortController();
+  let clientDisconnected = false;
+  let sseWriter: ServerSseWriter | null = null;
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
-      const send = (event: string, data: unknown) => {
-        controller.enqueue(
-          encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`),
-        );
-      };
+      const writer = createServerSseWriter(controller);
+      sseWriter = writer;
+      const send = writer.send;
 
       send("meta", {
         id,
@@ -252,6 +257,11 @@ export async function POST(req: NextRequest) {
 
       await Promise.all(workers);
 
+      // A disconnected consumer has already been persisted as failed by
+      // cancel(). Do not let the worker's abort path overwrite that row with
+      // a misleading complete result containing zero claims.
+      if (clientDisconnected) return;
+
       // If every chunk errored, fail the extraction as a whole.
       if (chunkDoneCount === 0 && chunkErrors.length > 0) {
         const message = chunkErrors.map((e) => e.message).join(" / ");
@@ -265,12 +275,12 @@ export async function POST(req: NextRequest) {
           metadata: { models: billableModels, completedChunks: 0 },
         });
         send("error", { error: message });
-        controller.close();
+        writer.close();
         return;
       }
 
-      await prisma.factCheck.update({
-        where: { id },
+      const completed = await prisma.factCheck.updateMany({
+        where: { id, status: "running" },
         data: {
           status: "complete",
           // The selected interface language controls generated copy. A model
@@ -281,6 +291,7 @@ export async function POST(req: NextRequest) {
           finishedAt: new Date(),
         },
       });
+      if (completed.count === 0 || clientDisconnected) return;
       await settleUsage({
         usages,
         fallbackModels: billableModels,
@@ -295,10 +306,27 @@ export async function POST(req: NextRequest) {
         claimCount: allClaims.length,
         truncated: allClaims.length >= maxClaimsPerFactcheck,
       });
-      controller.close();
+      writer.close();
     },
     async cancel() {
+      clientDisconnected = true;
+      sseWriter?.cancel();
       abortController.abort();
+      await prisma.factCheck
+        .updateMany({
+          where: { id, status: "running" },
+          data: {
+            status: "failed",
+            errorMessage: STREAM_DISCONNECTED_ERROR,
+            finishedAt: new Date(),
+          },
+        })
+        .catch((error) => {
+          console.error(
+            `[/api/factcheck] could not persist disconnected stream ${id}:`,
+            error,
+          );
+        });
       await settleUsage({
         usages,
         fallbackModels: billableModels,

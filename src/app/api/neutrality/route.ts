@@ -27,6 +27,11 @@ import {
   maxCreditsForCalls,
 } from "@/lib/jiddu-credit-rates";
 import type { OpenRouterUsage } from "@/lib/openrouter-usage";
+import {
+  ANALYSIS_STREAM_DISCONNECTED_ERROR,
+  createServerSseWriter,
+  type ServerSseWriter,
+} from "@/lib/server-sse";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -151,16 +156,15 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  const encoder = new TextEncoder();
   const abortController = new AbortController();
+  let clientDisconnected = false;
+  let sseWriter: ServerSseWriter | null = null;
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
-      const send = (event: string, data: unknown) => {
-        controller.enqueue(
-          encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`),
-        );
-      };
+      const writer = createServerSseWriter(controller);
+      sseWriter = writer;
+      const send = writer.send;
 
       send("meta", {
         id,
@@ -254,6 +258,7 @@ export async function POST(req: NextRequest) {
         workers.push(launch());
       }
       await Promise.all(workers);
+      if (clientDisconnected) return;
 
       if (chunkResults.length === 0 && chunkErrors.length > 0) {
         const message = chunkErrors.map((e) => e.message).join(" / ");
@@ -267,7 +272,7 @@ export async function POST(req: NextRequest) {
           metadata: { models: billableModels, completedChunks: 0 },
         });
         send("error", { error: message });
-        controller.close();
+        writer.close();
         return;
       }
 
@@ -302,8 +307,8 @@ export async function POST(req: NextRequest) {
         (a, b) => b[1] - a[1],
       )[0]?.[0] ?? "informational";
 
-      await prisma.neutrality.update({
-        where: { id },
+      const completed = await prisma.neutrality.updateMany({
+        where: { id, status: "running" },
         data: {
           status: "complete",
           verdict: finalVerdict,
@@ -314,6 +319,7 @@ export async function POST(req: NextRequest) {
           finishedAt: new Date(),
         },
       });
+      if (completed.count === 0 || clientDisconnected) return;
       await settleUsage({
         usages,
         fallbackModels: billableModels,
@@ -331,10 +337,27 @@ export async function POST(req: NextRequest) {
         textType: finalTextType,
         findingsCount: allFindings.length,
       });
-      controller.close();
+      writer.close();
     },
     async cancel() {
+      clientDisconnected = true;
+      sseWriter?.cancel();
       abortController.abort();
+      await prisma.neutrality
+        .updateMany({
+          where: { id, status: "running" },
+          data: {
+            status: "failed",
+            errorMessage: ANALYSIS_STREAM_DISCONNECTED_ERROR,
+            finishedAt: new Date(),
+          },
+        })
+        .catch((error) => {
+          console.error(
+            `[/api/neutrality] could not persist disconnected stream ${id}:`,
+            error,
+          );
+        });
       await settleUsage({
         usages,
         fallbackModels: billableModels,

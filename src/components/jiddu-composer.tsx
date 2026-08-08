@@ -9,7 +9,7 @@ import {
   type UploadSourceType,
 } from "@/components/upload-form";
 import { PipelineSidebar } from "@/components/pipeline-sidebar";
-import { readSse } from "@/lib/sse";
+import { prematureSseEndMessage, readSse } from "@/lib/sse";
 import { useI18n } from "@/lib/i18n/provider";
 
 type StreamingState = {
@@ -78,7 +78,11 @@ export function JidduComposer() {
       return;
     }
 
-    for await (const ev of readSse(res, ctrl.signal)) {
+    for await (const ev of readSse(
+      res,
+      ctrl.signal,
+      prematureSseEndMessage(lang),
+    )) {
       if (ev.event === "meta") {
         const meta = JSON.parse(ev.data) as { id: string; chunkCount: number };
         setLive((prev) =>

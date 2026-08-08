@@ -27,6 +27,11 @@ import {
   reserveWebAnalysisCredits,
 } from "@/lib/web-credit-billing";
 import type { OpenRouterUsage } from "@/lib/openrouter-usage";
+import {
+  ANALYSIS_STREAM_DISCONNECTED_ERROR,
+  createServerSseWriter,
+  type ServerSseWriter,
+} from "@/lib/server-sse";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -113,8 +118,9 @@ export async function POST(
     return jsonError("Could not start verification", 500);
   }
 
-  const encoder = new TextEncoder();
   const abortController = new AbortController();
+  let clientDisconnected = false;
+  let sseWriter: ServerSseWriter | null = null;
   let billableCacheMisses = 0;
   const usages: OpenRouterUsage[] = [];
   const settleUsage = createWebAnalysisUsageSettlement(access, reservation, {
@@ -134,11 +140,9 @@ export async function POST(
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
-      const send = (event: string, data: unknown) => {
-        controller.enqueue(
-          encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`),
-        );
-      };
+      const writer = createServerSseWriter(controller);
+      sseWriter = writer;
+      const send = writer.send;
 
       send("meta", {
         id,
@@ -199,6 +203,7 @@ export async function POST(
         workers.push(launch());
       }
       await Promise.all(workers);
+      if (clientDisconnected) return;
 
       // If every claim failed, mark the whole verification as failed.
       if (verdicts.length === 0 && errors.length > 0) {
@@ -213,7 +218,7 @@ export async function POST(
         });
         send("error", { error: message });
         await settle();
-        controller.close();
+        writer.close();
         return;
       }
 
@@ -223,8 +228,8 @@ export async function POST(
       const verdictById = new Map(existingVerdicts.map((v) => [v.claimId, v]));
       for (const v of verdicts) verdictById.set(v.claimId, v);
 
-      await prisma.factCheck.update({
-        where: { id },
+      const completed = await prisma.factCheck.updateMany({
+        where: { id, verifyStatus: "running" },
         data: {
           verifyStatus: "complete",
           verifyFinishedAt: new Date(),
@@ -232,6 +237,7 @@ export async function POST(
           refreshCounts: JSON.stringify(localRefreshCounts),
         },
       });
+      if (completed.count === 0 || clientDisconnected) return;
 
       send("done", {
         id,
@@ -241,10 +247,27 @@ export async function POST(
         cacheMisses,
       });
       await settle();
-      controller.close();
+      writer.close();
     },
     async cancel() {
+      clientDisconnected = true;
+      sseWriter?.cancel();
       abortController.abort();
+      await prisma.factCheck
+        .updateMany({
+          where: { id, verifyStatus: "running" },
+          data: {
+            verifyStatus: "failed",
+            verifyFinishedAt: new Date(),
+            errorMessage: ANALYSIS_STREAM_DISCONNECTED_ERROR,
+          },
+        })
+        .catch((error) => {
+          console.error(
+            `[/api/factcheck/${id}/verify] could not persist disconnected stream:`,
+            error,
+          );
+        });
       await settle();
     },
   });
