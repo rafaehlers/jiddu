@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { buildClaimsUserPrompt } from "./claims-prompt";
 import { buildNeutralityUserPrompt } from "./neutrality-prompt";
-import { buildUserPrompt } from "./prompt";
+import { buildSystemPrompt, buildUserPrompt } from "./prompt";
 import type { EditorialMetadata } from "./ingest/url";
 import type { Sentence } from "./schema";
 
@@ -12,6 +12,7 @@ const sentences: Sentence[] = [
     start: 0,
     end: 29,
     text: "A quoted political statement.",
+    blockId: "b0",
     editorialKind: "quote",
     containsQuotation: true,
     section: "Politics",
@@ -29,16 +30,25 @@ const metadata: EditorialMetadata = {
 };
 
 test("annotates editorial structure without changing the analyzable sentence", () => {
+  const system = buildSystemPrompt("pt");
   const prompt = buildUserPrompt(sentences, "pt", undefined, metadata);
 
+  assert.match(system, /review every paragraph in order/i);
+  assert.match(system, /Attribution determines who made the argument/i);
+  assert.match(system, /loaded_language \(Loaded language \/ Linguagem carregada\)/);
   assert.match(
     prompt,
-    /\[s0\]\[kind=quote;contains_quotation=true;section="Politics";attributed_to="The minister"\] A quoted political statement\./,
+    /\[s0\]\[block="b0";kind=quote;contains_quotation=true;section="Politics";attributed_to="The minister"\] A quoted political statement\./,
   );
   assert.match(prompt, /<publisher>Example News<\/publisher>/);
   assert.match(prompt, /Reporter &amp; Editor/);
   assert.match(prompt, /a=1&amp;b=2/);
   assert.match(prompt, /metadata.*not evidence/i);
+  assert.match(prompt, /inspect every distinct block in order/i);
+  assert.match(prompt, /otherwise inspect every sentence/i);
+  assert.match(prompt, /Attribution changes who owns a claim/i);
+  assert.match(prompt, /loaded_question only for an actual question/i);
+  assert.match(prompt, /Use loaded_language for declarative wording/i);
 });
 
 test("teaches claims and neutrality to distinguish speakers from narration", () => {

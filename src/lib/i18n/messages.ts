@@ -352,7 +352,7 @@ export type Messages = {
   copied: string;
   no_fallacies: string;
   pending: string;
-  finding_count: (count: number, total: number) => string;
+  finding_count: (count: number, total: number, paragraphs: number) => string;
   read_more: string;
 
   // Score labels
@@ -1366,8 +1366,8 @@ const en: Messages = {
   copied: "Copied",
   no_fallacies: "No fallacies detected.",
   pending: "pending",
-  finding_count: (count, total) =>
-    `${count} ${count === 1 ? "finding" : "findings"} across ${total} sentences`,
+  finding_count: (count, total, paragraphs) =>
+    `${count} ${count === 1 ? "finding" : "findings"} across ${total} sentences in ${paragraphs} ${paragraphs === 1 ? "paragraph" : "paragraphs"}`,
   read_more: "Learn more",
 
   score_label: "Score",
@@ -2308,8 +2308,8 @@ const pt: Messages = {
   copied: "Copiado",
   no_fallacies: "Nenhuma falácia detectada.",
   pending: "pendente",
-  finding_count: (count, total) =>
-    `${count} ${count === 1 ? "ocorrência" : "ocorrências"} em ${total} sentenças`,
+  finding_count: (count, total, paragraphs) =>
+    `${count} ${count === 1 ? "ocorrência" : "ocorrências"} ao longo de ${total} sentenças em ${paragraphs} ${paragraphs === 1 ? "parágrafo" : "parágrafos"}`,
   read_more: "Saber mais",
 
   score_label: "Nota",
@@ -3252,8 +3252,8 @@ const es: Messages = {
   copied: "Copiado",
   no_fallacies: "No se detectaron falacias.",
   pending: "pendiente",
-  finding_count: (count, total) =>
-    `${count} ${count === 1 ? "hallazgo" : "hallazgos"} en ${total} oraciones`,
+  finding_count: (count, total, paragraphs) =>
+    `${count} ${count === 1 ? "hallazgo" : "hallazgos"} en ${total} oraciones de ${paragraphs} ${paragraphs === 1 ? "párrafo" : "párrafos"}`,
   read_more: "Saber más",
 
   score_label: "Puntuación",

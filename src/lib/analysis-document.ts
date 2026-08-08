@@ -36,6 +36,7 @@ export function prepareAnalysisDocument(
         start: block.start + sentence.start,
         end: block.start + sentence.end,
         text: sentence.text,
+        blockId: block.id,
         ...(block.editorialKind
           ? { editorialKind: block.editorialKind }
           : {}),

@@ -6,6 +6,8 @@ export const SentenceSchema = z.object({
   start: z.number().int().nonnegative(),
   end: z.number().int().nonnegative(),
   text: z.string(),
+  /** Structural paragraph/block that contains this sentence. */
+  blockId: z.string().optional(),
   editorialKind: z.enum(["paragraph", "quote", "list_item"]).optional(),
   containsQuotation: z.boolean().optional(),
   section: z.string().nullable().optional(),

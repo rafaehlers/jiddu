@@ -55,6 +55,12 @@ export function AnalysisView({
     () => findings.map((f, i) => ({ ...f, key: `f${i}` })),
     [findings],
   );
+  const analyzableParagraphCount = useMemo(
+    () =>
+      blocks.filter((block) => (block.kind ?? "content") === "content")
+        .length,
+    [blocks],
+  );
 
   const findingsBySentence = useMemo(() => {
     const m = new Map<string, FindingWithKey[]>();
@@ -202,7 +208,12 @@ export function AnalysisView({
           <p className="text-foreground/90 text-base max-w-3xl">{summary}</p>
         )}
         <p className="text-xs text-muted">
-          {provider} · {model} · {t.finding_count(keyedFindings.length, sentences.length)}
+          {provider} · {model} ·{" "}
+          {t.finding_count(
+            keyedFindings.length,
+            sentences.length,
+            analyzableParagraphCount,
+          )}
         </p>
         <ShareLinkBar
           rightSlot={

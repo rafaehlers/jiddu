@@ -37,6 +37,10 @@ test("prepares sectioned content while keeping references out of model sentences
     ],
   );
   assert.equal(prepared.sentences.length, 4);
+  assert.deepEqual(
+    prepared.sentences.map((sentence) => sentence.blockId),
+    ["b0", "b0", "b1", "b1"],
+  );
   assert.ok(prepared.text.includes("Smith, A. (2024). Example reference."));
   assert.ok(
     prepared.sentences.every(
@@ -111,6 +115,10 @@ test("carries URL article structure and quotation context into model sentences",
   assert.equal(prepared.blocks[0].section, "Diplomacy");
   assert.equal(prepared.blocks[0].documentMetadata?.author, "Reporter Name");
   assert.equal(prepared.sentences[0].containsQuotation, undefined);
+  assert.deepEqual(
+    prepared.sentences.map((sentence) => sentence.blockId),
+    ["b0", "b1", "b2"],
+  );
   assert.equal(prepared.sentences[1].containsQuotation, true);
   assert.equal(prepared.sentences[2].editorialKind, "quote");
   assert.equal(prepared.sentences[2].quoteAttribution, "The minister");

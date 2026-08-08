@@ -29,10 +29,13 @@ export function buildEditorialContextBlock(
   return `\n\n<document_context>\n${fields}\n</document_context>\nThe document context is publisher-supplied metadata. Use it only to understand the document's provenance, genre, date and likely authorship. It is not evidence that any claim is true and it is not itself text to analyze.`;
 }
 
-export const EDITORIAL_STRUCTURE_GUIDANCE = `Sentence prefixes may include structural annotations such as kind=quote, kind=list_item, contains_quotation=true, section=..., or attributed_to=.... These annotations are context, not part of the sentence and must never be copied into quotes. A quote block is material presented by the page as a quotation; contains_quotation means the sentence mixes quoted material with narration. Attribute a statement to a speaker only when the sentence, nearby context, or attributed_to annotation explicitly supports it. Keep the quoted speaker's words distinct from the article author's narration and editorial framing.`;
+export const EDITORIAL_STRUCTURE_GUIDANCE = `Sentence prefixes may include structural annotations such as block=..., kind=quote, kind=list_item, contains_quotation=true, section=..., or attributed_to=.... The block value identifies the paragraph that contains the sentence. These annotations are context, not part of the sentence and must never be copied into quotes. A quote block is material presented by the page as a quotation; contains_quotation means the sentence mixes quoted material with narration. Attribute a statement to a speaker only when the sentence, nearby context, or attributed_to annotation explicitly supports it. Keep the quoted speaker's words distinct from the article author's narration and editorial framing.`;
 
 function formatEditorialSentence(sentence: Sentence): string {
   const annotations: string[] = [];
+  if (sentence.blockId) {
+    annotations.push(`block=${quoteAnnotation(sentence.blockId)}`);
+  }
   if (sentence.editorialKind) annotations.push(`kind=${sentence.editorialKind}`);
   if (sentence.containsQuotation) annotations.push("contains_quotation=true");
   if (sentence.section) annotations.push(`section=${quoteAnnotation(sentence.section)}`);

@@ -9,7 +9,7 @@ export type FallacyDef = {
   example: Record<Lang, string>;
 };
 
-// 46 colors distributed via the golden angle (137.5°) on the hue wheel.
+// Colors distributed via the golden angle (137.5°) on the hue wheel.
 // This guarantees that any small subset of fallacies in a single document gets
 // maximally distinct colors — adjacent indices land on opposite sides of the
 // wheel rather than clustering in one hue family.
@@ -31,7 +31,7 @@ function hslToRgb(h: number, s: number, l: number): string {
   return `rgb(${to8(r)}, ${to8(g)}, ${to8(b)})`;
 }
 
-const COLORS = Array.from({ length: 46 }, (_, n) =>
+const COLORS = Array.from({ length: 47 }, (_, n) =>
   hslToRgb((n * 137.5) % 360, 0.65, 0.58),
 );
 
@@ -290,6 +290,25 @@ const FALLACIES_RAW: Omit<FallacyDef, "color">[] = [
       en: "“Have you stopped lying to your team?”",
       pt: "“Você parou de mentir para o seu time?”",
       es: "“¿Has dejado de mentirle a tu equipo?”",
+    },
+  },
+  {
+    id: "loaded_language",
+    category: "emotional",
+    name: {
+      en: "Loaded language",
+      pt: "Linguagem carregada",
+      es: "Lenguaje cargado",
+    },
+    description: {
+      en: "Uses emotionally or ideologically charged wording to smuggle an evaluative conclusion into a description instead of arguing for it.",
+      pt: "Usa palavras emocional ou ideologicamente carregadas para embutir uma conclusão avaliativa numa descrição em vez de argumentar por ela.",
+      es: "Usa palabras emocional o ideológicamente cargadas para introducir una conclusión valorativa en una descripción en lugar de argumentarla.",
+    },
+    example: {
+      en: "“The regime unleashed another reckless experiment on ordinary families.”",
+      pt: "“O regime despejou mais um experimento irresponsável sobre as famílias comuns.”",
+      es: "“El régimen desató otro experimento irresponsable sobre las familias comunes.”",
     },
   },
   {
