@@ -21,28 +21,16 @@ import {
   type ReactNode,
 } from "react";
 import type { ContextCopy } from "./context-copy";
+import {
+  CONTEXT_PANEL_IDS,
+  type ContextPanelId,
+  type PanelLayout,
+  type PanelLayouts,
+  type PanelVisibility,
+} from "./context-panel-state";
+import { useContextUiStore } from "./context-ui-store-provider";
 
-export const CONTEXT_PANEL_IDS = [
-  "transcript",
-  "fallacies",
-  "facts",
-  "topics",
-  "neutrality",
-] as const;
-
-export type ContextPanelId = (typeof CONTEXT_PANEL_IDS)[number];
-
-type PanelVisibility = Record<ContextPanelId, boolean>;
-
-type PanelLayout = {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  minimized: boolean;
-};
-
-type PanelLayouts = Record<ContextPanelId, PanelLayout>;
+export { CONTEXT_PANEL_IDS, type ContextPanelId } from "./context-panel-state";
 
 type Bounds = { width: number; height: number };
 
@@ -66,80 +54,23 @@ export type ContextFloatingPanelDefinition = {
   contentClassName?: string;
 };
 
-const VISIBILITY_STORAGE_KEY = "jiddu_context_panel_visibility_v1";
-const LAYOUT_STORAGE_KEY = "jiddu_context_floating_panels_v2";
 const VIEWPORT_GAP = 12;
 const PANEL_HEADER_HEIGHT = 40;
 const STACK_GAP = 8;
 const MIN_PANEL_WIDTH = 240;
 const MIN_PANEL_HEIGHT = 160;
 
-const ALL_VISIBLE: PanelVisibility = {
-  transcript: true,
-  fallacies: true,
-  facts: true,
-  topics: true,
-  neutrality: true,
-};
-
 export function useContextFloatingPanels(): ContextFloatingPanelsState {
-  const [visibility, setVisibility] = useState<PanelVisibility>(ALL_VISIBLE);
-  const [activePanel, setActivePanel] = useState<ContextPanelId>("facts");
-  const [loaded, setLoaded] = useState(false);
-  const [resetVersion, setResetVersion] = useState(0);
-
-  useEffect(() => {
-    const frame = window.requestAnimationFrame(() => {
-      try {
-        const saved = window.localStorage.getItem(VISIBILITY_STORAGE_KEY);
-        if (saved) setVisibility(readVisibility(saved));
-      } catch {
-        // All panels remain visible when browser storage is unavailable.
-      } finally {
-        setLoaded(true);
-      }
-    });
-    return () => window.cancelAnimationFrame(frame);
-  }, []);
-
-  useEffect(() => {
-    if (!loaded) return;
-    try {
-      window.localStorage.setItem(
-        VISIBILITY_STORAGE_KEY,
-        JSON.stringify(visibility),
-      );
-    } catch {
-      // Visibility remains usable for the current page session.
-    }
-  }, [loaded, visibility]);
+  const visibility = useContextUiStore((state) => state.visibility);
+  const activePanel = useContextUiStore((state) => state.activePanel);
+  const resetVersion = useContextUiStore((state) => state.resetVersion);
+  const toggleAll = useContextUiStore((state) => state.toggleAllPanels);
+  const togglePanel = useContextUiStore((state) => state.togglePanel);
+  const selectPanel = useContextUiStore((state) => state.selectPanel);
+  const resetPanels = useContextUiStore((state) => state.resetPanels);
 
   const visibleCount = CONTEXT_PANEL_IDS.filter((id) => visibility[id]).length;
   const anyVisible = visibleCount > 0;
-
-  const toggleAll = useCallback(() => {
-    setVisibility((current) => {
-      const show = !CONTEXT_PANEL_IDS.some((id) => current[id]);
-      return mapVisibility(show);
-    });
-  }, []);
-
-  const togglePanel = useCallback((id: ContextPanelId) => {
-    setVisibility((current) => ({ ...current, [id]: !current[id] }));
-  }, []);
-
-  const selectPanel = useCallback((id: ContextPanelId) => {
-    setActivePanel(id);
-    setVisibility((current) =>
-      current[id] ? current : { ...current, [id]: true },
-    );
-  }, []);
-
-  const resetPanels = useCallback(() => {
-    setVisibility(ALL_VISIBLE);
-    setActivePanel("facts");
-    setResetVersion((current) => current + 1);
-  }, []);
 
   return {
     visibility,
@@ -267,25 +198,12 @@ export function ContextFloatingPanels({
   const containerRef = useRef<HTMLDivElement>(null);
   const appliedResetRef = useRef(0);
   const [bounds, setBounds] = useState<Bounds>({ width: 0, height: 0 });
-  const [layouts, setLayouts] = useState<PanelLayouts | null>(null);
-  const [loaded, setLoaded] = useState(false);
+  const layouts = useContextUiStore((store) => store.layouts);
+  const setLayouts = useContextUiStore((store) => store.setLayouts);
+  const hydrated = useContextUiStore((store) => store.hydrated);
   const [frontPanel, setFrontPanel] = useState<ContextPanelId>("facts");
   const [compactMode, setCompactMode] = useState(false);
   const [mobileMinimized, setMobileMinimized] = useState(false);
-
-  useEffect(() => {
-    const frame = window.requestAnimationFrame(() => {
-      try {
-        const saved = window.localStorage.getItem(LAYOUT_STORAGE_KEY);
-        setLayouts(saved ? readLayouts(saved) : null);
-      } catch {
-        setLayouts(null);
-      } finally {
-        setLoaded(true);
-      }
-    });
-    return () => window.cancelAnimationFrame(frame);
-  }, []);
 
   useLayoutEffect(() => {
     const container = containerRef.current;
@@ -314,7 +232,7 @@ export function ContextFloatingPanels({
   }, []);
 
   useEffect(() => {
-    if (!loaded || bounds.width <= 0 || bounds.height <= 0) return;
+    if (!hydrated || bounds.width <= 0 || bounds.height <= 0) return;
     const resetRequested = state.resetVersion > appliedResetRef.current;
     if (resetRequested) appliedResetRef.current = state.resetVersion;
     setLayouts((current) => {
@@ -327,16 +245,7 @@ export function ContextFloatingPanels({
         ]),
       ) as PanelLayouts;
     });
-  }, [bounds, loaded, state.resetVersion]);
-
-  useEffect(() => {
-    if (!loaded || !layouts) return;
-    try {
-      window.localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(layouts));
-    } catch {
-      // The panels remain draggable for the current page session.
-    }
-  }, [layouts, loaded]);
+  }, [bounds, hydrated, setLayouts, state.resetVersion]);
 
   const updatePanel = useCallback(
     (id: ContextPanelId, update: (layout: PanelLayout) => PanelLayout) => {
@@ -349,7 +258,7 @@ export function ContextFloatingPanels({
           : current,
       );
     },
-    [bounds],
+    [bounds, setLayouts],
   );
 
   const startMove = useCallback(
@@ -670,47 +579,6 @@ function clampPanelLayout(layout: PanelLayout, bounds: Bounds): PanelLayout {
     width,
     height,
   };
-}
-
-function readVisibility(raw: string): PanelVisibility {
-  try {
-    const parsed = JSON.parse(raw) as Partial<PanelVisibility>;
-    return Object.fromEntries(
-      CONTEXT_PANEL_IDS.map((id) => [id, parsed[id] !== false]),
-    ) as PanelVisibility;
-  } catch {
-    return ALL_VISIBLE;
-  }
-}
-
-function readLayouts(raw: string): PanelLayouts | null {
-  try {
-    const parsed = JSON.parse(raw) as Partial<PanelLayouts>;
-    if (!CONTEXT_PANEL_IDS.every((id) => isPanelLayout(parsed[id]))) {
-      return null;
-    }
-    return parsed as PanelLayouts;
-  } catch {
-    return null;
-  }
-}
-
-function isPanelLayout(value: unknown): value is PanelLayout {
-  if (!value || typeof value !== "object") return false;
-  const layout = value as Partial<PanelLayout>;
-  return (
-    Number.isFinite(layout.x) &&
-    Number.isFinite(layout.y) &&
-    Number.isFinite(layout.width) &&
-    Number.isFinite(layout.height) &&
-    typeof layout.minimized === "boolean"
-  );
-}
-
-function mapVisibility(value: boolean): PanelVisibility {
-  return Object.fromEntries(
-    CONTEXT_PANEL_IDS.map((id) => [id, value]),
-  ) as PanelVisibility;
 }
 
 function beginPointerDrag(

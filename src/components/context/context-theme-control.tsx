@@ -1,13 +1,12 @@
 "use client";
 
 import { Moon, Sun } from "lucide-react";
-import { useSyncExternalStore, type CSSProperties } from "react";
+import type { CSSProperties } from "react";
 import type { ContextCopy } from "./context-copy";
+import { useContextUiStore } from "./context-ui-store-provider";
+import type { ContextTheme } from "./context-ui-store";
 
-export type ContextTheme = "dark" | "light";
-
-const STORAGE_KEY = "jiddu_context_theme_v1";
-const CHANGE_EVENT = "jiddu-context-theme-change";
+export type { ContextTheme } from "./context-ui-store";
 type ContextThemeStyle = CSSProperties & Record<`--${string}`, string | number>;
 
 const THEME_STYLES = {
@@ -45,44 +44,9 @@ export function contextThemeStyle(theme: ContextTheme): CSSProperties {
   return THEME_STYLES[theme];
 }
 
-function readTheme(): ContextTheme {
-  try {
-    return window.localStorage.getItem(STORAGE_KEY) === "light"
-      ? "light"
-      : "dark";
-  } catch {
-    return "dark";
-  }
-}
-
-function subscribeTheme(notify: () => void) {
-  const handleStorage = (event: StorageEvent) => {
-    if (event.key === STORAGE_KEY) notify();
-  };
-  window.addEventListener("storage", handleStorage);
-  window.addEventListener(CHANGE_EVENT, notify);
-  return () => {
-    window.removeEventListener("storage", handleStorage);
-    window.removeEventListener(CHANGE_EVENT, notify);
-  };
-}
-
 export function useContextTheme() {
-  const theme = useSyncExternalStore(
-    subscribeTheme,
-    readTheme,
-    (): ContextTheme => "dark",
-  );
-
-  const setTheme = (next: ContextTheme) => {
-    try {
-      window.localStorage.setItem(STORAGE_KEY, next);
-      window.dispatchEvent(new Event(CHANGE_EVENT));
-    } catch {
-      // Dark remains the safe default when browser storage is unavailable.
-    }
-  };
-
+  const theme = useContextUiStore((state) => state.theme);
+  const setTheme = useContextUiStore((state) => state.setTheme);
   return [theme, setTheme] as const;
 }
 

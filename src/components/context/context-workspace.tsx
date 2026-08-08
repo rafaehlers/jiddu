@@ -46,16 +46,25 @@ import {
   useContextTheme,
 } from "./context-theme-control";
 import { ContextSettingsButton, useContextSettings } from "./context-settings";
+import { ContextUiStoreProvider } from "./context-ui-store-provider";
 import { useContextEnrichment } from "./use-context-enrichment";
 import { ContextActivityLog } from "./context-activity-log";
 
 const MAX_SESSION_MS = 60 * 60 * 1_000;
 
-export function ContextWorkspace({
-  searchModels,
-}: {
+type ContextWorkspaceProps = {
   searchModels: { news: string; factCheck: string };
-}) {
+};
+
+export function ContextWorkspace(props: ContextWorkspaceProps) {
+  return (
+    <ContextUiStoreProvider>
+      <ContextWorkspaceContent {...props} />
+    </ContextUiStoreProvider>
+  );
+}
+
+function ContextWorkspaceContent({ searchModels }: ContextWorkspaceProps) {
   const { lang, setLang } = useI18n();
   const copy = contextCopy(lang);
   const { user, loading: authLoading } = useAuth();
