@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { AnalysisView } from "@/components/analysis-view";
+import { ResultPageCta } from "@/components/result-page-cta";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { AnalysisHeaderActions } from "@/components/analysis-header-actions";
 import { ScrollIndicator } from "@/components/scroll-indicator";
 import { SkeletonReveal } from "@/components/skeleton-reveal";
 import { AnalysisSkeleton } from "@/components/analysis-skeleton";
@@ -70,10 +70,7 @@ export default async function AnalysisPage({ params }: Props) {
 
   return (
     <main className="flex-1 flex flex-col">
-      <SiteHeader
-        variant="viewer"
-        rightSlot={<AnalysisHeaderActions />}
-      />
+      <SiteHeader variant="viewer" />
 
       <SkeletonReveal skeleton={<AnalysisSkeleton />}>
         <AnalysisView
@@ -93,6 +90,7 @@ export default async function AnalysisPage({ params }: Props) {
         />
       </SkeletonReveal>
 
+      <ResultPageCta href="/" />
       <SiteFooter />
       <ScrollIndicator />
     </main>

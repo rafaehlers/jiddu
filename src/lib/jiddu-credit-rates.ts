@@ -1,4 +1,4 @@
-export const JIDDU_CREDIT_RATE_VERSION = "2026-08-08.v13";
+export const JIDDU_CREDIT_RATE_VERSION = "2026-08-08.v14";
 export const DEFAULT_LIVE_MINIMUM_CREDITS = 20;
 
 export const MODEL_CREDIT_RATES = {
@@ -24,6 +24,7 @@ export type JidduCreditFeature =
   | "review_standard"
   | "review_deep"
   | "live_transcription"
+  | "live_diarization"
   | "live_analysis";
 
 export type CreditRateRow = {
@@ -91,6 +92,12 @@ export const JIDDU_CREDIT_RATE_TABLE: CreditRateRow[] = [
     feature: "Live transcription",
     unit: "Per audio duration",
     detail: `${DEFAULT_LIVE_MINIMUM_CREDITS} available credits required to start. The final debit uses actual audio duration, OpenAI's configured per-minute rate and the standard cost multiplier.`,
+  },
+  {
+    feature: "Live speaker identification",
+    unit: "Per audio duration, when requested",
+    detail:
+      "The final debit uses the diarized recording duration, OpenAI's configured per-minute rate and the standard cost multiplier.",
   },
   {
     feature: "Live analysis",

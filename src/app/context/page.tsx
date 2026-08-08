@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { ContextWorkspace } from "@/components/context/context-workspace";
 import { publicPageMetadata } from "@/lib/social-metadata";
-import { loadStringSettings } from "@/lib/settings";
+import { loadSettings, loadStringSettings } from "@/lib/settings";
 
 export const metadata: Metadata = publicPageMetadata({
   title: "Jiddu Context — live conversation intelligence",
@@ -11,12 +11,21 @@ export const metadata: Metadata = publicPageMetadata({
 });
 
 export default async function ContextPage() {
-  const settings = await loadStringSettings();
+  const [settings, numericSettings] = await Promise.all([
+    loadStringSettings(),
+    loadSettings(),
+  ]);
   return (
     <ContextWorkspace
       searchModels={{
         news: settings["context.newsModel"],
         factCheck: settings["factcheck.fastModel"],
+      }}
+      diarizationBilling={{
+        marginMultiplier: numericSettings["credits.marginMultiplier"],
+        usdPerCredit: numericSettings["credits.usdPerCredit"],
+        usdPerMinute:
+          numericSettings["credits.liveDiarizationUsdPerMinute"],
       }}
     />
   );

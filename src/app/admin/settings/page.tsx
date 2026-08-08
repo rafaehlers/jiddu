@@ -72,6 +72,14 @@ const GROUPS: Group[] = [
         min: 0.000001,
         step: 0.000001,
       },
+      {
+        key: "credits.liveDiarizationUsdPerMinute",
+        label: "OpenAI diarization cost per minute",
+        help:
+          "Provider rate used when a user opts into post-session speaker identification",
+        min: 0.000001,
+        step: 0.000001,
+      },
     ],
   },
   {

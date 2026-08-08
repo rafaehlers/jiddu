@@ -7,6 +7,7 @@ import { SkeletonReveal } from "@/components/skeleton-reveal";
 import { AnalysisSkeleton } from "@/components/analysis-skeleton";
 import { ScrollIndicator } from "@/components/scroll-indicator";
 import { ExplainView } from "@/components/explain-view";
+import { ResultPageCta } from "@/components/result-page-cta";
 import type { Block } from "@/lib/paragraphs";
 import {
   parsePaperMap,
@@ -65,6 +66,7 @@ export default async function ExplainViewerPage({ params }: Props) {
         />
       </SkeletonReveal>
 
+      <ResultPageCta href="/explain" />
       <SiteFooter />
       <ScrollIndicator />
     </main>

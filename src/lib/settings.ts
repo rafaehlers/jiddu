@@ -43,6 +43,10 @@ export const DEFAULT_SETTINGS = {
     process.env.OPENAI_LIVE_TRANSCRIPTION_USD_PER_MINUTE,
     0.017,
   ),
+  "credits.liveDiarizationUsdPerMinute": positiveEnvironmentNumber(
+    process.env.OPENAI_LIVE_DIARIZATION_USD_PER_MINUTE,
+    0.006,
+  ),
 
   // Invitations are disabled by default. An operator must explicitly set all
   // three values before the account form permits new invitations.

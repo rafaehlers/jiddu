@@ -147,6 +147,7 @@ Open <http://localhost:3000>. Try `/a/demo-en`, `/e/demo-en`, or `/r/demo-en`
 | `JIDDU_CREDIT_MARGIN_MULTIPLIER` | Installation default for the multiplier applied to OpenRouter's reported cost. Defaults to `1.5`; the admin can override it at runtime. |
 | `JIDDU_LIVE_MINIMUM_CREDITS` | Minimum available balance required to start GPT Live Transcribe. It is checked but not reserved or charged. Defaults to `20`; the admin can override it at runtime. The former `JIDDU_LIVE_TRANSCRIPTION_CREDITS` name remains supported for compatibility. |
 | `OPENAI_LIVE_TRANSCRIPTION_USD_PER_MINUTE` | Installation default for GPT Live Transcribe provider cost per audio minute. Defaults to `0.017`; the admin can override it at runtime. |
+| `OPENAI_LIVE_DIARIZATION_USD_PER_MINUTE` | Installation default for post-session OpenAI speaker diarization per audio minute. Defaults to `0.006`; the admin can override it at runtime. |
 | `PAPER_REVIEW_DEEP_MODEL` | Optional internal model id for Deep specialist/synthesis stages. Defaults to `gpt-5.6-luna-pro`. |
 | `PAPER_REVIEW_CRITIC_MODEL` | Optional independent Deep critic model id. Defaults to `claude-opus-4.8`. |
 | `JIDDU_FACTCHECK_FAST_MODEL` | Installation default for first-pass, bulk and API/MCP fact verification. Defaults to `perplexity/sonar`; the admin can override it at runtime. |
@@ -445,14 +446,17 @@ The persisted final result is shown at `/r/[id]`; `GET /api/review/[id]/markdown
 
 ### Live mode (beta) — `/live`
 
-A separate page at `/live` listens to live audio (microphone or browser-tab capture) via the OpenAI Realtime API (`gpt-live-transcribe`) and surfaces fallacies as the speaker talks. The transcription session uses the balanced `medium` delay profile by default and passes English, Portuguese and Spanish together as language hints so the interface locale does not constrain multilingual speech. Two endpoints back it:
+A separate page at `/live` listens to live audio (microphone or browser-tab capture) via the OpenAI Realtime API (`gpt-live-transcribe`) and surfaces fallacies as the speaker talks. The transcription session uses the balanced `medium` delay profile by default and passes English, Portuguese and Spanish together as language hints so the interface locale does not constrain multilingual speech. The Live API routes include:
 
 - `POST /api/live/token` — mints a short-lived ephemeral client secret so the browser can open a WebRTC connection directly to OpenAI for **transcription** (`gpt-live-transcribe`). Requires `OPENAI_API_KEY`. This call never touches OpenRouter.
 - `POST /api/live/analyze` — a separate, later call: SSE stream that ingests the cumulative transcript in sliding windows (eagerly after ~800 new characters, or every 30s once at least ~120 characters are available) and emits `finding` events. Each window receives the preceding four sentences as context. **This is the analysis step**, running the same fallacy prompt routed via OpenRouter (same GPT-5.6 Luna / MiniMax M3 picker as the other pipelines) — a different model and provider from the OpenAI transcription above. Send `{ finalize: true }` on Stop to process the remaining text, compute the final score and commit the session.
+- `POST /api/live/diarize` — opt-in post-session speaker labeling. Before upload, the UI confirms the additional cost and shows a duration-based Jiddu Credit estimate. The route accepts the browser-local recording (maximum 25 MB), forwards it transiently to OpenAI's `gpt-4o-transcribe-diarize`, returns timestamped speaker segments and does not persist the audio. Usage is settled separately by actual audio duration.
+- `PUT /api/live/diarize` — explicitly saves a reviewed speaker-labeled transcript and edited speaker names to the authenticated owner's existing Live session. The saved transcript appears in account analysis history; no audio is included.
 
 Notes:
 - Tab capture requires Chrome or Edge — Safari/Firefox don't expose tab audio via `getDisplayMedia`. The Microphone source works everywhere.
-- Audio is streamed Browser → OpenAI directly via WebRTC; the Jiddu server only mints tokens and persists the transcript + findings.
+- During capture, audio is streamed Browser → OpenAI directly via WebRTC. The browser keeps a temporary, downloadable recording. Only after a separate cost confirmation and speaker-identification request does that recording pass through the Jiddu server to OpenAI's file transcription API; neither the route nor Jiddu storage retains it. The user may then explicitly save only the labeled text and edited speaker names to account history.
+- The local recorder targets 48 kbps so a 60-minute session normally remains below OpenAI's 25 MB file-transcription limit. Browsers may choose a different bitrate, so the UI and server both enforce the size ceiling.
 - Hard cap of 60 minutes per session to keep cost predictable (`gpt-live-transcribe` is $0.017/min ≈ $1/hour, plus the analysis LLM cost).
 - The page is intentionally not linked from the nav while in beta — access it by URL.
 

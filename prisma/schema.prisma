@@ -8,28 +8,30 @@ datasource db {
 }
 
 model Analysis {
-  id                String    @id
-  ownerWorkosUserId String?
-  status            String    @default("pending") // "pending" | "running" | "complete" | "failed"
-  source            String // "url" | "pdf" | "txt" | "paste" | "live"
-  sourceRef         String? // URL or filename
-  title             String?
-  text              String // full normalized text
-  language          String? // "pt" | "en" | ...
-  provider          String // "anthropic" | "openai"
-  model             String
-  score             Int       @default(0) // 0..100 fallacy intensity
-  summary           String? // short verdict
-  blocks            String    @default("[]") // JSON structural paragraphs with section/reference metadata
-  sentences         String    @default("[]") // JSON array of {id,start,end,text}
-  findings          String    @default("[]") // JSON array of findings
-  transcript        String? // raw transcript accumulated during a live session
-  liveContext       String? // JSON LiveContext recap for live sessions
-  audioDurationMs   Int? // total audio duration captured (live mode)
-  errorMessage      String?
-  createdAt         DateTime  @default(now())
-  finishedAt        DateTime?
-  reviewedAt        DateTime? // null = not yet human-reviewed; viewer shows a warning banner until set
+  id                 String    @id
+  ownerWorkosUserId  String?
+  status             String    @default("pending") // "pending" | "running" | "complete" | "failed"
+  source             String // "url" | "pdf" | "txt" | "paste" | "live"
+  sourceRef          String? // URL or filename
+  title              String?
+  text               String // full normalized text
+  language           String? // "pt" | "en" | ...
+  provider           String // "anthropic" | "openai"
+  model              String
+  score              Int       @default(0) // 0..100 fallacy intensity
+  summary            String? // short verdict
+  blocks             String    @default("[]") // JSON structural paragraphs with section/reference metadata
+  sentences          String    @default("[]") // JSON array of {id,start,end,text}
+  findings           String    @default("[]") // JSON array of findings
+  transcript         String? // raw transcript accumulated during a live session
+  diarizedTranscript String? // JSON speaker-labeled transcript explicitly saved by the owner
+  diarizedAt         DateTime? // when the owner last saved the speaker-labeled transcript
+  liveContext        String? // JSON LiveContext recap for live sessions
+  audioDurationMs    Int? // total audio duration captured (live mode)
+  errorMessage       String?
+  createdAt          DateTime  @default(now())
+  finishedAt         DateTime?
+  reviewedAt         DateTime? // null = not yet human-reviewed; viewer shows a warning banner until set
 
   knowledgeEntityMentions   KnowledgeEntityMention[]
   knowledgeRelationMentions KnowledgeRelationMention[]

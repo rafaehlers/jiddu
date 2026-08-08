@@ -7,6 +7,7 @@ import { analysisSocialMetadata } from "@/lib/social-metadata";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { LiveContextRecapView } from "@/components/live/context-recap-view";
+import { ResultPageCta } from "@/components/result-page-cta";
 import { canEmailOwnedReport } from "@/lib/report-email-access";
 
 type Props = { params: Promise<{ id: string }> };
@@ -45,6 +46,7 @@ export default async function LiveContextRecapPage({ params }: Props) {
         context={readLiveContext(analysis.liveContext)}
         audioDurationMs={analysis.audioDurationMs}
       />
+      <ResultPageCta href="/live" />
       <SiteFooter />
     </main>
   );

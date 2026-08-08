@@ -21,11 +21,13 @@ import { LiveClaimsList } from "@/components/live/claims-list";
 import { FindingsList } from "@/components/live/findings-list";
 import { LiveNeutralityList } from "@/components/live/neutrality-list";
 import { SourcePicker } from "@/components/live/source-picker";
+import { SessionAudioTools } from "@/components/live/session-audio-tools";
 import {
   TranscriptStream,
   type TranscriptStreamHandle,
 } from "@/components/live/transcript-stream";
 import { useI18n } from "@/lib/i18n/provider";
+import type { LiveDiarizationBillingConfig } from "@/lib/live-diarization-billing";
 import { DEFAULT_LIVE_LENSES } from "@/lib/live-lenses";
 import { useLiveAnalysis } from "@/lib/live/use-live-analysis";
 import { useLiveClaimVerification } from "@/lib/live/use-live-claim-verification";
@@ -52,8 +54,10 @@ import { ContextActivityLog } from "./context-activity-log";
 const MAX_SESSION_MS = 60 * 60 * 1_000;
 
 export function ContextWorkspace({
+  diarizationBilling,
   searchModels,
 }: {
+  diarizationBilling: LiveDiarizationBillingConfig;
   searchModels: { news: string; factCheck: string };
 }) {
   const { lang, setLang } = useI18n();
@@ -411,12 +415,27 @@ export function ContextWorkspace({
               toneClass: "bg-violet-500",
               contentClassName: "overflow-hidden",
               content: (
-                <TranscriptStream
-                  ref={transcriptRef}
-                  transcript={session.transcript}
-                  active={session.state === "live"}
-                  variant="feed"
-                />
+                <div className="grid h-full min-h-0 grid-rows-[minmax(0,1fr)_auto]">
+                  <TranscriptStream
+                    ref={transcriptRef}
+                    transcript={session.transcript}
+                    active={session.state === "live"}
+                    variant="feed"
+                  />
+                  {session.localAudioUrl &&
+                  session.localAudioBlob &&
+                  session.localAudioFilename ? (
+                    <SessionAudioTools
+                      audioBlob={session.localAudioBlob}
+                      audioUrl={session.localAudioUrl}
+                      billingConfig={diarizationBilling}
+                      downloadFilename={session.localAudioFilename}
+                      durationMs={session.elapsedMs}
+                      resourceId={analysis.sessionId}
+                      compact
+                    />
+                  ) : null}
+                </div>
               ),
             },
             fallacies: {

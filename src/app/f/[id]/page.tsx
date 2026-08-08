@@ -7,6 +7,7 @@ import { SkeletonReveal } from "@/components/skeleton-reveal";
 import { AnalysisSkeleton } from "@/components/analysis-skeleton";
 import { ScrollIndicator } from "@/components/scroll-indicator";
 import { FactCheckView } from "@/components/factcheck-view";
+import { ResultPageCta } from "@/components/result-page-cta";
 import type { Sentence } from "@/lib/schema";
 import type { Claim } from "@/lib/claims-schema";
 import type { Verdict } from "@/lib/verdict-schema";
@@ -76,6 +77,7 @@ export default async function FactCheckPageView({ params }: Props) {
         />
       </SkeletonReveal>
 
+      <ResultPageCta href="/factcheck" />
       <SiteFooter />
       <ScrollIndicator />
     </main>
