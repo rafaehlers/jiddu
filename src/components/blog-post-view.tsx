@@ -5,7 +5,6 @@ import Link from "next/link";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { JsonLd } from "@/components/json-ld";
-import { PageTitle } from "@/components/page-title";
 import type { BlogPost } from "@/lib/blog";
 import {
   BLOG_COPY,
@@ -175,12 +174,14 @@ export function BlogPostView({ post }: { post: BlogPost }) {
           <span>{copy.articleBreadcrumb}</span>
         </nav>
 
-        <header className="space-y-5">
-          <PageTitle>{content.title}</PageTitle>
-          <p className="text-lg leading-relaxed text-muted sm:text-xl">
+        <header className="space-y-4">
+          <h1 className="text-balance font-serif text-2xl tracking-tight md:text-3xl">
+            {content.title}
+          </h1>
+          <p className="max-w-3xl text-base text-foreground/90">
             {content.excerpt}
           </p>
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-rule pt-5 text-sm text-muted">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-rule pt-4 text-sm text-muted">
             <span>
               {copy.by} {post.author}
             </span>
