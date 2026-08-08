@@ -25,6 +25,7 @@ model Analysis {
   findings          String    @default("[]") // JSON array of findings
   transcript        String? // raw transcript accumulated during a live session
   liveContext       String? // JSON LiveContext recap for live sessions
+  contextRevision   Int       @default(0) // owner mutations increment; analysis writes use optimistic concurrency
   audioDurationMs   Int? // total audio duration captured (live mode)
   errorMessage      String?
   createdAt         DateTime  @default(now())

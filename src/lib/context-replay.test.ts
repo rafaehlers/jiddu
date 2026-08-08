@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { ContextReplayEvent } from "./context-replay-schema";
+import {
+  ClientContextReplayEventSchema,
+  type ContextReplayEvent,
+} from "./context-replay-schema";
 import {
   buildContextReplayFrame,
   type ContextReplaySource,
@@ -34,7 +37,7 @@ function event(
   value: Partial<ContextReplayEvent> & Pick<ContextReplayEvent, "kind">,
 ): ContextReplayEvent {
   return {
-    id: value.id ?? crypto.randomUUID(),
+    id: value.id ?? `ctx_${crypto.randomUUID()}`,
     kind: value.kind,
     elapsedMs: value.elapsedMs ?? 10_000,
     sentenceIds: value.sentenceIds ?? ["s1"],
@@ -132,4 +135,49 @@ test("always returns the authoritative saved state at the end", () => {
   assert.equal(frame.atEnd, true);
   assert.equal(frame.context, finalContext);
   assert.equal(frame.transcript, "Primeira. Segunda.");
+});
+
+test("replays persisted transcript deltas at their real capture time", () => {
+  const events = [
+    event({
+      kind: "transcript_delta",
+      elapsedMs: 1_000,
+      sentenceIds: [],
+      payload: { delta: "Primeira. " },
+    }),
+    event({
+      kind: "transcript_delta",
+      elapsedMs: 8_000,
+      sentenceIds: [],
+      payload: { delta: "Segunda." },
+    }),
+  ];
+
+  const middle = buildContextReplayFrame(source({ events }), 5_000);
+  assert.equal(middle.exact, true);
+  assert.equal(middle.transcript, "Primeira. ");
+  assert.equal(
+    buildContextReplayFrame(source({ events }), 9_000).transcript,
+    "Primeira. Segunda.",
+  );
+});
+
+test("only accepts bounded capture events from the browser", () => {
+  const valid = event({
+    kind: "transcript_delta",
+    payload: { delta: "Trecho novo" },
+  });
+  assert.equal(ClientContextReplayEventSchema.safeParse(valid).success, true);
+  assert.equal(
+    ClientContextReplayEventSchema.safeParse(
+      event({ kind: "claim_verified", payload: {} }),
+    ).success,
+    false,
+  );
+  assert.equal(
+    ClientContextReplayEventSchema.safeParse(
+      event({ kind: "transcript_delta", payload: { delta: "" } }),
+    ).success,
+    false,
+  );
 });

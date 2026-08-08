@@ -117,11 +117,16 @@ export function useLiveAnalysis({
   const lastAnalyzedLengthRef = useRef(0);
   const inFlightRef = useRef(false);
   const inFlightDoneRef = useRef<Promise<void> | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const generationRef = useRef(0);
 
   // Reset state when a fresh session begins (active flips false→true).
   const wasActiveRef = useRef(false);
   useEffect(() => {
     if (active && !wasActiveRef.current) {
+      generationRef.current += 1;
+      abortRef.current?.abort();
+      abortRef.current = null;
       setFindings([]);
       setClaims([]);
       setNeutralityFindings([]);
@@ -138,6 +143,15 @@ export function useLiveAnalysis({
     }
     wasActiveRef.current = active;
   }, [active]);
+
+  useEffect(
+    () => () => {
+      generationRef.current += 1;
+      abortRef.current?.abort();
+      abortRef.current = null;
+    },
+    [],
+  );
 
   const runAnalyze = useCallback(
     async (
@@ -161,6 +175,8 @@ export function useLiveAnalysis({
       });
       setIsAnalyzing(true);
       const ctrl = new AbortController();
+      const requestGeneration = generationRef.current;
+      abortRef.current = ctrl;
 
       try {
         const res = await fetch("/api/live/analyze", {
@@ -188,6 +204,7 @@ export function useLiveAnalysis({
         }
 
         for await (const ev of readSse(res, ctrl.signal)) {
+          if (requestGeneration !== generationRef.current) break;
           if (ev.event === "meta") {
             try {
               const meta = JSON.parse(ev.data) as {
@@ -318,10 +335,14 @@ export function useLiveAnalysis({
 
         return sessionIdRef.current;
       } catch (err) {
+        if (ctrl.signal.aborted || requestGeneration !== generationRef.current) {
+          return sessionIdRef.current;
+        }
         const message = err instanceof Error ? err.message : String(err);
         setError(message);
         return sessionIdRef.current;
       } finally {
+        if (abortRef.current === ctrl) abortRef.current = null;
         inFlightRef.current = false;
         resolveInFlight();
         inFlightDoneRef.current = null;

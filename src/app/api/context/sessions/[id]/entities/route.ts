@@ -9,6 +9,7 @@ import {
 import { syncContextKnowledgeMentions } from "@/lib/context-knowledge";
 import { recordContextSessionEvents } from "@/lib/context-session-events";
 import { prisma } from "@/lib/db";
+import type { Prisma } from "@/generated/prisma/client";
 import { readLiveContext } from "@/lib/live-context-schema";
 import type { LiveClaim } from "@/lib/live/use-live-analysis";
 
@@ -34,6 +35,9 @@ const MutationSchema = z.discriminatedUnion("action", [
   }),
 ]);
 
+type MutationPayload = z.infer<typeof MutationSchema>;
+const SERIALIZABLE_ATTEMPTS = 3;
+
 export async function PATCH(
   request: Request,
   routeContext: { params: Promise<{ id: string }> },
@@ -51,99 +55,19 @@ export async function PATCH(
   }
 
   const { id } = await routeContext.params;
-  const [analysis, factCheck] = await Promise.all([
-    prisma.analysis.findFirst({
-      where: { id, ownerWorkosUserId: user.id, source: "live" },
-      select: { id: true, liveContext: true, audioDurationMs: true },
-    }),
-    prisma.factCheck.findFirst({
-      where: { id, ownerWorkosUserId: user.id },
-      select: { claims: true, verifyStatus: true },
-    }),
-  ]);
-  if (!analysis) return Response.json({ error: "Not found" }, { status: 404 });
-  if (factCheck?.verifyStatus === "running") {
-    return Response.json(
-      { error: "Wait for the current verification to finish." },
-      { status: 409 },
-    );
-  }
-
-  const currentContext = readLiveContext(analysis.liveContext);
-  const currentClaims = parseClaims(factCheck?.claims);
-
   try {
-    let nextContext;
-    let nextClaims: LiveClaim[];
-    let verificationReset = false;
-    if (payload.data.action === "rename") {
-      const renamed = renameContextEntity(
-        currentContext,
-        payload.data.localEntityId,
-        payload.data.name,
-      );
-      nextContext = renamed.context;
-      nextClaims = replaceEntityNamesInClaims(currentClaims, [
-        { from: renamed.previousName, to: renamed.currentName },
-      ]);
-      verificationReset = true;
-    } else if (payload.data.action === "merge") {
-      const merged = mergeContextEntities(
-        currentContext,
-        payload.data.sourceLocalEntityId,
-        payload.data.targetLocalEntityId,
-      );
-      nextContext = merged.context;
-      nextClaims = replaceEntityNamesInClaims(currentClaims, [
-        { from: merged.sourceName, to: merged.mergedName },
-        { from: merged.previousTargetName, to: merged.mergedName },
-      ]);
-      verificationReset = true;
-    } else {
-      const removed = removeContextEntity(
-        currentContext,
-        payload.data.localEntityId,
-      );
-      nextContext = removed.context;
-      nextClaims = currentClaims;
-    }
-
-    await prisma.$transaction([
-      prisma.analysis.update({
-        where: { id },
-        data: { liveContext: JSON.stringify(nextContext) },
-      }),
-      ...(factCheck && verificationReset
-        ? [
-            prisma.factCheck.update({
-              where: { id },
-              data: {
-                claims: JSON.stringify(nextClaims),
-                verdicts: JSON.stringify([]),
-                refreshCounts: JSON.stringify({}),
-                verifyStatus: "none",
-                verifyModel: null,
-                verifyStartedAt: null,
-                verifyFinishedAt: null,
-                errorMessage: null,
-              },
-            }),
-          ]
-        : []),
-      prisma.knowledgeRelationMention.deleteMany({
-        where: { analysisId: id, ownerWorkosUserId: user.id },
-      }),
-      prisma.knowledgeEntityMention.deleteMany({
-        where: { analysisId: id, ownerWorkosUserId: user.id },
-      }),
-    ]);
+    const result = await mutateEntitySerializable({
+      analysisId: id,
+      ownerWorkosUserId: user.id,
+      mutation: payload.data,
+    });
 
     // Rebuild only this user's private session index. Public profiles and
     // globally attributed knowledge rows are intentionally left untouched.
     await syncContextKnowledgeMentions({
       analysisId: id,
       ownerWorkosUserId: user.id,
-      context: nextContext,
+      context: result.context,
     });
 
     try {
@@ -152,11 +76,23 @@ export async function PATCH(
         ownerWorkosUserId: user.id,
         events: [
           {
+            kind:
+              payload.data.action === "rename"
+                ? "entity_renamed"
+                : payload.data.action === "merge"
+                  ? "entities_merged"
+                  : "entity_removed",
+            elapsedMs:
+              payload.data.elapsedMs ?? result.audioDurationMs ?? 0,
+            sentenceIds: [],
+            payload: payload.data,
+          },
+          {
             kind: "context_snapshot",
             elapsedMs:
-              payload.data.elapsedMs ?? analysis.audioDurationMs ?? 0,
-            sentenceIds: mutationSentenceIds(nextContext),
-            payload: nextContext,
+              payload.data.elapsedMs ?? result.audioDurationMs ?? 0,
+            sentenceIds: mutationSentenceIds(result.context),
+            payload: result.context,
           },
         ],
       });
@@ -167,17 +103,166 @@ export async function PATCH(
     }
 
     return Response.json({
-      context: nextContext,
-      claims: nextClaims,
+      context: result.context,
+      claims: result.claims,
       verdicts: [],
-      verificationReset,
+      verificationReset: result.verificationReset,
     });
   } catch (error) {
+    if (error instanceof ContextMutationRequestError) {
+      return Response.json({ error: error.message }, { status: error.status });
+    }
     const message = error instanceof Error ? error.message : "Mutation failed";
     const status = /not found|same type|itself|empty/i.test(message)
       ? 422
       : 500;
     return Response.json({ error: message }, { status });
+  }
+}
+
+async function mutateEntitySerializable(input: {
+  analysisId: string;
+  ownerWorkosUserId: string;
+  mutation: MutationPayload;
+}) {
+  return serializableTransaction(async (tx) => {
+    const [analysis, factCheck] = await Promise.all([
+      tx.analysis.findFirst({
+        where: {
+          id: input.analysisId,
+          ownerWorkosUserId: input.ownerWorkosUserId,
+          source: "live",
+        },
+        select: { id: true, liveContext: true, audioDurationMs: true },
+      }),
+      tx.factCheck.findFirst({
+        where: {
+          id: input.analysisId,
+          ownerWorkosUserId: input.ownerWorkosUserId,
+        },
+        select: { claims: true, verifyStatus: true },
+      }),
+    ]);
+    if (!analysis) throw new ContextMutationRequestError("Not found", 404);
+    if (factCheck?.verifyStatus === "running") {
+      throw new ContextMutationRequestError(
+        "Wait for the current verification to finish.",
+        409,
+      );
+    }
+
+    const currentContext = readLiveContext(analysis.liveContext);
+    const currentClaims = parseClaims(factCheck?.claims);
+    let context;
+    let claims: LiveClaim[];
+    let verificationReset = false;
+    if (input.mutation.action === "rename") {
+      const renamed = renameContextEntity(
+        currentContext,
+        input.mutation.localEntityId,
+        input.mutation.name,
+      );
+      context = renamed.context;
+      claims = replaceEntityNamesInClaims(currentClaims, [
+        { from: renamed.previousName, to: renamed.currentName },
+      ]);
+      verificationReset = true;
+    } else if (input.mutation.action === "merge") {
+      const merged = mergeContextEntities(
+        currentContext,
+        input.mutation.sourceLocalEntityId,
+        input.mutation.targetLocalEntityId,
+      );
+      context = merged.context;
+      claims = replaceEntityNamesInClaims(currentClaims, [
+        { from: merged.sourceName, to: merged.mergedName },
+        { from: merged.previousTargetName, to: merged.mergedName },
+      ]);
+      verificationReset = true;
+    } else {
+      context = removeContextEntity(
+        currentContext,
+        input.mutation.localEntityId,
+      ).context;
+      claims = currentClaims;
+    }
+
+    await tx.analysis.update({
+      where: { id: input.analysisId },
+      data: {
+        liveContext: JSON.stringify(context),
+        contextRevision: { increment: 1 },
+      },
+    });
+    if (factCheck && verificationReset) {
+      await tx.factCheck.update({
+        where: { id: input.analysisId },
+        data: {
+          claims: JSON.stringify(claims),
+          verdicts: JSON.stringify([]),
+          refreshCounts: JSON.stringify({}),
+          verifyStatus: "none",
+          verifyModel: null,
+          verifyStartedAt: null,
+          verifyFinishedAt: null,
+          errorMessage: null,
+        },
+      });
+    }
+    await tx.knowledgeRelationMention.deleteMany({
+      where: {
+        analysisId: input.analysisId,
+        ownerWorkosUserId: input.ownerWorkosUserId,
+      },
+    });
+    await tx.knowledgeEntityMention.deleteMany({
+      where: {
+        analysisId: input.analysisId,
+        ownerWorkosUserId: input.ownerWorkosUserId,
+      },
+    });
+
+    return {
+      context,
+      claims,
+      verificationReset,
+      audioDurationMs: analysis.audioDurationMs,
+    };
+  });
+}
+
+async function serializableTransaction<T>(
+  work: (tx: Prisma.TransactionClient) => Promise<T>,
+): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < SERIALIZABLE_ATTEMPTS; attempt += 1) {
+    try {
+      return await prisma.$transaction(work, {
+        isolationLevel: "Serializable",
+      });
+    } catch (error) {
+      lastError = error;
+      if (!isPrismaError(error, "P2034")) throw error;
+    }
+  }
+  throw lastError;
+}
+
+function isPrismaError(error: unknown, code: string): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: unknown }).code === code
+  );
+}
+
+class ContextMutationRequestError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
   }
 }
 

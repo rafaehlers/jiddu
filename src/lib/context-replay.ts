@@ -79,7 +79,7 @@ export function buildContextReplayFrame(
   const playheadMs = clamp(requestedPlayheadMs, 0, durationMs);
   const atEnd = playheadMs >= durationMs;
   const exact = source.events.some(
-    (event) => event.kind === "context_snapshot" && event.elapsedMs === 0,
+    (event) => event.kind === "transcript_delta",
   );
 
   if (atEnd) {
@@ -118,12 +118,14 @@ export function buildContextReplayFrame(
     playheadMs,
     exact,
     atEnd: false,
-    transcript: visibleTranscript(
-      source.transcript,
-      source.sentences,
-      playheadMs,
-      durationMs,
-    ),
+    transcript:
+      transcriptFromEvents(visibleEvents) ??
+      visibleTranscript(
+        source.transcript,
+        source.sentences,
+        playheadMs,
+        durationMs,
+      ),
     context:
       latestContextSnapshot(visibleEvents) ??
       filterContext(source.context, isVisible),
@@ -157,6 +159,17 @@ export function buildContextReplayFrame(
     ),
     neutralityVerdict: latestNeutralityVerdict(visibleEvents),
   };
+}
+
+function transcriptFromEvents(events: ContextReplayEvent[]): string | null {
+  const deltas = events.filter((event) => event.kind === "transcript_delta");
+  if (deltas.length === 0) return null;
+  return deltas
+    .map((event) => {
+      const delta = (event.payload as { delta?: unknown } | null)?.delta;
+      return typeof delta === "string" ? delta : "";
+    })
+    .join("");
 }
 
 function visibleTranscript(
