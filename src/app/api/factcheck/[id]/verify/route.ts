@@ -10,6 +10,7 @@ import {
 import type { Claim } from "@/lib/claims-schema";
 import type { Verdict } from "@/lib/verdict-schema";
 import type { Lang } from "@/lib/fallacies";
+import { normalizeAppLanguage } from "@/lib/language";
 import {
   isAccessResponse,
   requireWebAnalysisAccess,
@@ -94,9 +95,7 @@ export async function POST(
   });
   if (isCreditResponse(reservation)) return reservation;
 
-  const lang = (fc.language && ["en", "pt", "es"].includes(fc.language)
-    ? fc.language
-    : "en") as Lang;
+  const lang: Lang = normalizeAppLanguage(fc.language);
 
   try {
     await prisma.factCheck.update({

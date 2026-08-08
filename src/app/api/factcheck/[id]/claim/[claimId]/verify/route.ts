@@ -12,6 +12,7 @@ import {
 import type { Claim } from "@/lib/claims-schema";
 import type { Verdict } from "@/lib/verdict-schema";
 import type { Lang } from "@/lib/fallacies";
+import { normalizeAppLanguage } from "@/lib/language";
 import {
   isAccessResponse,
   requireWebAnalysisAccess,
@@ -83,9 +84,7 @@ export async function POST(
     );
   }
 
-  const lang = (fc.language && ["en", "pt", "es"].includes(fc.language)
-    ? fc.language
-    : "en") as Lang;
+  const lang: Lang = normalizeAppLanguage(fc.language);
   const verifyModel = factCheckModelForAttempt(stringSettings, currentCount);
 
   const reservation = await reserveWebAnalysisCredits(access, {

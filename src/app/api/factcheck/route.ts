@@ -14,6 +14,7 @@ import type { IngestedDocument } from "@/lib/ingest/url";
 import { IngestError } from "@/lib/ingest/errors";
 import type { Claim } from "@/lib/claims-schema";
 import type { Lang } from "@/lib/fallacies";
+import { normalizeAppLanguage } from "@/lib/language";
 import {
   isAccessResponse,
   requireWebAnalysisAccess,
@@ -186,7 +187,6 @@ export async function POST(req: NextRequest) {
       // against the same key).
       const allClaims: (Claim & { id: string })[] = [];
       let claimCounter = 0;
-      let detectedLanguage: string | null = null;
       const chunkErrors: { index: number; message: string }[] = [];
       let chunkDoneCount = 0;
 
@@ -232,10 +232,6 @@ export async function POST(req: NextRequest) {
                 const stored = { id: claimId, ...event.claim };
                 allClaims.push(stored);
                 send("claim", stored);
-              } else if (event.type === "language") {
-                if (!detectedLanguage && event.language) {
-                  detectedLanguage = event.language;
-                }
               }
             }
             chunkDoneCount++;
@@ -277,7 +273,10 @@ export async function POST(req: NextRequest) {
         where: { id },
         data: {
           status: "complete",
-          language: detectedLanguage,
+          // The selected interface language controls generated copy. A model
+          // may report the source locale as e.g. `pt-BR`; persisting that value
+          // here used to make verification fall back to English.
+          language: lang,
           claims: JSON.stringify(allClaims),
           finishedAt: new Date(),
         },
@@ -333,9 +332,7 @@ function normalizeString(v: FormDataEntryValue | string | undefined | null): str
 }
 
 function normalizeLang(v: FormDataEntryValue | string | undefined | null): Lang {
-  const s = typeof v === "string" ? v.toLowerCase() : undefined;
-  if (s === "en" || s === "pt" || s === "es") return s;
-  return "en";
+  return normalizeAppLanguage(v);
 }
 
 function cap(s: string, max: number): string {
