@@ -167,6 +167,7 @@ export async function POST(req: NextRequest) {
         title: doc.title,
         source: doc.source,
         sourceRef: doc.sourceRef,
+        editorialMetadata: doc.editorial?.metadata ?? null,
         blocks,
         sentences,
         provider: llm.id,
@@ -206,7 +207,11 @@ export async function POST(req: NextRequest) {
               modelChain,
               (model) =>
                 llm.analyzeNeutralityStream(
-                  { sentences: chunk.sentences, lang },
+                  {
+                    sentences: chunk.sentences,
+                    lang,
+                    documentMetadata: doc.editorial?.metadata,
+                  },
                   {
                     model,
                     signal: abortController.signal,

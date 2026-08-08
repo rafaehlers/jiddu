@@ -19,6 +19,7 @@ import type {
   LiveContext,
   LiveContextWindow,
 } from "../live-context-schema";
+import type { EditorialMetadata } from "../ingest/url";
 
 export type ProviderId = "anthropic" | "openai";
 
@@ -34,6 +35,8 @@ export type AnalyzeInput = {
   contextSentences?: Sentence[];
   /** Listener-supplied page used only to disambiguate captured media. */
   sourceUrl?: string | null;
+  /** Publisher metadata recovered from an ingested article URL. */
+  documentMetadata?: EditorialMetadata;
 };
 
 export type AnalyzeOutput = {
@@ -46,6 +49,7 @@ export type AnalyzeOutput = {
 export type ExplainInput = {
   sections: ExplainInputSection[];
   lang?: Lang;
+  documentMetadata?: EditorialMetadata;
 };
 
 export type LlmStreamOptions = {

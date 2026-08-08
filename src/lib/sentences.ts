@@ -74,6 +74,11 @@ export function splitSentences(text: string): Sentence[] {
 
       if (ch === "\n") {
         while (end < len && normalized[end] === "\n") end++;
+      } else {
+        // Keep closing quotation marks and brackets attached to the sentence
+        // whose punctuation they close. Otherwise `“A claim.”` becomes a
+        // useful sentence plus a meaningless one-character sentence.
+        while (end < len && /["'”’»\)\]\}]/.test(normalized[end])) end++;
       }
 
       const raw = normalized.slice(start, end);

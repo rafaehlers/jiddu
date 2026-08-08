@@ -53,6 +53,10 @@ const TERMINAL = /[.!?][\])}"'’”]*$/;
  * deliberate: a PDF page/column break is layout, never a semantic boundary.
  */
 export function splitExplainDocument(doc: IngestedDocument): Block[] {
+  if (doc.source === "url" && doc.editorial?.blocks.length) {
+    const structured = splitEditorialArticle(doc);
+    if (structured.length > 0) return structured;
+  }
   if (
     doc.source === "pdf" &&
     doc.pages?.some((page) => (page.textItems?.length ?? 0) > 0)
@@ -80,6 +84,58 @@ export function splitExplainDocument(doc: IngestedDocument): Block[] {
     if (contentSections.size >= 2 && hasUsefulCoverage) return structured;
   }
   return splitBlocks(doc.text);
+}
+
+function splitEditorialArticle(doc: IngestedDocument): Block[] {
+  const sourceBlocks = doc.editorial?.blocks ?? [];
+  const blocks: Block[] = [];
+  let currentSection: string | null = null;
+  let currentSectionLevel = 1;
+  let currentSectionId: string | null = null;
+  let sectionSerial = 0;
+  let offset = 0;
+
+  for (const source of sourceBlocks) {
+    if (source.kind === "heading") {
+      currentSection = source.text;
+      currentSectionLevel = source.level ?? 1;
+      currentSectionId = `web-section-${sectionSerial++}`;
+      continue;
+    }
+
+    const text = source.text.trim();
+    if (!text) continue;
+    const start = offset;
+    const end = start + text.length;
+    offset = end + 2;
+    const section = source.section ?? currentSection;
+    const sectionLevel = source.sectionLevel ?? currentSectionLevel;
+    blocks.push({
+      id: `web-block-${blocks.length}`,
+      start,
+      end,
+      text,
+      section,
+      kind: "content",
+      sectionId: section ? currentSectionId : null,
+      sectionLevel,
+      sectionPath: section ? [section] : [],
+      analysisUnit: section ? "section" : "paragraph",
+      editorialKind: source.kind,
+      containsQuotation: containsQuotation(text),
+      quoteAttribution: source.quoteAttribution ?? null,
+    });
+  }
+
+  if (blocks[0] && doc.editorial?.metadata) {
+    blocks[0].documentMetadata = doc.editorial.metadata;
+  }
+
+  return blocks;
+}
+
+function containsQuotation(text: string): boolean {
+  return /(?:“[^”]{2,}”|"[^"]{2,}"|‘[^’]{2,}’|'[^']{2,}')/.test(text);
 }
 
 export function splitAcademicPdf(pages: IngestedPage[]): Block[] {

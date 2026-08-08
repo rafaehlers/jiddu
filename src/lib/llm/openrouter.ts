@@ -318,7 +318,15 @@ export class OpenRouterProvider implements LlmProvider {
       model,
       messages: [
         { role: "system", content: buildSystemPrompt(lang) },
-        { role: "user", content: buildUserPrompt(input.sentences, lang, input.contextSentences) },
+        {
+          role: "user",
+          content: buildUserPrompt(
+            input.sentences,
+            lang,
+            input.contextSentences,
+            input.documentMetadata,
+          ),
+        },
       ],
       tools: [
         {
@@ -366,7 +374,15 @@ export class OpenRouterProvider implements LlmProvider {
         model,
         messages: [
           { role: "system", content: buildSystemPrompt(lang) },
-          { role: "user", content: buildUserPrompt(input.sentences, lang, input.contextSentences) },
+          {
+            role: "user",
+            content: buildUserPrompt(
+              input.sentences,
+              lang,
+              input.contextSentences,
+              input.documentMetadata,
+            ),
+          },
         ],
         tools: [
           {
@@ -509,6 +525,7 @@ export class OpenRouterProvider implements LlmProvider {
               lang,
               input.contextSentences,
               input.sourceUrl,
+              input.documentMetadata,
             ),
           },
         ],
@@ -636,6 +653,7 @@ export class OpenRouterProvider implements LlmProvider {
               input.sentences,
               lang,
               input.contextSentences,
+              input.documentMetadata,
             ),
           },
         ],
@@ -843,6 +861,7 @@ export class OpenRouterProvider implements LlmProvider {
               input.sentences,
               lang,
               input.contextSentences,
+              input.documentMetadata,
             ),
           },
         ],
@@ -984,7 +1003,11 @@ export class OpenRouterProvider implements LlmProvider {
           { role: "system", content: buildExplainSystemPrompt(lang, level) },
           {
             role: "user",
-            content: buildExplainUserPrompt(input.sections, lang),
+            content: buildExplainUserPrompt(
+              input.sections,
+              lang,
+              input.documentMetadata,
+            ),
           },
         ],
         tools: [

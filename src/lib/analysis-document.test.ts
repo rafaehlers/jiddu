@@ -66,3 +66,58 @@ test("ignores malformed persisted structure and falls back safely", () => {
   assert.equal(blocks.length, 3);
   assert.equal(blocks[0].section, "Introduction");
 });
+
+test("carries URL article structure and quotation context into model sentences", () => {
+  const prepared = prepareAnalysisDocument(
+    {
+      title: "Diplomatic report",
+      text: "Opening context.\n\nThe minister said “This is a quoted claim.”\n\nA full quoted response.",
+      source: "url",
+      sourceRef: "https://example.com/report",
+      editorial: {
+        metadata: {
+          title: "Diplomatic report",
+          siteName: "Example News",
+          author: "Reporter Name",
+        },
+        blocks: [
+          { kind: "heading", text: "Diplomacy", level: 2 },
+          {
+            kind: "paragraph",
+            text: "Opening context.",
+            section: "Diplomacy",
+            sectionLevel: 2,
+          },
+          {
+            kind: "paragraph",
+            text: "The minister said “This is a quoted claim.”",
+            section: "Diplomacy",
+            sectionLevel: 2,
+          },
+          {
+            kind: "quote",
+            text: "A full quoted response.",
+            section: "Diplomacy",
+            sectionLevel: 2,
+            quoteAttribution: "The minister",
+          },
+        ],
+      },
+    },
+    10_000,
+  );
+
+  assert.equal(prepared.blocks.length, 3);
+  assert.equal(prepared.blocks[0].section, "Diplomacy");
+  assert.equal(prepared.blocks[0].documentMetadata?.author, "Reporter Name");
+  assert.equal(prepared.sentences[0].containsQuotation, undefined);
+  assert.equal(prepared.sentences[1].containsQuotation, true);
+  assert.equal(prepared.sentences[2].editorialKind, "quote");
+  assert.equal(prepared.sentences[2].quoteAttribution, "The minister");
+  assert.ok(
+    prepared.sentences.every(
+      (sentence) =>
+        prepared.text.slice(sentence.start, sentence.end) === sentence.text,
+    ),
+  );
+});

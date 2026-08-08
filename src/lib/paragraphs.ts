@@ -1,5 +1,6 @@
 import { splitSentences } from "./sentences";
 import type { Sentence } from "./schema";
+import type { EditorialMetadata } from "./ingest/url";
 
 // The explain pipeline works at paragraph granularity: one explanation per
 // paragraph. A "block" reuses the Sentence shape ({id,start,end,text}) so the
@@ -14,6 +15,12 @@ export type BlockKind = "content" | "references" | "metadata";
 export type Block = Sentence & {
   section?: string | null;
   kind?: BlockKind;
+  /** Structural role recovered from article HTML. */
+  editorialKind?: "paragraph" | "quote" | "list_item";
+  containsQuotation?: boolean;
+  quoteAttribution?: string | null;
+  /** Persisted once on the first URL block to avoid a database migration. */
+  documentMetadata?: EditorialMetadata;
   /** Stable structural identity. Several paragraph blocks can belong to one
    * paper section without making the model or the UI confuse them with chunks. */
   sectionId?: string | null;

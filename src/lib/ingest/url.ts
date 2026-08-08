@@ -14,9 +14,42 @@ export type IngestedDocument = {
   text: string;
   source: string;
   sourceRef: string;
+  editorial?: IngestedEditorialDocument;
   pages?: IngestedPage[];
   parser?: "liteparse" | "pdfjs";
   complexity?: PdfPageComplexity[];
+};
+
+export type EditorialBlockKind =
+  | "heading"
+  | "paragraph"
+  | "quote"
+  | "list_item";
+
+export type IngestedEditorialBlock = {
+  kind: EditorialBlockKind;
+  text: string;
+  level?: number;
+  section?: string | null;
+  sectionLevel?: number;
+  quoteAttribution?: string | null;
+};
+
+export type EditorialMetadata = {
+  title?: string | null;
+  canonicalUrl?: string | null;
+  siteName?: string | null;
+  author?: string | null;
+  publishedAt?: string | null;
+  modifiedAt?: string | null;
+  description?: string | null;
+  articleSection?: string | null;
+  contentType?: string | null;
+};
+
+export type IngestedEditorialDocument = {
+  metadata: EditorialMetadata;
+  blocks: IngestedEditorialBlock[];
 };
 
 export type IngestedPage = {
@@ -72,6 +105,152 @@ export type PdfPageLayoutComplexity = {
 const FETCH_TIMEOUT_MS = 15_000;
 const MAX_REDIRECTS = 5;
 const MAX_RESPONSE_BYTES = 5 * 1024 * 1024; // 5 MB
+
+const ARTICLE_BODY_SELECTORS = [
+  "[itemprop='articleBody']",
+  "[data-testid='article-body']",
+  ".article-body",
+  ".article__body",
+  ".story-body",
+  ".post-content-text",
+  ".post-content",
+  ".entry-content",
+  ".article-content",
+  "main article",
+  "article",
+] as const;
+
+// Elements that commonly sit inside an article wrapper but are not editorial
+// prose. Readability catches most of these on complete pages, while the extra
+// pass is important for publisher-specific author, ad and recommendation
+// widgets embedded directly in the article body.
+const BOILERPLATE_SELECTOR = [
+  "script",
+  "style",
+  "noscript",
+  "template",
+  "svg",
+  "canvas",
+  "iframe",
+  "nav",
+  "aside",
+  "footer",
+  "form",
+  "dialog",
+  "[hidden]",
+  "[aria-hidden='true']",
+  "[role='navigation']",
+  "[role='complementary']",
+  "[role='banner']",
+  "[role='contentinfo']",
+  ".no-print",
+  ".screen-reader-text",
+  ".visually-hidden",
+  ".advertisement",
+  ".advert",
+  ".ad-container",
+  ".ad-wrapper",
+  "[id^='ad-']",
+  "[class^='ad-']",
+  "[class*=' ad-']",
+  "[class*='-ad-']",
+  "[class*='advert']",
+  "[class*='newsletter']",
+  "[class*='social-share']",
+  "[class*='share-buttons']",
+  "[class*='related-post']",
+  "[class*='recommended']",
+  "[class*='comments']",
+  "[id^='comments']",
+  "[class*='author-box']",
+  "[class*='authors-box']",
+  "[class*='multiple-authors']",
+].join(",");
+
+const TEXT_BLOCK_SELECTOR = [
+  "address",
+  "article",
+  "blockquote",
+  "dd",
+  "div",
+  "dl",
+  "dt",
+  "figcaption",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "header",
+  "li",
+  "main",
+  "p",
+  "pre",
+  "section",
+  "td",
+  "th",
+].join(",");
+
+export type ReadableHtml = {
+  title: string | null;
+  text: string;
+  editorial: IngestedEditorialDocument;
+};
+
+type ArticleCandidate = {
+  text: string;
+  blocks: IngestedEditorialBlock[];
+};
+
+/**
+ * Extract the editorial prose from HTML without doing any network work.
+ * Keeping this stage pure makes publisher regressions reproducible in tests.
+ */
+export function extractReadableHtml(html: string, url: string): ReadableHtml {
+  const dom = new JSDOM(html, { url });
+  const document = dom.window.document;
+  const openGraphTitle = cleanInlineText(
+    document.querySelector<HTMLMetaElement>("meta[property='og:title']")
+      ?.content ?? "",
+  );
+  const documentTitle = cleanInlineText(document.title);
+  const metadata = extractEditorialMetadata(document, url);
+
+  removeBoilerplate(document);
+
+  // Capture a semantic body before Readability mutates the document. This is
+  // a recovery path for pages whose CMS markup causes Readability to truncate
+  // the article, not a replacement for Readability's scoring.
+  const semanticArticle = findBestSemanticArticle(document);
+  const bodyArticle = document.body
+    ? extractElementContent(document.body)
+    : emptyArticleCandidate();
+  const article = new Readability(document).parse();
+  const readabilityArticle = article?.content
+    ? extractFragmentContent(article.content, url)
+    : candidateFromText(article?.textContent ?? "");
+
+  const chosen = chooseArticleContent(
+    readabilityArticle,
+    semanticArticle,
+    bodyArticle,
+  );
+  const title =
+    openGraphTitle ||
+    cleanInlineText(article?.title ?? "") ||
+    documentTitle ||
+    null;
+
+  return {
+    title,
+    text: chosen.text,
+    editorial: {
+      metadata: { ...metadata, title },
+      blocks: chosen.blocks,
+    },
+  };
+}
 
 export async function ingestUrl(url: string): Promise<IngestedDocument> {
   const ctrl = new AbortController();
@@ -142,21 +321,10 @@ export async function ingestUrl(url: string): Promise<IngestedDocument> {
 
         const html = await readCappedText(response, MAX_RESPONSE_BYTES);
         bodyConsumed = true;
-        const dom = new JSDOM(html, { url: currentUrl.toString() });
-        const reader = new Readability(dom.window.document);
-        const article = reader.parse();
-
-        const title =
-          article?.title?.trim() || dom.window.document.title || null;
-        const text = (
-          article?.textContent ||
-          dom.window.document.body?.textContent ||
-          ""
-        )
-          .replace(/ /g, " ")
-          .replace(/[ \t]+/g, " ")
-          .replace(/\n{3,}/g, "\n\n")
-          .trim();
+        const { title, text, editorial } = extractReadableHtml(
+          html,
+          currentUrl.toString(),
+        );
 
         if (text.length < 40) {
           throw new IngestError(
@@ -170,6 +338,7 @@ export async function ingestUrl(url: string): Promise<IngestedDocument> {
           text,
           source: "url",
           sourceRef: currentUrl.toString(),
+          editorial,
         };
       } finally {
         if (!bodyConsumed) {
@@ -191,6 +360,326 @@ export async function ingestUrl(url: string): Promise<IngestedDocument> {
   } finally {
     clearTimeout(timer);
   }
+}
+
+function removeBoilerplate(root: ParentNode): void {
+  root.querySelectorAll(BOILERPLATE_SELECTOR).forEach((element) => {
+    element.remove();
+  });
+}
+
+function findBestSemanticArticle(document: Document): ArticleCandidate {
+  const seen = new Set<Element>();
+  let best = emptyArticleCandidate();
+  let bestScore = Number.NEGATIVE_INFINITY;
+
+  for (const selector of ARTICLE_BODY_SELECTORS) {
+    for (const element of document.querySelectorAll(selector)) {
+      if (seen.has(element)) continue;
+      seen.add(element);
+
+      const candidate = extractElementContent(element);
+      if (candidate.text.length < 200) continue;
+
+      const paragraphCount = candidate.blocks.filter(
+        (block) => block.kind !== "heading",
+      ).length;
+      const linkTextLength = Array.from(element.querySelectorAll("a"))
+        .map((link) => cleanInlineText(link.textContent ?? "").length)
+        .reduce((sum, length) => sum + length, 0);
+      const linkRatio = linkTextLength / Math.max(1, candidate.text.length);
+      const score =
+        candidate.text.length +
+        paragraphCount * 120 -
+        linkRatio * candidate.text.length * 2;
+
+      if (score > bestScore) {
+        bestScore = score;
+        best = candidate;
+      }
+    }
+  }
+
+  return best;
+}
+
+function extractFragmentContent(html: string, url: string): ArticleCandidate {
+  const fragment = new JSDOM(`<body>${html}</body>`, { url });
+  removeBoilerplate(fragment.window.document);
+  return fragment.window.document.body
+    ? extractElementContent(fragment.window.document.body)
+    : emptyArticleCandidate();
+}
+
+function extractElementContent(element: Element): ArticleCandidate {
+  const clone = element.cloneNode(true) as Element;
+  removeBoilerplate(clone);
+  const blocks = extractEditorialBlocks(clone);
+  const contentBlocks = blocks.filter((block) => block.kind !== "heading");
+  if (contentBlocks.length > 0) {
+    return {
+      text: contentBlocks.map((block) => block.text).join("\n\n"),
+      blocks,
+    };
+  }
+
+  const ownerDocument = clone.ownerDocument;
+
+  clone.querySelectorAll("br").forEach((br) => {
+    br.replaceWith(ownerDocument.createTextNode("\n"));
+  });
+  clone.querySelectorAll(TEXT_BLOCK_SELECTOR).forEach((block) => {
+    block.insertBefore(ownerDocument.createTextNode("\n\n"), block.firstChild);
+    block.appendChild(ownerDocument.createTextNode("\n\n"));
+  });
+
+  return candidateFromText(clone.textContent ?? "");
+}
+
+function chooseArticleContent(
+  readability: ArticleCandidate,
+  semantic: ArticleCandidate,
+  body: ArticleCandidate,
+): ArticleCandidate {
+  if (readability.text.length >= 40) {
+    // Prefer the semantically-marked body only when it recovered meaningful
+    // content that Readability dropped. Small differences are usually titles,
+    // captions or bylines that Readability correctly excluded.
+    if (semantic.text.length > readability.text.length * 1.12) {
+      return semantic;
+    }
+    return readability;
+  }
+  if (semantic.text.length >= 40) return semantic;
+  return body;
+}
+
+function extractEditorialBlocks(root: Element): IngestedEditorialBlock[] {
+  const blocks: IngestedEditorialBlock[] = [];
+  let section: string | null = null;
+  let sectionLevel: number | undefined;
+  const nodes = root.querySelectorAll(
+    "h1,h2,h3,h4,h5,h6,p,blockquote,li",
+  );
+
+  for (const node of nodes) {
+    const tag = node.tagName.toLowerCase();
+    if (tag === "p" && node.closest("blockquote,li")) continue;
+    if (tag === "li" && node.parentElement?.closest("li")) continue;
+
+    if (/^h[1-6]$/.test(tag)) {
+      const text = cleanInlineText(node.textContent ?? "");
+      if (!text) continue;
+      section = text;
+      sectionLevel = Number.parseInt(tag.slice(1), 10);
+      blocks.push({ kind: "heading", text, level: sectionLevel });
+      continue;
+    }
+
+    const quoteAttribution =
+      tag === "blockquote"
+        ? cleanInlineText(
+            node.querySelector("cite")?.textContent ??
+              node.getAttribute("data-attribution") ??
+              "",
+          ) || null
+        : null;
+    const contentNode = node.cloneNode(true) as Element;
+    contentNode.querySelectorAll("cite,ol,ul").forEach((child) => child.remove());
+    const text = cleanMultilineText(contentNode.textContent ?? "");
+    if (!text || blocks.at(-1)?.text === text) continue;
+
+    blocks.push({
+      kind:
+        tag === "blockquote"
+          ? "quote"
+          : tag === "li"
+            ? "list_item"
+            : "paragraph",
+      text,
+      section,
+      sectionLevel,
+      ...(quoteAttribution ? { quoteAttribution } : {}),
+    });
+  }
+
+  return blocks;
+}
+
+function candidateFromText(text: string): ArticleCandidate {
+  const cleaned = cleanMultilineText(text);
+  if (!cleaned) return emptyArticleCandidate();
+  const paragraphs = cleaned.split(/\n{2,}/).filter(Boolean);
+  return {
+    text: paragraphs.join("\n\n"),
+    blocks: paragraphs.map((paragraph) => ({
+      kind: "paragraph",
+      text: paragraph,
+      section: null,
+    })),
+  };
+}
+
+function emptyArticleCandidate(): ArticleCandidate {
+  return { text: "", blocks: [] };
+}
+
+function extractEditorialMetadata(
+  document: Document,
+  sourceUrl: string,
+): EditorialMetadata {
+  const structured = findStructuredArticle(document);
+  const canonicalHref =
+    document.querySelector<HTMLLinkElement>("link[rel='canonical']")?.href ??
+    sourceUrl;
+
+  return {
+    canonicalUrl: normalizeHttpUrl(canonicalHref, sourceUrl),
+    siteName: firstNonEmpty(
+      metaContent(document, "property", "og:site_name"),
+      asText(structured?.publisher),
+    ),
+    author: firstNonEmpty(
+      metaContent(document, "name", "author"),
+      metaContent(document, "property", "article:author"),
+      asAuthor(structured?.author),
+    ),
+    publishedAt: firstNonEmpty(
+      metaContent(document, "property", "article:published_time"),
+      asText(structured?.datePublished),
+    ),
+    modifiedAt: firstNonEmpty(
+      metaContent(document, "property", "article:modified_time"),
+      asText(structured?.dateModified),
+    ),
+    description: firstNonEmpty(
+      metaContent(document, "property", "og:description"),
+      metaContent(document, "name", "description"),
+      asText(structured?.description),
+    ),
+    articleSection: firstNonEmpty(
+      metaContent(document, "property", "article:section"),
+      asText(structured?.articleSection),
+    ),
+    contentType: firstNonEmpty(
+      asSchemaType(structured?.["@type"]),
+      metaContent(document, "property", "og:type"),
+    ),
+  };
+}
+
+function metaContent(
+  document: Document,
+  attribute: "name" | "property",
+  value: string,
+): string | null {
+  const content = document.querySelector<HTMLMetaElement>(
+    `meta[${attribute}='${value}']`,
+  )?.content;
+  return content ? capMetadata(content) : null;
+}
+
+function findStructuredArticle(
+  document: Document,
+): Record<string, unknown> | null {
+  const articleTypes = new Set([
+    "Article",
+    "NewsArticle",
+    "BlogPosting",
+    "AnalysisNewsArticle",
+    "OpinionNewsArticle",
+    "ReportageNewsArticle",
+  ]);
+
+  for (const script of document.querySelectorAll<HTMLScriptElement>(
+    "script[type='application/ld+json']",
+  )) {
+    try {
+      const parsed = JSON.parse(script.textContent ?? "") as unknown;
+      const queue: unknown[] = [parsed];
+      while (queue.length > 0) {
+        const value = queue.shift();
+        if (Array.isArray(value)) {
+          queue.push(...value);
+          continue;
+        }
+        if (!value || typeof value !== "object") continue;
+        const object = value as Record<string, unknown>;
+        const types = Array.isArray(object["@type"])
+          ? object["@type"]
+          : [object["@type"]];
+        if (types.some((type) => typeof type === "string" && articleTypes.has(type))) {
+          return object;
+        }
+        if (object["@graph"]) queue.push(object["@graph"]);
+      }
+    } catch {
+      // Invalid third-party structured data must not break article ingestion.
+    }
+  }
+  return null;
+}
+
+function asAuthor(value: unknown): string | null {
+  const values = Array.isArray(value) ? value : [value];
+  const authors = values
+    .map((author) =>
+      typeof author === "string"
+        ? author
+        : author && typeof author === "object"
+          ? asText((author as Record<string, unknown>).name)
+          : null,
+    )
+    .filter((author): author is string => Boolean(author));
+  return authors.length > 0 ? capMetadata(authors.join(", ")) : null;
+}
+
+function asText(value: unknown): string | null {
+  if (typeof value === "string") return capMetadata(value);
+  if (value && typeof value === "object") {
+    const name = (value as Record<string, unknown>).name;
+    if (typeof name === "string") return capMetadata(name);
+  }
+  return null;
+}
+
+function asSchemaType(value: unknown): string | null {
+  if (typeof value === "string") return capMetadata(value);
+  if (Array.isArray(value)) {
+    return value.find((item): item is string => typeof item === "string") ?? null;
+  }
+  return null;
+}
+
+function firstNonEmpty(...values: (string | null | undefined)[]): string | null {
+  return values.find((value): value is string => Boolean(value?.trim())) ?? null;
+}
+
+function capMetadata(value: string): string {
+  return cleanInlineText(value).slice(0, 2_000);
+}
+
+function normalizeHttpUrl(value: string, base: string): string | null {
+  try {
+    const parsed = new URL(value, base);
+    return /^https?:$/.test(parsed.protocol) ? parsed.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+function cleanInlineText(text: string): string {
+  return text.replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function cleanMultilineText(text: string): string {
+  return text
+    .replace(/\u00a0/g, " ")
+    .replace(/\r\n?/g, "\n")
+    .replace(/[\t\f\v ]+/g, " ")
+    .replace(/ *\n */g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 // Mimics a current Chrome on Windows. Most Brazilian outlets (Folha,
