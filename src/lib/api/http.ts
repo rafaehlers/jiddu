@@ -2,6 +2,7 @@
 
 import type { Lang } from "@/lib/fallacies";
 import { IngestError } from "@/lib/ingest/errors";
+import { normalizeAppLanguage } from "@/lib/language";
 import { NoUnitsError } from "./run";
 
 export const MAX_API_TEXT_CHARS = 2000;
@@ -16,9 +17,7 @@ export function jsonError(message: string, status: number, code?: string): Respo
 }
 
 export function normalizeLang(v: unknown): Lang {
-  const s = typeof v === "string" ? v.toLowerCase() : undefined;
-  if (s === "en" || s === "pt" || s === "es") return s;
-  return "en";
+  return normalizeAppLanguage(v);
 }
 
 // Validate and extract the `text` field shared by every v1 endpoint. Returns
