@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { nanoid } from "nanoid";
+import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { splitSentences } from "@/lib/sentences";
 import { getProvider, resolveModel } from "@/lib/llm";
@@ -40,11 +41,13 @@ import {
   readLiveContext,
   sanitizeLiveContextWindow,
   type LiveContext,
+  type LiveContextWindow,
 } from "@/lib/live-context-schema";
 import { syncContextKnowledgeMentions } from "@/lib/context-knowledge";
 import { recordContextSessionEvents } from "@/lib/context-session-events";
 import { normalizeCapturedSourceUrl } from "@/lib/live-source-context";
 import { resolveLiveNeutrality } from "@/lib/live-neutrality";
+import { replaceEntityNamesInClaims } from "@/lib/context-session-mutations";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -52,6 +55,7 @@ export const maxDuration = 120;
 const MAX_TRANSCRIPT_CHARS = 500_000;
 const MIN_NEW_CHARS_TO_ANALYZE = 80;
 const CONTEXT_SENTENCE_COUNT = 4;
+const SERIALIZABLE_ATTEMPTS = 3;
 
 type Body = {
   billingReservationId?: string;
@@ -332,7 +336,7 @@ export async function POST(req: NextRequest) {
     throw error;
   }
 
-  const existingClaims = safeJsonArray<ClaimWithId>(
+  let existingClaims = safeJsonArray<ClaimWithId>(
     factCheckRow?.claims ?? "[]",
   );
   const existingNeutralityFindings = safeJsonArray<NeutralityFinding>(
@@ -454,12 +458,13 @@ export async function POST(req: NextRequest) {
                     // soon as the card appears. Complete the private mention
                     // index first as well, avoiding a stale sync racing a
                     // listener mutation from this same analysis window.
-                    await prisma.analysis.update({
-                      where: { id: row.id },
-                      data: {
-                        liveContext: JSON.stringify(nextLiveContext),
-                      },
+                    const persistedContext = await persistLiveContextWindow({
+                      analysisId: row.id,
+                      expectedRevision: row.contextRevision,
+                      nextContext: nextLiveContext,
+                      analyzedWindow: sanitized,
                     });
+                    nextLiveContext = persistedContext.context;
                     if (row.ownerWorkosUserId) {
                       try {
                         await syncContextKnowledgeMentions({
@@ -711,6 +716,42 @@ export async function POST(req: NextRequest) {
 
             await Promise.all(tasks);
 
+            const latestContextRevision = await prisma.analysis.findUnique({
+              where: { id: row.id },
+              select: { contextRevision: true, liveContext: true },
+            });
+            if (
+              factCheckRow &&
+              latestContextRevision &&
+              latestContextRevision.contextRevision !== row.contextRevision
+            ) {
+              nextLiveContext = readLiveContext(
+                latestContextRevision.liveContext,
+              );
+              const latestFactCheck = await prisma.factCheck.findUnique({
+                where: { id: row.id },
+                select: { claims: true },
+              });
+              existingClaims = safeJsonArray<ClaimWithId>(
+                latestFactCheck?.claims ?? "[]",
+              );
+              const replacements = nextLiveContext.entities
+                .filter((entity) => entity.userCorrectedName)
+                .flatMap((entity) =>
+                  entity.aliases.map((alias) => ({
+                    from: alias,
+                    to: entity.name,
+                  })),
+                );
+              if (replacements.length > 0) {
+                const corrected = replaceEntityNamesInClaims(
+                  newClaims,
+                  replacements,
+                );
+                newClaims.splice(0, newClaims.length, ...corrected);
+              }
+            }
+
             const replayEvents = [
               ...newFindings.map((finding) => ({
                 kind: "finding_detected" as const,
@@ -770,7 +811,7 @@ export async function POST(req: NextRequest) {
               ? allSentences.slice(0, committedCount + toAnalyze.length)
               : allSentences.slice(0, committedCount);
           const allFindings = [...existingFindings, ...newFindings];
-          const allClaims = [...existingClaims, ...newClaims];
+          let allClaims = [...existingClaims, ...newClaims];
           const allNeutralityFindings = finalize
             ? finalNeutralityRecalculated
               ? newNeutralityFindings
@@ -807,8 +848,43 @@ export async function POST(req: NextRequest) {
             : row.title;
 
           const finishedAt = finalize ? new Date() : null;
-          await Promise.all([
-            prisma.analysis.update({
+          allClaims = await serializableTransaction(async (tx) => {
+            let claimsToPersist = allClaims;
+            const latestContext = await tx.analysis.findUnique({
+              where: { id: row.id },
+              select: { contextRevision: true, liveContext: true },
+            });
+            if (
+              factCheckRow &&
+              latestContext &&
+              latestContext.contextRevision !== row.contextRevision
+            ) {
+              const latestFactCheck = await tx.factCheck.findUnique({
+                where: { id: row.id },
+                select: { claims: true },
+              });
+              const correctedContext = readLiveContext(
+                latestContext.liveContext,
+              );
+              const replacements = correctedContext.entities
+                .filter((entity) => entity.userCorrectedName)
+                .flatMap((entity) =>
+                  entity.aliases.map((alias) => ({
+                    from: alias,
+                    to: entity.name,
+                  })),
+                );
+              const correctedNewClaims =
+                replacements.length > 0
+                  ? replaceEntityNamesInClaims(newClaims, replacements)
+                  : newClaims;
+              claimsToPersist = mergeClaimsById(
+                safeJsonArray<ClaimWithId>(latestFactCheck?.claims ?? "[]"),
+                correctedNewClaims,
+              );
+            }
+
+            await tx.analysis.update({
               where: { id: row.id },
               data: {
                 status: finalize ? "complete" : "running",
@@ -824,42 +900,43 @@ export async function POST(req: NextRequest) {
                 finishedAt,
                 audioDurationMs,
               },
-            }),
-            factCheckRow
-              ? prisma.factCheck.update({
-                  where: { id: row.id },
-                  data: {
-                    status: finalize ? "complete" : "running",
-                    sourceRef: capturedSourceUrl,
-                    text,
-                    title,
-                    language: windowLanguage ?? factCheckRow.language ?? lang,
-                    sentences: JSON.stringify(persistedSentences),
-                    claims: JSON.stringify(allClaims),
-                    finishedAt,
-                  },
-                })
-              : Promise.resolve(),
-            neutralityRow && neutrality
-              ? prisma.neutrality.update({
-                  where: { id: row.id },
-                  data: {
-                    status: finalize ? "complete" : "running",
-                    sourceRef: capturedSourceUrl,
-                    text,
-                    title,
-                    language: windowLanguage ?? neutralityRow.language ?? lang,
-                    sentences: JSON.stringify(persistedSentences),
-                    findings: JSON.stringify(allNeutralityFindings),
-                    verdict: neutrality.verdict,
-                    confidence: neutrality.confidence,
-                    rationale: neutrality.rationale || null,
-                    textType: neutrality.textType,
-                    finishedAt,
-                  },
-                })
-              : Promise.resolve(),
-          ]);
+            });
+            if (factCheckRow) {
+              await tx.factCheck.update({
+                where: { id: row.id },
+                data: {
+                  status: finalize ? "complete" : "running",
+                  sourceRef: capturedSourceUrl,
+                  text,
+                  title,
+                  language: windowLanguage ?? factCheckRow.language ?? lang,
+                  sentences: JSON.stringify(persistedSentences),
+                  claims: JSON.stringify(claimsToPersist),
+                  finishedAt,
+                },
+              });
+            }
+            if (neutralityRow && neutrality) {
+              await tx.neutrality.update({
+                where: { id: row.id },
+                data: {
+                  status: finalize ? "complete" : "running",
+                  sourceRef: capturedSourceUrl,
+                  text,
+                  title,
+                  language: windowLanguage ?? neutralityRow.language ?? lang,
+                  sentences: JSON.stringify(persistedSentences),
+                  findings: JSON.stringify(allNeutralityFindings),
+                  verdict: neutrality.verdict,
+                  confidence: neutrality.confidence,
+                  rationale: neutrality.rationale || null,
+                  textType: neutrality.textType,
+                  finishedAt,
+                },
+              });
+            }
+            return claimsToPersist;
+          });
 
           send("done", {
             id: row.id,
@@ -913,6 +990,72 @@ function jsonError(message: string, status: number) {
     status,
     headers: { "content-type": "application/json" },
   });
+}
+
+async function persistLiveContextWindow(input: {
+  analysisId: string;
+  expectedRevision: number;
+  nextContext: LiveContext;
+  analyzedWindow: LiveContextWindow;
+}): Promise<{ context: LiveContext }> {
+  let expectedRevision = input.expectedRevision;
+  let nextContext = input.nextContext;
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const updated = await prisma.analysis.updateMany({
+      where: { id: input.analysisId, contextRevision: expectedRevision },
+      data: { liveContext: JSON.stringify(nextContext) },
+    });
+    if (updated.count === 1) return { context: nextContext };
+
+    const latest = await prisma.analysis.findUnique({
+      where: { id: input.analysisId },
+      select: { liveContext: true, contextRevision: true },
+    });
+    if (!latest) throw new Error("Context session disappeared");
+    expectedRevision = latest.contextRevision;
+    nextContext = mergeLiveContext(
+      readLiveContext(latest.liveContext),
+      input.analyzedWindow,
+    );
+  }
+
+  throw new Error("Context changed repeatedly while analysis was running");
+}
+
+async function serializableTransaction<T>(
+  work: (tx: Prisma.TransactionClient) => Promise<T>,
+): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < SERIALIZABLE_ATTEMPTS; attempt += 1) {
+    try {
+      return await prisma.$transaction(work, {
+        isolationLevel: "Serializable",
+      });
+    } catch (error) {
+      lastError = error;
+      if (!isPrismaError(error, "P2034")) throw error;
+    }
+  }
+  throw lastError;
+}
+
+function isPrismaError(error: unknown, code: string): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: unknown }).code === code
+  );
+}
+
+function mergeClaimsById(
+  existing: ClaimWithId[],
+  additions: ClaimWithId[],
+): ClaimWithId[] {
+  const claims = new Map(existing.map((claim) => [claim.id, claim]));
+  for (const claim of additions) claims.set(claim.id, claim);
+  return [...claims.values()];
 }
 
 function normalizeLang(v: unknown): Lang {

@@ -46,16 +46,35 @@ import {
   useContextTheme,
 } from "./context-theme-control";
 import { ContextSettingsButton, useContextSettings } from "./context-settings";
+import { ContextUiStoreProvider } from "./context-ui-store-provider";
 import { useContextEnrichment } from "./use-context-enrichment";
 import { ContextActivityLog } from "./context-activity-log";
+import {
+  clearContextRecoveryMarker,
+  ContextSessionStoreProvider,
+  useContextRecoveryMarker,
+  useContextSessionStore,
+  useContextSessionStoreApi,
+} from "./context-session-store-provider";
+import { useContextSessionBridge } from "./use-context-session-bridge";
 
 const MAX_SESSION_MS = 60 * 60 * 1_000;
 
-export function ContextWorkspace({
-  searchModels,
-}: {
+type ContextWorkspaceProps = {
   searchModels: { news: string; factCheck: string };
-}) {
+};
+
+export function ContextWorkspace(props: ContextWorkspaceProps) {
+  return (
+    <ContextUiStoreProvider>
+      <ContextSessionStoreProvider>
+        <ContextWorkspaceContent {...props} />
+      </ContextSessionStoreProvider>
+    </ContextUiStoreProvider>
+  );
+}
+
+function ContextWorkspaceContent({ searchModels }: ContextWorkspaceProps) {
   const { lang, setLang } = useI18n();
   const copy = contextCopy(lang);
   const { user, loading: authLoading } = useAuth();
@@ -67,6 +86,7 @@ export function ContextWorkspace({
   const floatingPanels = useContextFloatingPanels();
   const [contextTheme, setContextTheme] = useContextTheme();
   const contextSettings = useContextSettings();
+  const sessionStore = useContextSessionStoreApi();
 
   const session = useLiveSession({ language: lang });
   const analysis = useLiveAnalysis({
@@ -78,17 +98,38 @@ export function ContextWorkspace({
     lenses: DEFAULT_LIVE_LENSES,
     intervalMs: contextSettings.settings.analysisIntervalMs,
   });
+  const captureView = useContextSessionStore((state) => state.capture);
+  const analysisView = useContextSessionStore((state) => state.analysis);
   const verification = useLiveClaimVerification(
     analysis.sessionId,
-    analysis.claims,
+    analysisView.claims,
     session.elapsedMs,
   );
   const enrichment = useContextEnrichment({
     sessionId: analysis.sessionId,
-    context: analysis.context,
+    context: analysisView.context,
     language: lang,
     automaticNewsEnabled:
       session.state === "live" && contextSettings.settings.automaticNews,
+  });
+  useContextSessionBridge({
+    source,
+    session,
+    analysis,
+    verification,
+    enrichment,
+    analysisProcesses: DEFAULT_LIVE_LENSES.length,
+    newsModel: searchModels.news,
+    verificationModel: searchModels.factCheck,
+  });
+  const verificationView = useContextSessionStore(
+    (state) => state.verification,
+  );
+  const enrichmentView = useContextSessionStore((state) => state.enrichment);
+  const pipelineAgents = useContextSessionStore((state) => state.agents);
+  const recoverableSessionId = useContextRecoveryMarker({
+    sessionId: analysis.sessionId,
+    state: session.state,
   });
 
   const isRunning =
@@ -99,9 +140,6 @@ export function ContextWorkspace({
     (session.state === "stopped" || session.state === "error") &&
     analysis.sessionId != null;
   const controlsLocked = isRunning || verification.isVerifying;
-  const verificationRequestCount =
-    verification.status === "running" ? 1 : verification.verifyingClaimIds.size;
-
   const jumpToSentence = useCallback((sentenceId: string) => {
     transcriptRef.current?.focusSentence(sentenceId);
   }, []);
@@ -109,45 +147,78 @@ export function ContextWorkspace({
   const handleRenameEntity = useCallback(
     async (entityId: string, name: string) => {
       if (!analysis.sessionId) throw new Error("Session is not ready");
-      const result = await mutateContextEntity(analysis.sessionId, {
+      const operationId = createMutationOperationId();
+      const mutation = {
         action: "rename",
         localEntityId: entityId,
         name,
         elapsedMs: session.elapsedMs,
-      });
-      analysis.applyContextMutation(result.context, result.claims);
-      if (result.verificationReset) verification.reset();
+      } as const;
+      sessionStore.getState().beginEntityMutation(operationId, mutation);
+      try {
+        const result = await mutateContextEntity(analysis.sessionId, mutation);
+        sessionStore
+          .getState()
+          .commitEntityMutation(operationId, result.context, result.claims);
+        analysis.applyContextMutation(result.context, result.claims);
+        if (result.verificationReset) verification.reset();
+      } catch (error) {
+        sessionStore.getState().rollbackEntityMutation(operationId);
+        throw error;
+      }
     },
-    [analysis, session.elapsedMs, verification],
+    [analysis, session.elapsedMs, sessionStore, verification],
   );
 
   const handleMergeEntities = useCallback(
     async (sourceEntityId: string, targetEntityId: string) => {
       if (!analysis.sessionId) throw new Error("Session is not ready");
-      const result = await mutateContextEntity(analysis.sessionId, {
+      const operationId = createMutationOperationId();
+      const mutation = {
         action: "merge",
         sourceLocalEntityId: sourceEntityId,
         targetLocalEntityId: targetEntityId,
         elapsedMs: session.elapsedMs,
-      });
-      analysis.applyContextMutation(result.context, result.claims);
-      if (result.verificationReset) verification.reset();
+      } as const;
+      sessionStore.getState().beginEntityMutation(operationId, mutation);
+      try {
+        const result = await mutateContextEntity(analysis.sessionId, mutation);
+        sessionStore
+          .getState()
+          .commitEntityMutation(operationId, result.context, result.claims);
+        analysis.applyContextMutation(result.context, result.claims);
+        if (result.verificationReset) verification.reset();
+      } catch (error) {
+        sessionStore.getState().rollbackEntityMutation(operationId);
+        throw error;
+      }
     },
-    [analysis, session.elapsedMs, verification],
+    [analysis, session.elapsedMs, sessionStore, verification],
   );
 
   const handleRemoveEntity = useCallback(
     async (entityId: string) => {
       if (!analysis.sessionId) throw new Error("Session is not ready");
-      const result = await mutateContextEntity(analysis.sessionId, {
+      const operationId = createMutationOperationId();
+      const mutation = {
         action: "remove",
         localEntityId: entityId,
         elapsedMs: session.elapsedMs,
-      });
-      analysis.applyContextMutation(result.context, result.claims);
-      if (result.verificationReset) verification.reset();
+      } as const;
+      sessionStore.getState().beginEntityMutation(operationId, mutation);
+      try {
+        const result = await mutateContextEntity(analysis.sessionId, mutation);
+        sessionStore
+          .getState()
+          .commitEntityMutation(operationId, result.context, result.claims);
+        analysis.applyContextMutation(result.context, result.claims);
+        if (result.verificationReset) verification.reset();
+      } catch (error) {
+        sessionStore.getState().rollbackEntityMutation(operationId);
+        throw error;
+      }
     },
-    [analysis, session.elapsedMs, verification],
+    [analysis, session.elapsedMs, sessionStore, verification],
   );
 
   const handleStart = () => {
@@ -157,6 +228,8 @@ export function ContextWorkspace({
       return;
     }
     verification.reset();
+    clearContextRecoveryMarker();
+    sessionStore.getState().resetSession(source);
     void session.start(source);
   };
 
@@ -182,11 +255,13 @@ export function ContextWorkspace({
   const statusLabel =
     session.state === "live"
       ? copy.listening
-      : analysis.isAnalyzing
-        ? copy.analyzing
-        : concluded
-          ? copy.saved
-          : copy.ready;
+      : session.state === "connecting"
+        ? copy.connecting
+        : analysis.isAnalyzing
+          ? copy.analyzing
+          : concluded
+            ? copy.saved
+            : copy.ready;
 
   return (
     <main
@@ -351,10 +426,18 @@ export function ContextWorkspace({
               {copy.openSaved}
               <ExternalLink className="size-3" />
             </Link>
+          ) : recoverableSessionId && !analysis.sessionId && !isRunning ? (
+            <Link
+              href={`/context/${recoverableSessionId}`}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-accent/40 bg-accent/10 px-3 py-1.5 text-xs font-semibold text-accent transition-colors hover:bg-accent/20"
+            >
+              {copy.recoverSession}
+              <ExternalLink className="size-3" />
+            </Link>
           ) : null}
           <ContextNeutralityHeader
-            verdict={analysis.neutralityVerdict}
-            findings={analysis.neutralityFindings}
+            verdict={analysisView.neutralityVerdict}
+            findings={analysisView.neutralityFindings}
             final={concluded}
             copy={copy}
           />
@@ -379,19 +462,19 @@ export function ContextWorkspace({
         <div className="pointer-events-none absolute left-3 top-3 z-10 rounded-md border border-rule bg-background/85 px-2.5 py-1.5 text-xs backdrop-blur">
           <span className="font-medium">{copy.graph}</span>
           <span className="ml-2 text-muted">
-            {analysis.context.entities.length} {copy.entities} ·{" "}
-            {analysis.context.relations.length} {copy.relations}
+            {analysisView.context.entities.length} {copy.entities} ·{" "}
+            {analysisView.context.relations.length} {copy.relations}
           </span>
         </div>
-        {enrichment.errors.size > 0 ? (
+        {enrichmentView.errors.size > 0 ? (
           <p className="pointer-events-none absolute right-3 top-3 z-10 max-w-xs rounded-md border border-amber-500/30 bg-background/85 px-2.5 py-1.5 text-[10px] text-amber-400 backdrop-blur">
             {copy.newsUnavailable}
           </p>
         ) : null}
         <ContextGraph
-          context={analysis.context}
-          enrichedEntities={enrichment.entities}
-          enrichedRelations={enrichment.relations}
+          context={analysisView.context}
+          enrichedEntities={enrichmentView.entities}
+          enrichedRelations={enrichmentView.relations}
           copy={copy}
           onJumpToSentence={jumpToSentence}
           editable={Boolean(analysis.sessionId) && !verification.isVerifying}
@@ -413,7 +496,7 @@ export function ContextWorkspace({
               content: (
                 <TranscriptStream
                   ref={transcriptRef}
-                  transcript={session.transcript}
+                  transcript={captureView.transcript}
                   active={session.state === "live"}
                   variant="feed"
                 />
@@ -421,15 +504,15 @@ export function ContextWorkspace({
             },
             fallacies: {
               title: copy.fallacies,
-              count: analysis.findings.length,
+              count: analysisView.findings.length,
               toneClass: "bg-rose-500",
               content: (
-                <FindingsList findings={analysis.findings} lang={lang} />
+                <FindingsList findings={analysisView.findings} lang={lang} />
               ),
             },
             facts: {
               title: copy.facts,
-              count: analysis.claims.length,
+              count: analysisView.claims.length,
               toneClass: "bg-blue-500",
               content: (
                 <>
@@ -437,8 +520,8 @@ export function ContextWorkspace({
                     {copy.detectedHint}
                   </p>
                   <LiveClaimsList
-                    claims={analysis.claims}
-                    verdicts={verification.verdicts}
+                    claims={analysisView.claims}
+                    verdicts={verificationView.verdicts}
                     maxSources={contextSettings.settings.factSourceLimit}
                     sourcesInitiallyOpen={
                       contextSettings.settings.expandFactSources
@@ -448,8 +531,9 @@ export function ContextWorkspace({
                         ? {
                             onVerify: (claimId) =>
                               void verification.startClaim(claimId),
-                            verifyingClaimIds: verification.verifyingClaimIds,
-                            errors: verification.claimErrors,
+                            verifyingClaimIds:
+                              verificationView.verifyingClaimIds,
+                            errors: verificationView.claimErrors,
                             verifyLabel: copy.verifyOne,
                             reverifyLabel: copy.reverifyOne,
                             verifyingLabel: copy.verifying,
@@ -462,20 +546,20 @@ export function ContextWorkspace({
             },
             topics: {
               title: copy.tagsAndTopics,
-              count: analysis.context.tags?.length ?? 0,
+              count: analysisView.context.tags?.length ?? 0,
               toneClass: "bg-emerald-500",
               content: (
-                <ContextTopicsFeed context={analysis.context} copy={copy} />
+                <ContextTopicsFeed context={analysisView.context} copy={copy} />
               ),
             },
             neutrality: {
               title: copy.neutrality,
-              count: analysis.neutralityFindings.length,
+              count: analysisView.neutralityFindings.length,
               toneClass: "bg-amber-500",
               content: (
                 <LiveNeutralityList
-                  findings={analysis.neutralityFindings}
-                  verdict={analysis.neutralityVerdict}
+                  findings={analysisView.neutralityFindings}
+                  verdict={analysisView.neutralityVerdict}
                   verdictLabel={
                     concluded ? copy.finalAssessment : copy.currentAssessment
                   }
@@ -489,18 +573,7 @@ export function ContextWorkspace({
       {contextSettings.settings.showActivityLog ? (
         <ContextActivityLog
           copy={copy}
-          captureActive={
-            session.state === "connecting" || session.state === "live"
-          }
-          analysisActive={analysis.isAnalyzing}
-          analysisProcesses={DEFAULT_LIVE_LENSES.length}
-          analysisModel={analysis.model}
-          analysisProvider={analysis.provider}
-          profileRequests={enrichment.activity.profileRequests}
-          newsRequests={enrichment.activity.newsRequests}
-          verificationRequests={verificationRequestCount}
-          newsModel={searchModels.news}
-          verificationModel={searchModels.factCheck}
+          agents={pipelineAgents}
         />
       ) : null}
 
@@ -541,4 +614,10 @@ function formatDuration(ms: number) {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
+function createMutationOperationId() {
+  return typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `${Date.now()}_${Math.random().toString(36).slice(2)}`;
 }

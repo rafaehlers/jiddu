@@ -57,6 +57,7 @@ import {
   ContextThemeSelector,
   useContextTheme,
 } from "./context-theme-control";
+import { ContextUiStoreProvider } from "./context-ui-store-provider";
 
 type Props = {
   id: string;
@@ -75,7 +76,15 @@ type Props = {
   enrichedRelations: ReadonlyArray<readonly [string, KnowledgeRelationDTO]>;
 };
 
-export function ContextReviewWorkspace({
+export function ContextReviewWorkspace(props: Props) {
+  return (
+    <ContextUiStoreProvider>
+      <ContextReviewWorkspaceContent {...props} />
+    </ContextUiStoreProvider>
+  );
+}
+
+function ContextReviewWorkspaceContent({
   id,
   title,
   transcript,

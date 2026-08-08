@@ -183,5 +183,10 @@ function eventTone(kind: ContextReplayEvent["kind"]): string {
     return "bg-blue-500";
   }
   if (kind.startsWith("neutrality")) return "bg-amber-500";
+  if (kind.startsWith("entity") || kind === "entities_merged") {
+    return "bg-emerald-500";
+  }
+  if (kind === "capture_state_changed") return "bg-cyan-500";
+  if (kind.startsWith("operation_")) return "bg-neutral-500";
   return "bg-violet-500";
 }

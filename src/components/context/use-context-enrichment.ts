@@ -29,24 +29,30 @@ export function useContextEnrichment(input: {
     newsRequests: 0,
   });
   const profileRequested = useRef(new Set<string>());
+  const profileRequestKeys = useRef(new Map<string, string>());
   const newsRequested = useRef(new Set<string>());
   const pollTimeouts = useRef(new Set<number>());
   const controllers = useRef(new Set<AbortController>());
+  const profileControllers = useRef(new Map<string, AbortController>());
   const newsPollTimeouts = useRef(new Set<number>());
   const newsControllers = useRef(new Set<AbortController>());
+  const newsControllersByTarget = useRef(new Map<string, AbortController>());
 
   useEffect(() => {
     profileRequested.current.clear();
+    profileRequestKeys.current.clear();
     newsRequested.current.clear();
     for (const timeout of pollTimeouts.current) window.clearTimeout(timeout);
     pollTimeouts.current.clear();
     for (const controller of controllers.current) controller.abort();
     controllers.current.clear();
+    profileControllers.current.clear();
     for (const timeout of newsPollTimeouts.current)
       window.clearTimeout(timeout);
     newsPollTimeouts.current.clear();
     for (const controller of newsControllers.current) controller.abort();
     newsControllers.current.clear();
+    newsControllersByTarget.current.clear();
     setEntities(new Map());
     setRelations(new Map());
     setErrors(new Map());
@@ -59,7 +65,9 @@ export function useContextEnrichment(input: {
       (entity) => !profileRequested.current.has(entityRequestKey(entity)),
     );
     for (const entity of pending) {
-      profileRequested.current.add(entityRequestKey(entity));
+      const key = entityRequestKey(entity);
+      profileRequested.current.add(key);
+      profileRequestKeys.current.set(entity.id, key);
       setEntities((current) => {
         if (!current.has(entity.id)) return current;
         const next = new Map(current);
@@ -82,8 +90,11 @@ export function useContextEnrichment(input: {
     async function requestEntityProfile(
       entity: LiveContext["entities"][number],
     ) {
+      const key = entityRequestKey(entity);
+      profileControllers.current.get(entity.id)?.abort();
       const controller = new AbortController();
       controllers.current.add(controller);
+      profileControllers.current.set(entity.id, controller);
       setActivity((current) => ({
         ...current,
         profileRequests: controllers.current.size,
@@ -105,9 +116,12 @@ export function useContextEnrichment(input: {
           entity: KnowledgeEntityDTO;
           refreshScheduled?: boolean;
         };
+        if (profileRequestKeys.current.get(entity.id) !== key) return;
         setEntity(entity.id, data.entity);
         clearError(entity.id);
-        if (data.refreshScheduled) pollEntity(entity.id, data.entity.id, 0);
+        if (data.refreshScheduled) {
+          pollEntity(entity.id, data.entity.id, key, 0);
+        }
       } catch (error) {
         if (!controller.signal.aborted) {
           setError(
@@ -117,6 +131,9 @@ export function useContextEnrichment(input: {
         }
       } finally {
         controllers.current.delete(controller);
+        if (profileControllers.current.get(entity.id) === controller) {
+          profileControllers.current.delete(entity.id);
+        }
         setActivity((current) => ({
           ...current,
           profileRequests: controllers.current.size,
@@ -127,11 +144,17 @@ export function useContextEnrichment(input: {
     function pollEntity(
       localEntityId: string,
       storedEntityId: string,
+      requestKeyAtStart: string,
       attempt: number,
     ) {
       if (attempt >= 4) return;
       const timeout = window.setTimeout(async () => {
         pollTimeouts.current.delete(timeout);
+        if (
+          profileRequestKeys.current.get(localEntityId) !== requestKeyAtStart
+        ) {
+          return;
+        }
         const controller = new AbortController();
         controllers.current.add(controller);
         setActivity((current) => ({
@@ -147,9 +170,19 @@ export function useContextEnrichment(input: {
           const data = (await response.json()) as {
             entity: KnowledgeEntityDTO;
           };
+          if (
+            profileRequestKeys.current.get(localEntityId) !== requestKeyAtStart
+          ) {
+            return;
+          }
           setEntity(localEntityId, data.entity);
           if (data.entity.stale || data.entity.profileStatus === "pending") {
-            pollEntity(localEntityId, storedEntityId, attempt + 1);
+            pollEntity(
+              localEntityId,
+              storedEntityId,
+              requestKeyAtStart,
+              attempt + 1,
+            );
           }
         } catch {
           // A profile is optional; a later appearance can retry the cache.
@@ -197,6 +230,7 @@ export function useContextEnrichment(input: {
     newsPollTimeouts.current.clear();
     for (const controller of newsControllers.current) controller.abort();
     newsControllers.current.clear();
+    newsControllersByTarget.current.clear();
     setActivity((current) => ({ ...current, newsRequests: 0 }));
   }, [input.automaticNewsEnabled]);
 
@@ -243,6 +277,7 @@ export function useContextEnrichment(input: {
       if (newsRequested.current.size >= MAX_AUTOMATIC_NEWS_TARGETS) break;
       if (newsRequested.current.has(target.key)) continue;
       newsRequested.current.add(target.key);
+      newsControllersByTarget.current.get(target.baseKey)?.abort();
       void requestNews(target);
     }
 
@@ -252,6 +287,7 @@ export function useContextEnrichment(input: {
     ) {
       const controller = new AbortController();
       newsControllers.current.add(controller);
+      newsControllersByTarget.current.set(target.baseKey, controller);
       setActivity((current) => ({
         ...current,
         newsRequests: newsControllers.current.size,
@@ -286,6 +322,7 @@ export function useContextEnrichment(input: {
               relation: KnowledgeRelationDTO | null;
               refreshScheduled?: boolean;
             };
+        if (!newsRequested.current.has(target.key)) return;
         if (
           target.kind === "entity" &&
           data.target === "entity" &&
@@ -314,7 +351,12 @@ export function useContextEnrichment(input: {
           const timeout = window.setTimeout(
             () => {
               newsPollTimeouts.current.delete(timeout);
-              if (!input.automaticNewsEnabled) return;
+              if (
+                !input.automaticNewsEnabled ||
+                !newsRequested.current.has(target.key)
+              ) {
+                return;
+              }
               void requestNews(target, refreshAttempt + 1);
             },
             refreshAttempt === 0 ? 5_000 : 9_000,
@@ -334,6 +376,9 @@ export function useContextEnrichment(input: {
         }
       } finally {
         newsControllers.current.delete(controller);
+        if (newsControllersByTarget.current.get(target.baseKey) === controller) {
+          newsControllersByTarget.current.delete(target.baseKey);
+        }
         setActivity((current) => ({
           ...current,
           newsRequests: newsControllers.current.size,

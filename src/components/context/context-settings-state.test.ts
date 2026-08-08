@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   DEFAULT_CONTEXT_SETTINGS,
+  normalizeContextSettings,
   readContextSettings,
 } from "./context-settings-state";
 
@@ -30,4 +31,27 @@ test("keeps supported context preferences and repairs invalid values", () => {
     automaticNews: false,
     analysisIntervalMs: DEFAULT_CONTEXT_SETTINGS.analysisIntervalMs,
   });
+});
+
+test("normalizes settings read from a Zustand persisted object", () => {
+  assert.deepEqual(
+    normalizeContextSettings({
+      factSourceLimit: 1,
+      expandFactSources: true,
+      showMiniMap: false,
+      animateRelations: false,
+      showActivityLog: false,
+      automaticNews: false,
+      analysisIntervalMs: 60_000,
+    }),
+    {
+      factSourceLimit: 1,
+      expandFactSources: true,
+      showMiniMap: false,
+      animateRelations: false,
+      showActivityLog: false,
+      automaticNews: false,
+      analysisIntervalMs: 60_000,
+    },
+  );
 });

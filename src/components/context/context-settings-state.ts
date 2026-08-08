@@ -26,44 +26,51 @@ export const DEFAULT_CONTEXT_SETTINGS: ContextSettings = {
 export function readContextSettings(raw: string | null): ContextSettings {
   if (!raw) return { ...DEFAULT_CONTEXT_SETTINGS };
   try {
-    const value = JSON.parse(raw) as Record<string, unknown>;
-    return {
-      factSourceLimit: includesNumber(
-        CONTEXT_FACT_SOURCE_LIMITS,
-        value.factSourceLimit,
-      )
-        ? value.factSourceLimit
-        : DEFAULT_CONTEXT_SETTINGS.factSourceLimit,
-      expandFactSources: booleanOrDefault(
-        value.expandFactSources,
-        DEFAULT_CONTEXT_SETTINGS.expandFactSources,
-      ),
-      showMiniMap: booleanOrDefault(
-        value.showMiniMap,
-        DEFAULT_CONTEXT_SETTINGS.showMiniMap,
-      ),
-      animateRelations: booleanOrDefault(
-        value.animateRelations,
-        DEFAULT_CONTEXT_SETTINGS.animateRelations,
-      ),
-      showActivityLog: booleanOrDefault(
-        value.showActivityLog,
-        DEFAULT_CONTEXT_SETTINGS.showActivityLog,
-      ),
-      automaticNews: booleanOrDefault(
-        value.automaticNews,
-        DEFAULT_CONTEXT_SETTINGS.automaticNews,
-      ),
-      analysisIntervalMs: includesNumber(
-        CONTEXT_ANALYSIS_INTERVALS,
-        value.analysisIntervalMs,
-      )
-        ? value.analysisIntervalMs
-        : DEFAULT_CONTEXT_SETTINGS.analysisIntervalMs,
-    };
+    return normalizeContextSettings(JSON.parse(raw));
   } catch {
     return { ...DEFAULT_CONTEXT_SETTINGS };
   }
+}
+
+export function normalizeContextSettings(value: unknown): ContextSettings {
+  const record =
+    value && typeof value === "object" && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : {};
+  return {
+    factSourceLimit: includesNumber(
+      CONTEXT_FACT_SOURCE_LIMITS,
+      record.factSourceLimit,
+    )
+      ? record.factSourceLimit
+      : DEFAULT_CONTEXT_SETTINGS.factSourceLimit,
+    expandFactSources: booleanOrDefault(
+      record.expandFactSources,
+      DEFAULT_CONTEXT_SETTINGS.expandFactSources,
+    ),
+    showMiniMap: booleanOrDefault(
+      record.showMiniMap,
+      DEFAULT_CONTEXT_SETTINGS.showMiniMap,
+    ),
+    animateRelations: booleanOrDefault(
+      record.animateRelations,
+      DEFAULT_CONTEXT_SETTINGS.animateRelations,
+    ),
+    showActivityLog: booleanOrDefault(
+      record.showActivityLog,
+      DEFAULT_CONTEXT_SETTINGS.showActivityLog,
+    ),
+    automaticNews: booleanOrDefault(
+      record.automaticNews,
+      DEFAULT_CONTEXT_SETTINGS.automaticNews,
+    ),
+    analysisIntervalMs: includesNumber(
+      CONTEXT_ANALYSIS_INTERVALS,
+      record.analysisIntervalMs,
+    )
+      ? record.analysisIntervalMs
+      : DEFAULT_CONTEXT_SETTINGS.analysisIntervalMs,
+  };
 }
 
 function booleanOrDefault(value: unknown, fallback: boolean): boolean {

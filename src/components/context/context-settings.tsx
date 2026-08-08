@@ -1,17 +1,14 @@
 "use client";
 
 import { Cog, RotateCcw, X } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ContextCopy } from "./context-copy";
 import {
   CONTEXT_ANALYSIS_INTERVALS,
   CONTEXT_FACT_SOURCE_LIMITS,
-  DEFAULT_CONTEXT_SETTINGS,
-  readContextSettings,
   type ContextSettings,
 } from "./context-settings-state";
-
-const STORAGE_KEY = "jiddu_context_settings_v1";
+import { useContextUiStore } from "./context-ui-store-provider";
 
 export type ContextSettingsControl = {
   settings: ContextSettings;
@@ -23,47 +20,9 @@ export type ContextSettingsControl = {
 };
 
 export function useContextSettings(): ContextSettingsControl {
-  const [settings, setSettings] = useState<ContextSettings>(
-    DEFAULT_CONTEXT_SETTINGS,
-  );
-  const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => {
-    const frame = window.requestAnimationFrame(() => {
-      try {
-        setSettings(
-          readContextSettings(window.localStorage.getItem(STORAGE_KEY)),
-        );
-      } catch {
-        setSettings({ ...DEFAULT_CONTEXT_SETTINGS });
-      } finally {
-        setLoaded(true);
-      }
-    });
-    return () => window.cancelAnimationFrame(frame);
-  }, []);
-
-  useEffect(() => {
-    if (!loaded) return;
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-    } catch {
-      // Preferences remain active for the current page session.
-    }
-  }, [loaded, settings]);
-
-  const update = useCallback(
-    <Key extends keyof ContextSettings>(
-      key: Key,
-      value: ContextSettings[Key],
-    ) => setSettings((current) => ({ ...current, [key]: value })),
-    [],
-  );
-  const reset = useCallback(
-    () => setSettings({ ...DEFAULT_CONTEXT_SETTINGS }),
-    [],
-  );
-
+  const settings = useContextUiStore((state) => state.settings);
+  const update = useContextUiStore((state) => state.updateSetting);
+  const reset = useContextUiStore((state) => state.resetSettings);
   return { settings, update, reset };
 }
 

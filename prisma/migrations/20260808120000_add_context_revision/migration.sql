@@ -1,0 +1,2 @@
+ALTER TABLE "Analysis"
+ADD COLUMN "contextRevision" INTEGER NOT NULL DEFAULT 0;

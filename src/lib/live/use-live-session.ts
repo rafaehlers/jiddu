@@ -102,6 +102,7 @@ export function useLiveSession(opts: LiveSessionOptions = {}): LiveSessionHandle
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const localAudioUrlRef = useRef<string | null>(null);
+  const disconnectTimerRef = useRef<number | null>(null);
 
   const clearLocalRecording = useCallback(() => {
     if (localAudioUrlRef.current) {
@@ -165,6 +166,10 @@ export function useLiveSession(opts: LiveSessionOptions = {}): LiveSessionHandle
   }, []);
 
   const cleanupMedia = useCallback(() => {
+    if (disconnectTimerRef.current != null) {
+      window.clearTimeout(disconnectTimerRef.current);
+      disconnectTimerRef.current = null;
+    }
     const dc = dcRef.current;
     dcRef.current = null;
     if (dc) {
@@ -453,21 +458,50 @@ export function useLiveSession(opts: LiveSessionOptions = {}): LiveSessionHandle
 
         pc.addEventListener("connectionstatechange", () => {
           const s = pc.connectionState;
-          if (s === "failed" || s === "disconnected" || s === "closed") {
-            // Clean disconnects after stop() are expected (cleanup nulls out
-            // pcRef). Only surface a problem if THIS pc is still the active
-            // one in the hook.
-            if (pcRef.current === pc) {
-              const durationMs = currentDurationMs();
-              setElapsedMs(durationMs);
-              setError({ code: "connection_lost" });
-              setState("error");
-              void stopLocalRecording();
-              cleanupMedia();
-              startedAtRef.current = null;
-              finalDurationMsRef.current = durationMs;
-              void settleBilling(durationMs, { keepalive: true });
+          if (s === "connected") {
+            if (disconnectTimerRef.current != null) {
+              window.clearTimeout(disconnectTimerRef.current);
+              disconnectTimerRef.current = null;
             }
+            if (pcRef.current === pc && startedAtRef.current != null) {
+              setState("live");
+            }
+            return;
+          }
+          if (s === "disconnected" && pcRef.current === pc) {
+            // WebRTC can recover a transient network handoff on its own. Give
+            // ICE a short grace period before ending and settling the session.
+            setState("connecting");
+            if (disconnectTimerRef.current == null) {
+              disconnectTimerRef.current = window.setTimeout(() => {
+                disconnectTimerRef.current = null;
+                if (
+                  pcRef.current === pc &&
+                  pc.connectionState === "disconnected"
+                ) {
+                  failConnection();
+                }
+              }, 4_000);
+            }
+            return;
+          }
+          if (s === "failed" || s === "closed") {
+            failConnection();
+          }
+
+          function failConnection() {
+            // Clean disconnects after stop() are expected (cleanup nulls out
+            // pcRef). Only surface a problem if THIS pc is still active.
+            if (pcRef.current !== pc) return;
+            const durationMs = currentDurationMs();
+            setElapsedMs(durationMs);
+            setError({ code: "connection_lost" });
+            setState("error");
+            void stopLocalRecording();
+            cleanupMedia();
+            startedAtRef.current = null;
+            finalDurationMsRef.current = durationMs;
+            void settleBilling(durationMs, { keepalive: true });
           }
         });
 

@@ -1,21 +1,15 @@
 "use client";
 
 import { Activity, Bot, Cpu, Radio, Waypoints } from "lucide-react";
-import { LIVE_TRANSCRIPTION_MODEL } from "@/lib/model-ids";
 import type { ContextCopy } from "./context-copy";
+import type {
+  ContextPipelineAgent,
+  ContextPipelineAgentKind,
+} from "./context-session-store";
 
 type Props = {
   copy: ContextCopy;
-  captureActive: boolean;
-  analysisActive: boolean;
-  analysisProcesses: number;
-  analysisModel: string | null;
-  analysisProvider: string | null;
-  profileRequests: number;
-  newsRequests: number;
-  verificationRequests: number;
-  newsModel: string;
-  verificationModel: string;
+  agents: ReadonlyMap<ContextPipelineAgentKind, ContextPipelineAgent>;
 };
 
 type ActiveAgent = {
@@ -23,62 +17,17 @@ type ActiveAgent = {
   label: string;
   processes: number;
   requests: number;
+  durationMs: number;
 };
 
-export function ContextActivityLog({
-  copy,
-  captureActive,
-  analysisActive,
-  analysisProcesses,
-  analysisModel,
-  analysisProvider,
-  profileRequests,
-  newsRequests,
-  verificationRequests,
-  newsModel,
-  verificationModel,
-}: Props) {
-  const agents: ActiveAgent[] = [];
-  if (captureActive) {
-    agents.push({
-      id: "capture",
-      label: copy.captureAgent,
-      processes: 1,
-      requests: 1,
-    });
-  }
-  if (analysisActive) {
-    agents.push({
-      id: "analysis",
-      label: copy.analysisAgent,
-      processes: Math.max(1, analysisProcesses),
-      requests: 1,
-    });
-  }
-  if (profileRequests > 0) {
-    agents.push({
-      id: "profiles",
-      label: copy.profileAgent,
-      processes: profileRequests,
-      requests: profileRequests,
-    });
-  }
-  if (newsRequests > 0) {
-    agents.push({
-      id: "news",
-      label: copy.newsAgent,
-      processes: newsRequests,
-      requests: newsRequests,
-    });
-  }
-  if (verificationRequests > 0) {
-    agents.push({
-      id: "verification",
-      label: copy.verificationAgent,
-      processes: verificationRequests,
-      requests: verificationRequests,
-    });
-  }
+export function ContextActivityLog({ copy, agents: agentMap }: Props) {
+  const agents: ActiveAgent[] = [...agentMap.values()].map((agent) => ({
+    id: agent.id,
+    label: agentLabel(agent.id, copy),
+    processes: agent.processes,
+    requests: agent.requests,
+    durationMs: agent.durationMs,
+  }));
 
   const processCount = agents.reduce(
     (total, agent) => total + agent.processes,
@@ -88,18 +37,11 @@ export function ContextActivityLog({
     (total, agent) => total + agent.requests,
     0,
   );
-  const models = uniqueModels([
-    captureActive ? { id: LIVE_TRANSCRIPTION_MODEL, provider: "OpenAI" } : null,
-    analysisActive && analysisModel
-      ? { id: analysisModel, provider: analysisProvider }
-      : null,
-    newsRequests > 0
-      ? { id: newsModel, provider: "OpenRouter" }
-      : null,
-    verificationRequests > 0
-      ? { id: verificationModel, provider: "OpenRouter" }
-      : null,
-  ]);
+  const models = uniqueModels(
+    [...agentMap.values()].map((agent) =>
+      agent.model ? { id: agent.model, provider: agent.provider } : null,
+    ),
+  );
 
   return (
     <footer
@@ -131,6 +73,9 @@ export function ContextActivityLog({
                 <span className="size-1 rounded-full bg-emerald-400" />
                 {agent.label}
                 {agent.processes > 1 ? ` ×${agent.processes}` : ""}
+                <span className="text-emerald-200/60">
+                  {formatOperationDuration(agent.durationMs)}
+                </span>
               </span>
             ))
           ) : (
@@ -158,6 +103,14 @@ export function ContextActivityLog({
       </div>
     </footer>
   );
+}
+
+function agentLabel(id: ContextPipelineAgentKind, copy: ContextCopy) {
+  if (id === "capture") return copy.captureAgent;
+  if (id === "analysis") return copy.analysisAgent;
+  if (id === "profiles") return copy.profileAgent;
+  if (id === "news") return copy.newsAgent;
+  return copy.verificationAgent;
 }
 
 function Metric({
@@ -188,4 +141,12 @@ function uniqueModels(
     if (value) result.set(value.id, value);
   }
   return [...result.values()];
+}
+
+function formatOperationDuration(durationMs: number) {
+  if (durationMs < 1_000) return "<1s";
+  if (durationMs < 60_000) return `${Math.floor(durationMs / 1_000)}s`;
+  const minutes = Math.floor(durationMs / 60_000);
+  const seconds = Math.floor((durationMs % 60_000) / 1_000);
+  return `${minutes}m${String(seconds).padStart(2, "0")}s`;
 }
