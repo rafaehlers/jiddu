@@ -19,27 +19,27 @@ import { SITE_URL } from "@/lib/social-metadata";
 
 const markdownComponents: Components = {
   h2: ({ children }) => (
-    <h2 className="mt-10 scroll-mt-20 font-serif text-2xl leading-tight sm:text-3xl">
+    <h2 className="mt-8 scroll-mt-20 font-serif text-xl leading-tight sm:text-2xl">
       {children}
     </h2>
   ),
   h3: ({ children }) => (
-    <h3 className="mt-8 font-serif text-xl leading-tight sm:text-2xl">
+    <h3 className="mt-6 font-serif text-lg leading-tight sm:text-xl">
       {children}
     </h3>
   ),
   p: ({ children }) => (
-    <p className="mt-5 text-[1.0625rem] leading-8 text-foreground/90">
+    <p className="mt-4 text-base leading-relaxed text-foreground/90">
       {children}
     </p>
   ),
   ul: ({ children }) => (
-    <ul className="mt-5 list-disc space-y-2 pl-6 text-[1.0625rem] leading-8 text-foreground/90">
+    <ul className="mt-4 list-disc space-y-1.5 pl-5 text-base leading-relaxed text-foreground/90">
       {children}
     </ul>
   ),
   ol: ({ children }) => (
-    <ol className="mt-5 list-decimal space-y-3 pl-6 text-[1.0625rem] leading-8 text-foreground/90">
+    <ol className="mt-4 list-decimal space-y-2 pl-5 text-base leading-relaxed text-foreground/90">
       {children}
     </ol>
   ),
@@ -48,7 +48,7 @@ const markdownComponents: Components = {
     <strong className="font-semibold text-foreground">{children}</strong>
   ),
   blockquote: ({ children }) => (
-    <blockquote className="my-8 border-l-2 border-accent-hi bg-paper px-5 py-1 font-serif text-xl italic leading-relaxed text-foreground">
+    <blockquote className="my-6 border-l-2 border-accent-hi bg-paper px-4 py-1 font-serif text-lg italic leading-relaxed text-foreground [&>p]:mt-0 [&>p]:text-lg">
       {children}
     </blockquote>
   ),
@@ -222,7 +222,7 @@ export function BlogPostView({ post }: { post: BlogPost }) {
           aria-labelledby="faq-title"
           className="mt-12 border-t border-rule pt-10"
         >
-          <h2 id="faq-title" className="font-serif text-2xl sm:text-3xl">
+          <h2 id="faq-title" className="font-serif text-xl sm:text-2xl">
             {copy.faqTitle}
           </h2>
           <dl className="mt-6 divide-y divide-rule border-y border-rule">
