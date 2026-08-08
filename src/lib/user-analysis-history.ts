@@ -3,9 +3,11 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { resolveAnalysisTitle } from "@/lib/live-title";
 import { readLiveContext } from "@/lib/live-context-schema";
+import { LIVE_DIARIZATION_MODEL } from "@/lib/model-ids";
 
 export type UserAnalysisKind =
   | "context"
+  | "diarization"
   | "fallacy"
   | "factcheck"
   | "neutrality"
@@ -59,6 +61,8 @@ export async function listUserAnalyses(
         ...select,
         summary: true,
         transcript: true,
+        diarizedTranscript: true,
+        diarizedAt: true,
         language: true,
         liveContext: true,
       },
@@ -71,6 +75,28 @@ export async function listUserAnalyses(
   ]);
 
   return [
+    ...analyses.flatMap((row) => {
+      if (!row.diarizedTranscript) return [];
+      return [
+        {
+          kind: "diarization" as const,
+          id: row.id,
+          title: resolveAnalysisTitle({
+            title: row.title,
+            source: row.source,
+            createdAt: row.createdAt,
+            summary: row.summary,
+            transcript: row.transcript,
+            language: row.language,
+          }),
+          source: row.source,
+          sourceRef: row.sourceRef,
+          model: LIVE_DIARIZATION_MODEL,
+          status: "complete",
+          createdAt: row.diarizedAt ?? row.createdAt,
+        },
+      ];
+    }),
     ...analyses.flatMap((row) => {
       if (row.source !== "live") return [];
       const context = readLiveContext(row.liveContext);

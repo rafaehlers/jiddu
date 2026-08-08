@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { SlopView } from "@/components/slop-view";
+import { ResultPageCta } from "@/components/result-page-cta";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { ScrollIndicator } from "@/components/scroll-indicator";
@@ -73,6 +74,7 @@ export default async function SlopPage({ params }: Props) {
         />
       </SkeletonReveal>
 
+      <ResultPageCta href="/slop" />
       <SiteFooter />
       <ScrollIndicator />
     </main>

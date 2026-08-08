@@ -7,6 +7,7 @@ import { SkeletonReveal } from "@/components/skeleton-reveal";
 import { AnalysisSkeleton } from "@/components/analysis-skeleton";
 import { ScrollIndicator } from "@/components/scroll-indicator";
 import { NeutralityView } from "@/components/neutrality-view";
+import { ResultPageCta } from "@/components/result-page-cta";
 import type { Sentence } from "@/lib/schema";
 import type {
   NeutralityFinding,
@@ -68,6 +69,7 @@ export default async function NeutralityViewerPage({ params }: Props) {
         />
       </SkeletonReveal>
 
+      <ResultPageCta href="/neutrality" />
       <SiteFooter />
       <ScrollIndicator />
     </main>

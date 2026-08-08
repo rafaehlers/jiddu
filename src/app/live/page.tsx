@@ -3,6 +3,7 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { LivePage } from "@/components/live/live-page";
 import { publicPageMetadata } from "@/lib/social-metadata";
+import { loadSettings } from "@/lib/settings";
 
 export const metadata: Metadata = publicPageMetadata({
   title: "Jiddu Live — real-time critical analysis",
@@ -11,11 +12,18 @@ export const metadata: Metadata = publicPageMetadata({
   path: "/live",
 });
 
-export default function LiveRoute() {
+export default async function LiveRoute() {
+  const settings = await loadSettings();
   return (
     <main className="flex-1 flex flex-col">
       <SiteHeader variant="viewer" />
-      <LivePage />
+      <LivePage
+        diarizationBilling={{
+          marginMultiplier: settings["credits.marginMultiplier"],
+          usdPerCredit: settings["credits.usdPerCredit"],
+          usdPerMinute: settings["credits.liveDiarizationUsdPerMinute"],
+        }}
+      />
       <SiteFooter />
     </main>
   );

@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CornerRightUp, Loader2 } from "lucide-react";
+import { CornerRightUp } from "lucide-react";
+import { AnalysisLoadingDialog } from "@/components/analysis-loading-dialog";
 import { UploadForm, type UploadSourceType } from "@/components/upload-form";
 import { ModeCards } from "@/components/mode-cards";
 import { AnalysisSkeleton } from "@/components/analysis-skeleton";
@@ -530,36 +531,18 @@ function LoadingModal({ state, mode }: { state: StreamingState; mode: Mode }) {
 
   const labels = cfg.countLabels?.(t);
 
+  // Non-dismissable progress dialog floating over the skeleton page. The
+  // scrim keeps the pulsing result skeleton visible behind it.
   return (
-    // Non-dismissable progress dialog floating over the skeleton page. The
-    // scrim is a light tint + blur so the pulsing skeleton stays visible
-    // behind it — the page is the loading indicator; the modal just narrates.
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={stage}
-      className="fixed inset-0 z-50 flex items-center justify-center px-6 bg-background/50 backdrop-blur-[2px]"
-    >
-      <div
-        role="status"
-        aria-live="polite"
-        className="flex flex-col items-center gap-5 sm:gap-6 bg-paper border border-rule rounded-lg px-8 py-8 sm:px-12 sm:py-10 shadow-lg text-center max-w-md w-full"
-      >
-        <Loader2 className="h-6 w-6 sm:h-7 sm:w-7 animate-spin text-muted" />
-
-        <div className="flex flex-col gap-1 min-h-[3.5rem]">
-          <p className="font-serif text-xl sm:text-2xl transition-opacity duration-200">
-            {stage}…
-          </p>
-          <p className="text-sm text-muted">
-            {labels && itemsCount > 0
-              ? `${itemsCount} ${itemsCount === 1 ? labels[0] : labels[1]}`
-              : mode === "review"
-                ? t.review_form_hint
-                : t.loading_hint}
-          </p>
-        </div>
-      </div>
-    </div>
+    <AnalysisLoadingDialog
+      stage={stage}
+      detail={
+        labels && itemsCount > 0
+          ? `${itemsCount} ${itemsCount === 1 ? labels[0] : labels[1]}`
+          : mode === "review"
+            ? t.review_form_hint
+            : t.loading_hint
+      }
+    />
   );
 }

@@ -194,9 +194,11 @@ export default async function AccountPage({
         transaction.feature === "live_transcription" &&
         transaction.note === "Live transcription and analysis usage"
           ? "live session"
-          : transaction.feature
-            ? transaction.feature.replaceAll("_", " ")
-            : transaction.note || transaction.kind,
+          : transaction.feature === "live_diarization"
+            ? "live speaker identification"
+            : transaction.feature
+              ? transaction.feature.replaceAll("_", " ")
+              : transaction.note || transaction.kind,
       amount: transaction.amount,
       balanceAfter: transaction.balanceAfter,
       createdAt: transaction.createdAt.toISOString(),

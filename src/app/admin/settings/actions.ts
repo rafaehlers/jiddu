@@ -45,7 +45,8 @@ export async function saveSettingsAction(formData: FormData): Promise<void> {
     if (
       (key === "credits.marginMultiplier" ||
         key === "credits.usdPerCredit" ||
-        key === "credits.liveTranscriptionUsdPerMinute") &&
+        key === "credits.liveTranscriptionUsdPerMinute" ||
+        key === "credits.liveDiarizationUsdPerMinute") &&
       num <= 0
     ) {
       continue;

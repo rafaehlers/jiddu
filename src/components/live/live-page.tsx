@@ -18,6 +18,7 @@ import type { LiveSessionError } from "@/lib/live/use-live-session";
 import { useLiveAnalysis } from "@/lib/live/use-live-analysis";
 import { useLiveClaimVerification } from "@/lib/live/use-live-claim-verification";
 import { useI18n } from "@/lib/i18n/provider";
+import type { LiveDiarizationBillingConfig } from "@/lib/live-diarization-billing";
 import type { Messages } from "@/lib/i18n/messages";
 import { splitSentences } from "@/lib/sentences";
 import { EMPTY_LIVE_CONTEXT } from "@/lib/live-context-schema";
@@ -38,13 +39,18 @@ import { LiveNeutralityList } from "./neutrality-list";
 import { LiveAllResults } from "./all-results";
 import { LiveClaimVerificationPanel } from "./claim-verification-panel";
 import { LiveContextPanel } from "./context-panel";
+import { SessionAudioTools } from "./session-audio-tools";
 
 // Hard cap: stop the session after this many seconds to prevent runaway cost.
 // 60 minutes ≈ $1 of gpt-live-transcribe at $0.017/min, before LLM analysis.
 const MAX_SESSION_MS = 60 * 60 * 1000;
 type LiveResultTab = "all" | LiveLens;
 
-export function LivePage() {
+export function LivePage({
+  diarizationBilling,
+}: {
+  diarizationBilling: LiveDiarizationBillingConfig;
+}) {
   // Use the site-wide language preference (selector lives in the header) so
   // both the transcription hint and the LLM analysis output language
   // follow the rest of the UI.
@@ -291,22 +297,18 @@ export function LivePage() {
         active={session.state === "live"}
       />
 
-      {hasConcludedSession && session.localAudioUrl ? (
-        <div className="mt-3 rounded-md border border-rule bg-paper px-3 py-3">
-          <div className="mb-2">
-            <p className="text-sm font-medium">{t.live_local_recording}</p>
-            <p className="mt-0.5 text-xs text-muted">
-              {t.live_local_recording_hint}
-            </p>
-          </div>
-          <audio
-            ref={audioPlayerRef}
-            controls
-            preload="metadata"
-            src={session.localAudioUrl}
-            className="h-10 w-full"
-          />
-        </div>
+      {session.localAudioUrl &&
+      session.localAudioBlob &&
+      session.localAudioFilename ? (
+        <SessionAudioTools
+          audioBlob={session.localAudioBlob}
+          audioUrl={session.localAudioUrl}
+          billingConfig={diarizationBilling}
+          downloadFilename={session.localAudioFilename}
+          durationMs={session.elapsedMs}
+          resourceId={analysis.sessionId}
+          audioRef={audioPlayerRef}
+        />
       ) : null}
 
       <section className="mt-6">

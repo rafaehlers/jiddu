@@ -51,6 +51,7 @@ export function AccountAnalysisTable({
 function viewerHref(kind: UserAnalysisKind, id: string): string {
   const prefix = {
     context: "live",
+    diarization: "live",
     fallacy: "a",
     factcheck: "f",
     neutrality: "n",
@@ -58,5 +59,7 @@ function viewerHref(kind: UserAnalysisKind, id: string): string {
     slop: "s",
     review: "r",
   }[kind];
-  return `/${prefix}/${id}`;
+  return kind === "diarization"
+    ? `/live/${id}/transcript`
+    : `/${prefix}/${id}`;
 }

@@ -348,6 +348,8 @@ export type Messages = {
 
   // Viewer chrome
   new_analysis: string;
+  result_cta_title: string;
+  result_cta_description: string;
   share: string;
   copied: string;
   no_fallacies: string;
@@ -515,6 +517,34 @@ export type Messages = {
   live_transcript_heading: string;
   live_local_recording: string;
   live_local_recording_hint: string;
+  live_download_audio: string;
+  live_identify_speakers: string;
+  live_diarizing_speakers: string;
+  live_diarization_consent_hint: string;
+  live_diarization_too_large: string;
+  live_diarization_error: string;
+  live_diarization_credits_error: string;
+  live_diarization_confirm_title: string;
+  live_diarization_confirm_body: string;
+  live_diarization_cost_warning: string;
+  live_diarization_session_estimate: (duration: string, credits: number) => string;
+  live_diarization_duration: string;
+  live_diarization_credits: string;
+  live_diarization_minutes: (minutes: number) => string;
+  live_diarization_estimate_note: string;
+  live_diarization_cancel: string;
+  live_diarization_confirm: string;
+  live_diarization_save: string;
+  live_diarization_saving: string;
+  live_diarization_saved: string;
+  live_diarization_save_hint: string;
+  live_diarization_save_unavailable: string;
+  live_diarization_save_error: string;
+  live_diarization_view_saved: string;
+  live_diarization_history_back: string;
+  live_diarized_transcript: string;
+  live_speaker: string;
+  live_speaker_name: string;
   live_no_findings_yet: string;
   live_no_claims_yet: string;
   live_no_neutrality_yet: string;
@@ -1278,10 +1308,10 @@ const en: Messages = {
     {
       title: "13. Live mode (beta)",
       paragraphs: [
-        "At [/live](/live), Jiddu transcribes a microphone or, on Chromium browsers, a browser tab with `gpt-live-transcribe`. Audio travels directly from the browser to OpenAI over an encrypted Realtime connection; Jiddu receives the transcript needed for analysis, not the raw audio.",
+        "At [/live](/live), Jiddu transcribes a microphone or, on Chromium browsers, a browser tab with `gpt-live-transcribe`. During capture, audio travels directly from the browser to OpenAI over an encrypted Realtime connection; Jiddu receives the transcript needed for analysis, not the raw audio. After capture, the user can download the browser-local recording or, after confirming the additional cost, explicitly send a temporary copy through Jiddu to OpenAI's `gpt-4o-transcribe-diarize` for speaker labeling. Jiddu does not retain that audio file. The user may separately save the labeled text and edited speaker names to private account history.",
         "GPT-5.6 Luna or MiniMax M3 periodically analyzes the growing transcript through the selected Live lenses: logical fallacies, check-worthy claim extraction and neutrality assessment. The user chooses a 10, 20, 30 or 60-second interval; longer intervals give each analysis more context. Results stream into an All feed and dedicated panels, with a badge identifying each type.",
         "After finalization, each selected lens receives a shareable full viewer. Detected claims can also be verified against web sources directly inside Live, with evidence-backed verdicts and sources, or from the full fact-check viewer.",
-        "Sessions are capped at 60 minutes, use Jiddu Credits or included access, and store only the transcript and selected analysis results. Tab audio is supported in Chrome and Edge; microphone capture works in other compatible browsers.",
+        "Sessions are capped at 60 minutes, use Jiddu Credits or included access, and store only the transcript and selected analysis results. Optional speaker identification is billed separately by audio duration. Tab audio is supported in Chrome and Edge; microphone capture works in other compatible browsers.",
       ],
     },
     {
@@ -1362,6 +1392,9 @@ const en: Messages = {
   a11y_show_explanation: "Show paragraph explanation",
 
   new_analysis: "New analysis",
+  result_cta_title: "Analyze something new",
+  result_cta_description:
+    "Start another Jiddu analysis with a new text, link, image, document or live session.",
   share: "Share",
   copied: "Copied",
   no_fallacies: "No fallacies detected.",
@@ -1437,7 +1470,7 @@ const en: Messages = {
   live_findings: "Findings",
   live_running_score: "Running score",
   live_privacy_note:
-    "Audio is streamed directly from your browser to OpenAI’s Realtime API via WebRTC. The raw audio is not uploaded to or stored by Jiddu. A temporary local copy stays in this tab for replay until you start a new session or close it; only the transcript and selected analysis results are persisted. When the Context guide is finalized, its recap and transcript excerpt are sent through OpenRouter to Perplexity Sonar to find related public sources.",
+    "During capture, audio streams directly from your browser to OpenAI’s Realtime API via WebRTC; Jiddu receives the transcript, not the raw audio. A temporary copy stays in this tab for replay or download until you start a new session or close it. Only after a separate cost confirmation and Identify speakers request does that copy pass temporarily through Jiddu to OpenAI’s file transcription API; it is not retained. The session transcript and selected analysis results are persisted; the speaker-labeled version is added to account history only if you choose Save transcript. When the Context guide is finalized, its recap and transcript excerpt are sent through OpenRouter to Perplexity Sonar to find related public sources.",
   live_status_connecting: "Connecting…",
   live_status_live: "Live",
   live_status_analyzing: "Analyzing",
@@ -1450,6 +1483,46 @@ const en: Messages = {
   live_local_recording: "Session audio",
   live_local_recording_hint:
     "Temporary replay in this tab. Context links seek to the approximate passage.",
+  live_download_audio: "Download audio",
+  live_identify_speakers: "Identify speakers",
+  live_diarizing_speakers: "Identifying speakers…",
+  live_diarization_consent_hint:
+    "Only if you choose this separately billed action, a temporary copy is sent through Jiddu to OpenAI for speaker labeling. The audio is not stored. The labeled view remains in this tab unless you explicitly save the transcript to your account history.",
+  live_diarization_too_large:
+    "Speaker identification is unavailable because this recording exceeds OpenAI’s 25 MB limit. You can still download it.",
+  live_diarization_error:
+    "We couldn’t identify the speakers. Please try again.",
+  live_diarization_credits_error:
+    "You need more Jiddu Credits to identify the speakers in this recording.",
+  live_diarization_confirm_title: "Identify speakers in this recording?",
+  live_diarization_confirm_body:
+    "The full recording will pass temporarily through Jiddu to OpenAI. The audio is used only for speaker identification and is not retained by Jiddu.",
+  live_diarization_cost_warning:
+    "This is an additional paid operation and may consume Jiddu Credits. Accounts with included platform access record the usage without deducting the personal balance.",
+  live_diarization_session_estimate: (duration, credits) =>
+    `${duration} session: estimated ${credits} Jiddu Credit${credits === 1 ? "" : "s"}.`,
+  live_diarization_duration: "Duration",
+  live_diarization_credits: "Jiddu Credits",
+  live_diarization_minutes: (minutes) =>
+    `${minutes} minute${minutes === 1 ? "" : "s"}`,
+  live_diarization_estimate_note:
+    "Examples use the current Jiddu rate. The final debit is calculated from the duration actually processed by OpenAI and rounded up to a whole credit.",
+  live_diarization_cancel: "Cancel",
+  live_diarization_confirm: "Continue with identification",
+  live_diarization_save: "Save transcript",
+  live_diarization_saving: "Saving…",
+  live_diarization_saved: "Saved to history",
+  live_diarization_save_hint:
+    "Saving stores the labeled transcript and names in your Jiddu account history. The audio is not stored.",
+  live_diarization_save_unavailable:
+    "This transcript can only be saved after the Live session has been added to your account history.",
+  live_diarization_save_error:
+    "We couldn’t save this transcript. Please try again.",
+  live_diarization_view_saved: "Open saved transcript",
+  live_diarization_history_back: "Account history",
+  live_diarized_transcript: "Speaker-labeled transcript",
+  live_speaker: "Speaker",
+  live_speaker_name: "Name for speaker",
   live_no_findings_yet:
     "No fallacies detected yet. They will appear here as the speaker talks.",
   live_no_claims_yet:
@@ -2220,10 +2293,10 @@ const pt: Messages = {
     {
       title: "13. Modo Live (beta)",
       paragraphs: [
-        "Em [/live](/live), o Jiddu transcreve um microfone ou, em navegadores Chromium, uma aba com `gpt-live-transcribe`. O áudio segue diretamente do navegador para a OpenAI por uma conexão Realtime criptografada; o Jiddu recebe a transcrição necessária para a análise, não o áudio bruto.",
+        "Em [/live](/live), o Jiddu transcreve um microfone ou, em navegadores Chromium, uma aba com `gpt-live-transcribe`. Durante a captura, o áudio segue diretamente do navegador para a OpenAI por uma conexão Realtime criptografada; o Jiddu recebe a transcrição necessária para a análise, não o áudio bruto. Depois da captura, o usuário pode baixar a gravação local do navegador ou, após confirmar o custo adicional, enviar explicitamente uma cópia temporária pelo Jiddu ao `gpt-4o-transcribe-diarize` da OpenAI para separar os interlocutores. O Jiddu não retém esse arquivo de áudio. O usuário pode salvar separadamente o texto identificado e os nomes editados no histórico privado da conta.",
         "GPT-5.6 Luna ou MiniMax M3 analisa periodicamente a transcrição crescente pelas lentes Live selecionadas: falácias lógicas, extração de afirmações verificáveis e neutralidade. O usuário escolhe um intervalo de 10, 20, 30 ou 60 segundos; intervalos maiores dão mais contexto a cada análise. Os resultados aparecem em um feed Todos e em painéis dedicados, com um badge identificando cada tipo.",
         "Depois da finalização, cada lente selecionada recebe um viewer completo compartilhável. As afirmações detectadas também podem ser verificadas contra fontes da web diretamente no Live, com vereditos e fontes, ou no viewer completo de fact-check.",
-        "As sessões são limitadas a 60 minutos, usam Créditos Jiddu ou acesso incluído e armazenam apenas a transcrição e os resultados selecionados. Áudio de aba funciona em Chrome e Edge; microfone funciona em outros navegadores compatíveis.",
+        "As sessões são limitadas a 60 minutos, usam Créditos Jiddu ou acesso incluído e armazenam apenas a transcrição e os resultados selecionados. A identificação opcional de interlocutores é cobrada separadamente pela duração do áudio. Áudio de aba funciona em Chrome e Edge; microfone funciona em outros navegadores compatíveis.",
       ],
     },
     {
@@ -2304,6 +2377,9 @@ const pt: Messages = {
   a11y_show_explanation: "Ver explicação do parágrafo",
 
   new_analysis: "Nova análise",
+  result_cta_title: "Analise algo novo",
+  result_cta_description:
+    "Comece outra análise no Jiddu com um novo texto, link, imagem, documento ou sessão ao vivo.",
   share: "Compartilhar",
   copied: "Copiado",
   no_fallacies: "Nenhuma falácia detectada.",
@@ -2379,7 +2455,7 @@ const pt: Messages = {
   live_findings: "Falácias",
   live_running_score: "Nota parcial",
   live_privacy_note:
-    "O áudio é transmitido direto do seu navegador para a API Realtime da OpenAI via WebRTC. O áudio bruto não é enviado nem armazenado pelo Jiddu. Uma cópia local temporária fica nesta aba para reprodução até você iniciar outra sessão ou fechá-la; apenas a transcrição e os resultados selecionados ficam salvos. Ao finalizar o Guia de contexto, a recapitulação e um trecho da transcrição são enviados via OpenRouter ao Perplexity Sonar para buscar fontes públicas relacionadas.",
+    "Durante a captura, o áudio é transmitido direto do seu navegador para a API Realtime da OpenAI via WebRTC; o Jiddu recebe a transcrição, não o áudio bruto. Uma cópia temporária fica nesta aba para reprodução ou download até você iniciar outra sessão ou fechá-la. Somente após uma confirmação separada de custo e o pedido Identificar interlocutores essa cópia passará temporariamente pelo Jiddu até a API de transcrição de arquivos da OpenAI; ela não será retida. A transcrição da sessão e os resultados selecionados ficam salvos; a versão por interlocutor só entra no histórico da conta se você escolher Salvar transcrição. Ao finalizar o Guia de contexto, a recapitulação e um trecho da transcrição são enviados via OpenRouter ao Perplexity Sonar para buscar fontes públicas relacionadas.",
   live_status_connecting: "Conectando…",
   live_status_live: "Ao vivo",
   live_status_analyzing: "Analisando",
@@ -2392,6 +2468,46 @@ const pt: Messages = {
   live_local_recording: "Áudio da sessão",
   live_local_recording_hint:
     "Reprodução temporária nesta aba. Os links de contexto avançam até o trecho aproximado.",
+  live_download_audio: "Baixar áudio",
+  live_identify_speakers: "Identificar interlocutores",
+  live_diarizing_speakers: "Identificando interlocutores…",
+  live_diarization_consent_hint:
+    "Somente se você escolher esta ação, cobrada separadamente, uma cópia temporária será enviada pelo Jiddu à OpenAI para separar os interlocutores. O áudio não é armazenado. A versão identificada fica nesta aba, a menos que você salve explicitamente a transcrição no histórico da conta.",
+  live_diarization_too_large:
+    "A identificação não está disponível porque esta gravação excede o limite de 25 MB da OpenAI. Você ainda pode baixá-la.",
+  live_diarization_error:
+    "Não foi possível identificar os interlocutores. Tente novamente.",
+  live_diarization_credits_error:
+    "Você precisa de mais Créditos Jiddu para identificar os interlocutores desta gravação.",
+  live_diarization_confirm_title: "Identificar os interlocutores desta gravação?",
+  live_diarization_confirm_body:
+    "A gravação completa passará temporariamente pelo Jiddu até a OpenAI. O áudio será usado somente para identificar os interlocutores e não será armazenado pelo Jiddu.",
+  live_diarization_cost_warning:
+    "Esta é uma operação adicional paga e pode consumir Créditos Jiddu. Contas com acesso incluído registram o uso sem descontar do saldo pessoal.",
+  live_diarization_session_estimate: (duration, credits) =>
+    `Sessão de ${duration}: estimativa de ${credits} Crédito${credits === 1 ? "" : "s"} Jiddu.`,
+  live_diarization_duration: "Duração",
+  live_diarization_credits: "Créditos Jiddu",
+  live_diarization_minutes: (minutes) =>
+    `${minutes} minuto${minutes === 1 ? "" : "s"}`,
+  live_diarization_estimate_note:
+    "Os exemplos usam a tarifa atual do Jiddu. A cobrança final é calculada pela duração realmente processada pela OpenAI e arredondada para um crédito inteiro.",
+  live_diarization_cancel: "Cancelar",
+  live_diarization_confirm: "Continuar com a identificação",
+  live_diarization_save: "Salvar transcrição",
+  live_diarization_saving: "Salvando…",
+  live_diarization_saved: "Salva no histórico",
+  live_diarization_save_hint:
+    "Ao salvar, a transcrição identificada e os nomes ficam no histórico da sua conta Jiddu. O áudio não é armazenado.",
+  live_diarization_save_unavailable:
+    "Esta transcrição só pode ser salva depois que a sessão Live for adicionada ao histórico da sua conta.",
+  live_diarization_save_error:
+    "Não foi possível salvar esta transcrição. Tente novamente.",
+  live_diarization_view_saved: "Abrir transcrição salva",
+  live_diarization_history_back: "Histórico da conta",
+  live_diarized_transcript: "Transcrição por interlocutor",
+  live_speaker: "Pessoa",
+  live_speaker_name: "Nome da pessoa",
   live_no_findings_yet:
     "Nenhuma falácia detectada ainda. Elas aparecerão aqui conforme a pessoa fala.",
   live_no_claims_yet:
@@ -3164,10 +3280,10 @@ const es: Messages = {
     {
       title: "13. Modo Live (beta)",
       paragraphs: [
-        "En [/live](/live), Jiddu transcribe un micrófono o, en navegadores Chromium, una pestaña con `gpt-live-transcribe`. El audio viaja directamente desde el navegador a OpenAI mediante una conexión Realtime cifrada; Jiddu recibe la transcripción necesaria para el análisis, no el audio bruto.",
+        "En [/live](/live), Jiddu transcribe un micrófono o, en navegadores Chromium, una pestaña con `gpt-live-transcribe`. Durante la captura, el audio viaja directamente desde el navegador a OpenAI mediante una conexión Realtime cifrada; Jiddu recibe la transcripción necesaria para el análisis, no el audio bruto. Después de la captura, el usuario puede descargar la grabación local del navegador o, tras confirmar el coste adicional, enviar explícitamente una copia temporal mediante Jiddu a `gpt-4o-transcribe-diarize` de OpenAI para separar a los interlocutores. Jiddu no conserva ese archivo de audio. El usuario puede guardar por separado el texto identificado y los nombres editados en el historial privado de la cuenta.",
         "GPT-5.6 Luna o MiniMax M3 analiza periódicamente la transcripción creciente mediante las lentes Live seleccionadas: falacias lógicas, extracción de afirmaciones verificables y neutralidad. El usuario elige un intervalo de 10, 20, 30 o 60 segundos; los intervalos más largos aportan más contexto a cada análisis. Los resultados aparecen en un feed Todos y en paneles dedicados, con una insignia que identifica cada tipo.",
         "Al finalizar, cada lente seleccionada recibe un visor completo compartible. Las afirmaciones detectadas también pueden verificarse con fuentes web directamente en Live, con veredictos y fuentes, o desde el visor completo de fact-check.",
-        "Las sesiones están limitadas a 60 minutos, utilizan Créditos Jiddu o acceso incluido y almacenan solo la transcripción y los resultados seleccionados. El audio de pestañas funciona en Chrome y Edge; el micrófono funciona en otros navegadores compatibles.",
+        "Las sesiones están limitadas a 60 minutos, utilizan Créditos Jiddu o acceso incluido y almacenan solo la transcripción y los resultados seleccionados. La identificación opcional de interlocutores se cobra por separado según la duración del audio. El audio de pestañas funciona en Chrome y Edge; el micrófono funciona en otros navegadores compatibles.",
       ],
     },
     {
@@ -3248,6 +3364,9 @@ const es: Messages = {
   a11y_show_explanation: "Ver explicación del párrafo",
 
   new_analysis: "Nuevo análisis",
+  result_cta_title: "Analiza algo nuevo",
+  result_cta_description:
+    "Inicia otro análisis en Jiddu con un nuevo texto, enlace, imagen, documento o sesión en vivo.",
   share: "Compartir",
   copied: "Copiado",
   no_fallacies: "No se detectaron falacias.",
@@ -3324,7 +3443,7 @@ const es: Messages = {
   live_findings: "Falacias",
   live_running_score: "Puntuación parcial",
   live_privacy_note:
-    "El audio se transmite directamente desde tu navegador a la API Realtime de OpenAI vía WebRTC. Jiddu no sube ni almacena el audio en bruto. Una copia local temporal permanece en esta pestaña para reproducirla hasta que inicies otra sesión o la cierres; solo se guardan la transcripción y los resultados seleccionados. Al finalizar la Guía de contexto, la recapitulación y un fragmento de la transcripción se envían mediante OpenRouter a Perplexity Sonar para buscar fuentes públicas relacionadas.",
+    "Durante la captura, el audio se transmite directamente desde tu navegador a la API Realtime de OpenAI vía WebRTC; Jiddu recibe la transcripción, no el audio bruto. Una copia temporal permanece en esta pestaña para reproducirla o descargarla hasta que inicies otra sesión o la cierres. Solo después de una confirmación de coste separada y de solicitar Identificar interlocutores esa copia pasa temporalmente por Jiddu a la API de transcripción de archivos de OpenAI; no se conserva. La transcripción de la sesión y los resultados seleccionados se guardan; la versión por interlocutor solo se añade al historial de la cuenta si eliges Guardar transcripción. Al finalizar la Guía de contexto, la recapitulación y un fragmento de la transcripción se envían mediante OpenRouter a Perplexity Sonar para buscar fuentes públicas relacionadas.",
   live_status_connecting: "Conectando…",
   live_status_live: "En vivo",
   live_status_analyzing: "Analizando",
@@ -3337,6 +3456,46 @@ const es: Messages = {
   live_local_recording: "Audio de la sesión",
   live_local_recording_hint:
     "Reproducción temporal en esta pestaña. Los enlaces de contexto avanzan al fragmento aproximado.",
+  live_download_audio: "Descargar audio",
+  live_identify_speakers: "Identificar interlocutores",
+  live_diarizing_speakers: "Identificando interlocutores…",
+  live_diarization_consent_hint:
+    "Solo si eliges esta acción, que se cobra por separado, una copia temporal se envía mediante Jiddu a OpenAI para separar a los interlocutores. El audio no se almacena. La vista identificada permanece en esta pestaña, salvo que guardes explícitamente la transcripción en el historial de la cuenta.",
+  live_diarization_too_large:
+    "La identificación no está disponible porque esta grabación supera el límite de 25 MB de OpenAI. Aún puedes descargarla.",
+  live_diarization_error:
+    "No pudimos identificar a los interlocutores. Inténtalo de nuevo.",
+  live_diarization_credits_error:
+    "Necesitas más Créditos Jiddu para identificar a los interlocutores de esta grabación.",
+  live_diarization_confirm_title: "¿Identificar a los interlocutores de esta grabación?",
+  live_diarization_confirm_body:
+    "La grabación completa pasará temporalmente por Jiddu hasta OpenAI. El audio se usará solo para identificar a los interlocutores y Jiddu no lo almacenará.",
+  live_diarization_cost_warning:
+    "Esta es una operación adicional de pago y puede consumir Créditos Jiddu. Las cuentas con acceso incluido registran el uso sin descontarlo del saldo personal.",
+  live_diarization_session_estimate: (duration, credits) =>
+    `Sesión de ${duration}: estimación de ${credits} Crédito${credits === 1 ? "" : "s"} Jiddu.`,
+  live_diarization_duration: "Duración",
+  live_diarization_credits: "Créditos Jiddu",
+  live_diarization_minutes: (minutes) =>
+    `${minutes} minuto${minutes === 1 ? "" : "s"}`,
+  live_diarization_estimate_note:
+    "Los ejemplos usan la tarifa actual de Jiddu. El cargo final se calcula según la duración realmente procesada por OpenAI y se redondea a un crédito entero.",
+  live_diarization_cancel: "Cancelar",
+  live_diarization_confirm: "Continuar con la identificación",
+  live_diarization_save: "Guardar transcripción",
+  live_diarization_saving: "Guardando…",
+  live_diarization_saved: "Guardada en el historial",
+  live_diarization_save_hint:
+    "Al guardar, la transcripción identificada y los nombres quedan en el historial de tu cuenta Jiddu. El audio no se almacena.",
+  live_diarization_save_unavailable:
+    "Esta transcripción solo se puede guardar después de añadir la sesión Live al historial de tu cuenta.",
+  live_diarization_save_error:
+    "No pudimos guardar esta transcripción. Inténtalo de nuevo.",
+  live_diarization_view_saved: "Abrir transcripción guardada",
+  live_diarization_history_back: "Historial de la cuenta",
+  live_diarized_transcript: "Transcripción por interlocutor",
+  live_speaker: "Persona",
+  live_speaker_name: "Nombre de la persona",
   live_no_findings_yet:
     "Aún no se detectaron falacias. Aparecerán aquí mientras la persona habla.",
   live_no_claims_yet:

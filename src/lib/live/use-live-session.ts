@@ -7,6 +7,10 @@ import {
   isTranscriptionDelta,
   type RealtimeEvent,
 } from "./realtime-events";
+import {
+  LOCAL_RECORDING_AUDIO_BITS_PER_SECOND,
+  sessionAudioFilename,
+} from "./diarization";
 
 export type LiveSource = "mic" | "tab";
 
@@ -51,6 +55,10 @@ export type LiveSessionHandle = {
   billingReservationId: string | null;
   /** Temporary in-browser recording for replay after this session. */
   localAudioUrl: string | null;
+  /** Audio bytes retained only in this browser tab for replay or an opt-in action. */
+  localAudioBlob: Blob | null;
+  /** Stable download name created when the browser recording finishes. */
+  localAudioFilename: string | null;
   /** Milliseconds elapsed since the session went live. */
   elapsedMs: number;
   start: (source: LiveSource) => Promise<void>;
@@ -88,6 +96,10 @@ export function useLiveSession(opts: LiveSessionOptions = {}): LiveSessionHandle
     string | null
   >(null);
   const [localAudioUrl, setLocalAudioUrl] = useState<string | null>(null);
+  const [localAudioBlob, setLocalAudioBlob] = useState<Blob | null>(null);
+  const [localAudioFilename, setLocalAudioFilename] = useState<string | null>(
+    null,
+  );
 
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const dcRef = useRef<RTCDataChannel | null>(null);
@@ -111,12 +123,14 @@ export function useLiveSession(opts: LiveSessionOptions = {}): LiveSessionHandle
     }
     audioChunksRef.current = [];
     setLocalAudioUrl(null);
+    setLocalAudioBlob(null);
+    setLocalAudioFilename(null);
   }, []);
 
   const startLocalRecording = useCallback((stream: MediaStream) => {
     if (typeof MediaRecorder === "undefined") return;
     try {
-      const recorder = new MediaRecorder(stream);
+      const recorder = createLocalMediaRecorder(stream);
       audioChunksRef.current = [];
       recorder.addEventListener("dataavailable", (event) => {
         if (event.data.size > 0) audioChunksRef.current.push(event.data);
@@ -163,6 +177,8 @@ export function useLiveSession(opts: LiveSessionOptions = {}): LiveSessionHandle
     const url = URL.createObjectURL(blob);
     localAudioUrlRef.current = url;
     setLocalAudioUrl(url);
+    setLocalAudioBlob(blob);
+    setLocalAudioFilename(sessionAudioFilename(blob.type));
   }, []);
 
   const cleanupMedia = useCallback(() => {
@@ -589,11 +605,31 @@ export function useLiveSession(opts: LiveSessionOptions = {}): LiveSessionHandle
     error,
     billingReservationId,
     localAudioUrl,
+    localAudioBlob,
+    localAudioFilename,
     elapsedMs,
     start,
     stop,
     finish,
   };
+}
+
+function createLocalMediaRecorder(stream: MediaStream): MediaRecorder {
+  const preferredMimeType = [
+    "audio/webm;codecs=opus",
+    "audio/webm",
+    "audio/mp4",
+  ].find((type) => MediaRecorder.isTypeSupported?.(type));
+  try {
+    return new MediaRecorder(stream, {
+      audioBitsPerSecond: LOCAL_RECORDING_AUDIO_BITS_PER_SECOND,
+      ...(preferredMimeType ? { mimeType: preferredMimeType } : {}),
+    });
+  } catch {
+    // Older implementations may reject bitrate or codec options. Preserve
+    // replay/download even though a long fallback recording may exceed 25 MB.
+    return new MediaRecorder(stream);
+  }
 }
 
 function toLiveSessionError(error: unknown): LiveSessionError {

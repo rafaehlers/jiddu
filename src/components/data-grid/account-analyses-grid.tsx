@@ -95,6 +95,7 @@ function TypeCell({
   if (!value) return null;
   const cls = {
     context: "bg-indigo-500/15 text-indigo-500",
+    diarization: "bg-cyan-500/15 text-cyan-600",
     fallacy: "bg-amber-500/15 text-amber-500",
     factcheck: "bg-blue-500/15 text-blue-500",
     neutrality: "bg-purple-500/15 text-purple-500",
@@ -104,6 +105,7 @@ function TypeCell({
   }[value];
   const label = {
     context: "Live context",
+    diarization: "Speakers",
     fallacy: "Fallacy",
     factcheck: "Fact-check",
     neutrality: "Neutrality",

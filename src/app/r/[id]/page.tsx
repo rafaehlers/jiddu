@@ -5,6 +5,7 @@ import { PaperReviewResultSchema } from "@/lib/paper-review-schema";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { PaperReviewView } from "@/components/paper-review-view";
+import { ResultPageCta } from "@/components/result-page-cta";
 import { ScrollIndicator } from "@/components/scroll-indicator";
 import { parseStoredVenueProfile } from "@/lib/venues";
 import { analysisSocialMetadata } from "@/lib/social-metadata";
@@ -59,6 +60,7 @@ export default async function PaperReviewPage({ params }: Props) {
         status={row.status}
         venueProfile={parseStoredVenueProfile(row.venueProfile)}
       />
+      <ResultPageCta href="/review" />
       <SiteFooter />
       <ScrollIndicator />
     </main>
