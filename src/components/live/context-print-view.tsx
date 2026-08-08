@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { PRINT_CSS } from "@/components/analysis-print-view";
+import { PrintBrand } from "@/components/print-brand";
 import { formatAppDateTime } from "@/lib/date-time";
 import type { Lang } from "@/lib/fallacies";
 import { useI18n } from "@/lib/i18n/provider";
@@ -41,10 +42,7 @@ export function LiveContextPrintView({
       <style>{`${PRINT_CSS}\n${LIVE_CONTEXT_PRINT_CSS}`}</style>
 
       <header className="print-header">
-        <div className="print-brand">
-          <span className="print-brand-name">Jiddu</span>
-          <span className="print-brand-tag">truth is a pathless land</span>
-        </div>
+        <PrintBrand />
         <h1>{title}</h1>
         {context.summary ? (
           <p className="print-summary">{context.summary}</p>

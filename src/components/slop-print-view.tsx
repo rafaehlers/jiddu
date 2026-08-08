@@ -9,6 +9,7 @@ import type { Sentence } from "@/lib/schema";
 import { SLOP_BY_ID } from "@/lib/slop";
 import type { Lang } from "@/lib/fallacies";
 import { PRINT_CSS } from "@/components/analysis-print-view";
+import { PrintBrand } from "@/components/print-brand";
 import type { Block } from "@/lib/paragraphs";
 import { StructuredDocumentText } from "@/components/structured-document-text";
 
@@ -68,10 +69,7 @@ export function SlopPrintView({
       <style>{PRINT_CSS}</style>
 
       <header className="print-header">
-        <div className="print-brand">
-          <span className="print-brand-name">Jiddu</span>
-          <span className="print-brand-tag">truth is a pathless land</span>
-        </div>
+        <PrintBrand />
         <h1>{title ?? t.fc_untitled}</h1>
         <div className="print-score">
           <span className="print-score-num">{score}</span>

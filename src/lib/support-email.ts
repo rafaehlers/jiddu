@@ -4,8 +4,7 @@ import { Resend, type CreateBatchOptions } from "resend";
 import { emailBrandHeader } from "@/lib/email-brand-header";
 import type { Lang } from "@/lib/fallacies";
 
-const DEFAULT_FROM_EMAIL =
-  "Jiddu Support <notifications@emails.jiddu.app>";
+const DEFAULT_FROM_EMAIL = "Jiddu <notifications@emails.jiddu.app>";
 const DEFAULT_SUPPORT_EMAIL = "support@emails.jiddu.app";
 
 type PublicContactEmail = {

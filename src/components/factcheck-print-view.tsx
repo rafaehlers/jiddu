@@ -9,6 +9,7 @@ import type { Sentence } from "@/lib/schema";
 import type { Claim } from "@/lib/claims-schema";
 import type { Verdict } from "@/lib/verdict-schema";
 import type { Block } from "@/lib/paragraphs";
+import { PrintBrand, PRINT_BRAND_CSS } from "@/components/print-brand";
 import { StructuredDocumentText } from "@/components/structured-document-text";
 
 type ClaimWithId = Claim & { id: string };
@@ -68,10 +69,7 @@ export function FactCheckPrintView({
       <style>{PRINT_CSS}</style>
 
       <header className="print-header">
-        <div className="print-brand">
-          <span className="print-brand-name">Jiddu</span>
-          <span className="print-brand-tag">truth is a pathless land</span>
-        </div>
+        <PrintBrand />
         <h1>{title ?? t.fc_untitled}</h1>
         <dl className="print-meta">
           {sourceRef && source === "url" && (
@@ -187,6 +185,7 @@ function fmt(d: Date, lang: Lang): string {
 }
 
 const PRINT_CSS = `
+  ${PRINT_BRAND_CSS}
   /* Reset for print: force a light, paper-like canvas regardless of the
      user's dark-mode preference. Print stylesheets in Chrome/Safari ignore
      CSS variables tied to color-scheme, so we use plain colors here. */
@@ -202,21 +201,6 @@ const PRINT_CSS = `
   .print-root a {
     color: #1a4ed8;
     word-break: break-all;
-  }
-  .print-brand {
-    display: flex;
-    align-items: baseline;
-    gap: 12px;
-    margin-bottom: 12px;
-  }
-  .print-brand-name {
-    font-size: 22px;
-    font-weight: 600;
-  }
-  .print-brand-tag {
-    font-style: italic;
-    color: #555;
-    font-size: 12px;
   }
   .print-root h1 {
     font-size: 26px;

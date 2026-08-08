@@ -204,6 +204,16 @@ export function AnalysisView({
         <p className="text-xs text-muted">
           {provider} · {model} · {t.finding_count(keyedFindings.length, sentences.length)}
         </p>
+        <ShareLinkBar
+          rightSlot={
+            <ReportDeliveryActions
+              canEmail={canEmail}
+              id={id}
+              kind="a"
+              printHref={`/a/${id}/print`}
+            />
+          }
+        />
       </div>
 
       <div className="mx-auto max-w-5xl w-full px-4 sm:px-6 pb-10 grid grid-cols-1 lg:grid-cols-[1fr_22rem] gap-6 lg:gap-8">
@@ -294,19 +304,6 @@ export function AnalysisView({
             );
           })}
         </aside>
-      </div>
-
-      <div className="mx-auto max-w-5xl w-full px-4 sm:px-6 pb-16 grid grid-cols-1 lg:grid-cols-[1fr_22rem] gap-8">
-        <ShareLinkBar
-          rightSlot={
-            <ReportDeliveryActions
-              canEmail={canEmail}
-              id={id}
-              kind="a"
-              printHref={`/a/${id}/print`}
-            />
-          }
-        />
       </div>
 
       <FallacyModal
