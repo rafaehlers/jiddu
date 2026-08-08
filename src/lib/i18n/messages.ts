@@ -93,6 +93,14 @@ export type Messages = {
   fc_claims_one_extracted: string;
   fc_claims_many_extracted: string;
   fc_claims_header: string;
+  fc_filter_label: string;
+  fc_filter_all: string;
+  fc_filter_supported: string;
+  fc_filter_contradicted: string;
+  fc_filter_mixed: string;
+  fc_filter_unverified: string;
+  fc_filter_pending: string;
+  fc_filter_empty: string;
   fc_extracting: string;
   fc_no_claims: string;
   fc_verify_panel_title: string;
@@ -682,6 +690,14 @@ const en: Messages = {
   fc_claims_one_extracted: "claim extracted",
   fc_claims_many_extracted: "claims extracted",
   fc_claims_header: "Claims",
+  fc_filter_label: "Filter claims by status",
+  fc_filter_all: "All",
+  fc_filter_supported: "Supported",
+  fc_filter_contradicted: "Contradicted",
+  fc_filter_mixed: "Mixed",
+  fc_filter_unverified: "Unverified",
+  fc_filter_pending: "Pending",
+  fc_filter_empty: "No claims have this status.",
   fc_extracting: "Extracting claims…",
   fc_no_claims: "No verifiable claims were extracted from this text.",
   fc_verify_panel_title: "Verify these claims",
@@ -1615,6 +1631,14 @@ const pt: Messages = {
   fc_claims_one_extracted: "afirmação extraída",
   fc_claims_many_extracted: "afirmações extraídas",
   fc_claims_header: "Afirmações",
+  fc_filter_label: "Filtrar afirmações por status",
+  fc_filter_all: "Todas",
+  fc_filter_supported: "Sustentadas",
+  fc_filter_contradicted: "Contraditas",
+  fc_filter_mixed: "Mistas",
+  fc_filter_unverified: "Não verificadas",
+  fc_filter_pending: "Pendentes",
+  fc_filter_empty: "Nenhuma afirmação possui este status.",
   fc_extracting: "Extraindo afirmações…",
   fc_no_claims: "Nenhuma afirmação verificável foi extraída deste texto.",
   fc_verify_panel_title: "Verificar estas afirmações",
@@ -2549,6 +2573,14 @@ const es: Messages = {
   fc_claims_one_extracted: "afirmación extraída",
   fc_claims_many_extracted: "afirmaciones extraídas",
   fc_claims_header: "Afirmaciones",
+  fc_filter_label: "Filtrar afirmaciones por estado",
+  fc_filter_all: "Todas",
+  fc_filter_supported: "Respaldadas",
+  fc_filter_contradicted: "Contradichas",
+  fc_filter_mixed: "Mixtas",
+  fc_filter_unverified: "No verificadas",
+  fc_filter_pending: "Pendientes",
+  fc_filter_empty: "Ninguna afirmación tiene este estado.",
   fc_extracting: "Extrayendo afirmaciones…",
   fc_no_claims: "No se extrajeron afirmaciones verificables de este texto.",
   fc_verify_panel_title: "Verificar estas afirmaciones",
