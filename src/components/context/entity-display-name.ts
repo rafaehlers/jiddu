@@ -1,16 +1,24 @@
 import type { KnowledgeEntityDTO } from "@/lib/context-knowledge-schema";
+import { isPublicProfileCompatible } from "@/lib/context-profile-match";
 import type { LiveContextEntity } from "@/lib/live-context-schema";
 
-type EntityNameSource = Pick<LiveContextEntity, "name" | "userCorrectedName">;
-type PublicNameSource = Pick<KnowledgeEntityDTO, "canonicalName"> | null;
+type EntityNameSource = Pick<
+  LiveContextEntity,
+  "name" | "aliases" | "description" | "kind" | "userCorrectedName"
+>;
+type PublicNameSource =
+  | (Pick<KnowledgeEntityDTO, "canonicalName"> &
+      Partial<Pick<KnowledgeEntityDTO, "description">>)
+  | null;
 
 export function resolveEntityDisplayName(
   entity: EntityNameSource,
   enriched: PublicNameSource,
 ): string {
-  return entity.userCorrectedName
-    ? entity.name
-    : (enriched?.canonicalName ?? entity.name);
+  if (entity.userCorrectedName || !enriched) return entity.name;
+  return isPublicProfileCompatible(entity, enriched)
+    ? enriched.canonicalName
+    : entity.name;
 }
 
 export function shouldPersistEntityName(

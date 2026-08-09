@@ -40,10 +40,10 @@ import { ContextGraph } from "./context-graph";
 import { mutateContextEntity } from "./context-entity-mutations";
 import { contextCopy } from "./context-copy";
 import {
-  ContextFloatingPanels,
+  ContextDockview,
   ContextPanelsControl,
-  useContextFloatingPanels,
-} from "./context-floating-panels";
+  useContextDockview,
+} from "./context-dockview";
 import { ContextTopicsFeed } from "./context-topics-feed";
 import { ContextNeutralityHeader } from "./context-neutrality-header";
 import {
@@ -93,7 +93,8 @@ function ContextWorkspaceContent({
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const transcriptRef = useRef<TranscriptStreamHandle>(null);
   const autoStopTriggeredRef = useRef(false);
-  const floatingPanels = useContextFloatingPanels();
+  const speakerPromptPendingRef = useRef(false);
+  const dockview = useContextDockview();
   const [contextTheme, setContextTheme] = useContextTheme();
   const contextSettings = useContextSettings();
   const sessionStore = useContextSessionStoreApi();
@@ -148,8 +149,14 @@ function ContextWorkspaceContent({
     downloadFilename: session.localAudioFilename,
     durationMs: session.elapsedMs,
     resourceId: analysis.sessionId,
-    onIdentificationFinished: () => floatingPanels.selectPanel("transcript"),
+    onIdentificationFinished: () => dockview.selectPanel("transcript"),
   });
+
+  useEffect(() => {
+    if (!speakerPromptPendingRef.current || !diarization.available) return;
+    speakerPromptPendingRef.current = false;
+    diarization.requestSpeakerIdentification();
+  }, [diarization]);
 
   const isRunning =
     session.state === "live" ||
@@ -247,12 +254,14 @@ function ContextWorkspaceContent({
       return;
     }
     verification.reset();
+    speakerPromptPendingRef.current = false;
     clearContextRecoveryMarker();
     sessionStore.getState().resetSession(source);
     void session.start(source);
   };
 
   const handleStop = useCallback(async () => {
+    speakerPromptPendingRef.current = true;
     const audioDurationMs = await session.stop();
     const analysisId = await analysis.finalize(audioDurationMs);
     await session.finish(analysisId);
@@ -297,56 +306,59 @@ function ContextWorkspaceContent({
         className="relative z-50 bg-background/95 px-3 py-2 shadow-sm backdrop-blur sm:px-4"
       >
         <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <div
-            className="flex size-16 shrink-0 items-center justify-center"
-            data-testid="context-session-mark"
-          >
-            {isRunning ? (
-              <ThinkingOrb
-                state="connecting"
-                size={64}
-                speed={1}
-                theme={contextTheme}
-                aria-label={statusLabel}
-              />
-            ) : (
-              <Link
-                href="/"
-                aria-label={copy.exit}
-                title={copy.exit}
-                className="rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-              >
-                <Image
-                  src={
-                    contextTheme === "dark"
-                      ? "/brand/jiddu_logo_inverted_128.webp"
-                      : "/brand/jiddu_logo_128.webp"
-                  }
-                  alt="Jiddu"
-                  width={64}
-                  height={64}
-                  priority
-                  className={`size-16 object-cover ${contextTheme === "dark" ? "mix-blend-lighten" : "mix-blend-darken"}`}
+          <div className="mr-auto grid min-w-0 flex-1 basis-[18rem] grid-cols-[4rem_minmax(0,1fr)] grid-rows-[4rem_auto] gap-x-2">
+            <div
+              className="col-start-1 row-start-1 flex size-16 shrink-0 items-center justify-center"
+              data-testid="context-session-mark"
+            >
+              {isRunning ? (
+                <ThinkingOrb
+                  state="connecting"
+                  size={64}
+                  speed={1}
+                  theme={contextTheme}
+                  aria-label={statusLabel}
                 />
-              </Link>
-            )}
-          </div>
-          <div className="mr-auto flex min-w-0 flex-col justify-center leading-none">
-            <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#d5533b] sm:text-xs">
-              Jiddu
-            </span>
-            <div className="mt-0.5 flex items-baseline gap-2">
+              ) : (
+                <Link
+                  href="/"
+                  aria-label={copy.exit}
+                  title={copy.exit}
+                  className="rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                >
+                  <Image
+                    src={
+                      contextTheme === "dark"
+                        ? "/brand/jiddu_logo_inverted_128.webp"
+                        : "/brand/jiddu_logo_128.webp"
+                    }
+                    alt="Jiddu"
+                    width={64}
+                    height={64}
+                    priority
+                    className={`size-16 object-cover ${contextTheme === "dark" ? "mix-blend-lighten" : "mix-blend-darken"}`}
+                  />
+                </Link>
+              )}
+            </div>
+            <div className="col-start-2 row-start-1 flex min-w-0 flex-col justify-center pt-2 leading-none">
+              <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#d5533b] sm:text-xs">
+                Jiddu
+              </span>
               <h1
                 aria-label={copy.title}
-                className="truncate font-serif text-2xl font-semibold leading-none sm:text-3xl"
+                className="mt-0.5 truncate font-serif text-2xl font-semibold leading-none sm:text-3xl"
               >
                 Context
+                <sup
+                  aria-hidden="true"
+                  className="ml-1 align-super font-sans text-[8px] font-medium uppercase tracking-wider text-accent sm:text-[9px]"
+                >
+                  beta
+                </sup>
               </h1>
-              <span className="rounded border border-accent/40 px-1.5 py-0.5 text-[9px] uppercase tracking-wider text-accent">
-                beta
-              </span>
             </div>
-            <p className="mt-1 hidden truncate text-xs leading-normal text-muted xl:block">
+            <p className="col-span-2 col-start-1 row-start-2 truncate text-left text-xs leading-normal text-muted">
               {copy.subtitle}
             </p>
           </div>
@@ -427,7 +439,7 @@ function ContextWorkspaceContent({
             ) : null}
           </div>
           <ContextPanelsControl
-            state={floatingPanels}
+            state={dockview}
             labels={{
               transcript: copy.transcript,
               fallacies: copy.fallacies,
@@ -487,36 +499,44 @@ function ContextWorkspaceContent({
         ) : null}
       </header>
 
-      <section className="relative min-h-0">
-        <div className="pointer-events-none absolute left-3 top-3 z-10 rounded-md border border-rule bg-background/85 px-2.5 py-1.5 text-xs backdrop-blur">
-          <span className="font-medium">{copy.graph}</span>
-          <span className="ml-2 text-muted">
-            {analysisView.context.entities.length} {copy.entities} ·{" "}
-            {analysisView.context.relations.length} {copy.relations}
-          </span>
-        </div>
-        {enrichmentView.errors.size > 0 ? (
-          <p className="pointer-events-none absolute right-3 top-3 z-10 max-w-xs rounded-md border border-amber-500/30 bg-background/85 px-2.5 py-1.5 text-[10px] text-amber-400 backdrop-blur">
-            {copy.newsUnavailable}
-          </p>
-        ) : null}
-        <ContextGraph
-          context={analysisView.context}
-          enrichedEntities={enrichmentView.entities}
-          enrichedRelations={enrichmentView.relations}
+      <section className="min-h-0">
+        <ContextDockview
+          state={dockview}
           copy={copy}
-          onJumpToSentence={jumpToSentence}
-          editable={Boolean(analysis.sessionId) && !verification.isVerifying}
-          onRenameEntity={handleRenameEntity}
-          onMergeEntities={handleMergeEntities}
-          onRemoveEntity={handleRemoveEntity}
-          colorMode={contextTheme}
-          showMiniMap={contextSettings.settings.showMiniMap}
-          animateRelations={contextSettings.settings.animateRelations}
-        />
-        <ContextFloatingPanels
-          state={floatingPanels}
-          copy={copy}
+          theme={contextTheme}
+          graphTitle={copy.graph}
+          graph={
+            <>
+              <div className="pointer-events-none absolute left-3 top-3 z-10 rounded-md border border-rule bg-background/85 px-2.5 py-1.5 text-xs backdrop-blur">
+                <span className="font-medium">{copy.graph}</span>
+                <span className="ml-2 text-muted">
+                  {analysisView.context.entities.length} {copy.entities} ·{" "}
+                  {analysisView.context.relations.length} {copy.relations}
+                </span>
+              </div>
+              {enrichmentView.errors.size > 0 ? (
+                <p className="pointer-events-none absolute right-3 top-3 z-10 max-w-xs rounded-md border border-amber-500/30 bg-background/85 px-2.5 py-1.5 text-[10px] text-amber-400 backdrop-blur">
+                  {copy.newsUnavailable}
+                </p>
+              ) : null}
+              <ContextGraph
+                context={analysisView.context}
+                enrichedEntities={enrichmentView.entities}
+                enrichedRelations={enrichmentView.relations}
+                copy={copy}
+                onJumpToSentence={jumpToSentence}
+                editable={
+                  Boolean(analysis.sessionId) && !verification.isVerifying
+                }
+                onRenameEntity={handleRenameEntity}
+                onMergeEntities={handleMergeEntities}
+                onRemoveEntity={handleRemoveEntity}
+                colorMode={contextTheme}
+                showMiniMap={contextSettings.settings.showMiniMap}
+                animateRelations={contextSettings.settings.animateRelations}
+              />
+            </>
+          }
           panels={{
             transcript: {
               title: copy.transcript,

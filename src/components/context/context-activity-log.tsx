@@ -47,12 +47,12 @@ export function ContextActivityLog({ copy, agents: agentMap }: Props) {
     <footer
       data-testid="context-activity-log"
       aria-label={copy.activityLog}
-      className="relative z-[70] flex h-9 min-w-0 items-center border-t border-white/10 bg-neutral-950 px-3 font-mono text-[10px] text-neutral-300 shadow-[0_-8px_24px_rgba(0,0,0,0.18)]"
+      className="relative z-[70] flex h-9 min-w-0 items-center border-t border-rule bg-paper px-3 font-mono text-[10px] text-muted shadow-[0_-8px_24px_rgba(0,0,0,0.12)]"
     >
       <div className="flex min-w-0 flex-1 items-center gap-3 overflow-x-auto whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <span className="inline-flex shrink-0 items-center gap-1.5 font-semibold tracking-[0.12em] text-neutral-100">
+        <span className="inline-flex shrink-0 items-center gap-1.5 font-semibold tracking-[0.12em] text-foreground">
           <span
-            className={`size-1.5 rounded-full ${agents.length > 0 ? "animate-pulse bg-emerald-400" : "bg-neutral-600"}`}
+            className={`size-1.5 rounded-full ${agents.length > 0 ? "animate-pulse bg-emerald-500" : "bg-muted/50"}`}
           />
           <Activity className="size-3.5" />
           {copy.activityLog}
@@ -62,43 +62,43 @@ export function ContextActivityLog({ copy, agents: agentMap }: Props) {
         <Metric icon={Cpu} label={copy.activeProcesses} value={processCount} />
         <Metric icon={Radio} label={copy.activeRequests} value={requestCount} />
 
-        <span className="h-4 w-px shrink-0 bg-white/10" />
+        <span className="h-4 w-px shrink-0 bg-rule" />
         <div className="flex shrink-0 items-center gap-1.5" aria-live="polite">
           {agents.length > 0 ? (
             agents.map((agent) => (
               <span
                 key={agent.id}
-                className="inline-flex items-center gap-1 rounded border border-emerald-400/20 bg-emerald-400/5 px-1.5 py-0.5 text-emerald-300"
+                className="inline-flex items-center gap-1 rounded border border-emerald-500/25 bg-emerald-500/10 px-1.5 py-0.5 text-emerald-500"
               >
-                <span className="size-1 rounded-full bg-emerald-400" />
+                <span className="size-1 rounded-full bg-emerald-500" />
                 {agent.label}
                 {agent.processes > 1 ? ` ×${agent.processes}` : ""}
-                <span className="text-emerald-200/60">
+                <span className="opacity-70">
                   {formatOperationDuration(agent.durationMs)}
                 </span>
               </span>
             ))
           ) : (
-            <span className="text-neutral-500">{copy.awaitingActivity}</span>
+            <span className="text-muted">{copy.awaitingActivity}</span>
           )}
         </div>
       </div>
 
-      <div className="ml-3 hidden shrink-0 items-center gap-1.5 border-l border-white/10 pl-3 lg:flex">
-        <Waypoints className="size-3.5 text-violet-300" />
-        <span className="text-neutral-500">{copy.modelsInUse}</span>
+      <div className="ml-3 hidden shrink-0 items-center gap-1.5 border-l border-rule pl-3 lg:flex">
+        <Waypoints className="size-3.5 text-violet-500" />
+        <span className="text-muted">{copy.modelsInUse}</span>
         {models.length > 0 ? (
           models.map((model) => (
             <span
               key={model.id}
               title={model.provider ?? undefined}
-              className="rounded border border-violet-400/20 bg-violet-400/5 px-1.5 py-0.5 text-violet-200"
+              className="rounded border border-violet-500/25 bg-violet-500/10 px-1.5 py-0.5 text-violet-500"
             >
               {model.id}
             </span>
           ))
         ) : (
-          <span className="text-neutral-600">—</span>
+          <span className="text-muted/70">—</span>
         )}
       </div>
     </footer>
@@ -123,10 +123,10 @@ function Metric({
   value: number;
 }) {
   return (
-    <span className="inline-flex shrink-0 items-center gap-1 text-neutral-500">
+    <span className="inline-flex shrink-0 items-center gap-1 text-muted">
       <Icon className="size-3" />
       {label}
-      <strong className="font-semibold tabular-nums text-neutral-200">
+      <strong className="font-semibold tabular-nums text-foreground">
         {value}
       </strong>
     </span>

@@ -19,6 +19,7 @@ import {
 import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
 import { useState } from "react";
 import type { KnowledgeEntityDTO } from "@/lib/context-knowledge-schema";
+import { isPublicProfileCompatible } from "@/lib/context-profile-match";
 import type {
   LiveContextEntity,
   LiveContextEntityKind,
@@ -86,6 +87,8 @@ export function ContextEntityNodeCard({
   const [error, setError] = useState<string | null>(null);
   const Icon = ICONS[entity.kind];
   const isLoading = !enriched || enriched.profileStatus === "pending";
+  const profileCompatible =
+    enriched !== null && isPublicProfileCompatible(entity, enriched);
   const correctedAt = entity.userCorrectedAt
     ? Date.parse(entity.userCorrectedAt)
     : null;
@@ -161,7 +164,7 @@ export function ContextEntityNodeCard({
       />
       <div className="border-b border-rule p-3">
         <div className="flex items-start gap-3">
-          {enriched?.imageUrl ? (
+          {profileCompatible && enriched?.imageUrl ? (
             <div
               aria-hidden="true"
               className="size-11 shrink-0 rounded-lg bg-cover bg-center ring-1 ring-rule"
@@ -406,7 +409,9 @@ export function ContextEntityNodeCard({
                 <Loader2 className="size-3 animate-spin" />
                 {copy.publicProfileLoading}
               </p>
-            ) : enriched?.profileStatus === "ready" && enriched.description ? (
+            ) : enriched?.profileStatus === "ready" &&
+              profileCompatible &&
+              enriched.description ? (
               <>
                 <p className="line-clamp-3 text-xs leading-relaxed text-muted">
                   {enriched.description}

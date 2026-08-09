@@ -2,52 +2,17 @@
 
 import { Moon, Sun } from "lucide-react";
 import type { CSSProperties } from "react";
+import { useSiteTheme, type SiteTheme } from "@/lib/site-theme";
 import type { ContextCopy } from "./context-copy";
-import { useContextUiStore } from "./context-ui-store-provider";
-import type { ContextTheme } from "./context-ui-store";
 
-export type { ContextTheme } from "./context-ui-store";
-type ContextThemeStyle = CSSProperties & Record<`--${string}`, string | number>;
-
-const THEME_STYLES = {
-  dark: {
-    "--background": "rgb(7, 7, 7)",
-    "--foreground": "rgb(251, 251, 251)",
-    "--paper": "rgb(17, 17, 17)",
-    "--ink": "rgb(251, 251, 251)",
-    "--muted": "rgb(145, 145, 145)",
-    "--rule": "rgb(34, 34, 34)",
-    "--accent": "rgb(226, 226, 226)",
-    "--accent-hi": "rgb(244, 244, 244)",
-    "--accent-edge": "rgb(74, 74, 74)",
-    "--severity-low": "rgb(228, 178, 102)",
-    "--severity-high": "rgb(232, 102, 78)",
-    colorScheme: "dark",
-  },
-  light: {
-    "--background": "rgb(247, 247, 247)",
-    "--foreground": "rgb(18, 18, 18)",
-    "--paper": "rgb(255, 255, 255)",
-    "--ink": "rgb(18, 18, 18)",
-    "--muted": "rgb(102, 102, 102)",
-    "--rule": "rgb(220, 220, 220)",
-    "--accent": "rgb(24, 24, 24)",
-    "--accent-hi": "rgb(7, 7, 7)",
-    "--accent-edge": "rgb(178, 178, 178)",
-    "--severity-low": "rgb(184, 128, 44)",
-    "--severity-high": "rgb(202, 67, 45)",
-    colorScheme: "light",
-  },
-} satisfies Record<ContextTheme, ContextThemeStyle>;
+export type ContextTheme = SiteTheme;
 
 export function contextThemeStyle(theme: ContextTheme): CSSProperties {
-  return THEME_STYLES[theme];
+  return { colorScheme: theme };
 }
 
 export function useContextTheme() {
-  const theme = useContextUiStore((state) => state.theme);
-  const setTheme = useContextUiStore((state) => state.setTheme);
-  return [theme, setTheme] as const;
+  return useSiteTheme();
 }
 
 export function ContextThemeSelector({

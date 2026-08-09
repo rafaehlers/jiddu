@@ -58,24 +58,6 @@
   --severity-high: rgb(220, 80, 56);
 }
 
-/* The Context workspace is a separate, fullscreen product surface. Keep it
-   intentionally dark even when the rest of Jiddu follows a light preference,
-   using the near-black, low-chrome palette of the Thinking Orbs reference. */
-html .context-orbs-theme {
-  --background: rgb(7, 7, 7);
-  --foreground: rgb(251, 251, 251);
-  --paper: rgb(17, 17, 17);
-  --ink: rgb(251, 251, 251);
-  --muted: rgb(145, 145, 145);
-  --rule: rgb(34, 34, 34);
-  --accent: rgb(226, 226, 226);
-  --accent-hi: rgb(244, 244, 244);
-  --accent-edge: rgb(74, 74, 74);
-  --severity-low: rgb(228, 178, 102);
-  --severity-high: rgb(232, 102, 78);
-  color-scheme: dark;
-}
-
 .context-orbs-theme .react-flow__controls {
   overflow: hidden;
   border: 1px solid var(--rule);
@@ -103,6 +85,38 @@ html .context-orbs-theme {
 
 .context-orbs-theme .react-flow__attribution {
   background: color-mix(in oklab, var(--paper) 88%, transparent);
+}
+
+@keyframes context-diarization-result-reveal {
+  0%,
+  100% {
+    border-color: var(--rule);
+    box-shadow: 0 0 0 0 transparent;
+  }
+  16%,
+  50%,
+  84% {
+    border-color: var(--accent-hi);
+    box-shadow: 0 0 0 4px
+      color-mix(in oklab, var(--accent-hi) 18%, transparent);
+  }
+  33%,
+  67% {
+    border-color: var(--rule);
+    box-shadow: 0 0 0 1px transparent;
+  }
+}
+
+.context-diarization-result-reveal {
+  animation: context-diarization-result-reveal 1.8s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .context-diarization-result-reveal {
+    animation: none;
+    box-shadow: 0 0 0 2px
+      color-mix(in oklab, var(--accent-hi) 35%, transparent);
+  }
 }
 
 body {

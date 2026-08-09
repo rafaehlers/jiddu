@@ -545,6 +545,7 @@ export type Messages = {
   live_diarization_credits_error: string;
   live_diarization_confirm_title: string;
   live_diarization_confirm_body: string;
+  live_diarization_processing_hint: string;
   live_diarization_cost_warning: string;
   live_diarization_session_estimate: (duration: string, credits: number) => string;
   live_diarization_duration: string;
@@ -1541,6 +1542,8 @@ const en: Messages = {
   live_diarization_confirm_title: "Identify speakers in this recording?",
   live_diarization_confirm_body:
     "The full recording will pass temporarily through Jiddu to OpenAI. The audio is used only for speaker identification and is not retained by Jiddu.",
+  live_diarization_processing_hint:
+    "Keep this window open while Jiddu separates the speakers.",
   live_diarization_cost_warning:
     "This is an additional paid operation and may consume Jiddu Credits. Accounts with included platform access record the usage without deducting the personal balance.",
   live_diarization_session_estimate: (duration, credits) =>
@@ -2551,6 +2554,8 @@ const pt: Messages = {
   live_diarization_confirm_title: "Identificar os interlocutores desta gravação?",
   live_diarization_confirm_body:
     "A gravação completa passará temporariamente pelo Jiddu até a OpenAI. O áudio será usado somente para identificar os interlocutores e não será armazenado pelo Jiddu.",
+  live_diarization_processing_hint:
+    "Mantenha esta janela aberta enquanto o Jiddu separa os interlocutores.",
   live_diarization_cost_warning:
     "Esta é uma operação adicional paga e pode consumir Créditos Jiddu. Contas com acesso incluído registram o uso sem descontar do saldo pessoal.",
   live_diarization_session_estimate: (duration, credits) =>
@@ -3564,6 +3569,8 @@ const es: Messages = {
   live_diarization_confirm_title: "¿Identificar a los interlocutores de esta grabación?",
   live_diarization_confirm_body:
     "La grabación completa pasará temporalmente por Jiddu hasta OpenAI. El audio se usará solo para identificar a los interlocutores y Jiddu no lo almacenará.",
+  live_diarization_processing_hint:
+    "Mantén esta ventana abierta mientras Jiddu separa a los interlocutores.",
   live_diarization_cost_warning:
     "Esta es una operación adicional de pago y puede consumir Créditos Jiddu. Las cuentas con acceso incluido registran el uso sin descontarlo del saldo personal.",
   live_diarization_session_estimate: (duration, credits) =>

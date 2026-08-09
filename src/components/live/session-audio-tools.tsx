@@ -8,6 +8,7 @@ import {
   useState,
   type RefObject,
 } from "react";
+import { ThinkingOrb } from "thinking-orbs";
 import { useI18n } from "@/lib/i18n/provider";
 import {
   calculateLiveDiarizationSettlement,
@@ -100,6 +101,7 @@ export function useSessionAudioToolsController({
   const [result, setResult] = useState<DiarizationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [speakerNames, setSpeakerNames] = useState<Record<string, string>>({});
+  const [resultHighlightVersion, setResultHighlightVersion] = useState(0);
   const available = Boolean(audioBlob && audioUrl && downloadFilename);
   const recordingTooLarge = Boolean(
     audioBlob && audioBlob.size > MAX_DIARIZATION_AUDIO_BYTES,
@@ -204,6 +206,8 @@ export function useSessionAudioToolsController({
       );
       setSaveStatus("idle");
       setStatus("complete");
+      setResultHighlightVersion((current) => current + 1);
+      setConfirmationOpen(false);
       onIdentificationFinished?.();
     } catch (requestError) {
       if (controller.signal.aborted) return;
@@ -213,7 +217,6 @@ export function useSessionAudioToolsController({
           ? requestError.message
           : t.live_diarization_error,
       );
-      onIdentificationFinished?.();
     } finally {
       if (abortRef.current === controller) abortRef.current = null;
     }
@@ -259,6 +262,7 @@ export function useSessionAudioToolsController({
     resourceId,
     resolvedAudioRef,
     result,
+    resultHighlightVersion,
     saveStatus,
     saveTranscript,
     seekTo,
@@ -302,6 +306,7 @@ export function SessionAudioToolsPanel({
     resourceId,
     resolvedAudioRef,
     result,
+    resultHighlightVersion,
     saveStatus,
     saveTranscript,
     seekTo,
@@ -361,7 +366,11 @@ export function SessionAudioToolsPanel({
         <p className="mt-2 text-xs text-severity-high">{error}</p>
       ) : null}
       {result ? (
-        <div className="mt-3 border-t border-rule pt-3">
+        <div
+          key={resultHighlightVersion}
+          data-testid="speaker-transcript-result"
+          className="context-diarization-result-reveal mt-3 rounded-lg border border-rule bg-background/35 p-3"
+        >
           <h3 className="text-sm font-semibold">
             {t.live_diarized_transcript}
           </h3>
@@ -469,6 +478,7 @@ export function SessionDiarizationAction({
     confirmationOpen,
     creditExamples,
     durationMs,
+    error,
     estimatedCredits,
     identifySpeakers,
     recordingTooLarge,
@@ -515,80 +525,111 @@ export function SessionDiarizationAction({
       <dialog
         ref={confirmationRef}
         onClose={() => setConfirmationOpen(false)}
+        onCancel={(event) => {
+          if (status === "loading") event.preventDefault();
+        }}
         onClick={(event) => {
-          if (event.target === confirmationRef.current) {
+          if (
+            status !== "loading" &&
+            event.target === confirmationRef.current
+          ) {
             setConfirmationOpen(false);
           }
         }}
         className="m-auto w-[min(92vw,34rem)] rounded-xl border border-rule bg-paper p-0 text-foreground shadow-2xl backdrop:bg-black/60 backdrop:backdrop-blur-sm"
       >
-        <div className="p-5 sm:p-6">
-          <h2 className="font-serif text-xl leading-tight">
-            {t.live_diarization_confirm_title}
-          </h2>
-          <p className="mt-2 text-sm leading-relaxed text-muted">
-            {t.live_diarization_confirm_body}
-          </p>
-          <div className="mt-4 rounded-lg border border-accent/30 bg-accent/5 px-3 py-3">
-            <p className="text-sm font-medium">
-              {t.live_diarization_session_estimate(
-                formatDurationMs(durationMs),
-                estimatedCredits,
-              )}
-            </p>
-            <p className="mt-1 text-xs leading-relaxed text-muted">
-              {t.live_diarization_cost_warning}
-            </p>
+        {status === "loading" ? (
+          <div
+            role="status"
+            aria-live="polite"
+            className="flex min-h-80 flex-col items-center justify-center gap-5 p-8 text-center sm:p-10"
+          >
+            <ThinkingOrb
+              state="solving"
+              size={64}
+              theme="auto"
+              aria-hidden="true"
+            />
+            <div>
+              <h2 className="font-serif text-xl leading-tight">
+                {t.live_diarizing_speakers}
+              </h2>
+              <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted">
+                {t.live_diarization_processing_hint}
+              </p>
+            </div>
           </div>
-          <div className="mt-4 overflow-hidden rounded-lg border border-rule">
-            <table className="w-full text-xs">
-              <thead className="bg-background/80 text-left text-muted">
-                <tr>
-                  <th className="px-3 py-2 font-medium">
-                    {t.live_diarization_duration}
-                  </th>
-                  <th className="px-3 py-2 text-right font-medium">
-                    {t.live_diarization_credits}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {creditExamples.map((example) => (
-                  <tr key={example.minutes} className="border-t border-rule">
-                    <td className="px-3 py-2">
-                      {t.live_diarization_minutes(example.minutes)}
-                    </td>
-                    <td className="px-3 py-2 text-right tabular-nums">
-                      {example.credits}
-                    </td>
+        ) : (
+          <div className="p-5 sm:p-6">
+            <h2 className="font-serif text-xl leading-tight">
+              {t.live_diarization_confirm_title}
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-muted">
+              {t.live_diarization_confirm_body}
+            </p>
+            <div className="mt-4 rounded-lg border border-accent/30 bg-accent/5 px-3 py-3">
+              <p className="text-sm font-medium">
+                {t.live_diarization_session_estimate(
+                  formatDurationMs(durationMs),
+                  estimatedCredits,
+                )}
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-muted">
+                {t.live_diarization_cost_warning}
+              </p>
+            </div>
+            <div className="mt-4 overflow-hidden rounded-lg border border-rule">
+              <table className="w-full text-xs">
+                <thead className="bg-background/80 text-left text-muted">
+                  <tr>
+                    <th className="px-3 py-2 font-medium">
+                      {t.live_diarization_duration}
+                    </th>
+                    <th className="px-3 py-2 text-right font-medium">
+                      {t.live_diarization_credits}
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {creditExamples.map((example) => (
+                    <tr key={example.minutes} className="border-t border-rule">
+                      <td className="px-3 py-2">
+                        {t.live_diarization_minutes(example.minutes)}
+                      </td>
+                      <td className="px-3 py-2 text-right tabular-nums">
+                        {example.credits}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-3 text-[11px] leading-relaxed text-muted">
+              {t.live_diarization_estimate_note}
+            </p>
+            {error ? (
+              <p className="mt-3 rounded-md border border-severity-high/30 bg-severity-high/10 px-3 py-2 text-xs text-severity-high">
+                {error}
+              </p>
+            ) : null}
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirmationOpen(false)}
+                className="rounded-md border border-rule px-3 py-2 text-sm font-medium hover:border-foreground/40"
+              >
+                {t.live_diarization_cancel}
+              </button>
+              <button
+                type="button"
+                onClick={() => void identifySpeakers()}
+                className="rounded-md bg-accent px-3 py-2 text-sm font-medium text-white hover:opacity-90"
+              >
+                {t.live_diarization_confirm}
+              </button>
+            </div>
           </div>
-          <p className="mt-3 text-[11px] leading-relaxed text-muted">
-            {t.live_diarization_estimate_note}
-          </p>
-          <div className="mt-5 flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setConfirmationOpen(false)}
-              className="rounded-md border border-rule px-3 py-2 text-sm font-medium hover:border-foreground/40"
-            >
-              {t.live_diarization_cancel}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setConfirmationOpen(false);
-                void identifySpeakers();
-              }}
-              className="rounded-md bg-accent px-3 py-2 text-sm font-medium text-white hover:opacity-90"
-            >
-              {t.live_diarization_confirm}
-            </button>
-          </div>
-        </div>
+        )}
       </dialog>
     </>
   );

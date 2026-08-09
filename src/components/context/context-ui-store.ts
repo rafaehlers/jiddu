@@ -3,10 +3,8 @@ import { createStore } from "zustand/vanilla";
 import {
   ALL_PANELS_VISIBLE,
   CONTEXT_PANEL_IDS,
-  normalizePanelLayouts,
   normalizePanelVisibility,
   type ContextPanelId,
-  type PanelLayouts,
   type PanelVisibility,
 } from "./context-panel-state";
 import {
@@ -15,31 +13,24 @@ import {
   type ContextSettings,
 } from "./context-settings-state";
 
-export type ContextTheme = "dark" | "light";
-
 export const CONTEXT_UI_STORAGE_KEY = "jiddu_context_ui_v1";
-export const CONTEXT_UI_STORAGE_VERSION = 1;
+export const CONTEXT_UI_STORAGE_VERSION = 3;
 
 const LEGACY_STORAGE_KEYS = {
-  theme: "jiddu_context_theme_v1",
   settings: "jiddu_context_settings_v1",
   visibility: "jiddu_context_panel_visibility_v1",
-  layouts: "jiddu_context_floating_panels_v2",
 } as const;
 
 export type ContextUiPersistedState = {
-  theme: ContextTheme;
   settings: ContextSettings;
   visibility: PanelVisibility;
   activePanel: ContextPanelId;
-  layouts: PanelLayouts | null;
 };
 
 export type ContextUiStore = ContextUiPersistedState & {
   hydrated: boolean;
   resetVersion: number;
   setHydrated: (hydrated: boolean) => void;
-  setTheme: (theme: ContextTheme) => void;
   updateSetting: <Key extends keyof ContextSettings>(
     key: Key,
     value: ContextSettings[Key],
@@ -47,14 +38,9 @@ export type ContextUiStore = ContextUiPersistedState & {
   resetSettings: () => void;
   toggleAllPanels: () => void;
   togglePanel: (id: ContextPanelId) => void;
+  setPanelVisibility: (visibility: PanelVisibility) => void;
   selectPanel: (id: ContextPanelId) => void;
   resetPanels: () => void;
-  setLayouts: (
-    next:
-      | PanelLayouts
-      | null
-      | ((current: PanelLayouts | null) => PanelLayouts | null),
-  ) => void;
 };
 
 export function createContextUiStore(
@@ -68,7 +54,6 @@ export function createContextUiStore(
         hydrated: false,
         resetVersion: 0,
         setHydrated: (hydrated) => set({ hydrated }),
-        setTheme: (theme) => set({ theme }),
         updateSetting: (key, value) =>
           set((state) => ({
             settings: { ...state.settings, [key]: value },
@@ -89,6 +74,14 @@ export function createContextUiStore(
               [id]: !state.visibility[id],
             },
           })),
+        setPanelVisibility: (visibility) =>
+          set((state) =>
+            CONTEXT_PANEL_IDS.every(
+              (id) => state.visibility[id] === visibility[id],
+            )
+              ? state
+              : { visibility },
+          ),
         selectPanel: (id) =>
           set((state) => ({
             activePanel: id,
@@ -100,13 +93,7 @@ export function createContextUiStore(
           set((state) => ({
             visibility: { ...ALL_PANELS_VISIBLE },
             activePanel: "facts",
-            layouts: null,
             resetVersion: state.resetVersion + 1,
-          })),
-        setLayouts: (next) =>
-          set((state) => ({
-            layouts:
-              typeof next === "function" ? next(state.layouts) : next,
           })),
       }),
       {
@@ -115,11 +102,9 @@ export function createContextUiStore(
         storage,
         skipHydration: true,
         partialize: (state) => ({
-          theme: state.theme,
           settings: state.settings,
           visibility: state.visibility,
           activePanel: state.activePanel,
-          layouts: state.layouts,
         }),
         migrate: (persistedState) =>
           normalizeContextUiPersistedState(persistedState),
@@ -169,13 +154,11 @@ export function normalizeContextUiPersistedState(
 ): ContextUiPersistedState {
   const record = isRecord(value) ? value : {};
   return {
-    theme: record.theme === "light" ? "light" : "dark",
     settings: normalizeContextSettings(record.settings),
     visibility: normalizePanelVisibility(record.visibility),
     activePanel: isContextPanelId(record.activePanel)
       ? record.activePanel
       : "facts",
-    layouts: normalizePanelLayouts(record.layouts),
   };
 }
 
@@ -183,29 +166,23 @@ export function readLegacyContextUiState(storage: {
   getItem: (key: string) => string | null;
 }): ContextUiPersistedState | null {
   const raw = {
-    theme: storage.getItem(LEGACY_STORAGE_KEYS.theme),
     settings: storage.getItem(LEGACY_STORAGE_KEYS.settings),
     visibility: storage.getItem(LEGACY_STORAGE_KEYS.visibility),
-    layouts: storage.getItem(LEGACY_STORAGE_KEYS.layouts),
   };
   if (Object.values(raw).every((value) => value === null)) return null;
 
   return normalizeContextUiPersistedState({
-    theme: raw.theme,
     settings: parseJson(raw.settings),
     visibility: parseJson(raw.visibility),
-    layouts: parseJson(raw.layouts),
     activePanel: "facts",
   });
 }
 
 function defaultPersistedState(): ContextUiPersistedState {
   return {
-    theme: "dark",
     settings: { ...DEFAULT_CONTEXT_SETTINGS },
     visibility: { ...ALL_PANELS_VISIBLE },
     activePanel: "facts",
-    layouts: null,
   };
 }
 

@@ -2,6 +2,7 @@ import { withAuth } from "@workos-inc/authkit-nextjs";
 import { after } from "next/server";
 import { ContextEntityEnrichmentRequestSchema } from "@/lib/context-knowledge-schema";
 import { correctedProfileNeedsRefresh } from "@/lib/context-knowledge-cache";
+import { isPublicProfileCompatible } from "@/lib/context-profile-match";
 import {
   assertOwnedContextSession,
   getKnowledgeEntityDTO,
@@ -52,19 +53,19 @@ export async function POST(request: Request) {
     body.data.entity.userCorrectedAt,
     entity.profileFetchedAt,
   );
-  if (entity.stale || correctedRefresh) {
+  const incompatibleProfile =
+    entity.profileStatus === "ready" &&
+    !isPublicProfileCompatible(body.data.entity, entity);
+  const forceRefresh = correctedRefresh || incompatibleProfile;
+  if (entity.stale || forceRefresh) {
     const jobId = await queueKnowledgeEntityProfile(entity.id, {
-      force: correctedRefresh,
+      force: forceRefresh,
     });
     refreshScheduled = true;
     after(() =>
-      runKnowledgeEntityProfileJob(
-        jobId,
-        body.data.language,
-        body.data.entity.userCorrectedName ? body.data.entity.name : undefined,
-      ),
+      runKnowledgeEntityProfileJob(jobId, body.data.language, body.data.entity),
     );
-    if (correctedRefresh) {
+    if (forceRefresh) {
       entity = (await getKnowledgeEntityDTO(stored.id)) ?? entity;
     }
   }

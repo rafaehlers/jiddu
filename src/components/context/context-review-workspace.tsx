@@ -40,10 +40,10 @@ import {
 } from "./context-entity-mutations";
 import { contextCopy } from "./context-copy";
 import {
-  ContextFloatingPanels,
+  ContextDockview,
   ContextPanelsControl,
-  useContextFloatingPanels,
-} from "./context-floating-panels";
+  useContextDockview,
+} from "./context-dockview";
 import { ContextTopicsFeed } from "./context-topics-feed";
 import { ContextNeutralityHeader } from "./context-neutrality-header";
 import {
@@ -107,7 +107,7 @@ function ContextReviewWorkspaceContent({
   const { lang, setLang, t } = useI18n();
   const copy = contextCopy(lang);
   const transcriptRef = useRef<TranscriptStreamHandle>(null);
-  const floatingPanels = useContextFloatingPanels();
+  const dockview = useContextDockview();
   const [contextTheme, setContextTheme] = useContextTheme();
   const contextSettings = useContextSettings();
   const [transcriptView, setTranscriptView] = useState<
@@ -298,7 +298,7 @@ function ContextReviewWorkspaceContent({
             </select>
           </label>
           <ContextPanelsControl
-            state={floatingPanels}
+            state={dockview}
             labels={{
               transcript: copy.transcript,
               fallacies: copy.fallacies,
@@ -332,31 +332,37 @@ function ContextReviewWorkspaceContent({
         copy={copy}
       />
 
-      <section className="relative min-h-0">
-        <div className="pointer-events-none absolute left-3 top-3 z-10 rounded-md border border-rule bg-background/85 px-2.5 py-1.5 text-xs backdrop-blur">
-          <span className="font-medium">{copy.graph}</span>
-          <span className="ml-2 text-muted">
-            {frame.context.entities.length} {copy.entities} ·{" "}
-            {frame.context.relations.length} {copy.relations}
-          </span>
-        </div>
-        <ContextGraph
-          context={frame.context}
-          enrichedEntities={entityMap}
-          enrichedRelations={relationMap}
+      <section className="min-h-0">
+        <ContextDockview
+          state={dockview}
           copy={copy}
-          onJumpToSentence={jumpToSentence}
-          editable={frame.atEnd && !verification.isVerifying}
-          onRenameEntity={handleRenameEntity}
-          onMergeEntities={handleMergeEntities}
-          onRemoveEntity={handleRemoveEntity}
-          colorMode={contextTheme}
-          showMiniMap={contextSettings.settings.showMiniMap}
-          animateRelations={contextSettings.settings.animateRelations}
-        />
-        <ContextFloatingPanels
-          state={floatingPanels}
-          copy={copy}
+          theme={contextTheme}
+          graphTitle={copy.graph}
+          graph={
+            <>
+              <div className="pointer-events-none absolute left-3 top-3 z-10 rounded-md border border-rule bg-background/85 px-2.5 py-1.5 text-xs backdrop-blur">
+                <span className="font-medium">{copy.graph}</span>
+                <span className="ml-2 text-muted">
+                  {frame.context.entities.length} {copy.entities} ·{" "}
+                  {frame.context.relations.length} {copy.relations}
+                </span>
+              </div>
+              <ContextGraph
+                context={frame.context}
+                enrichedEntities={entityMap}
+                enrichedRelations={relationMap}
+                copy={copy}
+                onJumpToSentence={jumpToSentence}
+                editable={frame.atEnd && !verification.isVerifying}
+                onRenameEntity={handleRenameEntity}
+                onMergeEntities={handleMergeEntities}
+                onRemoveEntity={handleRemoveEntity}
+                colorMode={contextTheme}
+                showMiniMap={contextSettings.settings.showMiniMap}
+                animateRelations={contextSettings.settings.animateRelations}
+              />
+            </>
+          }
           panels={{
             transcript: {
               title: copy.transcript,

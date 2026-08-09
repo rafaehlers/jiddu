@@ -13,6 +13,10 @@ import type {
 } from "./live-context-schema";
 import { prisma } from "./db";
 import { findWikipediaProfile } from "./wikipedia-profile";
+import {
+  isPublicProfileCompatible,
+  type EntityProfileHint,
+} from "./context-profile-match";
 import type { ContextNewsResult } from "./llm/context-news";
 import {
   knowledgeCanonicalKey,
@@ -295,7 +299,7 @@ export async function queueKnowledgeEntityProfile(
 export async function runKnowledgeEntityProfileJob(
   jobId: string,
   language: Lang,
-  searchName?: string,
+  profileHint?: EntityProfileHint,
 ): Promise<void> {
   const claimed = await prisma.knowledgeEnrichmentJob.updateMany({
     where: { id: jobId, status: "pending", runAfter: { lte: new Date() } },
@@ -314,8 +318,11 @@ export async function runKnowledgeEntityProfileJob(
   if (!job?.entity) return;
 
   try {
+    const searchEntity = profileHint ?? {
+      name: job.entity.canonicalName,
+    };
     const profile = await findWikipediaProfile(
-      searchName?.trim() || job.entity.canonicalName,
+      searchEntity,
       language,
     );
     const fetchedAt = new Date();
@@ -330,16 +337,12 @@ export async function runKnowledgeEntityProfileJob(
             profileStatus: "not_found",
             profileFetchedAt: fetchedAt,
             profileExpiresAt: expiresAt,
-            ...(searchName
-              ? {
-                  description: null,
-                  imageUrl: null,
-                  wikipediaUrl: null,
-                  wikidataId: null,
-                  profileLanguage: null,
-                  publiclyEnrichedAt: null,
-                }
-              : {}),
+            description: null,
+            imageUrl: null,
+            wikipediaUrl: null,
+            wikidataId: null,
+            profileLanguage: null,
+            publiclyEnrichedAt: null,
           },
         }),
         prisma.knowledgeEnrichmentJob.update({
@@ -378,8 +381,20 @@ export async function runKnowledgeEntityProfileJob(
         ? profile.wikidataId
         : null;
 
+    const observedNames = uniqueNames([
+      searchEntity.name,
+      ...(searchEntity.aliases ?? []),
+    ]);
+    const previousProfileWasIncompatible = !isPublicProfileCompatible(
+      searchEntity,
+      {
+        canonicalName: job.entity.canonicalName,
+        description: job.entity.description,
+      },
+    );
+
     await prisma.knowledgeEntityAlias.createMany({
-      data: uniqueNames([job.entity.canonicalName, profile.canonicalName]).map(
+      data: uniqueNames([...observedNames, profile.canonicalName]).map(
         (displayName) => ({
           entityId: job.entity!.id,
           displayName,
@@ -443,6 +458,20 @@ export async function runKnowledgeEntityProfileJob(
         data: { status: "complete", completedAt: fetchedAt, lockedAt: null },
       }),
     ]);
+    const previousCanonicalName = normalizeKnowledgeName(
+      job.entity.canonicalName,
+    );
+    if (
+      previousProfileWasIncompatible &&
+      !observedNames.map(normalizeKnowledgeName).includes(previousCanonicalName)
+    ) {
+      await prisma.knowledgeEntityAlias.deleteMany({
+        where: {
+          entityId: job.entity.id,
+          normalizedName: previousCanonicalName,
+        },
+      });
+    }
   } catch (error) {
     const retryAt = new Date(Date.now() + 60 * 60 * 1_000);
     await prisma.$transaction([

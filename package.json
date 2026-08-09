@@ -36,6 +36,7 @@
     "better-sqlite3": "^12.10.0",
     "cheerio": "^1.2.0",
     "clsx": "^2.1.1",
+    "dockview-react": "^7.0.4",
     "jose": "^6.2.4",
     "jsdom": "^29.1.1",
     "lucide-react": "^1.16.0",
