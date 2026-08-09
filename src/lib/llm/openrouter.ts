@@ -102,17 +102,15 @@ export type ModelChoice = {
     | "deepseek"
     | "qwen"
     | "moonshot"
-    | "zhipu"
-    | "minimax";
+    | "zhipu";
   openrouter: string;
   // Most upstreams honour a forced tool_choice; Qwen rejects it and only
   // works with "auto". Default is forced.
   toolMode?: "forced" | "auto";
-  // Pin OpenRouter's upstream routing. MiniMax is a reasoning model that
-  // only emits tool_calls reliably when the upstream is "MiniMax" itself
-  // (Morph/Fireworks burn budget on reasoning and never call the tool).
+  // Pin OpenRouter's upstream routing when a model needs a specific provider.
   providerOrder?: string[];
   reasoningEffort?: "low" | "medium" | "high" | "xhigh";
+  supportsVision?: boolean;
 };
 
 export const MODEL_CATALOG: ModelChoice[] = [
@@ -123,19 +121,16 @@ export const MODEL_CATALOG: ModelChoice[] = [
     family: "openai",
     openrouter: "openai/gpt-5.6-luna",
     reasoningEffort: "high",
+    supportsVision: true,
   },
   {
-    id: "minimax-m3",
-    label: "MiniMax M3",
+    id: "deepseek-v4-flash-0731",
+    label: "DeepSeek V4 Flash 0731",
     flag: "🇨🇳",
-    family: "minimax",
-    openrouter: "minimax/minimax-m3",
-    // The Minimax upstream rejects forced tool_choice ("auto" only), and
-    // pinning the provider stops OpenRouter from routing to Morph/Fireworks
-    // (those burn the budget on reasoning and never emit the tool call).
-    // Both quirks carried over from M2.7 — same upstream API.
-    toolMode: "auto",
-    providerOrder: ["Minimax"],
+    family: "deepseek",
+    openrouter: "deepseek/deepseek-v4-flash-0731",
+    reasoningEffort: "low",
+    supportsVision: false,
   },
 ];
 

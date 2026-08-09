@@ -62,11 +62,16 @@ export async function ingestAnalysisFile(
   }
   validateImageBytes(bytes);
 
-  const modelChain: string[] = opts.modelId
+  const requestedModelChain: string[] = opts.modelId
     ? Array.from(
         new Set([resolveModel(opts.modelId).id, ...DEFAULT_MODEL_CHAIN]),
       )
     : [...DEFAULT_MODEL_CHAIN];
+  // DeepSeek V4 Flash is text-only. Screenshot transcription stays on the
+  // vision-capable model; the selected model still handles the text analysis.
+  const modelChain = requestedModelChain.filter(
+    (model) => resolveModel(model).supportsVision,
+  );
   const reservation = await reserveWebAnalysisCredits(opts.access, {
     amount: maxCreditsForCalls(modelChain, 1),
     minimumAvailable: maxCreditsForCalls(modelChain, 2),

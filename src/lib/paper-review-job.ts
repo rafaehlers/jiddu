@@ -335,9 +335,9 @@ export async function runPreparedPaperReview(
   const criticModel =
     prepared.reviewDepth === "deep"
       ? routing["paperReview.criticModel"]
-      : prepared.modelId === "minimax-m3"
+      : prepared.modelId === "deepseek-v4-flash-0731"
         ? "gpt-5.6-luna"
-        : "minimax-m3";
+        : "deepseek-v4-flash-0731";
   const stageModels: Record<string, string> = {};
 
   try {

@@ -70,7 +70,7 @@ Choose the lens that fits the reading: logical fallacies, factual claims, neutra
 
 ### Across the product
 - **One reading interface** — the first five modes accept URL, pasted text, PDF or TXT; adversarial review accepts one complete PDF so the manuscript can be assessed as a self-contained submission.
-- **Model choice and fallback** — GPT-5.6 Luna with high reasoning is the default, MiniMax M3 is available for comparison, and requests fall back only when the first model fails before emitting output. Deep review uses GPT-5.6 Luna Pro with xhigh reasoning, while evidence-backed fact-check verdicts use Sonar by default.
+- **Model choice and fallback** — GPT-5.6 Luna with high reasoning is the default, DeepSeek V4 Flash 0731 is available for comparison, and requests fall back only when the first model fails before emitting output. Deep review uses GPT-5.6 Luna Pro with xhigh reasoning, while evidence-backed fact-check verdicts use Sonar by default.
 - **Inspectable output** — findings quote the source and stay anchored to the relevant sentence, paragraph or paper page. Automated results are marked as unreviewed unless they receive an operator spot-check.
 - **Share and export** — every completed analysis gets an unlisted share URL and a print-ready PDF view. Adversarial reviews also export deterministic Markdown.
 - **English, Portuguese and Spanish** — the interface and model output follow the selected language.
@@ -295,7 +295,7 @@ src/
         ├── openrouter.ts              Provider: OpenRouter via OpenAI SDK
         ├── verifyClaim.ts             Single-claim Sonar verifier (cache-first, force=true skips)
         ├── fallback.ts                withModelFallback() — client-side retry across model chain
-        └── index.ts                   getProvider() + MODEL_CATALOG (🇺🇸 GPT, 🇨🇳 MiniMax)
+        └── index.ts                   getProvider() + MODEL_CATALOG (🇺🇸 GPT, 🇨🇳 DeepSeek)
 ```
 
 ## Public API & MCP
@@ -348,7 +348,7 @@ Request bodies:
 { "type": "text", "text": "…",         "lang": "en" }
 ```
 
-…or multipart with `file=<PDF or TXT>` + `lang`. The optional `model` field accepts `gpt-5.6-luna` or `minimax-m3` and is prepended to the default fallback chain — usually you can omit it.
+…or multipart with `file=<PDF or TXT>` + `lang`. The optional `model` field accepts `gpt-5.6-luna` or `deepseek-v4-flash-0731` and is prepended to the default fallback chain — usually you can omit it.
 
 ### `GET /api/analysis/[id]`
 
@@ -449,7 +449,7 @@ The persisted final result is shown at `/r/[id]`; `GET /api/review/[id]/markdown
 A separate page at `/live` listens to live audio (microphone or browser-tab capture) via the OpenAI Realtime API (`gpt-live-transcribe`) and surfaces fallacies as the speaker talks. The transcription session uses the balanced `medium` delay profile by default and passes English, Portuguese and Spanish together as language hints so the interface locale does not constrain multilingual speech. The Live API routes include:
 
 - `POST /api/live/token` — mints a short-lived ephemeral client secret so the browser can open a WebRTC connection directly to OpenAI for **transcription** (`gpt-live-transcribe`). Requires `OPENAI_API_KEY`. This call never touches OpenRouter.
-- `POST /api/live/analyze` — a separate, later call: SSE stream that ingests the cumulative transcript in sliding windows (eagerly after ~800 new characters, or every 30s once at least ~120 characters are available) and emits `finding` events. Each window receives the preceding four sentences as context. **This is the analysis step**, running the same fallacy prompt routed via OpenRouter (same GPT-5.6 Luna / MiniMax M3 picker as the other pipelines) — a different model and provider from the OpenAI transcription above. Send `{ finalize: true }` on Stop to process the remaining text, compute the final score and commit the session.
+- `POST /api/live/analyze` — a separate, later call: SSE stream that ingests the cumulative transcript in sliding windows (eagerly after ~800 new characters, or every 30s once at least ~120 characters are available) and emits `finding` events. Each window receives the preceding four sentences as context. **This is the analysis step**, running the same fallacy prompt routed via OpenRouter (same GPT-5.6 Luna / DeepSeek V4 Flash 0731 picker as the other pipelines) — a different model and provider from the OpenAI transcription above. Send `{ finalize: true }` on Stop to process the remaining text, compute the final score and commit the session.
 - `POST /api/live/diarize` — opt-in post-session speaker labeling. Before upload, the UI confirms the additional cost and shows a duration-based Jiddu Credit estimate. The route accepts the browser-local recording (maximum 25 MB), forwards it transiently to OpenAI's `gpt-4o-transcribe-diarize`, returns timestamped speaker segments and does not persist the audio. Usage is settled separately by actual audio duration.
 - `PUT /api/live/diarize` — explicitly saves a reviewed speaker-labeled transcript and edited speaker names to the authenticated owner's existing Live session. The saved transcript appears in account analysis history; no audio is included.
 

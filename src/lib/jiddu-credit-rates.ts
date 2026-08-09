@@ -1,7 +1,9 @@
-export const JIDDU_CREDIT_RATE_VERSION = "2026-08-08.v14";
+export const JIDDU_CREDIT_RATE_VERSION = "2026-08-08.v15";
 export const DEFAULT_LIVE_MINIMUM_CREDITS = 20;
 
 export const MODEL_CREDIT_RATES = {
+  "deepseek-v4-flash-0731": 1,
+  // Legacy rate retained for historical usage records.
   "minimax-m3": 1,
   "gpt-5.6-luna": 1,
   "gpt-5.6-luna-pro": 3,
@@ -38,13 +40,13 @@ export const JIDDU_CREDIT_RATE_TABLE: CreditRateRow[] = [
     feature: "Fallacy detector",
     unit: "Per completed text chunk",
     detail:
-      "1 credit reserved per call. If cost data is missing, a completed GPT-5.6 Luna or MiniMax M3 call falls back to 1 credit.",
+      "1 credit reserved per call. If cost data is missing, a completed GPT-5.6 Luna or DeepSeek V4 Flash 0731 call falls back to 1 credit.",
   },
   {
     feature: "Fact-check — extraction",
     unit: "Per completed text chunk",
     detail:
-      "1 credit reserved per call. If cost data is missing, a completed GPT-5.6 Luna or MiniMax M3 call falls back to 1 credit.",
+      "1 credit reserved per call. If cost data is missing, a completed GPT-5.6 Luna or DeepSeek V4 Flash 0731 call falls back to 1 credit.",
   },
   {
     feature: "Fact-check — verification",
@@ -56,19 +58,19 @@ export const JIDDU_CREDIT_RATE_TABLE: CreditRateRow[] = [
     feature: "Neutrality",
     unit: "Per completed text chunk",
     detail:
-      "1 credit reserved per call. If cost data is missing, a completed GPT-5.6 Luna or MiniMax M3 call falls back to 1 credit.",
+      "1 credit reserved per call. If cost data is missing, a completed GPT-5.6 Luna or DeepSeek V4 Flash 0731 call falls back to 1 credit.",
   },
   {
     feature: "Paper explainer",
     unit: "Per completed analysis call",
     detail:
-      "One call per text chunk; papers with recognizable methods/results add one evidence-first reading and one final guided-reading synthesis. If cost data is missing, a completed GPT-5.6 Luna or MiniMax M3 call falls back to 1 credit.",
+      "One call per text chunk; papers with recognizable methods/results add one evidence-first reading and one final guided-reading synthesis. If cost data is missing, a completed GPT-5.6 Luna or DeepSeek V4 Flash 0731 call falls back to 1 credit.",
   },
   {
     feature: "Slop detector",
     unit: "Per completed text chunk",
     detail:
-      "1 credit reserved per call. If cost data is missing, a completed GPT-5.6 Luna or MiniMax M3 call falls back to 1 credit.",
+      "1 credit reserved per call. If cost data is missing, a completed GPT-5.6 Luna or DeepSeek V4 Flash 0731 call falls back to 1 credit.",
   },
   {
     feature: "Screenshot transcription",
@@ -80,7 +82,7 @@ export const JIDDU_CREDIT_RATE_TABLE: CreditRateRow[] = [
     feature: "Adversarial review — Standard",
     unit: "Per review run",
     detail:
-      "Up to 11 credits with GPT-5.6 Luna or MiniMax M3 (10 without repair).",
+      "Up to 11 credits with GPT-5.6 Luna or DeepSeek V4 Flash 0731 (10 without repair).",
   },
   {
     feature: "Adversarial review — Deep",
@@ -103,7 +105,7 @@ export const JIDDU_CREDIT_RATE_TABLE: CreditRateRow[] = [
     feature: "Live analysis",
     unit: "Per selected lens and completed analysis window",
     detail:
-      "1 credit reserved per selected lens with GPT-5.6 Luna or MiniMax M3, up to 4 with all lenses. Context enrichment uses its configured Perplexity model (1 credit for Sonar, 2 for Reasoning Pro). Completed costs are accumulated with transcription and the Live session is rounded once at settlement.",
+      "1 credit reserved per selected lens with GPT-5.6 Luna or DeepSeek V4 Flash 0731, up to 4 with all lenses. Context enrichment uses its configured Perplexity model (1 credit for Sonar, 2 for Reasoning Pro). Completed costs are accumulated with transcription and the Live session is rounded once at settlement.",
   },
 ];
 
@@ -138,7 +140,9 @@ export function paperReviewMaximumModels(input: {
   if (input.depth === "standard") {
     const critic =
       input.criticModel ??
-      (selected === "minimax-m3" ? "gpt-5.6-luna" : "minimax-m3");
+      (selected === "deepseek-v4-flash-0731"
+        ? "gpt-5.6-luna"
+        : "deepseek-v4-flash-0731");
     return [
       ...Array.from({ length: 9 }, () => selected),
       critic,

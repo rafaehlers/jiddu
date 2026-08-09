@@ -101,7 +101,7 @@ ceil(${rawCredits.toFixed(3)}) = ${credits} credits`}
             reflects the model, different input and output prices, reasoning
             and cached tokens, the selected upstream, and provider-specific
             pricing. Ten thousand GPT-5.6 Luna Pro tokens are therefore not
-            treated like ten thousand MiniMax M3 tokens.
+            treated like ten thousand DeepSeek V4 Flash 0731 tokens.
           </p>
         </GuideSection>
 

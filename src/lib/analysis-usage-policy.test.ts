@@ -94,7 +94,7 @@ test("records fallback-only provider work when usage details are unavailable", (
     providerCostMicros: 0,
     billedCostMicros: 0,
     fallbackCredits: 1,
-    fallbackModels: ["minimax-m3"],
+    fallbackModels: ["deepseek-v4-flash-0731"],
     calls: [],
   };
 

@@ -235,7 +235,7 @@ const MODEL_LABELS: Record<
   "gpt-5.6-luna-pro": "GPT-5.6 Luna Pro",
   "claude-opus-4.8": "Claude Opus 4.8",
   "gpt-5.6-luna": "GPT-5.6 Luna",
-  "minimax-m3": "MiniMax M3",
+  "deepseek-v4-flash-0731": "DeepSeek V4 Flash 0731",
 };
 
 const DELAY_LABELS: Record<

@@ -1,12 +1,9 @@
 // Cross-model fallback for streaming LLM calls.
 //
 // OpenRouter has a native `models: [...]` array that retries across models on
-// failure, but its `provider: {...}` block is shared by all models in the
-// request — and we need per-model provider preferences (MiniMax must be
-// pinned to the "Minimax" upstream, otherwise Morph/Fireworks burn the
-// budget on reasoning and never emit the tool_call). So we do the fallback
-// client-side: try the first model; if it fails before yielding anything,
-// try the next one with its own provider preferences.
+// failure, but its `provider: {...}` and reasoning controls are shared by all
+// models in the request. We do the fallback client-side so each model gets its
+// own routing and reasoning configuration.
 //
 // Once any event has been yielded we do NOT retry — we accept the partial
 // output and let the caller's partial-parse / salvage logic kick in.
@@ -92,8 +89,9 @@ export async function withModelFallbackPromise<T>(
 }
 
 // The default chain used everywhere when the caller doesn't pick a model
-// explicitly. Order is: cheapest/fastest first, robust fallback second.
+// explicitly. Order is: primary default first, economical cross-family
+// fallback second.
 export const DEFAULT_MODEL_CHAIN: readonly string[] = [
   "gpt-5.6-luna",
-  "minimax-m3",
+  "deepseek-v4-flash-0731",
 ];

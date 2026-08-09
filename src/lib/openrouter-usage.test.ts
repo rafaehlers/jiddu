@@ -55,14 +55,14 @@ test("converts real cost to credits with margin and only falls back when cost is
 
   const settlement = calculateJidduCreditSettlement(
     [priced],
-    ["gpt-5.6-luna", "minimax-m3"],
+    ["gpt-5.6-luna", "deepseek-v4-flash-0731"],
     { marginMultiplier: 1.5, usdPerCredit: 0.01 },
   );
 
   assert.equal(settlement.providerCostMicros, 12_000);
   assert.equal(settlement.billedCostMicros, 18_000);
   assert.equal(settlement.fallbackCredits, 1);
-  assert.deepEqual(settlement.fallbackModels, ["minimax-m3"]);
+  assert.deepEqual(settlement.fallbackModels, ["deepseek-v4-flash-0731"]);
   assert.equal(settlement.credits, 3);
 });
 

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { QualityAuditSchema } from "./paper-review-audit-schema";
 
-test("normalizes MiniMax text wrappers in a quality audit", () => {
+test("normalizes model-generated text wrappers in a quality audit", () => {
   const result = QualityAuditSchema.parse({
     summary: { text: "The review needs one correction." },
     flags: [

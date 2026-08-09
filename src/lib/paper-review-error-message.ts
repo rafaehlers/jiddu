@@ -3,6 +3,8 @@ export type PaperReviewErrorLanguage = "en" | "pt" | "es";
 const MODEL_LABELS: Record<string, string> = {
   "gpt-5.6-luna": "GPT-5.6 Luna",
   "gpt-5.6-luna-pro": "GPT-5.6 Luna Pro",
+  "deepseek-v4-flash-0731": "DeepSeek V4 Flash 0731",
+  // Retained so historical MiniMax review telemetry remains readable.
   "minimax-m3": "MiniMax M3",
 };
 

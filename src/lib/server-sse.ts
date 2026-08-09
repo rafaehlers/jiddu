@@ -18,8 +18,8 @@ export type ServerSseWriter = {
 /**
  * Small SSE writer shared by the long-running analysis routes.
  *
- * MiniMax can spend more than a reverse proxy's idle timeout reasoning before
- * it emits its first tool call. SSE comments keep the HTTP hop alive without
+ * Reasoning models can spend more than a reverse proxy's idle timeout before
+ * emitting their first tool call. SSE comments keep the HTTP hop alive without
  * surfacing a fake progress event to the browser's event parser.
  */
 export function createServerSseWriter(

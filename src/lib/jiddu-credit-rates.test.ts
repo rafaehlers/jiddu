@@ -9,6 +9,8 @@ import {
 } from "./jiddu-credit-rates";
 
 test("prices economical, reasoning and critic models distinctly", () => {
+  assert.equal(modelCreditRate("deepseek-v4-flash-0731"), 1);
+  // Historical MiniMax usage still needs a deterministic fallback rate.
   assert.equal(modelCreditRate("minimax-m3"), 1);
   assert.equal(modelCreditRate("gpt-5.6-luna"), 1);
   assert.equal(modelCreditRate("gpt-5.6-luna-pro"), 3);
@@ -23,11 +25,18 @@ test("keeps the Live entry check separate from model fallback pricing", () => {
 
 test("reserves the worst possible fallback cost but settles actual models", () => {
   assert.equal(
-    maxCreditsForCalls(["gpt-5.6-luna", "minimax-m3"], 3),
+    maxCreditsForCalls(
+      ["gpt-5.6-luna", "deepseek-v4-flash-0731"],
+      3,
+    ),
     3,
   );
   assert.equal(
-    creditsForModels(["gpt-5.6-luna", "minimax-m3", "minimax-m3"]),
+    creditsForModels([
+      "gpt-5.6-luna",
+      "deepseek-v4-flash-0731",
+      "deepseek-v4-flash-0731",
+    ]),
     3,
   );
 });
@@ -40,12 +49,12 @@ test("standard paper review includes ten required calls and optional repair", ()
   assert.equal(gptModels.length, 11);
   assert.equal(creditsForModels(gptModels), 11);
 
-  const minimaxModels = paperReviewMaximumModels({
+  const deepseekModels = paperReviewMaximumModels({
     depth: "standard",
-    selectedModel: "minimax-m3",
+    selectedModel: "deepseek-v4-flash-0731",
   });
-  assert.equal(minimaxModels.length, 11);
-  assert.equal(creditsForModels(minimaxModels), 11);
+  assert.equal(deepseekModels.length, 11);
+  assert.equal(creditsForModels(deepseekModels), 11);
 });
 
 test("deep paper review reserves selected, reasoning, critic and repair calls", () => {
@@ -56,10 +65,10 @@ test("deep paper review reserves selected, reasoning, critic and repair calls", 
   assert.equal(gptModels.length, 11);
   assert.equal(creditsForModels(gptModels), 42);
 
-  const minimaxModels = paperReviewMaximumModels({
+  const deepseekModels = paperReviewMaximumModels({
     depth: "deep",
-    selectedModel: "minimax-m3",
+    selectedModel: "deepseek-v4-flash-0731",
   });
-  assert.equal(minimaxModels.length, 11);
-  assert.equal(creditsForModels(minimaxModels), 42);
+  assert.equal(deepseekModels.length, 11);
+  assert.equal(creditsForModels(deepseekModels), 42);
 });

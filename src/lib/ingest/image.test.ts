@@ -38,7 +38,7 @@ test("falls back between vision models and returns an image-source document", as
     ) {
       const model = opts?.model ?? "unknown";
       attempts.push(model);
-      if (model === "minimax-m3") throw new Error("temporary vision failure");
+      if (model === "vision-model-a") throw new Error("temporary vision failure");
       return {
         model,
         text: "Speaker A: This is a sufficiently long exact transcription for analysis.",
@@ -50,10 +50,10 @@ test("falls back between vision models and returns an image-source document", as
     Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
     "screenshot.png",
     provider,
-    ["minimax-m3", "gpt-5.6-luna"],
+    ["vision-model-a", "vision-model-b"],
   );
 
-  assert.deepEqual(attempts, ["minimax-m3", "gpt-5.6-luna"]);
+  assert.deepEqual(attempts, ["vision-model-a", "vision-model-b"]);
   assert.equal(doc.source, "image");
   assert.equal(doc.sourceRef, "screenshot.png");
   assert.match(doc.text, /Speaker A/);

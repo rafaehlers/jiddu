@@ -71,10 +71,10 @@ export const ComputationAuditItemSchema = ComputationProposalSchema.extend({
 });
 export type ComputationAuditItem = z.infer<typeof ComputationAuditItemSchema>;
 
-// MiniMax occasionally wraps prose fields in a small object even though the
-// tool schema asks for a string (for example, { issue, evidence }). Preserve
-// those useful string fragments while still rejecting arrays, nested objects,
-// numbers and other arbitrary shapes.
+// Some models occasionally wrap prose fields in a small object even though
+// the tool schema asks for a string (for example, { issue, evidence }).
+// Preserve those useful string fragments while still rejecting arrays, nested
+// objects, numbers and other arbitrary shapes.
 const ModelGeneratedTextSchema = z.preprocess((value) => {
   if (
     !value ||
