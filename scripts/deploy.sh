@@ -44,12 +44,18 @@ if [[ -n "$(git status --porcelain)" ]]; then
 fi
 
 EXPECTED_SHA="$(git rev-parse HEAD)"
+BUILD_STAMP="$(TZ=America/Sao_Paulo date '+%Y-%m-%d_%H:%S')"
+BUILD_DATE="${BUILD_STAMP%%_*}"
+BUILD_TIME="${BUILD_STAMP#*_}"
+BUILD_HASH="${EXPECTED_SHA:0:7}"
+BUILD_VERSION="${BUILD_DATE} ${BUILD_TIME} ${BUILD_HASH}"
 
 echo "→ Pushing ${BRANCH} to GitHub…"
 git push origin "${BRANCH}"
 
-echo "→ Deploying on VPS (${REMOTE_HOST})… (docker build can take a few minutes)"
-ssh -o ConnectTimeout=15 "${REMOTE_HOST}" 'bash /opt/deploy-jiddu.sh'
+echo "→ Deploying version ${BUILD_VERSION} on VPS (${REMOTE_HOST})… (docker build can take a few minutes)"
+ssh -o ConnectTimeout=15 "${REMOTE_HOST}" \
+  "JIDDU_BUILD_DATE='${BUILD_DATE}' JIDDU_BUILD_TIME='${BUILD_TIME}' JIDDU_BUILD_HASH='${BUILD_HASH}' bash /opt/deploy-jiddu.sh"
 
 REMOTE_STATE="$(
   ssh -o ConnectTimeout=15 "${REMOTE_HOST}" \

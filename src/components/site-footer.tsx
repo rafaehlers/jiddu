@@ -3,12 +3,16 @@
 import { useAuth } from "@workos-inc/authkit-nextjs/components";
 import Link from "next/link";
 import { useAuthControlsEnabled } from "@/components/auth-controls";
+import { normalizeBuildVersion } from "@/lib/build-version";
 import { useI18n } from "@/lib/i18n/provider";
 
 export function SiteFooter() {
   const { t, lang } = useI18n();
   const { user, loading } = useAuth();
   const authEnabled = useAuthControlsEnabled();
+  const buildVersion = normalizeBuildVersion(
+    process.env.NEXT_PUBLIC_JIDDU_BUILD_VERSION,
+  );
   const accountLabel =
     lang === "pt" ? "Conta" : lang === "es" ? "Cuenta" : "Account";
   const signUpLabel =
@@ -156,6 +160,11 @@ export function SiteFooter() {
             </a>
           </span>
         </nav>
+        {buildVersion && (
+          <small className="font-mono text-[9px] leading-none text-muted/60 tabular-nums">
+            Version: {buildVersion}
+          </small>
+        )}
       </div>
     </footer>
   );

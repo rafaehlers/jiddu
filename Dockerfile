@@ -26,6 +26,12 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 # Generate Prisma client into src/generated/prisma.
 RUN npx prisma generate
+# The deploy script supplies these values without spaces so they survive the
+# local-to-SSH-to-Compose handoff. Next inlines their joined value client-side.
+ARG JIDDU_BUILD_DATE=0000-00-00
+ARG JIDDU_BUILD_TIME=00:00
+ARG JIDDU_BUILD_HASH=local
+ENV NEXT_PUBLIC_JIDDU_BUILD_VERSION="${JIDDU_BUILD_DATE} ${JIDDU_BUILD_TIME} ${JIDDU_BUILD_HASH}"
 RUN npm run build
 
 # ---------- runner ----------
