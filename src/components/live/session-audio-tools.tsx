@@ -21,7 +21,7 @@ import {
   type DiarizationResult,
 } from "@/lib/live/diarization";
 
-type Props = {
+type SessionAudioToolsInput = {
   audioBlob: Blob;
   audioUrl: string;
   billingConfig: LiveDiarizationBillingConfig;
@@ -29,7 +29,20 @@ type Props = {
   durationMs: number;
   resourceId?: string | null;
   audioRef?: RefObject<HTMLAudioElement | null>;
+};
+
+type Props = SessionAudioToolsInput & {
   compact?: boolean;
+};
+
+type SessionAudioToolsControllerInput = Omit<
+  SessionAudioToolsInput,
+  "audioBlob" | "audioUrl" | "downloadFilename"
+> & {
+  audioBlob: Blob | null;
+  audioUrl: string | null;
+  downloadFilename: string | null;
+  onIdentificationFinished?: () => void;
 };
 
 type DiarizationStatus = "idle" | "loading" | "complete" | "error";
@@ -47,18 +60,50 @@ export function SessionAudioTools({
   audioRef,
   compact = false,
 }: Props) {
+  const controller = useSessionAudioToolsController({
+    audioBlob,
+    audioUrl,
+    billingConfig,
+    downloadFilename,
+    durationMs,
+    resourceId,
+    audioRef,
+  });
+
+  return (
+    <SessionAudioToolsPanel
+      controller={controller}
+      compact={compact}
+      showDiarizationAction
+    />
+  );
+}
+
+export function useSessionAudioToolsController({
+  audioBlob,
+  audioUrl,
+  billingConfig,
+  downloadFilename,
+  durationMs,
+  resourceId,
+  audioRef,
+  onIdentificationFinished,
+}: SessionAudioToolsControllerInput) {
   const { t } = useI18n();
   const internalAudioRef = useRef<HTMLAudioElement>(null);
   const resolvedAudioRef = audioRef ?? internalAudioRef;
-  const confirmationRef = useRef<HTMLDialogElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const previousAudioBlobRef = useRef<Blob | null>(audioBlob);
   const [confirmationOpen, setConfirmationOpen] = useState(false);
   const [status, setStatus] = useState<DiarizationStatus>("idle");
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [result, setResult] = useState<DiarizationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [speakerNames, setSpeakerNames] = useState<Record<string, string>>({});
-  const recordingTooLarge = audioBlob.size > MAX_DIARIZATION_AUDIO_BYTES;
+  const available = Boolean(audioBlob && audioUrl && downloadFilename);
+  const recordingTooLarge = Boolean(
+    audioBlob && audioBlob.size > MAX_DIARIZATION_AUDIO_BYTES,
+  );
   const estimatedCredits = useMemo(
     () =>
       calculateLiveDiarizationSettlement(durationMs / 1_000, billingConfig)
@@ -88,19 +133,32 @@ export function SessionAudioTools({
   useEffect(() => () => abortRef.current?.abort(), []);
 
   useEffect(() => {
-    const dialog = confirmationRef.current;
-    if (!dialog) return;
-    if (confirmationOpen && !dialog.open) dialog.showModal();
-    else if (!confirmationOpen && dialog.open) dialog.close();
-  }, [confirmationOpen]);
+    if (previousAudioBlobRef.current === audioBlob) return;
+    previousAudioBlobRef.current = audioBlob;
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setConfirmationOpen(false);
+    setStatus("idle");
+    setSaveStatus("idle");
+    setResult(null);
+    setError(null);
+    setSpeakerNames({});
+  }, [audioBlob]);
 
   function requestSpeakerIdentification() {
-    if (recordingTooLarge || status === "loading") return;
+    if (!available || recordingTooLarge || status === "loading") return;
     setConfirmationOpen(true);
   }
 
   async function identifySpeakers() {
-    if (recordingTooLarge || status === "loading") return;
+    if (
+      !audioBlob ||
+      !downloadFilename ||
+      recordingTooLarge ||
+      status === "loading"
+    ) {
+      return;
+    }
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -146,6 +204,7 @@ export function SessionAudioTools({
       );
       setSaveStatus("idle");
       setStatus("complete");
+      onIdentificationFinished?.();
     } catch (requestError) {
       if (controller.signal.aborted) return;
       setStatus("error");
@@ -154,6 +213,7 @@ export function SessionAudioTools({
           ? requestError.message
           : t.live_diarization_error,
       );
+      onIdentificationFinished?.();
     } finally {
       if (abortRef.current === controller) abortRef.current = null;
     }
@@ -183,6 +243,75 @@ export function SessionAudioTools({
       // A browser may still decline playback even after a user gesture.
     });
   }
+
+  return {
+    available,
+    audioUrl,
+    creditExamples,
+    downloadFilename,
+    durationMs,
+    error,
+    estimatedCredits,
+    confirmationOpen,
+    identifySpeakers,
+    recordingTooLarge,
+    requestSpeakerIdentification,
+    resourceId,
+    resolvedAudioRef,
+    result,
+    saveStatus,
+    saveTranscript,
+    seekTo,
+    setConfirmationOpen,
+    setSaveStatus,
+    setSpeakerNames,
+    speakerNames,
+    speakers,
+    status,
+    t,
+    turns,
+  };
+}
+
+export type SessionAudioToolsController = ReturnType<
+  typeof useSessionAudioToolsController
+>;
+
+export function SessionAudioToolsPanel({
+  controller,
+  compact = false,
+  showDiarizationAction = false,
+}: {
+  controller: SessionAudioToolsController;
+  compact?: boolean;
+  showDiarizationAction?: boolean;
+}) {
+  if (
+    !controller.available ||
+    !controller.audioUrl ||
+    !controller.downloadFilename
+  ) {
+    return null;
+  }
+
+  const {
+    audioUrl,
+    downloadFilename,
+    error,
+    recordingTooLarge,
+    resourceId,
+    resolvedAudioRef,
+    result,
+    saveStatus,
+    saveTranscript,
+    seekTo,
+    setSaveStatus,
+    setSpeakerNames,
+    speakerNames,
+    speakers,
+    t,
+    turns,
+  } = controller;
 
   return (
     <div
@@ -214,25 +343,15 @@ export function SessionAudioTools({
           <Download className="size-3.5" />
           {t.live_download_audio}
         </a>
-        <button
-          type="button"
-          onClick={requestSpeakerIdentification}
-          disabled={recordingTooLarge || status === "loading"}
-          className="inline-flex items-center gap-1.5 rounded-md bg-accent px-2.5 py-1.5 text-xs font-medium text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {status === "loading" ? (
-            <Loader2 className="size-3.5 animate-spin" />
-          ) : (
-            <Users className="size-3.5" />
-          )}
-          {status === "loading"
-            ? t.live_diarizing_speakers
-            : t.live_identify_speakers}
-        </button>
+        {showDiarizationAction ? (
+          <SessionDiarizationAction controller={controller} />
+        ) : null}
       </div>
-      <p className="mt-2 text-[11px] leading-relaxed text-muted">
-        {t.live_diarization_consent_hint}
-      </p>
+      {showDiarizationAction ? (
+        <p className="mt-2 text-[11px] leading-relaxed text-muted">
+          {t.live_diarization_consent_hint}
+        </p>
+      ) : null}
       {recordingTooLarge ? (
         <p className="mt-2 text-xs text-severity-high">
           {t.live_diarization_too_large}
@@ -333,6 +452,66 @@ export function SessionAudioTools({
           ) : null}
         </div>
       ) : null}
+    </div>
+  );
+}
+
+export function SessionDiarizationAction({
+  controller,
+  variant = "inline",
+}: {
+  controller: SessionAudioToolsController;
+  variant?: "header" | "inline";
+}) {
+  const confirmationRef = useRef<HTMLDialogElement>(null);
+  const {
+    available,
+    confirmationOpen,
+    creditExamples,
+    durationMs,
+    estimatedCredits,
+    identifySpeakers,
+    recordingTooLarge,
+    requestSpeakerIdentification,
+    setConfirmationOpen,
+    status,
+    t,
+  } = controller;
+
+  useEffect(() => {
+    const dialog = confirmationRef.current;
+    if (!dialog) return;
+    if (confirmationOpen && !dialog.open) dialog.showModal();
+    else if (!confirmationOpen && dialog.open) dialog.close();
+  }, [confirmationOpen]);
+
+  if (!available) return null;
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={requestSpeakerIdentification}
+        disabled={recordingTooLarge || status === "loading"}
+        title={recordingTooLarge ? t.live_diarization_too_large : undefined}
+        data-testid={
+          variant === "header" ? "context-diarization-action" : undefined
+        }
+        className={
+          variant === "header"
+            ? "inline-flex shrink-0 items-center gap-1.5 rounded-md bg-accent px-3 py-1.5 text-xs font-semibold text-white shadow-lg transition-opacity hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-60"
+            : "inline-flex items-center gap-1.5 rounded-md bg-accent px-2.5 py-1.5 text-xs font-medium text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+        }
+      >
+        {status === "loading" ? (
+          <Loader2 className="size-3.5 animate-spin" />
+        ) : (
+          <Users className="size-3.5" />
+        )}
+        {status === "loading"
+          ? t.live_diarizing_speakers
+          : t.live_identify_speakers}
+      </button>
       <dialog
         ref={confirmationRef}
         onClose={() => setConfirmationOpen(false)}
@@ -411,7 +590,7 @@ export function SessionAudioTools({
           </div>
         </div>
       </dialog>
-    </div>
+    </>
   );
 }
 

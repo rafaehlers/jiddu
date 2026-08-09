@@ -7,6 +7,7 @@ import {
   type ExplainFinding,
 } from "./explain-schema";
 import {
+  buildPaperMapSystemPrompt,
   buildPaperMapUserPrompt,
   selectPaperMapEvidence,
 } from "./paper-map-prompt";
@@ -103,4 +104,13 @@ test("paper-map evidence spans the document and retains semantic roles", () => {
   });
   assert.match(prompt, /A complete paper/);
   assert.match(prompt, /\[chunk 2\] Results summary/);
+});
+
+test("paper-map prompt uses the shared audience profile", () => {
+  const prompt = buildPaperMapSystemPrompt("pt", "high_school");
+
+  assert.match(prompt, /12 to 20 words per sentence/);
+  assert.match(prompt, /Do not exceed 25 words/);
+  assert.match(prompt, /2 to 3 sentences/);
+  assert.match(prompt, /Use one consistent term for one concept/);
 });

@@ -9,6 +9,7 @@ import {
 import { parseContextReplayEvent } from "@/lib/context-replay-schema";
 import { prisma } from "@/lib/db";
 import { readLiveContext } from "@/lib/live-context-schema";
+import { readSavedDiarization } from "@/lib/live/diarization";
 import { resolveAnalysisTitle } from "@/lib/live-title";
 import type { LiveClaim } from "@/lib/live/use-live-analysis";
 import type {
@@ -78,6 +79,7 @@ export default async function SavedContextPage({ params }: Props) {
         }) ?? "Jiddu Context"
       }
       transcript={transcript}
+      diarization={readSavedDiarization(analysis.diarizedTranscript)}
       sentences={parseArray<Sentence>(analysis.sentences)}
       audioDurationMs={analysis.audioDurationMs}
       replayEvents={analysis.contextSessionEvents

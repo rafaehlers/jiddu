@@ -46,10 +46,10 @@ Choose the lens that fits the reading: logical fallacies, factual claims, neutra
 
 ### Explain
 - **Paragraph-by-paragraph viewer** at `/e/[id]` — the paper on the left with every paragraph tinted by the role it plays; one explanation card per paragraph on the right, **anchored beside the paragraph it explains** (absolute-positioned with collision avoidance, same as the fallacy detector's margin comments) so clicking a paragraph never scrolls you across a long document.
-- **Audience level** — a pill selector on the composer picks who the explanations are written for: `Child` (ELI5, everyday analogies, no jargon), `High school`, `Undergraduate` (default), or `Expert` (concise, critical, no basic definitions). The level only changes the prose, not the pipeline.
+- **Audience level** — a pill selector on the composer picks who the explanations are written for: `Child` (short, concrete, everyday language), `High school` (explicit reasoning and defined field terms), `Undergraduate` (default; academic terminology and introductory methods assumed), or `Expert` (concise peer-level analysis focused on assumptions, evidence and limitations). The level changes assumed knowledge, terminology, explanatory depth and prose structure, but not the source evidence or pipeline.
 - **Section-aware hybrid segmentation** — the paper's own headings (`1`, `1.1`, `2.1`, `Introduction`, `Methods`…) are detected and rendered as section dividers on the left, while the explanation stays one card per paragraph. Papers with no headings fall back to plain paragraphs (blank-line aware, with a sentence-grouping fallback for prose with no paragraph breaks). The prompt enforces one explanation per paragraph so a long paper never condenses into a handful of section summaries.
 - **7 section roles** — each paragraph is tagged `background` / `objective` / `method` / `result` / `interpretation` / `limitation` / `conclusion`, each with its own color, so the paper's skeleton is visible at a glance. A legend sits above the text.
-- **Whole-document overview** — a 2–4 sentence plain-language abstract at the chosen level, shown above the paper.
+- **Whole-document overview** — a short 2–4 sentence abstract whose terminology, depth and sentence budget follow the chosen audience profile, shown above the paper.
 - **Parallel chunking** — long papers are split at block boundaries and explained in parallel with bounded concurrency, like the other pipelines.
 - **Demo explanations** in 3 languages (`/e/demo-en`, `/e/demo-pt`, `/e/demo-es`).
 

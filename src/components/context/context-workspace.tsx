@@ -21,7 +21,11 @@ import { LiveClaimsList } from "@/components/live/claims-list";
 import { FindingsList } from "@/components/live/findings-list";
 import { LiveNeutralityList } from "@/components/live/neutrality-list";
 import { SourcePicker } from "@/components/live/source-picker";
-import { SessionAudioTools } from "@/components/live/session-audio-tools";
+import {
+  SessionAudioToolsPanel,
+  SessionDiarizationAction,
+  useSessionAudioToolsController,
+} from "@/components/live/session-audio-tools";
 import {
   TranscriptStream,
   type TranscriptStreamHandle,
@@ -136,6 +140,15 @@ function ContextWorkspaceContent({
   const recoverableSessionId = useContextRecoveryMarker({
     sessionId: analysis.sessionId,
     state: session.state,
+  });
+  const diarization = useSessionAudioToolsController({
+    audioBlob: session.localAudioBlob,
+    audioUrl: session.localAudioUrl,
+    billingConfig: diarizationBilling,
+    downloadFilename: session.localAudioFilename,
+    durationMs: session.elapsedMs,
+    resourceId: analysis.sessionId,
+    onIdentificationFinished: () => floatingPanels.selectPanel("transcript"),
   });
 
   const isRunning =
@@ -427,6 +440,8 @@ function ContextWorkspaceContent({
           {concluded && analysis.sessionId ? (
             <Link
               href={`/context/${analysis.sessionId}`}
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-xs font-semibold text-background shadow-lg transition-opacity hover:opacity-85"
             >
               {copy.openSaved}
@@ -435,11 +450,19 @@ function ContextWorkspaceContent({
           ) : recoverableSessionId && !analysis.sessionId && !isRunning ? (
             <Link
               href={`/context/${recoverableSessionId}`}
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-accent/40 bg-accent/10 px-3 py-1.5 text-xs font-semibold text-accent transition-colors hover:bg-accent/20"
             >
               {copy.recoverSession}
               <ExternalLink className="size-3" />
             </Link>
+          ) : null}
+          {diarization.available ? (
+            <SessionDiarizationAction
+              controller={diarization}
+              variant="header"
+            />
           ) : null}
           <ContextNeutralityHeader
             verdict={analysisView.neutralityVerdict}
@@ -507,16 +530,9 @@ function ContextWorkspaceContent({
                     active={session.state === "live"}
                     variant="feed"
                   />
-                  {session.localAudioUrl &&
-                  session.localAudioBlob &&
-                  session.localAudioFilename ? (
-                    <SessionAudioTools
-                      audioBlob={session.localAudioBlob}
-                      audioUrl={session.localAudioUrl}
-                      billingConfig={diarizationBilling}
-                      downloadFilename={session.localAudioFilename}
-                      durationMs={session.elapsedMs}
-                      resourceId={analysis.sessionId}
+                  {diarization.available ? (
+                    <SessionAudioToolsPanel
+                      controller={diarization}
                       compact
                     />
                   ) : null}

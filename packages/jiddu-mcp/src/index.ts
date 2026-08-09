@@ -102,7 +102,9 @@ server.tool(
     level: z
       .enum(["eli5", "high_school", "undergrad", "expert"])
       .optional()
-      .describe("Audience level for the explanation. Defaults to undergrad."),
+      .describe(
+        "Audience profile for the explanation. Controls assumed knowledge, terminology, explanatory depth, and prose structure. Defaults to undergrad.",
+      ),
   },
   async ({ text, lang, level }) => toolResult("explain", { text, lang, level }),
 );

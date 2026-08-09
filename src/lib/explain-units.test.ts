@@ -50,6 +50,22 @@ test("prompts for one finding per section with every paragraph id", () => {
   assert.match(user, /block_ids="p0,p1"/);
   assert.equal((user.match(/<section /g) ?? []).length, 2);
   assert.match(user, /path="Introduction"/);
+  assert.match(system, /12 to 20 words per sentence/);
+  assert.match(system, /Do not exceed 25 words/);
+  assert.match(system, /3 to 5 sentences explaining the COMPLETE section/);
+  assert.match(system, /Use one consistent term for one concept/);
+});
+
+test("gives undergraduate explanations more assumed knowledge and depth", () => {
+  const highSchool = buildExplainSystemPrompt("pt", "high_school");
+  const undergrad = buildExplainSystemPrompt("pt", "undergrad");
+
+  assert.notEqual(highSchool, undergrad);
+  assert.match(highSchool, /without specialist training/);
+  assert.match(highSchool, /define each field-specific term/);
+  assert.match(undergrad, /introductory research methods/);
+  assert.match(undergrad, /what follows from that choice/);
+  assert.match(undergrad, /3 to 6 sentences explaining the COMPLETE section/);
 });
 
 test("keeps the public API at one semantic unit per paragraph", () => {

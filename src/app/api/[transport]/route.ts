@@ -410,7 +410,9 @@ const mcpHandler = createMcpHandler(
           level: z
             .enum(["eli5", "high_school", "undergrad", "expert"])
             .optional()
-            .describe("Audience level. Defaults to undergrad."),
+            .describe(
+              "Audience profile. Controls assumed knowledge, terminology, explanatory depth, and prose structure. Defaults to undergrad.",
+            ),
         },
       },
       async ({ text, lang, level }) => {

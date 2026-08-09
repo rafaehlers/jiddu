@@ -1,18 +1,15 @@
 import type { Lang } from "./fallacies";
 import type { ExplainLevel } from "./explain-schema";
 import type { Block } from "./paragraphs";
+import {
+  buildExplanationLevelGuidance,
+  CONTROLLED_CLARITY_GUIDANCE,
+} from "./explain-level-guidance";
 
 const LANG_NAME: Record<Lang, string> = {
   en: "English",
   pt: "Brazilian Portuguese",
   es: "Spanish",
-};
-
-const LEVEL_GUIDANCE: Record<ExplainLevel, string> = {
-  eli5: "Use everyday language that a bright 10-year-old can understand.",
-  high_school: "Use clear language and define field-specific terms.",
-  undergrad: "Write for an undergraduate in a related field.",
-  expert: "Be concise and retain precise domain terminology.",
 };
 
 export type PaperEvidenceVisualPage = {
@@ -40,7 +37,12 @@ For visual pages, inspect only scholarly content such as figures, tables, diagra
 
 Every statement must cite only block ids printed in the evidence. A visualAudit item cites its supplied page number instead. Use null when the material does not support a requested summary. Keep uncertainties concrete and evidence-bound.
 
-OUTPUT LANGUAGE: write every free-text value in ${LANG_NAME[lang]}. ${LEVEL_GUIDANCE[level]}`;
+OUTPUT LANGUAGE: write every free-text value in ${LANG_NAME[lang]}.
+
+AUDIENCE LEVEL:
+${buildExplanationLevelGuidance(level)}
+
+${CONTROLLED_CLARITY_GUIDANCE}`;
 }
 
 export function buildPaperEvidenceUserPrompt(input: PaperEvidenceInput): string {

@@ -1,12 +1,12 @@
 import { z } from "zod";
 
 // The four explanation audiences the user picks before running. Each level
-// only changes the vocabulary and depth of the section explanation.
+// changes assumed knowledge, terminology, reasoning depth, and prose structure.
 export const EXPLAIN_LEVELS = [
-  "eli5", // a curious child / general public — everyday words, analogies
-  "high_school", // bright high-schooler — defines field terms
-  "undergrad", // undergraduate in a related field — assumes academic vocab
-  "expert", // domain expert — concise, critical, no basic definitions
+  "eli5", // child — concrete explanation, everyday words, no assumed background
+  "high_school", // high school — explicit reasoning, every field term defined
+  "undergrad", // undergraduate — academic methods and standard terms assumed
+  "expert", // expert — concise peer-level analysis, assumptions and limits foregrounded
 ] as const;
 export type ExplainLevel = (typeof EXPLAIN_LEVELS)[number];
 

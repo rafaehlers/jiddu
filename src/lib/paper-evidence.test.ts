@@ -5,6 +5,7 @@ import {
   sanitizePaperSynthesis,
 } from "./explain-schema";
 import {
+  buildPaperEvidenceSystemPrompt,
   buildPaperEvidenceUserPrompt,
   selectPaperEvidenceBlocks,
 } from "./paper-evidence-prompt";
@@ -41,6 +42,15 @@ test("evidence-first selection excludes author framing", () => {
   assert.match(prompt, /Twelve cases improved/);
   assert.doesNotMatch(prompt, /abstract claims success/);
   assert.doesNotMatch(prompt, /authors call it decisive/);
+});
+
+test("evidence-first prompt uses the shared audience profile", () => {
+  const prompt = buildPaperEvidenceSystemPrompt("pt", "undergrad");
+
+  assert.match(prompt, /16 to 25 words per sentence/);
+  assert.match(prompt, /Do not exceed 30 words/);
+  assert.match(prompt, /introductory research methods/);
+  assert.match(prompt, /Preserve every fact, number/);
 });
 
 test("guided reading sanitizes nested evidence links", () => {

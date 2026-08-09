@@ -1,11 +1,12 @@
 "use client";
 
-import { ArrowLeft, Languages } from "lucide-react";
+import { ArrowLeft, Languages, Users } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { LiveClaimsList } from "@/components/live/claims-list";
 import { FindingsList } from "@/components/live/findings-list";
 import { LiveNeutralityList } from "@/components/live/neutrality-list";
+import { SavedDiarizedTranscript } from "@/components/live/saved-diarized-transcript";
 import {
   TranscriptStream,
   type TranscriptStreamHandle,
@@ -23,6 +24,7 @@ import type { ContextReplayEvent } from "@/lib/context-replay-schema";
 import type { Lang } from "@/lib/fallacies";
 import { useI18n } from "@/lib/i18n/provider";
 import type { LiveContext } from "@/lib/live-context-schema";
+import type { SavedDiarization } from "@/lib/live/diarization";
 import type {
   LiveClaim,
   LiveNeutralityVerdict,
@@ -63,6 +65,7 @@ type Props = {
   id: string;
   title: string;
   transcript: string;
+  diarization: SavedDiarization | null;
   sentences: Sentence[];
   audioDurationMs: number | null;
   replayEvents: ContextReplayEvent[];
@@ -88,6 +91,7 @@ function ContextReviewWorkspaceContent({
   id,
   title,
   transcript,
+  diarization,
   sentences,
   audioDurationMs,
   replayEvents,
@@ -100,12 +104,15 @@ function ContextReviewWorkspaceContent({
   enrichedEntities,
   enrichedRelations,
 }: Props) {
-  const { lang, setLang } = useI18n();
+  const { lang, setLang, t } = useI18n();
   const copy = contextCopy(lang);
   const transcriptRef = useRef<TranscriptStreamHandle>(null);
   const floatingPanels = useContextFloatingPanels();
   const [contextTheme, setContextTheme] = useContextTheme();
   const contextSettings = useContextSettings();
+  const [transcriptView, setTranscriptView] = useState<
+    "replay" | "speakers"
+  >(diarization ? "speakers" : "replay");
   const [currentContext, setCurrentContext] = useState(context);
   const [currentClaims, setCurrentClaims] = useState(claims);
   const [currentVerdicts, setCurrentVerdicts] = useState(verdicts);
@@ -165,8 +172,26 @@ function ContextReviewWorkspaceContent({
     [frame.verdicts],
   );
   const jumpToSentence = useCallback((sentenceId: string) => {
-    transcriptRef.current?.focusSentence(sentenceId);
+    setTranscriptView("replay");
+    window.requestAnimationFrame(() => {
+      transcriptRef.current?.focusSentence(sentenceId);
+    });
   }, []);
+  const replayTimeline = {
+    ...timeline,
+    toggle: () => {
+      setTranscriptView("replay");
+      timeline.toggle();
+    },
+    restart: () => {
+      setTranscriptView("replay");
+      timeline.restart();
+    },
+    seek: (value: number) => {
+      setTranscriptView("replay");
+      timeline.seek(value);
+    },
+  };
 
   const applyMutation = useCallback(
     async (mutation: ContextEntityMutation) => {
@@ -303,7 +328,7 @@ function ContextReviewWorkspaceContent({
         durationMs={frame.durationMs}
         exact={frame.exact}
         events={replayEvents}
-        timeline={timeline}
+        timeline={replayTimeline}
         copy={copy}
       />
 
@@ -337,7 +362,57 @@ function ContextReviewWorkspaceContent({
               title: copy.transcript,
               toneClass: "bg-violet-500",
               contentClassName: "overflow-hidden",
-              content: (
+              content: diarization ? (
+                <div className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)]">
+                  <div className="flex shrink-0 gap-1 border-b border-rule bg-paper/90 p-1.5">
+                    <button
+                      type="button"
+                      aria-pressed={transcriptView === "replay"}
+                      onClick={() => setTranscriptView("replay")}
+                      className={`rounded-md px-2 py-1 text-[10px] font-semibold transition-colors ${
+                        transcriptView === "replay"
+                          ? "bg-foreground text-background"
+                          : "text-muted hover:bg-foreground/10 hover:text-foreground"
+                      }`}
+                    >
+                      {copy.transcript}
+                    </button>
+                    <button
+                      type="button"
+                      aria-pressed={transcriptView === "speakers"}
+                      onClick={() => setTranscriptView("speakers")}
+                      className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-semibold transition-colors ${
+                        transcriptView === "speakers"
+                          ? "bg-accent text-white"
+                          : "text-muted hover:bg-foreground/10 hover:text-foreground"
+                      }`}
+                    >
+                      <Users className="size-3" />
+                      {t.live_diarized_transcript}
+                    </button>
+                  </div>
+                  <div className="relative min-h-0 overflow-hidden">
+                    <div
+                      className={`h-full ${
+                        transcriptView === "replay" ? "block" : "hidden"
+                      }`}
+                    >
+                      <TranscriptStream
+                        ref={transcriptRef}
+                        transcript={frame.transcript}
+                        variant="feed"
+                      />
+                    </div>
+                    <div
+                      className={`h-full overflow-y-auto p-2 ${
+                        transcriptView === "speakers" ? "block" : "hidden"
+                      }`}
+                    >
+                      <SavedDiarizedTranscript diarization={diarization} />
+                    </div>
+                  </div>
+                </div>
+              ) : (
                 <TranscriptStream
                   ref={transcriptRef}
                   transcript={frame.transcript}

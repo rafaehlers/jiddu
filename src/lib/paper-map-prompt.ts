@@ -6,18 +6,17 @@ import type {
   SectionRole,
 } from "./explain-schema";
 import type { Block } from "./paragraphs";
+import {
+  buildExplanationLevelGuidance,
+  CONTROLLED_CLARITY_GUIDANCE,
+  formatSentenceRange,
+  getExplanationLevelProfile,
+} from "./explain-level-guidance";
 
 const LANG_NAME: Record<Lang, string> = {
   en: "English",
   pt: "Portuguese (Brazilian)",
   es: "Spanish",
-};
-
-const LEVEL_GUIDANCE: Record<ExplainLevel, string> = {
-  eli5: "Use everyday language that a bright 10-year-old can understand.",
-  high_school: "Use clear language and define field-specific terms.",
-  undergrad: "Write for an undergraduate in a related field.",
-  expert: "Be concise and retain precise domain terminology.",
 };
 
 const ROLE_BUDGET: Record<SectionRole, number> = {
@@ -44,11 +43,18 @@ export function buildPaperMapSystemPrompt(
   lang: Lang,
   level: ExplainLevel,
 ): string {
+  const profile = getExplanationLevelProfile(level);
+
   return `You are Jiddu's document-level paper explainer. Build a compact, faithful guided reading from paragraph evidence already extracted from one academic paper or technical document.
 
 This is EXPLANATION, not peer review. Describe what the authors ask, do, claim, and explicitly acknowledge. Do not fact-check, infer novelty against external literature, or use outside knowledge. The quick scan may make a cautious, provisional assessment of internal correctness and clarity, but it must not present correctness as established.
 
-OUTPUT LANGUAGE: write every free-text value and every tag in ${LANG_NAME[lang]}. ${LEVEL_GUIDANCE[level]}
+OUTPUT LANGUAGE: write every free-text value and every tag in ${LANG_NAME[lang]}.
+
+AUDIENCE LEVEL:
+${buildExplanationLevelGuidance(level)}
+
+${CONTROLLED_CLARITY_GUIDANCE}
 
 For paperTypes, return 1 to 3 short labels such as empirical, theoretical, conceptual, methodological, literature review/survey, or mixed. For contributionTypes, return 1 to 3 short labels such as new theory, new method, empirical application, critique, replication, dataset/benchmark, or synthesis. Translate the labels into ${LANG_NAME[lang]}.
 
@@ -60,7 +66,7 @@ Build the guided-reading fields as follows:
 - notebook contains at most 8 key terms, 6 questions for the authors, 5 genuinely confusing passages, 6 implicit assumptions, and 6 references or background works that the supplied text itself indicates may deserve further reading. An implicit assumption must be necessary to follow the authors' reasoning, not merely something absent from the paper.
 - challenge must be null when no independent evidence-first reading is supplied. When one is supplied, preserve its independent interpretation, then separately state the authors' interpretation and compare them. Assess abstract fidelity against the methods, results, limitations, and conclusion. A faithful abstract need not mention every detail; flag only material mismatch, omission, or overstatement. Copy visual-audit observations faithfully without inventing unseen visuals.
 
-The overview must be a 2 to 4 sentence plain-language account of the whole supplied document, informed by its methods, results, and conclusion as well as its introduction.`;
+The overview must be a plain-language account of the whole supplied document, in ${formatSentenceRange(profile.overviewSentences)}. It must reflect the methods, results, and conclusion as well as the introduction.`;
 }
 
 export function buildPaperMapUserPrompt(input: PaperSynthesisInput): string {
