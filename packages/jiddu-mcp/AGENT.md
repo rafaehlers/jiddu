@@ -159,7 +159,8 @@ URLs are rejected. Optional inputs:
 - `venue_profile_id`: e.g. `neurips-2026-main`
 - `venue`, `venue_year`, `venue_track`
 - `paper_type`: `research` | `position` | `survey` | `dataset` | `theory` |
-  `use-inspired` | `concept` | `negative-results`
+  `use-inspired` | `concept` | `negative-results` | `systematic-review` |
+  `meta-analysis`
 - `review_date`: `YYYY-MM-DD`
 - `depth`: `standard` (economical default) | `deep` (stronger reasoning and
   independent critic models; slower and more expensive)

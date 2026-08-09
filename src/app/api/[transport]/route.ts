@@ -490,12 +490,16 @@ const mcpHandler = createMcpHandler(
             .min(2000)
             .max(2100)
             .optional()
-            .describe("Target edition. Defaults to 2026."),
+            .describe(
+              "Target conference edition or journal-guideline version. Defaults to 2026.",
+            ),
           venue_track: z
             .string()
             .max(200)
             .optional()
-            .describe("Target track. Defaults to the profile's main track."),
+            .describe(
+              "Target conference track or journal article type. Defaults to the profile's primary type.",
+            ),
           paper_type: z
             .enum([
               "research",
@@ -506,9 +510,13 @@ const mcpHandler = createMcpHandler(
               "use-inspired",
               "concept",
               "negative-results",
+              "systematic-review",
+              "meta-analysis",
             ])
             .optional()
-            .describe("Contribution type. Defaults to research."),
+            .describe(
+              "Contribution type. Defaults to the selected profile's primary type or research.",
+            ),
           review_date: z
             .string()
             .regex(/^\d{4}-\d{2}-\d{2}$/)

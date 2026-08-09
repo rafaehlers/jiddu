@@ -8,7 +8,9 @@ export type PaperType =
   | "theory"
   | "use-inspired"
   | "concept"
-  | "negative-results";
+  | "negative-results"
+  | "systematic-review"
+  | "meta-analysis";
 
 export type VenueCriterion = {
   key: string;
@@ -25,6 +27,8 @@ export type VenueProfile = {
   id: string;
   name: string;
   acronym?: string;
+  aliases?: string[];
+  defaultPaperType?: PaperType;
   kind: VenueKind;
   edition: number;
   track: string;
@@ -53,6 +57,7 @@ export type VenueSearchResult = {
   profileId?: string;
   edition?: number;
   defaultTrack?: string;
+  defaultPaperType?: PaperType;
   catalogUrl?: string;
   verifiedProfile: boolean;
 };
@@ -88,6 +93,12 @@ const GENERAL_CRITERIA: VenueCriterion[] = [
     guidance:
       "The paper must report enough methodological and experimental detail for an expert to verify or reproduce the result.",
   },
+];
+
+const MEDICAL_REPORTING_REQUIREMENTS = [
+  "Apply the reporting standard that matches the study design: CONSORT for randomized trials, STROBE for observational studies, PRISMA for systematic reviews and meta-analyses, STARD for diagnostic studies, TRIPOD for prediction models, CARE for case reports, SQUIRE for quality-improvement studies, and CHEERS for economic evaluations.",
+  "Check ethics approval, informed consent, prospective trial registration, protocol availability, and data-sharing disclosures whenever applicable.",
+  "Distinguish statistical significance from clinical importance and require effect estimates, uncertainty, limitations, and harms to be reported proportionately.",
 ];
 
 export const CURATED_VENUE_PROFILES: VenueProfile[] = [
@@ -384,15 +395,482 @@ export const CURATED_VENUE_PROFILES: VenueProfile[] = [
     verified: true,
     verifiedAt: "2026-07-26",
   },
+  {
+    id: "jama-2026-original-investigation",
+    name: "Journal of the American Medical Association",
+    acronym: "JAMA",
+    aliases: ["Journal of the AMA", "JAMA Journal"],
+    kind: "journal",
+    edition: 2026,
+    track: "Original Investigation",
+    criteria: [
+      {
+        key: "originality-timeliness",
+        label: "Originality and timeliness",
+        guidance:
+          "Assess whether the material is original, current, and clearly differentiated from the closest published medical evidence.",
+      },
+      {
+        key: "methods",
+        label: "Appropriate study methods",
+        guidance:
+          "Assess whether the design, population, interventions or exposures, outcomes, and analyses appropriately answer the stated clinical or health question.",
+      },
+      {
+        key: "data-validity",
+        label: "Data validity and integrity",
+        guidance:
+          "Assess whether the data are credible, sufficiently reported, and analyzed in a way that supports independent evaluation of the findings.",
+      },
+      {
+        key: "supported-conclusions",
+        label: "Reasonable, supported conclusions",
+        guidance:
+          "Require conclusions and implications to follow from the reported results without causal, clinical, or policy overstatement.",
+      },
+      {
+        key: "importance-interest",
+        label: "Importance and general medical interest",
+        guidance:
+          "Assess whether the question and findings are important and relevant to JAMA's broad clinical, research, and health-policy readership.",
+      },
+      {
+        key: "clarity",
+        label: "Clear reporting",
+        guidance:
+          "Assess whether the writing, structured abstract, Key Points, tables, figures, and limitations communicate the study accurately and efficiently.",
+      },
+    ],
+    requirements: [
+      "For an Original Investigation, check the current JAMA limits and required elements, including a structured abstract, Key Points, a Data Sharing Statement, and no more than five tables and/or figures.",
+      "For reports containing original data, identify whether responsibility for data integrity and the accuracy of the analysis is stated.",
+      ...MEDICAL_REPORTING_REQUIREMENTS,
+    ],
+    officialSources: [
+      {
+        label: "JAMA Instructions for Authors",
+        url: "https://jamanetwork.com/journals/jama/pages/instructions-for-authors",
+      },
+      {
+        label: "JAMA For Authors",
+        url: "https://jamanetwork.com/journals/jama/pages/for-authors",
+      },
+    ],
+    verified: true,
+    verifiedAt: "2026-08-08",
+  },
+  {
+    id: "nejm-2026-original-article",
+    name: "The New England Journal of Medicine",
+    acronym: "NEJM",
+    aliases: ["New England Journal of Medicine", "N Engl J Med"],
+    kind: "journal",
+    edition: 2026,
+    track: "Original Article",
+    criteria: [
+      {
+        key: "originality",
+        label: "Originality",
+        guidance:
+          "Assess whether the study provides genuinely new evidence and differentiates its contribution from the closest published clinical research.",
+      },
+      {
+        key: "clinical-impact",
+        label: "Clinical importance",
+        guidance:
+          "Assess whether the findings could improve patient care or clinical practice, or materially advance understanding of human disease biology.",
+      },
+      {
+        key: "scientific-integrity",
+        label: "Scientific integrity",
+        guidance:
+          "Assess whether design, conduct, outcomes, and analyses are rigorous enough to support the central claims and withstand specialist scrutiny.",
+      },
+      {
+        key: "statistical-rigor",
+        label: "Statistical rigor",
+        guidance:
+          "Check effect estimates and confidence intervals, multiplicity control, missing-data handling, prespecification, sensitivity analyses, and the distinction between statistical and clinical significance.",
+      },
+      {
+        key: "reporting",
+        label: "Complete and accessible reporting",
+        guidance:
+          "Assess whether the abstract, methods, results, safety findings, limitations, and conclusions are complete, internally consistent, and understandable to a broad medical audience.",
+      },
+    ],
+    requirements: [
+      "For an Original Article, check the current NEJM limits and required elements, including a structured abstract, no more than five tables and figures, and the reference limit.",
+      "A protocol and statistical analysis plan should accompany original research and contain enough detail to allow replication of the analysis in a similar data set.",
+      "For clinical trials, check prospective registration, alignment with the protocol and statistical analysis plan, CONSORT flow reporting, and complete efficacy and safety results.",
+      ...MEDICAL_REPORTING_REQUIREMENTS,
+    ],
+    officialSources: [
+      {
+        label: "NEJM Article Types",
+        url: "https://www.nejm.org/author-center/article-types",
+      },
+      {
+        label: "NEJM New Manuscripts and Statistical Reporting Guidelines",
+        url: "https://www.nejm.org/author-center/new-manuscripts",
+      },
+      {
+        label: "NEJM Editorial Policies",
+        url: "https://www.nejm.org/about-nejm/editorial-policies",
+      },
+    ],
+    verified: true,
+    verifiedAt: "2026-08-08",
+  },
+  {
+    id: "lancet-2026-article",
+    name: "The Lancet",
+    aliases: ["Lancet", "The Lancet Journal"],
+    kind: "journal",
+    edition: 2026,
+    track: "Article",
+    criteria: [
+      {
+        key: "medical-advance",
+        label: "Advance to medical science or practice",
+        guidance:
+          "Assess whether the contribution materially advances or illuminates medical science, clinical practice, or public health.",
+      },
+      {
+        key: "importance",
+        label: "Importance and likely influence",
+        guidance:
+          "Assess whether the research question is consequential and whether the findings could change clinical practice, policy, or thinking about a disease or health problem.",
+      },
+      {
+        key: "validity",
+        label: "Methodological validity",
+        guidance:
+          "Assess whether the design, execution, analysis, and interpretation provide trustworthy evidence for every central claim.",
+      },
+      {
+        key: "research-context",
+        label: "Research in context",
+        guidance:
+          "Assess whether the paper identifies the evidence before the study, explains its added value, and states the implications of all available evidence without overstating novelty.",
+      },
+      {
+        key: "general-readership",
+        label: "Relevance and clarity for a general medical readership",
+        guidance:
+          "Assess whether the work has broad international relevance and is written clearly enough for clinicians and researchers outside the immediate specialty.",
+      },
+    ],
+    requirements: [
+      "Primary research Articles should include a Research in context panel covering evidence before the study, added value, and implications of all available evidence.",
+      "For randomized controlled trials, check the protocol, registration, CONSORT reporting, prespecified outcomes, and a balanced account of benefits and harms.",
+      "Check originality, authorship and contribution statements, competing interests, funding, and the required data-sharing statement.",
+      ...MEDICAL_REPORTING_REQUIREMENTS,
+    ],
+    officialSources: [
+      {
+        label: "The Lancet Guide for Authors",
+        url: "https://www.sciencedirect.com/journal/the-lancet/publish/guide-for-authors",
+      },
+      {
+        label: "The Lancet Information for Authors",
+        url: "https://www.lancet.com/pb/assets/raw/Lancet/authors/lancet-information-for-authors.pdf",
+      },
+    ],
+    verified: true,
+    verifiedAt: "2026-08-08",
+  },
+  {
+    id: "bmj-2026-research",
+    name: "The BMJ",
+    acronym: "BMJ",
+    aliases: ["British Medical Journal"],
+    kind: "journal",
+    edition: 2026,
+    track: "Research",
+    criteria: [
+      {
+        key: "decision-value",
+        label: "Value for medical decision-making",
+        guidance:
+          "Assess whether the study can improve decisions in clinical medicine, public health, health policy, medical education, or biomedical research.",
+      },
+      {
+        key: "importance-novelty",
+        label: "Important, new, and relevant question",
+        guidance:
+          "Assess whether the research question is important, meaningfully new, and relevant to The BMJ's international general readership, regardless of whether results are positive or negative.",
+      },
+      {
+        key: "robust-design",
+        label: "Appropriate and robust design",
+        guidance:
+          "Assess whether study design, conduct, analysis, and sensitivity checks are appropriate and robust for the question and data.",
+      },
+      {
+        key: "transparent-reporting",
+        label: "Complete and transparent reporting",
+        guidance:
+          "Assess whether the manuscript reports methods, results, limitations, competing interests, funding, data sharing, and patient involvement completely and candidly.",
+      },
+      {
+        key: "interpretation",
+        label: "Balanced interpretation",
+        guidance:
+          "Assess whether the discussion states principal findings, strengths and weaknesses, relation to other studies, implications, and unanswered questions without overclaiming.",
+      },
+    ],
+    requirements: [
+      "Original research should follow IMRaD structure and include a complete structured abstract and a structured discussion.",
+      "Check that the title identifies the study design and that the applicable reporting checklist is followed and submitted.",
+      "Check data-sharing, competing-interest, funding, contributor, guarantor, and patient and public involvement statements where applicable.",
+      ...MEDICAL_REPORTING_REQUIREMENTS,
+    ],
+    officialSources: [
+      {
+        label: "The BMJ Article Types and Preparation",
+        url: "https://www.bmj.com/about-bmj/resources-authors/article-types",
+      },
+      {
+        label: "ICMJE Recommendations",
+        url: "https://www.icmje.org/recommendations/",
+      },
+    ],
+    verified: true,
+    verifiedAt: "2026-08-08",
+  },
+  {
+    id: "nature-medicine-2026-primary-research",
+    name: "Nature Medicine",
+    aliases: ["Nat Med", "Nature Med"],
+    kind: "journal",
+    edition: 2026,
+    track: "Primary research",
+    criteria: [
+      {
+        key: "originality",
+        label: "Originality",
+        guidance:
+          "Assess whether the work offers a genuinely original advance in translational or clinical research.",
+      },
+      {
+        key: "timeliness",
+        label: "Timeliness",
+        guidance:
+          "Assess whether the question and evidence address a current and consequential opportunity in medicine or human health.",
+      },
+      {
+        key: "human-health-impact",
+        label: "Impact on human health",
+        guidance:
+          "Assess whether the study plausibly improves human health by addressing an unmet clinical need, rather than merely demonstrating a narrow technical result.",
+      },
+      {
+        key: "field-advance",
+        label: "Advance in understanding",
+        guidance:
+          "Assess the degree to which the work advances understanding of the field and offers conclusions with wide relevance to the journal's readership.",
+      },
+      {
+        key: "evidence-soundness",
+        label: "Sound conclusions supported by evidence",
+        guidance:
+          "Assess whether appropriate data, controls, analyses, validation, and uncertainty support every central conclusion.",
+      },
+      {
+        key: "transparency",
+        label: "Research transparency",
+        guidance:
+          "Assess registration, protocol and analysis-plan fidelity, reporting checklists, ethics, competing interests, and availability of data and code.",
+      },
+    ],
+    requirements: [
+      "Clinical trials must be prospectively registered and submitted with the latest signed protocol and statistical analysis plan; deviations from prespecified analyses must be justified.",
+      "Include Data Availability and, when custom code is used, Code Availability statements; supporting data and code must be available for editorial and peer review when requested.",
+      "For medical AI studies, apply the current AI-specific clinical reporting guidance identified by Nature Medicine in addition to the underlying study-design guideline.",
+      ...MEDICAL_REPORTING_REQUIREMENTS,
+    ],
+    officialSources: [
+      {
+        label: "Nature Medicine Aims and Scope",
+        url: "https://www.nature.com/nm/submission-guidelines/about/aims",
+      },
+      {
+        label: "Nature Medicine Editorial Process and Peer Review",
+        url: "https://www.nature.com/nm/submission-guidelines/editorial-process",
+      },
+      {
+        label: "Nature Medicine Clinical Research Policies",
+        url: "https://www.nature.com/nm/editorial-policies/clinicalresearch",
+      },
+    ],
+    verified: true,
+    verifiedAt: "2026-08-08",
+  },
+  {
+    id: "jama-network-open-2026-original-investigation",
+    name: "JAMA Network Open",
+    aliases: ["JAMA Open", "JNO"],
+    kind: "journal",
+    edition: 2026,
+    track: "Original Investigation",
+    criteria: [
+      {
+        key: "scope",
+        label: "Fit with medical and health scope",
+        guidance:
+          "Assess whether the work reports original research relevant to clinical care, health-care innovation, health policy, or global health.",
+      },
+      {
+        key: "originality-timeliness",
+        label: "Originality and timeliness",
+        guidance:
+          "Assess whether the material is original, current, and differentiated from the closest published evidence.",
+      },
+      {
+        key: "methods",
+        label: "Appropriate methods and valid data",
+        guidance:
+          "Assess whether the design, sampling, measurements, outcomes, and analyses appropriately answer the question and produce valid evidence.",
+      },
+      {
+        key: "supported-conclusions",
+        label: "Supported conclusions",
+        guidance:
+          "Require conclusions and clinical, policy, or global-health implications to be proportional to the results and limitations.",
+      },
+      {
+        key: "relevance",
+        label: "Broad relevance",
+        guidance:
+          "Assess whether the work matters to clinicians, investigators, or policy makers across health disciplines and countries.",
+      },
+      {
+        key: "transparency",
+        label: "Transparent and reproducible reporting",
+        guidance:
+          "Assess study-type reporting, protocol and analysis-plan availability, data sharing, conflicts, funding, and reproducibility.",
+      },
+    ],
+    requirements: [
+      "For an Original Investigation, check the current limits and required elements, including a structured abstract, Key Points, a Data Sharing Statement, an identified Study Type, and no more than five tables and/or figures.",
+      "JAMA Network Open does not consider non-research articles, case reports, animal preclinical studies, reviews, or unsolicited opinion for this article type.",
+      "Randomized and nonrandomized clinical trials require a study protocol and statistical analysis plan.",
+      ...MEDICAL_REPORTING_REQUIREMENTS,
+    ],
+    officialSources: [
+      {
+        label: "JAMA Network Open Instructions for Authors",
+        url: "https://jamanetwork.com/journals/jamanetworkopen/pages/instructions-for-authors",
+      },
+      {
+        label: "JAMA Network Open For Authors",
+        url: "https://jamanetwork.com/journals/jamanetworkopen/pages/for-authors",
+      },
+    ],
+    verified: true,
+    verifiedAt: "2026-08-08",
+  },
+  {
+    id: "cochrane-2026-review",
+    name: "Cochrane Database of Systematic Reviews",
+    acronym: "CDSR",
+    aliases: [
+      "Cochrane",
+      "Cochrane Library",
+      "Cochrane Review",
+      "Cochrane Systematic Review",
+    ],
+    defaultPaperType: "systematic-review",
+    kind: "journal",
+    edition: 2026,
+    track: "Cochrane Review",
+    criteria: [
+      {
+        key: "question-priority",
+        label: "Important and non-duplicative review question",
+        guidance:
+          "Assess whether the review addresses a clearly defined, decision-relevant uncertainty and makes a unique contribution rather than duplicating an existing or active Cochrane review.",
+      },
+      {
+        key: "protocol-fidelity",
+        label: "Prospective protocol and methodological fidelity",
+        guidance:
+          "Assess whether objectives, PICO, eligibility criteria, outcomes, and synthesis methods follow the published protocol, with every material deviation clearly identified and justified.",
+      },
+      {
+        key: "search-selection",
+        label: "Comprehensive and current evidence identification",
+        guidance:
+          "Assess whether searches cover appropriate databases and other sources, are reproducible and sufficiently current, and use transparent duplicate screening and defensible inclusion decisions.",
+      },
+      {
+        key: "risk-of-bias",
+        label: "Risk-of-bias assessment",
+        guidance:
+          "Assess whether the appropriate Cochrane risk-of-bias tool was applied independently and consistently, with judgments supported by study-level evidence.",
+      },
+      {
+        key: "synthesis",
+        label: "Appropriate synthesis and meta-analysis",
+        guidance:
+          "Assess whether effect measures, models, unit-of-analysis decisions, heterogeneity assessment, missing-data handling, subgroup and sensitivity analyses, and any meta-analysis match the protocol and the structure of the evidence. Do not require meta-analysis when pooling would be inappropriate.",
+      },
+      {
+        key: "certainty",
+        label: "Certainty of evidence and Summary of Findings",
+        guidance:
+          "Assess whether GRADE judgments address risk of bias, inconsistency, indirectness, imprecision, and publication bias, and whether Summary of Findings tables present benefits and harms for prioritized outcomes accurately.",
+      },
+      {
+        key: "reporting-conclusions",
+        label: "Transparent reporting and evidence-bounded conclusions",
+        guidance:
+          "Assess PRISMA flow consistency, abstract and plain-language summary accuracy, and whether conclusions remain consistent across the review and are based only on the available evidence and its certainty.",
+      },
+    ],
+    requirements: [
+      "A standard new Cochrane Review begins with an accepted research proposal and a peer-reviewed published protocol; completed reviews are considered directly only in exceptional circumstances under Cochrane's stated conditions.",
+      "Follow the current Cochrane Handbook, mandatory MECIR conduct standards, the Cochrane Review template in RevMan, and PRISMA 2020 reporting guidance.",
+      "At submission, the search date should be less than 12 months old and dates and study counts must remain consistent across the abstract, methods, PRISMA flow diagram, results, and study tables.",
+      "From July 2026, reviews and updates should remain within the stated 12,000-word maximum, excluding references and supplementary material.",
+      "For each main outcome, report the number of studies and participants, direction and magnitude of effect, confidence interval when meta-analysis is used, harms, and the GRADE certainty assessment.",
+      "If meta-analysis is not appropriate, explain why and use a prespecified, transparent synthesis method rather than forcing statistical pooling.",
+    ],
+    officialSources: [
+      {
+        label: "Cochrane Library",
+        url: "https://www.cochranelibrary.com/",
+      },
+      {
+        label: "Cochrane Handbook for Systematic Reviews of Interventions",
+        url: "https://training.cochrane.org/handbook/current",
+      },
+      {
+        label: "Cochrane Methods Peer Review Checklist for Reviews",
+        url: "https://www.cochrane.org/authors/submit-your-manuscript/methods-peer-review-checklist-review",
+      },
+      {
+        label: "How to Write a Cochrane Review or Update",
+        url: "https://www.cochrane.org/authors/how-write-cochrane-review-or-update",
+      },
+      {
+        label: "Publishing with Cochrane",
+        url: "https://www.cochrane.org/authors/publish-with-us",
+      },
+    ],
+    verified: true,
+    verifiedAt: "2026-08-08",
+  },
 ];
 
 export function curatedVenueSearch(query: string): VenueSearchResult[] {
-  const normalized = query.trim().toLowerCase();
+  const normalized = normalizeVenueSearchTerm(query);
   if (!normalized) return [];
   return CURATED_VENUE_PROFILES.filter((profile) =>
-    [profile.name, profile.acronym, profile.track]
+    [profile.name, profile.acronym, profile.track, ...(profile.aliases ?? [])]
       .filter(Boolean)
-      .some((value) => value!.toLowerCase().includes(normalized)),
+      .some((value) => normalizeVenueSearchTerm(value!).includes(normalized)),
   ).map((profile) => ({
     id: `profile:${profile.id}`,
     name: profile.name,
@@ -402,8 +880,9 @@ export function curatedVenueSearch(query: string): VenueSearchResult[] {
     profileId: profile.id,
     edition: profile.edition,
     defaultTrack: profile.track,
+    defaultPaperType: profile.defaultPaperType ?? "research",
     catalogUrl: profile.officialSources[0]?.url,
-    verifiedProfile: true,
+    verifiedProfile: profile.verified,
   }));
 }
 
@@ -415,9 +894,11 @@ export function resolveVenueProfile(input: {
   paperType?: string;
 }): ResolvedVenueProfile {
   const selectedYear = normalizeYear(input.year);
-  const paperType = normalizePaperType(input.paperType);
   const curated = CURATED_VENUE_PROFILES.find(
     (profile) => profile.id === input.profileId,
+  );
+  const paperType = normalizePaperType(
+    input.paperType ?? curated?.defaultPaperType,
   );
 
   if (!curated) {
@@ -459,8 +940,12 @@ export function resolveVenueProfile(input: {
     paperType,
     profileVerified,
     verificationNote: profileVerified
-      ? `Official ${curated.edition} ${curated.track} criteria were applied.`
-      : `The closest available official profile is ${curated.edition} ${curated.track}; the selected edition or track was not independently verified.`,
+      ? curated.kind === "journal"
+        ? `Official ${curated.name} guidance for ${curated.track}, verified ${curated.verifiedAt}, was applied.`
+        : `Official ${curated.edition} ${curated.track} criteria were applied.`
+      : curated.kind === "journal"
+        ? `The closest available official profile is the ${curated.track} guidance verified ${curated.verifiedAt}; the selected guideline version or article type was not independently verified.`
+        : `The closest available official profile is ${curated.edition} ${curated.track}; the selected edition or track was not independently verified.`,
     targetLabel: buildTargetLabel(
       curated.acronym ?? curated.name,
       selectedYear,
@@ -527,6 +1012,15 @@ function normalizeYear(value?: string): number {
   return parsed >= 2000 && parsed <= 2100 ? parsed : 2026;
 }
 
+function normalizeVenueSearchTerm(value: string): string {
+  return value
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
 function normalizePaperType(value?: string): PaperType {
   const allowed: PaperType[] = [
     "research",
@@ -537,6 +1031,8 @@ function normalizePaperType(value?: string): PaperType {
     "use-inspired",
     "concept",
     "negative-results",
+    "systematic-review",
+    "meta-analysis",
   ];
   return allowed.includes(value as PaperType)
     ? (value as PaperType)
@@ -549,5 +1045,11 @@ function buildTargetLabel(
   track: string,
   paperType: PaperType,
 ): string {
-  return `${name} ${year} — ${track} · ${paperType.replaceAll("-", " ")} paper`;
+  const paperTypeLabel =
+    paperType === "systematic-review"
+      ? "systematic review"
+      : paperType === "meta-analysis"
+        ? "meta-analysis"
+        : `${paperType.replaceAll("-", " ")} paper`;
+  return `${name} ${year} — ${track} · ${paperTypeLabel}`;
 }

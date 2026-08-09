@@ -294,13 +294,30 @@ export type Messages = {
   review_venue_searching: string;
   review_venue_verified: string;
   review_venue_catalog_only: string;
+  review_venue_suggest_link: string;
+  review_venue_suggest_title: string;
+  review_venue_suggest_description: string;
+  review_venue_suggest_name: string;
+  review_venue_suggest_name_placeholder: string;
+  review_venue_suggest_url: string;
+  review_venue_suggest_url_placeholder: string;
+  review_venue_suggest_cancel: string;
+  review_venue_suggest_submit: string;
+  review_venue_suggest_sending: string;
+  review_venue_suggest_success: string;
+  review_venue_suggest_error_validation: string;
+  review_venue_suggest_error_rate_limit: string;
+  review_venue_suggest_error_send: string;
   review_venue_year: string;
+  review_venue_policy_version: string;
   review_depth: string;
   review_depth_standard: string;
   review_depth_deep: string;
   review_depth_help: string;
   review_track: string;
   review_track_placeholder: string;
+  review_article_type: string;
+  review_article_type_placeholder: string;
   review_paper_type: string;
   review_type_research: string;
   review_type_position: string;
@@ -310,6 +327,8 @@ export type Messages = {
   review_type_use_inspired: string;
   review_type_concept: string;
   review_type_negative_results: string;
+  review_type_systematic_review: string;
+  review_type_meta_analysis: string;
   review_date: string;
   review_pdf_hint: string;
   review_file_size_hint: string;
@@ -952,13 +971,34 @@ const en: Messages = {
     "Finalizing the review",
   ],
   review_venue: "Target venue (optional)",
-  review_venue_placeholder: "Search NeurIPS, ICML, ICLR, AAAI…",
+  review_venue_placeholder: "Search NeurIPS, JAMA, NEJM, Cochrane…",
   review_venue_help:
-    "Verified profiles apply official, edition-specific criteria. Other DBLP venues use a general scholarly standard.",
+    "Verified profiles apply official conference- or journal-specific criteria. Other DBLP venues use a general scholarly standard.",
   review_venue_searching: "Searching DBLP…",
   review_venue_verified: "Verified rubric",
   review_venue_catalog_only: "Catalog match · general rubric",
+  review_venue_suggest_link:
+    "Don’t see your target publication here? Suggest one.",
+  review_venue_suggest_title: "Suggest a publication",
+  review_venue_suggest_description:
+    "Share the official publication name and website. We’ll review its guidelines for a future verified integration.",
+  review_venue_suggest_name: "Publication name",
+  review_venue_suggest_name_placeholder: "e.g. Annals of Internal Medicine",
+  review_venue_suggest_url: "Official URL (optional)",
+  review_venue_suggest_url_placeholder: "https://publication.org",
+  review_venue_suggest_cancel: "Cancel",
+  review_venue_suggest_submit: "Send suggestion",
+  review_venue_suggest_sending: "Sending…",
+  review_venue_suggest_success:
+    "Thanks — your suggestion was emailed to our team. We’ll evaluate it for a future integration.",
+  review_venue_suggest_error_validation:
+    "Enter a valid publication name and an HTTP(S) URL.",
+  review_venue_suggest_error_rate_limit:
+    "Too many suggestions were sent recently. Please try again later.",
+  review_venue_suggest_error_send:
+    "We couldn’t send your suggestion. Please try again shortly.",
   review_venue_year: "Edition",
+  review_venue_policy_version: "Guideline version",
   review_depth: "Review depth",
   review_depth_standard: "Standard",
   review_depth_deep: "Deep",
@@ -966,6 +1006,8 @@ const en: Messages = {
     "Deep uses stronger reasoning models for evaluations, correctness, synthesis, and an independent critic. It takes longer and costs more.",
   review_track: "Track",
   review_track_placeholder: "Main track",
+  review_article_type: "Article type",
+  review_article_type_placeholder: "Original research",
   review_paper_type: "Paper type",
   review_type_research: "Research paper",
   review_type_position: "Position paper",
@@ -975,6 +1017,8 @@ const en: Messages = {
   review_type_use_inspired: "Use-inspired",
   review_type_concept: "Concept & feasibility",
   review_type_negative_results: "Negative results",
+  review_type_systematic_review: "Systematic review",
+  review_type_meta_analysis: "Meta-analysis",
   review_date: "Review date (optional)",
   review_pdf_hint: "Drop exactly one final PDF, or click to choose",
   review_file_size_hint: "PDF only · read in full · up to ~300k characters",
@@ -1333,7 +1377,7 @@ const en: Messages = {
         "The review examines **Story, Presentation, Evaluations, Correctness and Significance**, checks published literature and challenges its own synthesis before returning retained findings. It does not execute manuscript code.",
         "**Models and why.** Standard uses the selected GPT-5.6 Luna or DeepSeek V4 Flash 0731 with a separate model family for quality critique. Deep adds GPT-5.6 Luna Pro reasoning and an independent Claude Opus 4.8 audit for greater scrutiny; it takes longer and costs more.",
         "On Jiddu's 30-case synthetic SPECS benchmark, GPT-5.4 mini, GPT-5.5, GPT-5.6 Luna and GPT-5.6 Luna Pro detected every injected defect. Luna Pro produced 8% fewer findings than standard Luna, but the benchmark reached a ceiling and does not prove superiority on complete papers.",
-        "Venue discovery uses [DBLP](https://dblp.org) and verified profiles for selected conferences. Verified profiles apply cited official criteria; unmatched venues use a clearly labeled general scholarly rubric rather than guessed requirements.",
+        "Venue discovery uses [DBLP](https://dblp.org) and verified profiles for selected conferences and journals. Verified profiles apply cited official criteria; unmatched venues use a clearly labeled general scholarly rubric rather than guessed requirements.",
         "Every substantive weakness must carry a manuscript page or section and a `MAJOR`, `MODERATE` or `MINOR` severity. The review is still automated: it can miss problems, invent comparisons or misapply a criterion, and it is not an official peer review or acceptance prediction.",
       ],
     },
@@ -1935,13 +1979,34 @@ const pt: Messages = {
     "Finalizando a review",
   ],
   review_venue: "Venue-alvo (opcional)",
-  review_venue_placeholder: "Busque NeurIPS, ICML, ICLR, AAAI…",
+  review_venue_placeholder: "Busque NeurIPS, JAMA, NEJM, Cochrane…",
   review_venue_help:
-    "Perfis verificados aplicam critérios oficiais da edição. Outros venues do DBLP usam um padrão acadêmico geral.",
+    "Perfis verificados aplicam critérios oficiais específicos da conferência ou revista. Outros venues do DBLP usam um padrão acadêmico geral.",
   review_venue_searching: "Buscando no DBLP…",
   review_venue_verified: "Rubrica verificada",
   review_venue_catalog_only: "Resultado do catálogo · rubrica geral",
+  review_venue_suggest_link:
+    "Não encontrou a publicação desejada? Sugira uma.",
+  review_venue_suggest_title: "Sugira uma publicação",
+  review_venue_suggest_description:
+    "Envie o nome oficial e o site da publicação. Vamos avaliar as diretrizes para uma futura integração verificada.",
+  review_venue_suggest_name: "Nome da publicação",
+  review_venue_suggest_name_placeholder: "Ex.: Annals of Internal Medicine",
+  review_venue_suggest_url: "URL oficial (opcional)",
+  review_venue_suggest_url_placeholder: "https://publicacao.org",
+  review_venue_suggest_cancel: "Cancelar",
+  review_venue_suggest_submit: "Enviar sugestão",
+  review_venue_suggest_sending: "Enviando…",
+  review_venue_suggest_success:
+    "Obrigado — sua sugestão foi enviada por e-mail à nossa equipe. Vamos avaliá-la para uma futura integração.",
+  review_venue_suggest_error_validation:
+    "Informe um nome de publicação válido e uma URL HTTP(S).",
+  review_venue_suggest_error_rate_limit:
+    "Muitas sugestões foram enviadas recentemente. Tente novamente mais tarde.",
+  review_venue_suggest_error_send:
+    "Não foi possível enviar sua sugestão. Tente novamente em instantes.",
   review_venue_year: "Edição",
+  review_venue_policy_version: "Versão das diretrizes",
   review_depth: "Profundidade da revisão",
   review_depth_standard: "Padrão",
   review_depth_deep: "Profunda",
@@ -1949,6 +2014,8 @@ const pt: Messages = {
     "A revisão profunda usa modelos de raciocínio mais fortes em avaliações, correção, síntese e numa crítica independente. Leva mais tempo e custa mais.",
   review_track: "Track",
   review_track_placeholder: "Main track",
+  review_article_type: "Tipo de artigo",
+  review_article_type_placeholder: "Pesquisa original",
   review_paper_type: "Tipo de paper",
   review_type_research: "Paper de pesquisa",
   review_type_position: "Position paper",
@@ -1958,6 +2025,8 @@ const pt: Messages = {
   review_type_use_inspired: "Orientado à aplicação",
   review_type_concept: "Conceito e viabilidade",
   review_type_negative_results: "Resultados negativos",
+  review_type_systematic_review: "Revisão sistemática",
+  review_type_meta_analysis: "Meta-análise",
   review_date: "Data da revisão (opcional)",
   review_pdf_hint: "Solte exatamente um PDF final, ou clique para escolher",
   review_file_size_hint:
@@ -2318,7 +2387,7 @@ const pt: Messages = {
         "A revisão examina **Story, Presentation, Evaluations, Correctness e Significance**, consulta literatura publicada e desafia a própria síntese antes de devolver os achados retidos. Ela não executa código do manuscrito.",
         "**Modelos e por quê.** O modo Padrão usa GPT-5.6 Luna ou DeepSeek V4 Flash 0731 com outra família de modelos na crítica de qualidade. O modo Profundo acrescenta raciocínio GPT-5.6 Luna Pro e auditoria independente por Claude Opus 4.8; leva mais tempo e custa mais.",
         "No benchmark sintético SPECS de 30 casos, GPT-5.4 mini, GPT-5.5, GPT-5.6 Luna e GPT-5.6 Luna Pro detectaram todas as falhas inseridas. Luna Pro produziu 8% menos achados que Luna padrão, mas o benchmark atingiu o teto e não prova superioridade em papers completos.",
-        "A descoberta de venues usa [DBLP](https://dblp.org) e perfis verificados de conferências selecionadas. Perfis verificados aplicam critérios oficiais citados; venues sem perfil usam uma rubrica acadêmica geral claramente identificada.",
+        "A descoberta de venues usa [DBLP](https://dblp.org) e perfis verificados de conferências e revistas selecionadas. Perfis verificados aplicam critérios oficiais citados; venues sem perfil usam uma rubrica acadêmica geral claramente identificada.",
         "Toda fraqueza substantiva precisa trazer página ou seção do manuscrito e severidade `MAJOR`, `MODERATE` ou `MINOR`. A revisão continua automatizada: pode perder problemas, inventar comparações ou aplicar mal um critério, e não é revisão oficial por pares nem previsão de aceitação.",
       ],
     },
@@ -2922,13 +2991,34 @@ const es: Messages = {
     "Finalizando la revisión",
   ],
   review_venue: "Venue objetivo (opcional)",
-  review_venue_placeholder: "Busca NeurIPS, ICML, ICLR, AAAI…",
+  review_venue_placeholder: "Busca NeurIPS, JAMA, NEJM, Cochrane…",
   review_venue_help:
-    "Los perfiles verificados aplican criterios oficiales de la edición. Otros venues de DBLP usan un estándar académico general.",
+    "Los perfiles verificados aplican criterios oficiales específicos de la conferencia o revista. Otros venues de DBLP usan un estándar académico general.",
   review_venue_searching: "Buscando en DBLP…",
   review_venue_verified: "Rúbrica verificada",
   review_venue_catalog_only: "Resultado del catálogo · rúbrica general",
+  review_venue_suggest_link:
+    "¿No encuentras la publicación deseada? Sugiere una.",
+  review_venue_suggest_title: "Sugiere una publicación",
+  review_venue_suggest_description:
+    "Comparte el nombre oficial y el sitio web de la publicación. Evaluaremos sus directrices para una futura integración verificada.",
+  review_venue_suggest_name: "Nombre de la publicación",
+  review_venue_suggest_name_placeholder: "Ej.: Annals of Internal Medicine",
+  review_venue_suggest_url: "URL oficial (opcional)",
+  review_venue_suggest_url_placeholder: "https://publicacion.org",
+  review_venue_suggest_cancel: "Cancelar",
+  review_venue_suggest_submit: "Enviar sugerencia",
+  review_venue_suggest_sending: "Enviando…",
+  review_venue_suggest_success:
+    "Gracias — enviamos tu sugerencia por correo a nuestro equipo. La evaluaremos para una futura integración.",
+  review_venue_suggest_error_validation:
+    "Introduce un nombre de publicación válido y una URL HTTP(S).",
+  review_venue_suggest_error_rate_limit:
+    "Se enviaron demasiadas sugerencias recientemente. Inténtalo más tarde.",
+  review_venue_suggest_error_send:
+    "No pudimos enviar tu sugerencia. Inténtalo de nuevo en unos instantes.",
   review_venue_year: "Edición",
+  review_venue_policy_version: "Versión de las directrices",
   review_depth: "Profundidad de revisión",
   review_depth_standard: "Estándar",
   review_depth_deep: "Profunda",
@@ -2936,6 +3026,8 @@ const es: Messages = {
     "La revisión profunda usa modelos de razonamiento más fuertes para evaluaciones, corrección, síntesis y una crítica independiente. Tarda más y cuesta más.",
   review_track: "Track",
   review_track_placeholder: "Main track",
+  review_article_type: "Tipo de artículo",
+  review_article_type_placeholder: "Investigación original",
   review_paper_type: "Tipo de paper",
   review_type_research: "Paper de investigación",
   review_type_position: "Position paper",
@@ -2945,6 +3037,8 @@ const es: Messages = {
   review_type_use_inspired: "Orientado a la aplicación",
   review_type_concept: "Concepto y viabilidad",
   review_type_negative_results: "Resultados negativos",
+  review_type_systematic_review: "Revisión sistemática",
+  review_type_meta_analysis: "Metaanálisis",
   review_date: "Fecha de revisión (opcional)",
   review_pdf_hint: "Suelta exactamente un PDF final, o haz clic para elegir",
   review_file_size_hint:
@@ -3305,7 +3399,7 @@ const es: Messages = {
         "La revisión examina **Story, Presentation, Evaluations, Correctness y Significance**, consulta literatura publicada y desafía su propia síntesis antes de devolver los hallazgos retenidos. No ejecuta código del manuscrito.",
         "**Modelos y por qué.** El modo Estándar utiliza GPT-5.6 Luna o DeepSeek V4 Flash 0731 con otra familia de modelos en la crítica de calidad. El modo Profundo añade razonamiento GPT-5.6 Luna Pro y auditoría independiente por Claude Opus 4.8; tarda más y cuesta más.",
         "En el benchmark sintético SPECS de 30 casos, GPT-5.4 mini, GPT-5.5, GPT-5.6 Luna y GPT-5.6 Luna Pro detectaron todos los defectos insertados. Luna Pro produjo un 8 % menos de hallazgos que Luna estándar, pero el benchmark alcanzó un techo y no demuestra superioridad en papers completos.",
-        "El descubrimiento de venues utiliza [DBLP](https://dblp.org) y perfiles verificados de conferencias seleccionadas. Los perfiles verificados aplican criterios oficiales citados; los venues sin perfil utilizan una rúbrica académica general claramente identificada.",
+        "El descubrimiento de venues utiliza [DBLP](https://dblp.org) y perfiles verificados de conferencias y revistas seleccionadas. Los perfiles verificados aplican criterios oficiales citados; los venues sin perfil utilizan una rúbrica académica general claramente identificada.",
         "Cada debilidad sustantiva debe incluir página o sección del manuscrito y severidad `MAJOR`, `MODERATE` o `MINOR`. La revisión sigue siendo automatizada: puede omitir problemas, inventar comparaciones o aplicar mal un criterio, y no es revisión oficial por pares ni predicción de aceptación.",
       ],
     },

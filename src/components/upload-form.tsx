@@ -7,12 +7,17 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { AnalysisAuthModal } from "@/components/analysis-auth-modal";
+import { VenueSuggestionModal } from "@/components/venue-suggestion-modal";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n/provider";
 import type { Messages } from "@/lib/i18n/messages";
 import { MODEL_CATALOG } from "@/lib/llm";
 import { EXPLAIN_LEVELS, type ExplainLevel } from "@/lib/explain-schema";
-import type { PaperType, VenueSearchResult } from "@/lib/venues";
+import type {
+  PaperType,
+  VenueKind,
+  VenueSearchResult,
+} from "@/lib/venues";
 import type { ReviewDepth } from "@/lib/paper-review-audit-schema";
 
 type Tab = "url" | "text" | "file";
@@ -86,6 +91,7 @@ export function UploadForm({
   const [venueSelectionSource, setVenueSelectionSource] = useState<
     VenueSearchResult["source"] | null
   >(null);
+  const [venueKind, setVenueKind] = useState<VenueKind | null>(null);
   const [venueSuggestions, setVenueSuggestions] = useState<VenueSearchResult[]>(
     [],
   );
@@ -98,6 +104,8 @@ export function UploadForm({
   // True while a file is being dragged over the form, for the drop highlight.
   const [dragging, setDragging] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [venueSuggestionModalOpen, setVenueSuggestionModalOpen] =
+    useState(false);
 
   const visibleError = error ?? localError;
 
@@ -456,6 +464,7 @@ export function UploadForm({
                 setVenue(event.target.value);
                 setVenueProfileId("");
                 setVenueSelectionSource(null);
+                setVenueKind(null);
                 setVenueSuggestions([]);
               }}
               onBlur={() =>
@@ -489,11 +498,15 @@ export function UploadForm({
                       );
                       setVenueProfileId(suggestion.profileId ?? "");
                       setVenueSelectionSource(suggestion.source);
+                      setVenueKind(suggestion.kind);
                       if (suggestion.edition) {
                         setVenueYear(String(suggestion.edition));
                       }
                       if (suggestion.defaultTrack) {
                         setVenueTrack(suggestion.defaultTrack);
+                      }
+                      if (suggestion.defaultPaperType) {
+                        setPaperType(suggestion.defaultPaperType);
                       }
                       setVenueSuggestions([]);
                     }}
@@ -549,10 +562,20 @@ export function UploadForm({
             </span>
           </label>
 
+          <button
+            type="button"
+            onClick={() => setVenueSuggestionModalOpen(true)}
+            className="-mt-2 self-start text-xs text-accent-hi underline decoration-dotted underline-offset-2 transition-colors hover:text-accent"
+          >
+            {t.review_venue_suggest_link}
+          </button>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <label className="flex flex-col gap-2">
               <span className="text-xs uppercase tracking-wide text-muted">
-                {t.review_venue_year}
+                {venueKind === "journal"
+                  ? t.review_venue_policy_version
+                  : t.review_venue_year}
               </span>
               <input
                 type="number"
@@ -565,13 +588,19 @@ export function UploadForm({
             </label>
             <label className="flex flex-col gap-2">
               <span className="text-xs uppercase tracking-wide text-muted">
-                {t.review_track}
+                {venueKind === "journal"
+                  ? t.review_article_type
+                  : t.review_track}
               </span>
               <input
                 type="text"
                 value={venueTrack}
                 onChange={(event) => setVenueTrack(event.target.value)}
-                placeholder={t.review_track_placeholder}
+                placeholder={
+                  venueKind === "journal"
+                    ? t.review_article_type_placeholder
+                    : t.review_track_placeholder
+                }
                 className="w-full bg-background border border-rule rounded-md px-3 py-2 outline-none focus:border-accent"
               />
             </label>
@@ -597,6 +626,12 @@ export function UploadForm({
                 <option value="concept">{t.review_type_concept}</option>
                 <option value="negative-results">
                   {t.review_type_negative_results}
+                </option>
+                <option value="systematic-review">
+                  {t.review_type_systematic_review}
+                </option>
+                <option value="meta-analysis">
+                  {t.review_type_meta_analysis}
                 </option>
               </select>
             </label>
@@ -700,6 +735,12 @@ export function UploadForm({
         returnTo={pathname}
         onClose={() => setAuthModalOpen(false)}
       />
+      {venueSuggestionModalOpen && (
+        <VenueSuggestionModal
+          initialName={venue.trim()}
+          onClose={() => setVenueSuggestionModalOpen(false)}
+        />
+      )}
     </>
   );
 }

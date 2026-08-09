@@ -225,7 +225,7 @@ function parseReviewFields(fields: PublicReviewFields): {
   venue?: string;
   venueYear?: string;
   venueTrack?: string;
-  paperType: PaperType;
+  paperType?: PaperType;
   reviewDate: string;
   depth: ReviewDepth;
 } {
@@ -237,7 +237,7 @@ function parseReviewFields(fields: PublicReviewFields): {
       "bad_request",
     );
   }
-  const paperType = optionalString(fields.paper_type) ?? "research";
+  const paperType = optionalString(fields.paper_type);
   const allowedPaperTypes: PaperType[] = [
     "research",
     "position",
@@ -247,8 +247,10 @@ function parseReviewFields(fields: PublicReviewFields): {
     "use-inspired",
     "concept",
     "negative-results",
+    "systematic-review",
+    "meta-analysis",
   ];
-  if (!allowedPaperTypes.includes(paperType as PaperType)) {
+  if (paperType && !allowedPaperTypes.includes(paperType as PaperType)) {
     throw new PaperReviewInputError(
       "`paper_type` is not supported.",
       400,
@@ -278,7 +280,7 @@ function parseReviewFields(fields: PublicReviewFields): {
     venue: optionalString(fields.venue)?.slice(0, 300),
     venueYear: optionalString(fields.venue_year)?.slice(0, 4),
     venueTrack: optionalString(fields.venue_track)?.slice(0, 200),
-    paperType: paperType as PaperType,
+    paperType: paperType as PaperType | undefined,
     reviewDate: suppliedDate ?? new Date().toISOString().slice(0, 10),
     depth,
   };

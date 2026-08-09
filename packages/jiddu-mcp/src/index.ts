@@ -133,6 +133,8 @@ server.tool(
         "use-inspired",
         "concept",
         "negative-results",
+        "systematic-review",
+        "meta-analysis",
       ])
       .optional(),
     review_date: z

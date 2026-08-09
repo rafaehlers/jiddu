@@ -22,6 +22,12 @@ type AccountSupportEmail = {
   subject: string;
 };
 
+type VenueSuggestionEmail = {
+  lang: Lang;
+  name: string;
+  url?: string;
+};
+
 const AUTORESPONDER_COPY: Record<
   Lang,
   {
@@ -171,6 +177,43 @@ export async function sendAccountSupportEmail(
        <p>${formatMessage(input.message)}</p>`,
     ),
     tags: [{ name: "source", value: "account-support" }],
+  });
+  if (error) throw new Error(`Resend send failed: ${error.message}`);
+}
+
+export async function sendVenueSuggestionEmail(
+  input: VenueSuggestionEmail,
+): Promise<void> {
+  const name = singleLine(input.name);
+  const url = input.url?.trim();
+  const urlText = url || "Not provided";
+  const urlHtml = url
+    ? `<a href="${escapeHtml(url)}">${escapeHtml(url)}</a>`
+    : "Not provided";
+  const { error } = await resendClient().emails.send({
+    from: resendFromEmail(),
+    to: supportInboxEmail(),
+    subject: `[Venue suggestion] ${name}`,
+    text: [
+      "New target publication suggestion",
+      "",
+      `Publication: ${name}`,
+      `Official URL: ${urlText}`,
+      `Language: ${input.lang}`,
+      "Source: /review",
+      "",
+      "Requested follow-up: evaluate the publication's official guidelines and create a verified venue profile.",
+    ].join("\n"),
+    html: emailLayout(
+      "New target publication suggestion",
+      `<p><strong>Publication:</strong> ${escapeHtml(name)}</p>
+       <p><strong>Official URL:</strong> ${urlHtml}</p>
+       <p><strong>Language:</strong> ${escapeHtml(input.lang)}</p>
+       <p><strong>Source:</strong> /review</p>
+       <hr />
+       <p>Requested follow-up: evaluate the publication&rsquo;s official guidelines and create a verified venue profile.</p>`,
+    ),
+    tags: [{ name: "source", value: "venue-suggestion" }],
   });
   if (error) throw new Error(`Resend send failed: ${error.message}`);
 }
