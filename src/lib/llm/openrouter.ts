@@ -89,10 +89,9 @@ import type {
 export type ModelChoice = {
   id: string;
   label: string;
-  // Country-of-origin emoji shown next to the model name in the UI. Used
-  // as a quick signal that the user is choosing between e.g. a Western
-  // and a Chinese model, which matters for political-content analysis
-  // where the model's training bias can flow through.
+  // Country-of-origin emoji shown next to the model name in the UI. It makes
+  // the upstream model family explicit because training choices can affect
+  // borderline interpretations.
   flag?: string;
   family:
     | ProviderId
@@ -109,6 +108,8 @@ export type ModelChoice = {
   toolMode?: "forced" | "auto";
   // Pin OpenRouter's upstream routing when a model needs a specific provider.
   providerOrder?: string[];
+  // Only route to endpoints that support every parameter in the request.
+  requireParameters?: boolean;
   reasoningEffort?: "low" | "medium" | "high" | "xhigh";
   supportsVision?: boolean;
 };
@@ -124,13 +125,13 @@ export const MODEL_CATALOG: ModelChoice[] = [
     supportsVision: true,
   },
   {
-    id: "deepseek-v4-flash-0731",
-    label: "DeepSeek V4 Flash 0731",
-    flag: "🇨🇳",
-    family: "deepseek",
-    openrouter: "deepseek/deepseek-v4-flash-0731",
-    reasoningEffort: "low",
-    supportsVision: false,
+    id: "gemma-4-31b-it",
+    label: "Gemma 4 31B",
+    flag: "🇺🇸",
+    family: "google",
+    openrouter: "google/gemma-4-31b-it",
+    requireParameters: true,
+    supportsVision: true,
   },
 ];
 
@@ -234,15 +235,17 @@ export class OpenRouterProvider implements LlmProvider {
   // we widen the request body below.
   private openRouterExtras(modelOverride?: string): Record<string, unknown> {
     const choice = resolveModel(modelOverride ?? this.defaultModel);
-    return {
+    const provider = {
       ...(choice.providerOrder && choice.providerOrder.length > 0
         ? {
-            provider: {
-              order: choice.providerOrder,
-              allow_fallbacks: false,
-            },
+            order: choice.providerOrder,
+            allow_fallbacks: false,
           }
         : {}),
+      ...(choice.requireParameters ? { require_parameters: true } : {}),
+    };
+    return {
+      ...(Object.keys(provider).length > 0 ? { provider } : {}),
       ...(choice.reasoningEffort
         ? { reasoning: { effort: choice.reasoningEffort } }
         : {}),

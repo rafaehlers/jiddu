@@ -110,7 +110,7 @@ export const PAPER_REVIEW_MODEL_OPTIONS = [
   "gpt-5.6-luna-pro",
   "claude-opus-4.8",
   "gpt-5.6-luna",
-  "deepseek-v4-flash-0731",
+  "gemma-4-31b-it",
 ] as const;
 
 export const LIVE_TRANSCRIPTION_DELAY_OPTIONS = [

@@ -2,10 +2,21 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   DEFAULT_STRING_SETTINGS,
+  PAPER_REVIEW_MODEL_OPTIONS,
   PERPLEXITY_SEARCH_MODEL_OPTIONS,
   factCheckModelForAttempt,
   isPerplexitySearchModelSetting,
 } from "./settings";
+
+test("offers Gemma instead of retired DeepSeek for paper review routing", () => {
+  assert.equal(PAPER_REVIEW_MODEL_OPTIONS.includes("gemma-4-31b-it"), true);
+  assert.equal(
+    PAPER_REVIEW_MODEL_OPTIONS.some(
+      (model: string) => model === "deepseek-v4-flash-0731",
+    ),
+    false,
+  );
+});
 
 test("uses the intended fast and deep Perplexity routing defaults", () => {
   assert.equal(

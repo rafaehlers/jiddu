@@ -67,8 +67,7 @@ export async function ingestAnalysisFile(
         new Set([resolveModel(opts.modelId).id, ...DEFAULT_MODEL_CHAIN]),
       )
     : [...DEFAULT_MODEL_CHAIN];
-  // DeepSeek V4 Flash is text-only. Screenshot transcription stays on the
-  // vision-capable model; the selected model still handles the text analysis.
+  // Keep image transcription on models that explicitly support vision.
   const modelChain = requestedModelChain.filter(
     (model) => resolveModel(model).supportsVision,
   );

@@ -440,15 +440,17 @@ function modelChain(selected?: string, strictModel = false): string[] {
 function providerExtras(
   choice: ReturnType<typeof resolvePaperReviewModel>,
 ): Record<string, unknown> {
-  return {
+  const provider = {
     ...(choice.providerOrder
       ? {
-        provider: {
           order: choice.providerOrder,
           allow_fallbacks: false,
-        },
-      }
+        }
       : {}),
+    ...(choice.requireParameters ? { require_parameters: true } : {}),
+  };
+  return {
+    ...(Object.keys(provider).length > 0 ? { provider } : {}),
     ...(choice.reasoningEffort
       ? { reasoning: { effort: choice.reasoningEffort } }
       : {}),

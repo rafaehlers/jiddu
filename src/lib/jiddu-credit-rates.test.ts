@@ -9,8 +9,9 @@ import {
 } from "./jiddu-credit-rates";
 
 test("prices economical, reasoning and critic models distinctly", () => {
+  assert.equal(modelCreditRate("gemma-4-31b-it"), 1);
+  // Historical DeepSeek and MiniMax usage still needs deterministic rates.
   assert.equal(modelCreditRate("deepseek-v4-flash-0731"), 1);
-  // Historical MiniMax usage still needs a deterministic fallback rate.
   assert.equal(modelCreditRate("minimax-m3"), 1);
   assert.equal(modelCreditRate("gpt-5.6-luna"), 1);
   assert.equal(modelCreditRate("gpt-5.6-luna-pro"), 3);
@@ -26,7 +27,7 @@ test("keeps the Live entry check separate from model fallback pricing", () => {
 test("reserves the worst possible fallback cost but settles actual models", () => {
   assert.equal(
     maxCreditsForCalls(
-      ["gpt-5.6-luna", "deepseek-v4-flash-0731"],
+      ["gpt-5.6-luna", "gemma-4-31b-it"],
       3,
     ),
     3,
@@ -34,8 +35,8 @@ test("reserves the worst possible fallback cost but settles actual models", () =
   assert.equal(
     creditsForModels([
       "gpt-5.6-luna",
-      "deepseek-v4-flash-0731",
-      "deepseek-v4-flash-0731",
+      "gemma-4-31b-it",
+      "gemma-4-31b-it",
     ]),
     3,
   );
@@ -49,12 +50,15 @@ test("standard paper review includes ten required calls and optional repair", ()
   assert.equal(gptModels.length, 11);
   assert.equal(creditsForModels(gptModels), 11);
 
-  const deepseekModels = paperReviewMaximumModels({
+  const gemmaModels = paperReviewMaximumModels({
     depth: "standard",
-    selectedModel: "deepseek-v4-flash-0731",
+    selectedModel: "gemma-4-31b-it",
+    // Admin critic settings apply only to Deep review. Standard execution
+    // always uses the economical model from the other public family.
+    criticModel: "claude-opus-4.8",
   });
-  assert.equal(deepseekModels.length, 11);
-  assert.equal(creditsForModels(deepseekModels), 11);
+  assert.equal(gemmaModels.length, 11);
+  assert.equal(creditsForModels(gemmaModels), 11);
 });
 
 test("deep paper review reserves selected, reasoning, critic and repair calls", () => {
@@ -65,10 +69,10 @@ test("deep paper review reserves selected, reasoning, critic and repair calls", 
   assert.equal(gptModels.length, 11);
   assert.equal(creditsForModels(gptModels), 42);
 
-  const deepseekModels = paperReviewMaximumModels({
+  const gemmaModels = paperReviewMaximumModels({
     depth: "deep",
-    selectedModel: "deepseek-v4-flash-0731",
+    selectedModel: "gemma-4-31b-it",
   });
-  assert.equal(deepseekModels.length, 11);
-  assert.equal(creditsForModels(deepseekModels), 42);
+  assert.equal(gemmaModels.length, 11);
+  assert.equal(creditsForModels(gemmaModels), 42);
 });

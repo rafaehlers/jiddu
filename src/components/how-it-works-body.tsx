@@ -4,9 +4,32 @@ import { Fragment } from "react";
 import { PageTitle } from "@/components/page-title";
 import { useI18n } from "@/lib/i18n/provider";
 import {
+  creditsForModels,
   DEFAULT_LIVE_MINIMUM_CREDITS,
   JIDDU_CREDIT_RATE_VERSION,
+  maxCreditsForCalls,
+  paperReviewMaximumModels,
 } from "@/lib/jiddu-credit-rates";
+import { DEFAULT_MODEL_CHAIN } from "@/lib/llm/fallback";
+
+const DEFAULT_PRIMARY_MODEL = DEFAULT_MODEL_CHAIN[0] ?? "gpt-5.6-luna";
+const PUBLIC_CREDIT_ESTIMATES = {
+  baseCall: maxCreditsForCalls(DEFAULT_MODEL_CHAIN, 1),
+  standardReview: creditsForModels(
+    paperReviewMaximumModels({
+      depth: "standard",
+      selectedModel: DEFAULT_PRIMARY_MODEL,
+    }),
+  ),
+  deepReview: creditsForModels(
+    paperReviewMaximumModels({
+      depth: "deep",
+      selectedModel: DEFAULT_PRIMARY_MODEL,
+      deepModel: "gpt-5.6-luna-pro",
+      criticModel: "claude-opus-4.8",
+    }),
+  ),
+};
 
 // Technical walkthrough of every Jiddu pipeline. Same content pattern as
 // LegalBody: structured array of {title, paragraphs} lives in i18n so the
@@ -127,6 +150,11 @@ function PublicCreditRateTable({
   const replacements = {
     "{liveCredits}": Math.ceil(liveMinimumCredits).toLocaleString(locale),
     "{rateVersion}": JIDDU_CREDIT_RATE_VERSION,
+    "{baseCallCredits}": PUBLIC_CREDIT_ESTIMATES.baseCall.toLocaleString(locale),
+    "{standardReviewCredits}":
+      PUBLIC_CREDIT_ESTIMATES.standardReview.toLocaleString(locale),
+    "{deepReviewCredits}":
+      PUBLIC_CREDIT_ESTIMATES.deepReview.toLocaleString(locale),
   };
   const interpolate = (text: string) =>
     Object.entries(replacements).reduce(

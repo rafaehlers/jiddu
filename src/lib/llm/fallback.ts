@@ -93,5 +93,5 @@ export async function withModelFallbackPromise<T>(
 // fallback second.
 export const DEFAULT_MODEL_CHAIN: readonly string[] = [
   "gpt-5.6-luna",
-  "deepseek-v4-flash-0731",
+  "gemma-4-31b-it",
 ];

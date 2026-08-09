@@ -244,11 +244,13 @@ The current rate card assigns a fixed estimate to each known model:
 
 | Model | Fallback credits per call |
 | --- | ---: |
-| MiniMax M3 | 1 |
+| Gemma 4 31B | 1 |
 | GPT-5.6 Luna | 1 |
 | GPT-5.6 Luna Pro | 3 |
 | Perplexity Sonar Reasoning Pro | 2 |
 | Claude Opus 4.8 | 18 |
+| DeepSeek V4 Flash 0731 (legacy) | 1 |
+| MiniMax M3 (legacy) | 1 |
 | GPT-5.4 mini (legacy) | 2 |
 | GPT-5.5 (legacy) | 10 |
 | GPT Live Transcribe | 20 per session |
@@ -263,7 +265,7 @@ GPT-5.6 Luna
 reported cost: $0.006
 converted charge: ceil($0.006 × 1.5 ÷ $0.01) = 1 credit
 
-MiniMax M3
+Gemma 4 31B
 reported cost: missing
 fallback charge: 1 credit
 

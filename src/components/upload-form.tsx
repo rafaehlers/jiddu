@@ -683,9 +683,8 @@ export function UploadForm({
       )}
 
       {/* Model picker — a radio group. Each model has a country-of-origin
-          flag so the user sees they're picking between a US model and a
-          Chinese model. The same prompt is sent either way (apart from
-          per-model tool_choice / provider-pin quirks). */}
+          flag so its upstream family is explicit. The same prompt is sent
+          either way, apart from model-specific routing parameters. */}
       <div className="flex flex-col gap-2">
         <span className="text-xs uppercase tracking-wide text-muted">
           {t.model}
