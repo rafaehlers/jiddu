@@ -8,6 +8,7 @@ const COPY = {
     darkTheme: "Dark",
     lightTheme: "Light",
     subtitle: "A live map of who, what and how the conversation connects.",
+    audioSource: "Audio source:",
     exit: "Back to site",
     start: "Start capture",
     stop: "Stop and save",
@@ -150,6 +151,7 @@ const COPY = {
     lightTheme: "Claro",
     subtitle:
       "Um mapa ao vivo de quem participa, do que acontece e de como tudo se conecta.",
+    audioSource: "Fonte do áudio:",
     exit: "Voltar ao site",
     start: "Iniciar captura",
     stop: "Parar e salvar",
@@ -292,6 +294,7 @@ const COPY = {
     lightTheme: "Claro",
     subtitle:
       "Un mapa en vivo de quién participa, qué ocurre y cómo se conecta todo.",
+    audioSource: "Fuente de audio:",
     exit: "Volver al sitio",
     start: "Iniciar captura",
     stop: "Detener y guardar",

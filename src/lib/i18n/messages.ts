@@ -553,6 +553,7 @@ export type Messages = {
   live_diarization_minutes: (minutes: number) => string;
   live_diarization_estimate_note: string;
   live_diarization_cancel: string;
+  live_diarization_decline: string;
   live_diarization_confirm: string;
   live_diarization_save: string;
   live_diarization_saving: string;
@@ -565,6 +566,8 @@ export type Messages = {
   live_diarized_transcript: string;
   live_speaker: string;
   live_speaker_name: string;
+  live_speaker_choose: string;
+  live_speaker_add_new: string;
   live_no_findings_yet: string;
   live_no_claims_yet: string;
   live_no_neutrality_yet: string;
@@ -1555,6 +1558,7 @@ const en: Messages = {
   live_diarization_estimate_note:
     "Examples use the current Jiddu rate. The final debit is calculated from the duration actually processed by OpenAI and rounded up to a whole credit.",
   live_diarization_cancel: "Cancel",
+  live_diarization_decline: "Not now",
   live_diarization_confirm: "Continue with identification",
   live_diarization_save: "Save transcript",
   live_diarization_saving: "Saving…",
@@ -1570,6 +1574,8 @@ const en: Messages = {
   live_diarized_transcript: "Speaker-labeled transcript",
   live_speaker: "Speaker",
   live_speaker_name: "Name for speaker",
+  live_speaker_choose: "Choose a person",
+  live_speaker_add_new: "Add new…",
   live_no_findings_yet:
     "No fallacies detected yet. They will appear here as the speaker talks.",
   live_no_claims_yet:
@@ -2567,6 +2573,7 @@ const pt: Messages = {
   live_diarization_estimate_note:
     "Os exemplos usam a tarifa atual do Jiddu. A cobrança final é calculada pela duração realmente processada pela OpenAI e arredondada para um crédito inteiro.",
   live_diarization_cancel: "Cancelar",
+  live_diarization_decline: "Agora não",
   live_diarization_confirm: "Continuar com a identificação",
   live_diarization_save: "Salvar transcrição",
   live_diarization_saving: "Salvando…",
@@ -2582,6 +2589,8 @@ const pt: Messages = {
   live_diarized_transcript: "Transcrição por interlocutor",
   live_speaker: "Pessoa",
   live_speaker_name: "Nome da pessoa",
+  live_speaker_choose: "Escolha uma pessoa",
+  live_speaker_add_new: "Adicionar novo…",
   live_no_findings_yet:
     "Nenhuma falácia detectada ainda. Elas aparecerão aqui conforme a pessoa fala.",
   live_no_claims_yet:
@@ -3582,6 +3591,7 @@ const es: Messages = {
   live_diarization_estimate_note:
     "Los ejemplos usan la tarifa actual de Jiddu. El cargo final se calcula según la duración realmente procesada por OpenAI y se redondea a un crédito entero.",
   live_diarization_cancel: "Cancelar",
+  live_diarization_decline: "Ahora no",
   live_diarization_confirm: "Continuar con la identificación",
   live_diarization_save: "Guardar transcripción",
   live_diarization_saving: "Guardando…",
@@ -3597,6 +3607,8 @@ const es: Messages = {
   live_diarized_transcript: "Transcripción por interlocutor",
   live_speaker: "Persona",
   live_speaker_name: "Nombre de la persona",
+  live_speaker_choose: "Elige una persona",
+  live_speaker_add_new: "Añadir nuevo…",
   live_no_findings_yet:
     "Aún no se detectaron falacias. Aparecerán aquí mientras la persona habla.",
   live_no_claims_yet:

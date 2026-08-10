@@ -30,6 +30,7 @@ import {
   type PanelVisibility,
 } from "./context-panel-state";
 import type { ContextTheme } from "./context-theme-control";
+import { planDefaultDesktopLayout } from "./context-dockview-layout";
 import { useContextUiStore } from "./context-ui-store-provider";
 import styles from "./context-dockview.module.css";
 
@@ -604,38 +605,28 @@ function buildDefaultLayout(
       reference = id;
     }
   } else {
-    addPanelFamily(api, ["transcript", "topics"], "left", visibility);
-    addPanelFamily(
-      api,
-      ["facts", "fallacies", "neutrality"],
-      "right",
+    for (const placement of planDefaultDesktopLayout(
       visibility,
-    );
+      GRAPH_PANEL_ID,
+    )) {
+      addToolPanel(api, placement.id, {
+        direction: placement.direction,
+        referencePanel: placement.referencePanel,
+        initialWidth: placement.initialWidthRatio
+          ? desktopSideWidth(api.width, placement.initialWidthRatio)
+          : undefined,
+        initialHeight: placement.initialHeightRatio
+          ? desktopRowHeight(api.height, placement.initialHeightRatio)
+          : undefined,
+      });
+    }
+    normalizeDefaultDesktopSizes(api, visibility);
   }
 
   const requested = visibility[activePanel]
     ? activePanel
     : GRAPH_PANEL_ID;
   api.getPanel(requested)?.api.setActive();
-}
-
-function addPanelFamily(
-  api: DockviewApi,
-  ids: ContextPanelId[],
-  direction: "left" | "right",
-  visibility: PanelVisibility,
-) {
-  let reference = GRAPH_PANEL_ID;
-  for (const id of ids) {
-    if (!visibility[id]) continue;
-    addToolPanel(api, id, {
-      direction: reference === GRAPH_PANEL_ID ? direction : "within",
-      referencePanel: reference,
-      initialWidth: Math.max(250, Math.min(360, Math.round(api.width * 0.27))),
-      inactive: id !== "facts",
-    });
-    reference = id;
-  }
 }
 
 function reconcilePanels(
@@ -681,22 +672,101 @@ function addToolPanelAtPreferredLocation(
     return;
   }
 
-  const family =
-    id === "transcript" || id === "topics"
-      ? (["transcript", "topics"] as const)
-      : (["facts", "fallacies", "neutrality"] as const);
-  const sibling = family.find(
-    (candidate) => candidate !== id && api.getPanel(candidate),
-  );
+  const placement = preferredDesktopPlacement(api, id);
   addToolPanel(api, id, {
-    direction: sibling
-      ? "within"
-      : id === "transcript" || id === "topics"
-        ? "left"
-        : "right",
-    referencePanel: sibling ?? GRAPH_PANEL_ID,
-    initialWidth: Math.max(250, Math.min(360, Math.round(api.width * 0.27))),
+    direction: placement.direction,
+    referencePanel: placement.referencePanel,
+    initialWidth: placement.side
+      ? desktopSideWidth(api.width, 0.145)
+      : undefined,
+    initialHeight: placement.side
+      ? undefined
+      : desktopRowHeight(
+          api.height,
+          id === "transcript" || id === "topics" ? 0.5 : 1 / 3,
+        ),
   });
+}
+
+function preferredDesktopPlacement(
+  api: DockviewApi,
+  id: ContextPanelId,
+): {
+  direction: "above" | "below" | "left" | "right";
+  referencePanel: string;
+  side: boolean;
+} {
+  if (id === "transcript") {
+    return api.getPanel("topics")
+      ? { direction: "above", referencePanel: "topics", side: false }
+      : { direction: "left", referencePanel: GRAPH_PANEL_ID, side: true };
+  }
+  if (id === "topics") {
+    return api.getPanel("transcript")
+      ? { direction: "below", referencePanel: "transcript", side: false }
+      : { direction: "left", referencePanel: GRAPH_PANEL_ID, side: true };
+  }
+  if (id === "facts") {
+    const sibling = api.getPanel("neutrality")
+      ? "neutrality"
+      : api.getPanel("fallacies")
+        ? "fallacies"
+        : null;
+    return sibling
+      ? { direction: "above", referencePanel: sibling, side: false }
+      : { direction: "right", referencePanel: GRAPH_PANEL_ID, side: true };
+  }
+  if (id === "neutrality") {
+    if (api.getPanel("facts")) {
+      return { direction: "below", referencePanel: "facts", side: false };
+    }
+    if (api.getPanel("fallacies")) {
+      return { direction: "above", referencePanel: "fallacies", side: false };
+    }
+    return { direction: "right", referencePanel: GRAPH_PANEL_ID, side: true };
+  }
+  const sibling = api.getPanel("neutrality")
+    ? "neutrality"
+    : api.getPanel("facts")
+      ? "facts"
+      : null;
+  return sibling
+    ? { direction: "below", referencePanel: sibling, side: false }
+    : { direction: "right", referencePanel: GRAPH_PANEL_ID, side: true };
+}
+
+function desktopSideWidth(width: number, ratio: number): number {
+  return Math.max(240, Math.min(320, Math.round(width * ratio)));
+}
+
+function desktopRowHeight(height: number, ratio: number): number {
+  return Math.max(150, Math.round(height * ratio));
+}
+
+function normalizeDefaultDesktopSizes(
+  api: DockviewApi,
+  visibility: PanelVisibility,
+) {
+  const leftPanels = (["transcript", "topics"] as const).filter(
+    (id) => visibility[id] && api.getPanel(id),
+  );
+  const rightPanels = (["facts", "neutrality", "fallacies"] as const).filter(
+    (id) => visibility[id] && api.getPanel(id),
+  );
+  const sideWidth = desktopSideWidth(api.width, 0.145);
+
+  for (const id of leftPanels) {
+    api.getPanel(id)?.api.setSize({
+      width: sideWidth,
+      height: desktopRowHeight(api.height, 1 / leftPanels.length),
+    });
+  }
+  for (const id of rightPanels) {
+    api.getPanel(id)?.api.setSize({
+      width: sideWidth,
+      height: desktopRowHeight(api.height, 1 / rightPanels.length),
+    });
+  }
 }
 
 function addGraphPanel(api: DockviewApi, title: string) {

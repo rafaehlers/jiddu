@@ -24,38 +24,24 @@ export function ContextThemeSelector({
   onChange: (theme: ContextTheme) => void;
   copy: ContextCopy;
 }) {
-  const Icon = theme === "dark" ? Moon : Sun;
+  const nextTheme = theme === "light" ? "dark" : "light";
+  const label = `${copy.theme}: ${
+    nextTheme === "dark" ? copy.darkTheme : copy.lightTheme
+  }`;
+
   return (
-    <label className="inline-flex items-center gap-1 rounded-md border border-rule bg-paper px-2 py-1.5 text-xs text-muted">
-      <Icon aria-hidden="true" className="size-3.5" />
-      <select
-        aria-label={copy.theme}
-        className="bg-transparent text-foreground outline-none"
-        style={{ colorScheme: theme }}
-        value={theme}
-        onChange={(event) => onChange(event.target.value as ContextTheme)}
-      >
-        <option
-          className="bg-paper text-foreground"
-          style={{
-            backgroundColor: "var(--paper)",
-            color: "var(--foreground)",
-          }}
-          value="dark"
-        >
-          {copy.darkTheme}
-        </option>
-        <option
-          className="bg-paper text-foreground"
-          style={{
-            backgroundColor: "var(--paper)",
-            color: "var(--foreground)",
-          }}
-          value="light"
-        >
-          {copy.lightTheme}
-        </option>
-      </select>
-    </label>
+    <button
+      type="button"
+      onClick={() => onChange(nextTheme)}
+      aria-label={label}
+      title={label}
+      className="inline-flex size-8 shrink-0 items-center justify-center rounded-md border border-rule bg-paper text-muted transition-colors hover:border-foreground hover:text-foreground"
+    >
+      {theme === "dark" ? (
+        <Sun aria-hidden="true" className="size-4" />
+      ) : (
+        <Moon aria-hidden="true" className="size-4" />
+      )}
+    </button>
   );
 }

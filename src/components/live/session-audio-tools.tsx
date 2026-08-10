@@ -1,6 +1,15 @@
 "use client";
 
-import { Check, Download, ExternalLink, Loader2, Save, Users } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  Download,
+  ExternalLink,
+  Loader2,
+  Save,
+  Users,
+  X,
+} from "lucide-react";
 import {
   useEffect,
   useMemo,
@@ -15,11 +24,13 @@ import {
   type LiveDiarizationBillingConfig,
 } from "@/lib/live-diarization-billing";
 import {
+  createSavedDiarization,
   formatDiarizationTimestamp,
   groupDiarizedSegments,
   MAX_DIARIZATION_AUDIO_BYTES,
   sanitizeDiarizationResult,
   type DiarizationResult,
+  type SavedDiarization,
 } from "@/lib/live/diarization";
 
 type SessionAudioToolsInput = {
@@ -43,7 +54,15 @@ type SessionAudioToolsControllerInput = Omit<
   audioBlob: Blob | null;
   audioUrl: string | null;
   downloadFilename: string | null;
+  closeConfirmationOnSave?: boolean;
+  keepConfirmationOpenOnComplete?: boolean;
   onIdentificationFinished?: () => void;
+  onTranscriptSaved?: (diarization: SavedDiarization) => void;
+};
+
+export type SpeakerPersonSuggestion = {
+  id: string;
+  name: string;
 };
 
 type DiarizationStatus = "idle" | "loading" | "complete" | "error";
@@ -88,7 +107,10 @@ export function useSessionAudioToolsController({
   durationMs,
   resourceId,
   audioRef,
+  closeConfirmationOnSave = false,
+  keepConfirmationOpenOnComplete = false,
   onIdentificationFinished,
+  onTranscriptSaved,
 }: SessionAudioToolsControllerInput) {
   const { t } = useI18n();
   const internalAudioRef = useRef<HTMLAudioElement>(null);
@@ -207,7 +229,7 @@ export function useSessionAudioToolsController({
       setSaveStatus("idle");
       setStatus("complete");
       setResultHighlightVersion((current) => current + 1);
-      setConfirmationOpen(false);
+      if (!keepConfirmationOpenOnComplete) setConfirmationOpen(false);
       onIdentificationFinished?.();
     } catch (requestError) {
       if (controller.signal.aborted) return;
@@ -233,6 +255,9 @@ export function useSessionAudioToolsController({
       });
       if (!response.ok) throw new Error(t.live_diarization_save_error);
       setSaveStatus("saved");
+      if (closeConfirmationOnSave) setConfirmationOpen(false);
+      const savedDiarization = createSavedDiarization(result, speakerNames);
+      if (savedDiarization) onTranscriptSaved?.(savedDiarization);
     } catch {
       setSaveStatus("error");
     }
@@ -281,6 +306,40 @@ export type SessionAudioToolsController = ReturnType<
   typeof useSessionAudioToolsController
 >;
 
+export function SessionAudioDownloadAction({
+  controller,
+  variant = "inline",
+}: {
+  controller: SessionAudioToolsController;
+  variant?: "header" | "inline";
+}) {
+  if (
+    !controller.available ||
+    !controller.audioUrl ||
+    !controller.downloadFilename
+  ) {
+    return null;
+  }
+
+  return (
+    <a
+      href={controller.audioUrl}
+      download={controller.downloadFilename}
+      data-testid={
+        variant === "header" ? "context-audio-download" : undefined
+      }
+      className={
+        variant === "header"
+          ? "inline-flex shrink-0 items-center gap-1.5 rounded-md border border-rule bg-paper px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:border-accent hover:text-accent"
+          : "inline-flex items-center gap-1.5 rounded-md border border-rule px-2.5 py-1.5 text-xs font-medium text-foreground hover:border-accent hover:text-accent"
+      }
+    >
+      <Download className="size-3.5" />
+      {controller.t.live_download_audio}
+    </a>
+  );
+}
+
 export function SessionAudioToolsPanel({
   controller,
   compact = false,
@@ -300,22 +359,12 @@ export function SessionAudioToolsPanel({
 
   const {
     audioUrl,
-    downloadFilename,
     error,
     recordingTooLarge,
-    resourceId,
     resolvedAudioRef,
     result,
     resultHighlightVersion,
-    saveStatus,
-    saveTranscript,
-    seekTo,
-    setSaveStatus,
-    setSpeakerNames,
-    speakerNames,
-    speakers,
     t,
-    turns,
   } = controller;
 
   return (
@@ -340,14 +389,7 @@ export function SessionAudioToolsPanel({
         className="h-10 w-full"
       />
       <div className="mt-2 flex flex-wrap gap-2">
-        <a
-          href={audioUrl}
-          download={downloadFilename}
-          className="inline-flex items-center gap-1.5 rounded-md border border-rule px-2.5 py-1.5 text-xs font-medium text-foreground hover:border-accent hover:text-accent"
-        >
-          <Download className="size-3.5" />
-          {t.live_download_audio}
-        </a>
+        <SessionAudioDownloadAction controller={controller} />
         {showDiarizationAction ? (
           <SessionDiarizationAction controller={controller} />
         ) : null}
@@ -366,100 +408,208 @@ export function SessionAudioToolsPanel({
         <p className="mt-2 text-xs text-severity-high">{error}</p>
       ) : null}
       {result ? (
-        <div
+        <DiarizationResultEditor
           key={resultHighlightVersion}
-          data-testid="speaker-transcript-result"
-          className="context-diarization-result-reveal mt-3 rounded-lg border border-rule bg-background/35 p-3"
-        >
-          <h3 className="text-sm font-semibold">
-            {t.live_diarized_transcript}
-          </h3>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {speakers.map((speaker) => (
-              <label key={speaker} className="text-[11px] text-muted">
-                <span className="sr-only">
-                  {t.live_speaker_name} {speaker}
-                </span>
+          controller={controller}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+const ADD_NEW_SPEAKER_VALUE = "__add_new_speaker__";
+
+function DiarizationResultEditor({
+  controller,
+  personSuggestions,
+  showHeading = true,
+}: {
+  controller: SessionAudioToolsController;
+  personSuggestions?: readonly SpeakerPersonSuggestion[];
+  showHeading?: boolean;
+}) {
+  const [speakerSelections, setSpeakerSelections] = useState<
+    Record<string, string>
+  >({});
+  const {
+    resourceId,
+    result,
+    saveStatus,
+    saveTranscript,
+    seekTo,
+    setSaveStatus,
+    setSpeakerNames,
+    speakerNames,
+    speakers,
+    t,
+    turns,
+  } = controller;
+
+  if (!result) return null;
+
+  function updateSpeakerName(speaker: string, name: string) {
+    setSaveStatus("idle");
+    setSpeakerNames((current) => ({ ...current, [speaker]: name }));
+  }
+
+  return (
+    <div
+      data-testid="speaker-transcript-result"
+      className="context-diarization-result-reveal mt-3 rounded-lg border border-rule bg-background/35 p-3"
+    >
+      {showHeading ? (
+        <h3 className="text-sm font-semibold">{t.live_diarized_transcript}</h3>
+      ) : null}
+      <div className={`${showHeading ? "mt-3" : ""} grid gap-2 sm:grid-cols-2`}>
+        {speakers.map((speaker) => {
+          const selection = speakerSelections[speaker] ?? "";
+          const manual = selection === ADD_NEW_SPEAKER_VALUE;
+
+          return (
+            <label key={speaker} className="min-w-0 text-xs text-muted">
+              <span className="mb-1 block font-medium text-foreground">
+                {t.live_speaker} {speaker}
+              </span>
+              {personSuggestions === undefined ? (
                 <input
                   type="text"
                   value={speakerNames[speaker] ?? ""}
+                  onChange={(event) =>
+                    updateSpeakerName(speaker, event.target.value)
+                  }
+                  aria-label={`${t.live_speaker_name} ${speaker}`}
+                  className="h-8 w-full rounded-md border border-rule bg-background px-2 text-xs text-foreground outline-none focus:border-accent"
+                />
+              ) : manual ? (
+                <span className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSpeakerSelections((current) => ({
+                        ...current,
+                        [speaker]: "",
+                      }));
+                      updateSpeakerName(
+                        speaker,
+                        `${t.live_speaker} ${speaker}`,
+                      );
+                    }}
+                    aria-label={t.live_speaker_choose}
+                    title={t.live_speaker_choose}
+                    className="inline-flex size-8 shrink-0 items-center justify-center rounded-md border border-rule bg-paper text-muted hover:border-accent hover:text-foreground"
+                  >
+                    <ArrowLeft className="size-3.5" />
+                  </button>
+                  <input
+                    autoFocus
+                    type="text"
+                    value={speakerNames[speaker] ?? ""}
+                    onChange={(event) =>
+                      updateSpeakerName(speaker, event.target.value)
+                    }
+                    placeholder={t.live_speaker_name}
+                    aria-label={`${t.live_speaker_name} ${speaker}`}
+                    className="h-8 min-w-0 flex-1 rounded-md border border-rule bg-background px-2 text-xs text-foreground outline-none focus:border-accent"
+                  />
+                </span>
+              ) : (
+                <select
+                  value={selection}
                   onChange={(event) => {
-                    setSaveStatus("idle");
-                    setSpeakerNames((current) => ({
+                    const value = event.target.value;
+                    setSpeakerSelections((current) => ({
                       ...current,
-                      [speaker]: event.target.value,
+                      [speaker]: value,
                     }));
+                    if (value === ADD_NEW_SPEAKER_VALUE) {
+                      updateSpeakerName(speaker, "");
+                      return;
+                    }
+                    const person = personSuggestions.find(
+                      (suggestion) => suggestion.id === value,
+                    );
+                    if (person) updateSpeakerName(speaker, person.name);
                   }}
                   aria-label={`${t.live_speaker_name} ${speaker}`}
-                  className="w-32 rounded-md border border-rule bg-background px-2 py-1 text-xs text-foreground outline-none focus:border-accent"
-                />
-              </label>
-            ))}
-          </div>
-          <div className="mt-3 max-h-64 space-y-2 overflow-y-auto pr-1">
-            {turns.map((turn) => (
-              <button
-                key={`${turn.id}-${turn.start}`}
-                type="button"
-                onClick={() => seekTo(turn.start)}
-                className="block w-full rounded-md border border-rule/70 bg-background/70 px-2.5 py-2 text-left hover:border-accent/60"
-              >
-                <span className="text-[10px] font-semibold uppercase tracking-wide text-accent">
-                  {formatDiarizationTimestamp(turn.start)} ·{" "}
-                  {speakerNames[turn.speaker] ||
-                    `${t.live_speaker} ${turn.speaker}`}
-                </span>
-                <span className="mt-0.5 block text-xs leading-relaxed text-foreground">
-                  {turn.text}
-                </span>
-              </button>
-            ))}
-          </div>
-          <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-rule/70 pt-3">
-            <button
-              type="button"
-              onClick={() => void saveTranscript()}
-              disabled={!resourceId || saveStatus === "saving"}
-              className="inline-flex items-center gap-1.5 rounded-md border border-rule px-2.5 py-1.5 text-xs font-medium text-foreground hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {saveStatus === "saving" ? (
-                <Loader2 className="size-3.5 animate-spin" />
-              ) : saveStatus === "saved" ? (
-                <Check className="size-3.5" />
-              ) : (
-                <Save className="size-3.5" />
+                  className="h-8 w-full rounded-md border border-rule bg-background px-2 text-xs text-foreground outline-none focus:border-accent"
+                >
+                  <option value="">{t.live_speaker_choose}</option>
+                  {personSuggestions.map((person) => (
+                    <option key={person.id} value={person.id}>
+                      {person.name}
+                    </option>
+                  ))}
+                  <option value={ADD_NEW_SPEAKER_VALUE}>
+                    {t.live_speaker_add_new}
+                  </option>
+                </select>
               )}
-              {saveStatus === "saving"
-                ? t.live_diarization_saving
-                : saveStatus === "saved"
-                  ? t.live_diarization_saved
-                  : t.live_diarization_save}
-            </button>
-            {saveStatus === "saved" && resourceId ? (
-              <a
-                href={`/live/${resourceId}/transcript`}
-                className="inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline"
-              >
-                {t.live_diarization_view_saved}
-                <ExternalLink className="size-3" />
-              </a>
-            ) : null}
-          </div>
-          {!resourceId ? (
-            <p className="mt-2 text-[11px] text-muted">
-              {t.live_diarization_save_unavailable}
-            </p>
+            </label>
+          );
+        })}
+      </div>
+      <div className="mt-3 max-h-64 space-y-2 overflow-y-auto pr-1">
+        {turns.map((turn) => (
+          <button
+            key={`${turn.id}-${turn.start}`}
+            type="button"
+            onClick={() => seekTo(turn.start)}
+            className="block w-full rounded-md border border-rule/70 bg-background/70 px-2.5 py-2 text-left hover:border-accent/60"
+          >
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-accent">
+              {formatDiarizationTimestamp(turn.start)} ·{" "}
+              {speakerNames[turn.speaker] ||
+                `${t.live_speaker} ${turn.speaker}`}
+            </span>
+            <span className="mt-0.5 block text-xs leading-relaxed text-foreground">
+              {turn.text}
+            </span>
+          </button>
+        ))}
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-rule/70 pt-3">
+        <button
+          type="button"
+          onClick={() => void saveTranscript()}
+          disabled={!resourceId || saveStatus === "saving"}
+          className="inline-flex items-center gap-1.5 rounded-md border border-rule px-2.5 py-1.5 text-xs font-medium text-foreground hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {saveStatus === "saving" ? (
+            <Loader2 className="size-3.5 animate-spin" />
+          ) : saveStatus === "saved" ? (
+            <Check className="size-3.5" />
           ) : (
-            <p className="mt-2 text-[11px] text-muted">
-              {t.live_diarization_save_hint}
-            </p>
+            <Save className="size-3.5" />
           )}
-          {saveStatus === "error" ? (
-            <p className="mt-2 text-xs text-severity-high">
-              {t.live_diarization_save_error}
-            </p>
-          ) : null}
-        </div>
+          {saveStatus === "saving"
+            ? t.live_diarization_saving
+            : saveStatus === "saved"
+              ? t.live_diarization_saved
+              : t.live_diarization_save}
+        </button>
+        {saveStatus === "saved" && resourceId ? (
+          <a
+            href={`/live/${resourceId}/transcript`}
+            className="inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline"
+          >
+            {t.live_diarization_view_saved}
+            <ExternalLink className="size-3" />
+          </a>
+        ) : null}
+      </div>
+      {!resourceId ? (
+        <p className="mt-2 text-[11px] text-muted">
+          {t.live_diarization_save_unavailable}
+        </p>
+      ) : (
+        <p className="mt-2 text-[11px] text-muted">
+          {t.live_diarization_save_hint}
+        </p>
+      )}
+      {saveStatus === "error" ? (
+        <p className="mt-2 text-xs text-severity-high">
+          {t.live_diarization_save_error}
+        </p>
       ) : null}
     </div>
   );
@@ -467,14 +617,19 @@ export function SessionAudioToolsPanel({
 
 export function SessionDiarizationAction({
   controller,
+  personSuggestions = [],
+  showResultInDialog = false,
   variant = "inline",
 }: {
   controller: SessionAudioToolsController;
+  personSuggestions?: readonly SpeakerPersonSuggestion[];
+  showResultInDialog?: boolean;
   variant?: "header" | "inline";
 }) {
   const confirmationRef = useRef<HTMLDialogElement>(null);
   const {
     available,
+    audioUrl,
     confirmationOpen,
     creditExamples,
     durationMs,
@@ -483,6 +638,9 @@ export function SessionDiarizationAction({
     identifySpeakers,
     recordingTooLarge,
     requestSpeakerIdentification,
+    resolvedAudioRef,
+    result,
+    resultHighlightVersion,
     setConfirmationOpen,
     status,
     t,
@@ -520,10 +678,13 @@ export function SessionDiarizationAction({
         )}
         {status === "loading"
           ? t.live_diarizing_speakers
-          : t.live_identify_speakers}
+          : status === "complete" && showResultInDialog
+            ? t.live_diarized_transcript
+            : t.live_identify_speakers}
       </button>
       <dialog
         ref={confirmationRef}
+        aria-labelledby="session-diarization-dialog-title"
         onClose={() => setConfirmationOpen(false)}
         onCancel={(event) => {
           if (status === "loading") event.preventDefault();
@@ -536,9 +697,52 @@ export function SessionDiarizationAction({
             setConfirmationOpen(false);
           }
         }}
-        className="m-auto w-[min(92vw,34rem)] rounded-xl border border-rule bg-paper p-0 text-foreground shadow-2xl backdrop:bg-black/60 backdrop:backdrop-blur-sm"
+        className={`m-auto rounded-xl border border-rule bg-paper p-0 text-foreground shadow-2xl backdrop:bg-black/60 backdrop:backdrop-blur-sm ${
+          status === "complete" && showResultInDialog
+            ? "w-[min(94vw,52rem)]"
+            : "w-[min(92vw,34rem)]"
+        }`}
       >
-        {status === "loading" ? (
+        {status === "complete" && result && showResultInDialog ? (
+          <div className="flex max-h-[90vh] min-h-0 flex-col">
+            <div className="flex shrink-0 items-center justify-between gap-3 border-b border-rule px-5 py-4">
+              <div>
+                <h2
+                  id="session-diarization-dialog-title"
+                  className="font-serif text-xl leading-tight"
+                >
+                  {t.live_diarized_transcript}
+                </h2>
+                <p className="mt-1 text-xs text-muted">
+                  {t.live_local_recording_hint}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setConfirmationOpen(false)}
+                aria-label={t.live_diarization_cancel}
+                className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-muted hover:bg-background hover:text-foreground"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+            <div className="min-h-0 overflow-y-auto p-4 sm:p-5">
+              <audio
+                ref={resolvedAudioRef}
+                controls
+                preload="metadata"
+                src={audioUrl ?? undefined}
+                className="h-10 w-full"
+              />
+              <DiarizationResultEditor
+                key={resultHighlightVersion}
+                controller={controller}
+                personSuggestions={personSuggestions}
+                showHeading={false}
+              />
+            </div>
+          </div>
+        ) : status === "loading" ? (
           <div
             role="status"
             aria-live="polite"
@@ -551,7 +755,10 @@ export function SessionDiarizationAction({
               aria-hidden="true"
             />
             <div>
-              <h2 className="font-serif text-xl leading-tight">
+              <h2
+                id="session-diarization-dialog-title"
+                className="font-serif text-xl leading-tight"
+              >
                 {t.live_diarizing_speakers}
               </h2>
               <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted">
@@ -561,7 +768,10 @@ export function SessionDiarizationAction({
           </div>
         ) : (
           <div className="p-5 sm:p-6">
-            <h2 className="font-serif text-xl leading-tight">
+            <h2
+              id="session-diarization-dialog-title"
+              className="font-serif text-xl leading-tight"
+            >
               {t.live_diarization_confirm_title}
             </h2>
             <p className="mt-2 text-sm leading-relaxed text-muted">
@@ -618,7 +828,7 @@ export function SessionDiarizationAction({
                 onClick={() => setConfirmationOpen(false)}
                 className="rounded-md border border-rule px-3 py-2 text-sm font-medium hover:border-foreground/40"
               >
-                {t.live_diarization_cancel}
+                {t.live_diarization_decline}
               </button>
               <button
                 type="button"

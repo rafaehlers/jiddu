@@ -10,11 +10,12 @@ import {
   Play,
   RotateCcw,
   Square,
+  Users,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ThinkingOrb } from "thinking-orbs";
 import { AnalysisAuthModal } from "@/components/analysis-auth-modal";
 import { LiveClaimsList } from "@/components/live/claims-list";
@@ -22,22 +23,32 @@ import { FindingsList } from "@/components/live/findings-list";
 import { LiveNeutralityList } from "@/components/live/neutrality-list";
 import { SourcePicker } from "@/components/live/source-picker";
 import {
-  SessionAudioToolsPanel,
+  SessionAudioDownloadAction,
   SessionDiarizationAction,
   useSessionAudioToolsController,
 } from "@/components/live/session-audio-tools";
+import {
+  SavedDiarizedTranscript,
+  type SavedDiarizedTranscriptHandle,
+} from "@/components/live/saved-diarized-transcript";
 import {
   TranscriptStream,
   type TranscriptStreamHandle,
 } from "@/components/live/transcript-stream";
 import { useI18n } from "@/lib/i18n/provider";
 import type { LiveDiarizationBillingConfig } from "@/lib/live-diarization-billing";
+import {
+  groupDiarizedSegments,
+  type SavedDiarization,
+} from "@/lib/live/diarization";
+import { resolveDiarizedTurnTimeForSentence } from "@/lib/live/diarized-transcript-navigation";
 import { DEFAULT_LIVE_LENSES } from "@/lib/live-lenses";
 import { useLiveAnalysis } from "@/lib/live/use-live-analysis";
 import { useLiveClaimVerification } from "@/lib/live/use-live-claim-verification";
 import { useLiveSession, type LiveSource } from "@/lib/live/use-live-session";
 import { ContextGraph } from "./context-graph";
 import { mutateContextEntity } from "./context-entity-mutations";
+import { resolveEntityDisplayName } from "./entity-display-name";
 import { contextCopy } from "./context-copy";
 import {
   ContextDockview,
@@ -45,7 +56,6 @@ import {
   useContextDockview,
 } from "./context-dockview";
 import { ContextTopicsFeed } from "./context-topics-feed";
-import { ContextNeutralityHeader } from "./context-neutrality-header";
 import {
   contextThemeStyle,
   ContextThemeSelector,
@@ -85,16 +95,24 @@ function ContextWorkspaceContent({
   diarizationBilling,
   searchModels,
 }: ContextWorkspaceProps) {
-  const { lang, setLang } = useI18n();
+  const { lang, setLang, t } = useI18n();
   const copy = contextCopy(lang);
   const { user, loading: authLoading } = useAuth();
   const pathname = usePathname();
   const [source, setSource] = useState<LiveSource>("mic");
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const transcriptRef = useRef<TranscriptStreamHandle>(null);
+  const diarizedTranscriptRef =
+    useRef<SavedDiarizedTranscriptHandle>(null);
+  const [transcriptView, setTranscriptView] = useState<
+    "live" | "speakers"
+  >("live");
+  const [savedDiarization, setSavedDiarization] =
+    useState<SavedDiarization | null>(null);
   const autoStopTriggeredRef = useRef(false);
   const speakerPromptPendingRef = useRef(false);
   const dockview = useContextDockview();
+  const selectDockviewPanel = dockview.selectPanel;
   const [contextTheme, setContextTheme] = useContextTheme();
   const contextSettings = useContextSettings();
   const sessionStore = useContextSessionStoreApi();
@@ -110,6 +128,7 @@ function ContextWorkspaceContent({
     intervalMs: contextSettings.settings.analysisIntervalMs,
   });
   const captureView = useContextSessionStore((state) => state.capture);
+  const sessionEvents = useContextSessionStore((state) => state.events);
   const analysisView = useContextSessionStore((state) => state.analysis);
   const verification = useLiveClaimVerification(
     analysis.sessionId,
@@ -142,15 +161,46 @@ function ContextWorkspaceContent({
     sessionId: analysis.sessionId,
     state: session.state,
   });
+  const speakerPersonSuggestions = useMemo(() => {
+    const names = new Set<string>();
+    return analysisView.context.entities.flatMap((entity) => {
+      if (entity.kind !== "person") return [];
+      const name = resolveEntityDisplayName(
+        entity,
+        enrichmentView.entities.get(entity.id) ?? null,
+      ).trim();
+      const normalizedName = name.toLocaleLowerCase();
+      if (!name || names.has(normalizedName)) return [];
+      names.add(normalizedName);
+      return [{ id: entity.id, name }];
+    });
+  }, [analysisView.context.entities, enrichmentView.entities]);
+  const handleTranscriptSaved = useCallback(
+    (nextDiarization: SavedDiarization) => {
+      setSavedDiarization(nextDiarization);
+      setTranscriptView("speakers");
+      selectDockviewPanel("transcript");
+    },
+    [selectDockviewPanel],
+  );
   const diarization = useSessionAudioToolsController({
     audioBlob: session.localAudioBlob,
     audioUrl: session.localAudioUrl,
     billingConfig: diarizationBilling,
+    closeConfirmationOnSave: true,
     downloadFilename: session.localAudioFilename,
     durationMs: session.elapsedMs,
+    keepConfirmationOpenOnComplete: true,
+    onTranscriptSaved: handleTranscriptSaved,
     resourceId: analysis.sessionId,
-    onIdentificationFinished: () => dockview.selectPanel("transcript"),
   });
+  const diarizedTurns = useMemo(
+    () =>
+      savedDiarization
+        ? groupDiarizedSegments(savedDiarization.result.segments)
+        : [],
+    [savedDiarization],
+  );
 
   useEffect(() => {
     if (!speakerPromptPendingRef.current || !diarization.available) return;
@@ -166,9 +216,40 @@ function ContextWorkspaceContent({
     (session.state === "stopped" || session.state === "error") &&
     analysis.sessionId != null;
   const controlsLocked = isRunning || verification.isVerifying;
-  const jumpToSentence = useCallback((sentenceId: string) => {
-    transcriptRef.current?.focusSentence(sentenceId);
-  }, []);
+  const jumpToSentence = useCallback(
+    (sentenceId: string) => {
+      selectDockviewPanel("transcript");
+      if (savedDiarization) {
+        const focusTime = resolveDiarizedTurnTimeForSentence({
+          sentenceId,
+          transcript: captureView.transcript,
+          durationMs: captureView.elapsedMs,
+          events: sessionEvents,
+          turns: diarizedTurns,
+        });
+        setTranscriptView("speakers");
+        if (focusTime !== null) {
+          window.requestAnimationFrame(() => {
+            diarizedTranscriptRef.current?.focusTime(focusTime);
+          });
+        }
+        return;
+      }
+
+      setTranscriptView("live");
+      window.requestAnimationFrame(() => {
+        transcriptRef.current?.focusSentence(sentenceId);
+      });
+    },
+    [
+      captureView.elapsedMs,
+      captureView.transcript,
+      diarizedTurns,
+      savedDiarization,
+      selectDockviewPanel,
+      sessionEvents,
+    ],
+  );
 
   const handleRenameEntity = useCallback(
     async (entityId: string, name: string) => {
@@ -255,6 +336,8 @@ function ContextWorkspaceContent({
     }
     verification.reset();
     speakerPromptPendingRef.current = false;
+    setSavedDiarization(null);
+    setTranscriptView("live");
     clearContextRecoveryMarker();
     sessionStore.getState().resetSession(source);
     void session.start(source);
@@ -305,8 +388,8 @@ function ContextWorkspaceContent({
         data-context-controls
         className="relative z-50 bg-background/95 px-3 py-2 shadow-sm backdrop-blur sm:px-4"
       >
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <div className="mr-auto grid min-w-0 flex-1 basis-[18rem] grid-cols-[4rem_minmax(0,1fr)] grid-rows-[4rem_auto] gap-x-2">
+        <div className="grid min-w-0 gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,3fr)] md:items-start">
+          <div className="grid min-w-0 grid-cols-[4rem_minmax(0,1fr)] gap-x-2">
             <div
               className="col-start-1 row-start-1 flex size-16 shrink-0 items-center justify-center"
               data-testid="context-session-mark"
@@ -352,143 +435,162 @@ function ContextWorkspaceContent({
                 Context
                 <sup
                   aria-hidden="true"
-                  className="ml-1 align-super font-sans text-[8px] font-medium uppercase tracking-wider text-accent sm:text-[9px]"
+                  className="ml-1 align-super font-sans text-[8px] font-medium uppercase tracking-wider text-foreground sm:text-[9px]"
                 >
                   beta
                 </sup>
               </h1>
             </div>
-            <p className="col-span-2 col-start-1 row-start-2 truncate text-left text-xs leading-normal text-muted">
-              {copy.subtitle}
-            </p>
           </div>
 
-          <div className="hidden xl:block">
-            <SourcePicker
-              value={source}
-              onChange={setSource}
-              disabled={controlsLocked}
-            />
-          </div>
-          <div className="xl:hidden">
-            <CompactSourcePicker
-              value={source}
-              onChange={setSource}
-              disabled={controlsLocked}
-            />
-          </div>
-          <ContextThemeSelector
-            theme={contextTheme}
-            onChange={setContextTheme}
-            copy={copy}
-          />
-          <label className="inline-flex items-center gap-1 rounded-md border border-rule bg-paper px-2 py-1.5 text-xs text-muted">
-            <Languages className="size-3.5" />
-            <select
-              aria-label="Language"
-              className="bg-transparent text-foreground outline-none"
-              value={lang}
-              disabled={isRunning}
-              onChange={(event) => setLang(event.target.value as typeof lang)}
+          <div className="flex min-w-0 flex-col items-start gap-2">
+            <div
+              data-context-control-row="settings"
+              className="flex w-full min-w-0 flex-wrap items-center gap-2"
             >
-              <option value="en">EN</option>
-              <option value="pt">PT</option>
-              <option value="es">ES</option>
-            </select>
-          </label>
-          {!isRunning ? (
-            <button
-              type="button"
-              onClick={handleStart}
-              disabled={authLoading || verification.isVerifying}
-              className="inline-flex items-center gap-1.5 rounded-md bg-accent px-3 py-2 text-xs font-semibold text-background hover:opacity-90 disabled:opacity-60"
-            >
-              {concluded ? (
-                <RotateCcw className="size-3.5" />
-              ) : (
-                <Play className="size-3.5" />
-              )}
-              <span className="hidden sm:inline">
-                {concluded ? copy.newSession : copy.start}
+              <span className="inline-flex h-8 shrink-0 items-center text-xs font-medium text-muted">
+                {copy.audioSource}
               </span>
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => void handleStop()}
-              disabled={session.state === "stopping"}
-              className="inline-flex items-center gap-1.5 rounded-md bg-severity-high px-3 py-2 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-60"
+              <div className="hidden xl:block">
+                <SourcePicker
+                  value={source}
+                  onChange={setSource}
+                  disabled={controlsLocked}
+                />
+              </div>
+              <div className="xl:hidden">
+                <CompactSourcePicker
+                  value={source}
+                  onChange={setSource}
+                  disabled={controlsLocked}
+                />
+              </div>
+              <div className="ml-auto flex shrink-0 items-center gap-2">
+                <ContextThemeSelector
+                  theme={contextTheme}
+                  onChange={setContextTheme}
+                  copy={copy}
+                />
+                <label className="inline-flex items-center gap-1 rounded-md border border-rule bg-paper px-2 py-1.5 text-xs text-muted">
+                  <Languages className="size-3.5" />
+                  <select
+                    aria-label="Language"
+                    className="bg-transparent text-foreground outline-none"
+                    value={lang}
+                    disabled={isRunning}
+                    onChange={(event) =>
+                      setLang(event.target.value as typeof lang)
+                    }
+                  >
+                    <option value="en">EN</option>
+                    <option value="pt">PT</option>
+                    <option value="es">ES</option>
+                  </select>
+                </label>
+                <ContextSettingsButton
+                  control={contextSettings}
+                  copy={copy}
+                  showCaptureSettings
+                  captureSettingsLocked={controlsLocked}
+                />
+              </div>
+            </div>
+
+            <div
+              data-context-control-row="session"
+              className="flex w-full min-w-0 flex-wrap items-center gap-2"
             >
-              {session.state === "stopping" ? (
-                <Loader2 className="size-3.5 animate-spin" />
+              {!isRunning ? (
+                <button
+                  type="button"
+                  onClick={handleStart}
+                  disabled={authLoading || verification.isVerifying}
+                  className="inline-flex items-center gap-1.5 rounded-md bg-accent px-3 py-2 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-60"
+                >
+                  {concluded ? (
+                    <RotateCcw className="size-3.5" />
+                  ) : (
+                    <Play className="size-3.5" />
+                  )}
+                  <span className="hidden sm:inline">
+                    {concluded ? copy.newSession : copy.start}
+                  </span>
+                </button>
               ) : (
-                <Square className="size-3.5" />
+                <button
+                  type="button"
+                  onClick={() => void handleStop()}
+                  disabled={session.state === "stopping"}
+                  className="inline-flex items-center gap-1.5 rounded-md bg-severity-high px-3 py-2 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-60"
+                >
+                  {session.state === "stopping" ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <Square className="size-3.5" />
+                  )}
+                  <span className="hidden sm:inline">{copy.stop}</span>
+                </button>
               )}
-              <span className="hidden sm:inline">{copy.stop}</span>
-            </button>
-          )}
-          <div className="inline-flex items-center gap-1.5 text-xs text-muted">
-            <span
-              className={`size-2 rounded-full ${session.state === "live" ? "animate-pulse bg-emerald-500" : analysis.isAnalyzing ? "animate-pulse bg-amber-500" : "bg-muted"}`}
-            />
-            <span>{statusLabel}</span>
-            {isRunning ? (
-              <span className="tabular-nums">
-                {formatDuration(session.elapsedMs)}
-              </span>
-            ) : null}
-          </div>
-          <ContextPanelsControl
-            state={dockview}
-            labels={{
-              transcript: copy.transcript,
-              fallacies: copy.fallacies,
-              facts: copy.facts,
-              topics: copy.tagsAndTopics,
-              neutrality: copy.neutrality,
-            }}
-            copy={copy}
-          />
-          {concluded && analysis.sessionId ? (
-            <Link
-              href={`/context/${analysis.sessionId}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-xs font-semibold text-background shadow-lg transition-opacity hover:opacity-85"
-            >
-              {copy.openSaved}
-              <ExternalLink className="size-3" />
-            </Link>
-          ) : recoverableSessionId && !analysis.sessionId && !isRunning ? (
-            <Link
-              href={`/context/${recoverableSessionId}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-accent/40 bg-accent/10 px-3 py-1.5 text-xs font-semibold text-accent transition-colors hover:bg-accent/20"
-            >
-              {copy.recoverSession}
-              <ExternalLink className="size-3" />
-            </Link>
-          ) : null}
-          {diarization.available ? (
-            <SessionDiarizationAction
-              controller={diarization}
-              variant="header"
-            />
-          ) : null}
-          <ContextNeutralityHeader
-            verdict={analysisView.neutralityVerdict}
-            findings={analysisView.neutralityFindings}
-            final={concluded}
-            copy={copy}
-          />
-          <div className="shrink-0">
-            <ContextSettingsButton
-              control={contextSettings}
-              copy={copy}
-              showCaptureSettings
-              captureSettingsLocked={controlsLocked}
-            />
+              <div className="inline-flex items-center gap-1.5 text-xs text-muted">
+                <span
+                  className={`size-2 rounded-full ${session.state === "live" ? "animate-pulse bg-emerald-500" : analysis.isAnalyzing ? "animate-pulse bg-amber-500" : "bg-muted"}`}
+                />
+                <span>{statusLabel}</span>
+                {isRunning ? (
+                  <span className="tabular-nums">
+                    {formatDuration(session.elapsedMs)}
+                  </span>
+                ) : null}
+              </div>
+              <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+                <ContextPanelsControl
+                  state={dockview}
+                  labels={{
+                    transcript: copy.transcript,
+                    fallacies: copy.fallacies,
+                    facts: copy.facts,
+                    topics: copy.tagsAndTopics,
+                    neutrality: copy.neutrality,
+                  }}
+                  copy={copy}
+                />
+                {concluded && analysis.sessionId ? (
+                  <Link
+                    href={`/context/${analysis.sessionId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-xs font-semibold text-background shadow-lg transition-opacity hover:opacity-85"
+                  >
+                    {copy.openSaved}
+                    <ExternalLink className="size-3" />
+                  </Link>
+                ) : recoverableSessionId &&
+                  !analysis.sessionId &&
+                  !isRunning ? (
+                  <Link
+                    href={`/context/${recoverableSessionId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-accent/40 bg-accent/10 px-3 py-1.5 text-xs font-semibold text-accent transition-colors hover:bg-accent/20"
+                  >
+                    {copy.recoverSession}
+                    <ExternalLink className="size-3" />
+                  </Link>
+                ) : null}
+                <SessionAudioDownloadAction
+                  controller={diarization}
+                  variant="header"
+                />
+                {diarization.available ? (
+                  <SessionDiarizationAction
+                    controller={diarization}
+                    personSuggestions={speakerPersonSuggestions}
+                    showResultInDialog
+                    variant="header"
+                  />
+                ) : null}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -542,21 +644,67 @@ function ContextWorkspaceContent({
               title: copy.transcript,
               toneClass: "bg-violet-500",
               contentClassName: "overflow-hidden",
-              content: (
-                <div className="grid h-full min-h-0 grid-rows-[minmax(0,1fr)_auto]">
-                  <TranscriptStream
-                    ref={transcriptRef}
-                    transcript={captureView.transcript}
-                    active={session.state === "live"}
-                    variant="feed"
-                  />
-                  {diarization.available ? (
-                    <SessionAudioToolsPanel
-                      controller={diarization}
-                      compact
-                    />
-                  ) : null}
+              content: savedDiarization ? (
+                <div className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)]">
+                  <div className="flex shrink-0 gap-1 border-b border-rule bg-paper/90 p-1.5">
+                    <button
+                      type="button"
+                      aria-pressed={transcriptView === "live"}
+                      onClick={() => setTranscriptView("live")}
+                      className={`rounded-md px-2 py-1 text-[10px] font-semibold transition-colors ${
+                        transcriptView === "live"
+                          ? "bg-foreground text-background"
+                          : "text-muted hover:bg-foreground/10 hover:text-foreground"
+                      }`}
+                    >
+                      {copy.transcript}
+                    </button>
+                    <button
+                      type="button"
+                      aria-pressed={transcriptView === "speakers"}
+                      onClick={() => setTranscriptView("speakers")}
+                      className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-semibold transition-colors ${
+                        transcriptView === "speakers"
+                          ? "bg-accent text-white"
+                          : "text-muted hover:bg-foreground/10 hover:text-foreground"
+                      }`}
+                    >
+                      <Users className="size-3" />
+                      {t.live_diarized_transcript}
+                    </button>
+                  </div>
+                  <div className="relative min-h-0 overflow-hidden">
+                    <div
+                      className={`h-full ${
+                        transcriptView === "live" ? "block" : "hidden"
+                      }`}
+                    >
+                      <TranscriptStream
+                        ref={transcriptRef}
+                        transcript={captureView.transcript}
+                        active={session.state === "live"}
+                        variant="feed"
+                      />
+                    </div>
+                    <div
+                      className={`h-full overflow-y-auto p-2 ${
+                        transcriptView === "speakers" ? "block" : "hidden"
+                      }`}
+                    >
+                      <SavedDiarizedTranscript
+                        ref={diarizedTranscriptRef}
+                        diarization={savedDiarization}
+                      />
+                    </div>
+                  </div>
                 </div>
+              ) : (
+                <TranscriptStream
+                  ref={transcriptRef}
+                  transcript={captureView.transcript}
+                  active={session.state === "live"}
+                  variant="feed"
+                />
               ),
             },
             fallacies: {

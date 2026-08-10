@@ -6,7 +6,10 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { LiveClaimsList } from "@/components/live/claims-list";
 import { FindingsList } from "@/components/live/findings-list";
 import { LiveNeutralityList } from "@/components/live/neutrality-list";
-import { SavedDiarizedTranscript } from "@/components/live/saved-diarized-transcript";
+import {
+  SavedDiarizedTranscript,
+  type SavedDiarizedTranscriptHandle,
+} from "@/components/live/saved-diarized-transcript";
 import {
   TranscriptStream,
   type TranscriptStreamHandle,
@@ -24,7 +27,11 @@ import type { ContextReplayEvent } from "@/lib/context-replay-schema";
 import type { Lang } from "@/lib/fallacies";
 import { useI18n } from "@/lib/i18n/provider";
 import type { LiveContext } from "@/lib/live-context-schema";
-import type { SavedDiarization } from "@/lib/live/diarization";
+import {
+  groupDiarizedSegments,
+  type SavedDiarization,
+} from "@/lib/live/diarization";
+import { resolveDiarizedTurnTimeForSentence } from "@/lib/live/diarized-transcript-navigation";
 import type {
   LiveClaim,
   LiveNeutralityVerdict,
@@ -107,6 +114,8 @@ function ContextReviewWorkspaceContent({
   const { lang, setLang, t } = useI18n();
   const copy = contextCopy(lang);
   const transcriptRef = useRef<TranscriptStreamHandle>(null);
+  const diarizedTranscriptRef =
+    useRef<SavedDiarizedTranscriptHandle>(null);
   const dockview = useContextDockview();
   const [contextTheme, setContextTheme] = useContextTheme();
   const contextSettings = useContextSettings();
@@ -171,12 +180,46 @@ function ContextReviewWorkspaceContent({
     () => new Map(frame.verdicts.map((verdict) => [verdict.claimId, verdict])),
     [frame.verdicts],
   );
-  const jumpToSentence = useCallback((sentenceId: string) => {
-    setTranscriptView("replay");
-    window.requestAnimationFrame(() => {
-      transcriptRef.current?.focusSentence(sentenceId);
-    });
-  }, []);
+  const diarizedTurns = useMemo(
+    () =>
+      diarization ? groupDiarizedSegments(diarization.result.segments) : [],
+    [diarization],
+  );
+  const selectDockviewPanel = dockview.selectPanel;
+  const jumpToSentence = useCallback(
+    (sentenceId: string) => {
+      selectDockviewPanel("transcript");
+      if (diarization) {
+        const focusTime = resolveDiarizedTurnTimeForSentence({
+          sentenceId,
+          transcript,
+          durationMs: replayDurationMs,
+          events: replayEvents,
+          turns: diarizedTurns,
+        });
+        setTranscriptView("speakers");
+        if (focusTime !== null) {
+          window.requestAnimationFrame(() => {
+            diarizedTranscriptRef.current?.focusTime(focusTime);
+          });
+        }
+        return;
+      }
+
+      setTranscriptView("replay");
+      window.requestAnimationFrame(() => {
+        transcriptRef.current?.focusSentence(sentenceId);
+      });
+    },
+    [
+      diarization,
+      diarizedTurns,
+      replayDurationMs,
+      replayEvents,
+      selectDockviewPanel,
+      transcript,
+    ],
+  );
   const replayTimeline = {
     ...timeline,
     toggle: () => {
@@ -414,7 +457,10 @@ function ContextReviewWorkspaceContent({
                         transcriptView === "speakers" ? "block" : "hidden"
                       }`}
                     >
-                      <SavedDiarizedTranscript diarization={diarization} />
+                      <SavedDiarizedTranscript
+                        ref={diarizedTranscriptRef}
+                        diarization={diarization}
+                      />
                     </div>
                   </div>
                 </div>
