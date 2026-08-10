@@ -2,9 +2,9 @@ import "server-only";
 
 import { Resend, type CreateBatchOptions } from "resend";
 import { emailBrandHeader } from "@/lib/email-brand-header";
+import { jidduFromEmail } from "@/lib/email-from";
 import type { Lang } from "@/lib/fallacies";
 
-const DEFAULT_FROM_EMAIL = "Jiddu <notifications@emails.jiddu.app>";
 const DEFAULT_SUPPORT_EMAIL = "support@emails.jiddu.app";
 
 type PublicContactEmail = {
@@ -70,7 +70,7 @@ export function resendClient(): Resend {
 }
 
 export function resendFromEmail(): string {
-  return process.env.RESEND_FROM_EMAIL?.trim() || DEFAULT_FROM_EMAIL;
+  return jidduFromEmail(process.env.RESEND_FROM_EMAIL);
 }
 
 export function supportInboxEmail(): string {
