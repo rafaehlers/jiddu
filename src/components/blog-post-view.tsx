@@ -84,6 +84,22 @@ export function BlogPostView({ post }: { post: BlogPost }) {
     return tag ? [{ tag, content: getBlogTagTranslation(tag, lang) }] : [];
   });
   const url = `${SITE_URL}/blog/${post.slug}`;
+  const cta = content.cta ?? {
+    title: copy.ctaTitle,
+    description: copy.ctaDescription,
+    label: copy.ctaLabel,
+  };
+  const postImage = (
+    <Image
+      src={post.image.src}
+      alt={content.imageAlt}
+      width={post.image.width}
+      height={post.image.height}
+      sizes="(min-width: 1024px) 976px, calc(100vw - 2rem)"
+      className="h-auto w-full transition-opacity group-hover:opacity-95"
+      priority
+    />
+  );
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
@@ -97,6 +113,9 @@ export function BlogPostView({ post }: { post: BlogPost }) {
         image: {
           "@type": "ImageObject",
           url: `${SITE_URL}${post.image.src}`,
+          ...(post.image.full
+            ? { contentUrl: `${SITE_URL}${post.image.full.src}` }
+            : {}),
           width: post.image.width,
           height: post.image.height,
         },
@@ -115,7 +134,7 @@ export function BlogPostView({ post }: { post: BlogPost }) {
         },
         keywords: localizedTags.map(({ content: tag }) => tag.label).join(", "),
         isPartOf: { "@id": `${SITE_URL}/blog#blog` },
-        citation: [
+        citation: post.citations ?? [
           "https://arxiv.org/abs/2604.13940",
           `${SITE_URL}/how-it-works`,
         ],
@@ -196,15 +215,20 @@ export function BlogPostView({ post }: { post: BlogPost }) {
       </div>
 
       <figure className="my-8 overflow-hidden rounded-xl border border-rule bg-paper sm:my-10">
-        <Image
-          src={post.image.src}
-          alt={content.imageAlt}
-          width={post.image.width}
-          height={post.image.height}
-          sizes="(min-width: 1024px) 976px, calc(100vw - 2rem)"
-          className="h-auto w-full"
-          priority
-        />
+        {post.image.full ? (
+          <a
+            href={post.image.full.src}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={content.imageOpenLabel ?? content.imageAlt}
+            title={content.imageOpenLabel ?? content.imageAlt}
+            className="group block cursor-zoom-in"
+          >
+            {postImage}
+          </a>
+        ) : (
+          postImage
+        )}
         <figcaption className="border-t border-rule px-4 py-3 text-center text-xs leading-relaxed text-muted">
           {content.imageCaption}
         </figcaption>
@@ -255,15 +279,15 @@ export function BlogPostView({ post }: { post: BlogPost }) {
         </footer>
 
         <aside className="mt-12 rounded-xl border border-rule bg-paper p-6 sm:p-8">
-          <p className="font-serif text-2xl">{copy.ctaTitle}</p>
+          <p className="font-serif text-2xl">{cta.title}</p>
           <p className="mt-2 max-w-2xl text-base leading-relaxed text-muted">
-            {copy.ctaDescription}
+            {cta.description}
           </p>
           <Link
-            href="/review"
+            href={post.ctaHref ?? "/review"}
             className="mt-5 inline-flex rounded-md bg-accent px-4 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
           >
-            {copy.ctaLabel}
+            {cta.label}
           </Link>
         </aside>
       </div>

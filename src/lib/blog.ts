@@ -25,8 +25,14 @@ export type BlogPostTranslation = {
   readingTime: string;
   imageAlt: string;
   imageCaption: string;
+  imageOpenLabel?: string;
   body: string;
   faq: BlogFaq[];
+  cta?: {
+    title: string;
+    description: string;
+    label: string;
+  };
 };
 
 export type BlogPost = {
@@ -39,7 +45,16 @@ export type BlogPost = {
     src: string;
     width: number;
     height: number;
+    type?: string;
+    full?: {
+      src: string;
+      width: number;
+      height: number;
+      type?: string;
+    };
   };
+  citations?: string[];
+  ctaHref?: string;
   translations: Localized<BlogPostTranslation>;
 };
 
@@ -65,7 +80,7 @@ export const BLOG_COPY: Localized<BlogCopy> = {
   en: {
     name: "Jiddu Blog",
     description:
-      "Critical reading, academic research, and artificial intelligence explained with clear methods, limits, and practical examples.",
+      "Critical reading, live intelligence, academic research, and artificial intelligence explained with clear methods, limits, and practical examples.",
     tagsTitle: "Tags",
     tagsAriaLabel: "Blog tags",
     postSingular: "post",
@@ -84,7 +99,7 @@ export const BLOG_COPY: Localized<BlogCopy> = {
   pt: {
     name: "Blog Jiddu",
     description:
-      "Leitura crítica, pesquisa acadêmica e inteligência artificial explicadas com método, limites claros e exemplos práticos.",
+      "Leitura crítica, inteligência ao vivo, pesquisa acadêmica e inteligência artificial explicadas com método, limites claros e exemplos práticos.",
     tagsTitle: "Tags",
     tagsAriaLabel: "Tags do blog",
     postSingular: "post",
@@ -103,7 +118,7 @@ export const BLOG_COPY: Localized<BlogCopy> = {
   es: {
     name: "Blog Jiddu",
     description:
-      "Lectura crítica, investigación académica e inteligencia artificial explicadas con método, límites claros y ejemplos prácticos.",
+      "Lectura crítica, inteligencia en vivo, investigación académica e inteligencia artificial explicadas con método, límites claros y ejemplos prácticos.",
     tagsTitle: "Etiquetas",
     tagsAriaLabel: "Etiquetas del blog",
     postSingular: "artículo",
@@ -122,6 +137,46 @@ export const BLOG_COPY: Localized<BlogCopy> = {
 };
 
 export const blogTags: BlogTag[] = [
+  {
+    slug: "live-intelligence",
+    translations: {
+      en: {
+        label: "Live intelligence",
+        description:
+          "Tools for understanding conversations, claims, people, and sources as they develop.",
+      },
+      pt: {
+        label: "Inteligência ao vivo",
+        description:
+          "Ferramentas para compreender conversas, afirmações, pessoas e fontes enquanto elas se desenvolvem.",
+      },
+      es: {
+        label: "Inteligencia en vivo",
+        description:
+          "Herramientas para comprender conversaciones, afirmaciones, personas y fuentes mientras se desarrollan.",
+      },
+    },
+  },
+  {
+    slug: "elections",
+    translations: {
+      en: {
+        label: "Elections",
+        description:
+          "Methods and tools for following campaign interviews, debates, and public claims.",
+      },
+      pt: {
+        label: "Eleições",
+        description:
+          "Métodos e ferramentas para acompanhar entrevistas, debates e afirmações públicas de campanha.",
+      },
+      es: {
+        label: "Elecciones",
+        description:
+          "Métodos y herramientas para seguir entrevistas, debates y afirmaciones públicas de campaña.",
+      },
+    },
+  },
   {
     slug: "adversarial-review",
     translations: {
@@ -185,6 +240,291 @@ export const blogTags: BlogTag[] = [
 ];
 
 const posts: BlogPost[] = [
+  {
+    slug: "what-is-live-intelligence",
+    publishedAt: "2026-08-09",
+    updatedAt: "2026-08-10",
+    author: "Jiddu",
+    tags: ["live-intelligence", "elections", "responsible-ai"],
+    image: {
+      src: "/blog/jiddu-context-live-intelligence.webp",
+      width: 1600,
+      height: 1116,
+      type: "image/webp",
+      full: {
+        src: "/blog/jiddu-context-full.png",
+        width: 2178,
+        height: 1519,
+        type: "image/png",
+      },
+    },
+    citations: [
+      "https://www.tse.jus.br/legislacao/compilada/res/2026/resolucao-no-23-751-de-26-de-fevereiro-de-2026",
+      "https://www.fec.gov/introduction-campaign-finance/election-results-and-voting-information/",
+      "https://jiddu.app/context",
+    ],
+    ctaHref: "/context",
+    translations: {
+      en: {
+        title:
+          "What is live intelligence — and how Jiddu Context helps you follow political speech in real time",
+        seoTitle: "Jiddu Context: live intelligence for political debates",
+        description:
+          "Meet Jiddu Context, a live workspace that transcribes political speech and organizes entities, claims, sources, neutrality, and fallacies.",
+        excerpt:
+          "Political speech moves faster than careful analysis. Jiddu Context turns a live interview or debate into a workspace you can inspect while the conversation is still happening.",
+        readingTime: "5 min read",
+        imageAlt:
+          "Jiddu Context analyzing a Brazilian political interview beside a live transcript, entity graph, sources, neutrality, and fallacy panels",
+        imageCaption:
+          "Jiddu Context running beside an interview, with the transcript, entity graph, sources, neutrality, and fallacy analysis in one session.",
+        imageOpenLabel: "Open the full-resolution Jiddu Context image",
+        body: `A political interview can produce dozens of names, numbers, accusations, comparisons, and promises in a few minutes. By the time a viewer searches for one claim, the conversation has already moved on.
+
+**Jiddu Context** turns that stream of speech into a workspace. It listens through the microphone or a browser tab, transcribes the conversation, maps the people and organizations mentioned, and organizes claims, sources, topics, neutrality signals, and possible fallacies as the session develops.
+
+> Jiddu Context is a live intelligence workspace built on an orchestrated multi-agent architecture.
+
+## Why launch it now?
+
+The next election cycle will put a large volume of political speech in front of voters, journalists, researchers, and campaign observers. Brazil holds the first round of its 2026 general election on **October 4**, with a possible second round on **October 25**, according to the [official electoral rules published by the Superior Electoral Court](https://www.tse.jus.br/legislacao/compilada/res/2026/resolucao-no-23-751-de-26-de-fevereiro-de-2026). The next regularly scheduled U.S. federal general election, including the midterms, is **November 3**, according to the [Federal Election Commission](https://www.fec.gov/introduction-campaign-finance/election-results-and-voting-information/).
+
+During this period, candidates will appear in debates, long-form interviews, press conferences, podcasts, radio programs, and live streams. Each format makes careful follow-up difficult: a factual claim may depend on an older statistic, a name may refer to several people, and a persuasive phrase may sound conclusive without presenting evidence.
+
+Context keeps these elements visible without forcing the user to pause the conversation and open a trail of disconnected searches.
+
+## What Jiddu Context does
+
+A Context session combines several forms of analysis around the same transcript:
+
+1. **Live transcription:** captures audio from a microphone or browser tab and keeps the conversation readable as it happens.
+2. **Speaker identification:** separates speakers and lets the user review their names after the session.
+3. **Context graph:** maps people, organizations, institutions, events, and the relationships mentioned in the conversation.
+4. **Claims and sources:** detects verifiable statements, searches for supporting material, and distinguishes a sourced verdict from a claim that still needs review.
+5. **Neutrality and fallacies:** points to language that may deserve closer examination and explains the reason for the signal.
+6. **Topics and navigation:** groups recurring subjects and links findings back to the relevant part of the transcript.
+
+The saved workspace preserves the structure of the session so the user can revisit a claim, correct a participant's name, inspect a source, or compare parts of the conversation later.
+
+## Why we use multiple agents
+
+Transcription, entity resolution, source research, claim verification, neutrality analysis, and fallacy detection are different jobs. In Context, specialized agents handle these jobs around a shared session. The transcript gives them a common timeline, and the orchestrator keeps their results connected to the relevant people and passages.
+
+This separation also makes the interface easier to audit. A source appears with the claim it is meant to support. A neutrality or fallacy signal includes an explanation. A person or organization appears in the graph with the passage that introduced it. The user can inspect the chain instead of receiving a single opaque answer.
+
+## A practical election use case
+
+Suppose a candidate says that an indicator fell by 40%, attributes the result to a government program, and names an institution responsible for the data. Context can keep the exact passage in the transcript, add the candidate and institution to the graph, identify the numerical claim, and look for recent sources related to it.
+
+A journalist can use the saved workspace as a reporting notebook. A researcher can compare recurring themes across an interview. A voter can return to the original wording instead of relying on a clipped quote or a summary posted later.
+
+The same workflow applies to debates in Brazil, U.S. midterm interviews, legislative hearings, public meetings, and any conversation in which the relationship between a statement and its evidence matters.
+
+## What it does not do
+
+Context does not decide whether a candidate is trustworthy, infer hidden intentions, or tell anyone how to vote. Its analyses are automated and can be wrong. A transcript may mishear a name or number; an entity may be matched to the wrong person; a recent source may mention the same subject without proving the claim; and a neutrality or fallacy signal may depend on interpretation.
+
+Treat every result as a path for closer inspection. The transcript, cited sources, and original recording remain more important than a label produced by the system.
+
+You can [open Jiddu Context](/context) and start a session from your microphone or a browser tab.`,
+        faq: [
+          {
+            question: "Does Jiddu Context decide whether a candidate is lying?",
+            answer:
+              "No. It identifies claims, looks for relevant sources, and shows the evidence it found. The user still needs to inspect whether the sources address the exact statement and whether the conclusion is justified.",
+          },
+          {
+            question: "Can Context analyze a debate playing in my browser?",
+            answer:
+              "Yes. You can select a browser tab as the audio source. Context can also listen through the microphone for an in-person conversation or audio playing outside the browser.",
+          },
+          {
+            question: "What can I review after the session ends?",
+            answer:
+              "You can revisit the transcript, identify speakers, inspect entities and relationships, open cited sources, and review the neutrality, fallacy, fact, and topic panels saved with the workspace.",
+          },
+        ],
+        cta: {
+          title: "Follow the next conversation with Context",
+          description:
+            "Choose your microphone or a browser tab and turn a live interview, debate, or public meeting into a workspace you can inspect.",
+          label: "Open Jiddu Context",
+        },
+      },
+      pt: {
+        title:
+          "O que é inteligência ao vivo — e como o Jiddu Context ajuda a acompanhar o discurso político em tempo real",
+        seoTitle: "Jiddu Context: inteligência ao vivo para debates políticos",
+        description:
+          "Conheça o Jiddu Context, um workspace ao vivo que transcreve falas políticas e organiza entidades, afirmações, fontes, neutralidade e falácias.",
+        excerpt:
+          "O discurso político avança mais rápido que uma análise cuidadosa. O Jiddu Context transforma uma entrevista ou debate ao vivo em um workspace que você pode examinar enquanto a conversa acontece.",
+        readingTime: "5 min de leitura",
+        imageAlt:
+          "Jiddu Context analisando uma entrevista política brasileira ao lado da transcrição, do grafo de entidades e dos painéis de fontes, neutralidade e falácias",
+        imageCaption:
+          "O Jiddu Context acompanha uma entrevista com a transcrição, o grafo de entidades, as fontes e as análises de neutralidade e falácias na mesma sessão.",
+        imageOpenLabel: "Abrir a imagem do Jiddu Context em alta resolução",
+        body: `Uma entrevista política pode produzir dezenas de nomes, números, acusações, comparações e promessas em poucos minutos. Quando o espectador termina de pesquisar uma afirmação, a conversa já avançou.
+
+O **Jiddu Context** transforma esse fluxo de falas em um workspace. Ele escuta pelo microfone ou por uma aba do navegador, transcreve a conversa, mapeia pessoas e organizações mencionadas e organiza afirmações, fontes, temas, sinais de neutralidade e possíveis falácias conforme a sessão se desenvolve.
+
+> O Jiddu Context é um workspace de inteligência ao vivo, construído sobre uma arquitetura multiagente orquestrada.
+
+## Por que lançar agora?
+
+O próximo ciclo eleitoral colocará um grande volume de discurso político diante de eleitores, jornalistas, pesquisadores e observadores de campanha. O primeiro turno das Eleições Gerais de 2026 no Brasil será em **4 de outubro**, com eventual segundo turno em **25 de outubro**, segundo as [regras oficiais publicadas pelo Tribunal Superior Eleitoral](https://www.tse.jus.br/legislacao/compilada/res/2026/resolucao-no-23-751-de-26-de-fevereiro-de-2026). A próxima eleição federal geral dos Estados Unidos, que inclui as midterms, será em **3 de novembro**, segundo a [Federal Election Commission](https://www.fec.gov/introduction-campaign-finance/election-results-and-voting-information/).
+
+Nesse período, candidatos participarão de debates, entrevistas longas, coletivas de imprensa, podcasts, programas de rádio e transmissões ao vivo. Cada formato dificulta o acompanhamento cuidadoso: uma afirmação factual pode depender de uma estatística antiga, um nome pode se referir a várias pessoas e uma frase persuasiva pode parecer conclusiva sem apresentar evidências.
+
+O Context mantém esses elementos visíveis sem obrigar o usuário a pausar a conversa e abrir uma sequência de pesquisas desconectadas.
+
+## O que o Jiddu Context faz
+
+Uma sessão do Context reúne diferentes formas de análise em torno da mesma transcrição:
+
+1. **Transcrição ao vivo:** captura o áudio do microfone ou de uma aba do navegador e mantém a conversa legível enquanto ela acontece.
+2. **Identificação de interlocutores:** separa quem falou e permite revisar os nomes depois da sessão.
+3. **Grafo de contexto:** mapeia pessoas, organizações, instituições, eventos e as relações mencionadas na conversa.
+4. **Afirmações e fontes:** detecta falas verificáveis, procura material de apoio e diferencia um veredito com fontes de uma afirmação que ainda precisa de revisão.
+5. **Neutralidade e falácias:** aponta trechos cuja linguagem merece um exame mais atento e explica o motivo do sinal.
+6. **Temas e navegação:** agrupa assuntos recorrentes e conecta os achados ao trecho correspondente da transcrição.
+
+O workspace salvo preserva a estrutura da sessão para que o usuário possa retomar uma afirmação, corrigir o nome de um participante, examinar uma fonte ou comparar partes da conversa mais tarde.
+
+## Por que usamos vários agentes
+
+Transcrição, resolução de entidades, pesquisa de fontes, verificação de afirmações, análise de neutralidade e detecção de falácias são trabalhos diferentes. No Context, agentes especializados cuidam dessas tarefas em torno de uma sessão compartilhada. A transcrição oferece uma linha do tempo comum, e o orquestrador mantém os resultados ligados às pessoas e aos trechos relevantes.
+
+Essa separação também facilita a auditoria da interface. Uma fonte aparece junto da afirmação que pretende sustentar. Um sinal de neutralidade ou falácia inclui uma explicação. Uma pessoa ou organização aparece no grafo com o trecho em que foi introduzida. O usuário consegue examinar esse encadeamento em vez de receber uma resposta única e opaca.
+
+## Um exemplo prático nas eleições
+
+Imagine que um candidato diga que um indicador caiu 40%, atribua o resultado a um programa de governo e cite a instituição responsável pelos dados. O Context pode manter a fala exata na transcrição, adicionar o candidato e a instituição ao grafo, identificar a afirmação numérica e procurar fontes recentes relacionadas a ela.
+
+Um jornalista pode usar o workspace salvo como caderno de apuração. Um pesquisador pode comparar os temas recorrentes de uma entrevista. Um eleitor pode voltar às palavras originais sem depender de um corte ou de um resumo publicado depois.
+
+O mesmo fluxo serve para debates no Brasil, entrevistas das midterms nos Estados Unidos, audiências legislativas, reuniões públicas e qualquer conversa em que a relação entre uma fala e sua evidência importe.
+
+## O que ele não faz
+
+O Context não decide se um candidato é confiável, não infere intenções ocultas e não diz a ninguém como votar. Suas análises são automatizadas e podem estar erradas. A transcrição pode confundir um nome ou número; uma entidade pode ser associada à pessoa errada; uma fonte recente pode mencionar o mesmo assunto sem comprovar a afirmação; e um sinal de neutralidade ou falácia pode depender de interpretação.
+
+Trate cada resultado como um caminho para uma análise mais cuidadosa. A transcrição, as fontes citadas e a gravação original continuam sendo mais importantes que um rótulo produzido pelo sistema.
+
+Você pode [abrir o Jiddu Context](/context) e iniciar uma sessão pelo microfone ou por uma aba do navegador.`,
+        faq: [
+          {
+            question: "O Jiddu Context decide se um candidato está mentindo?",
+            answer:
+              "Não. Ele identifica afirmações, procura fontes relacionadas e mostra as evidências encontradas. O usuário ainda precisa examinar se as fontes respondem à fala exata e se a conclusão se sustenta.",
+          },
+          {
+            question: "O Context consegue analisar um debate aberto no navegador?",
+            answer:
+              "Sim. Você pode selecionar uma aba do navegador como fonte do áudio. O Context também pode escutar pelo microfone uma conversa presencial ou um áudio reproduzido fora do navegador.",
+          },
+          {
+            question: "O que posso revisar depois que a sessão termina?",
+            answer:
+              "Você pode retomar a transcrição, identificar os interlocutores, examinar entidades e relações, abrir as fontes citadas e revisar os painéis de neutralidade, falácias, fatos e temas salvos no workspace.",
+          },
+        ],
+        cta: {
+          title: "Acompanhe a próxima conversa com o Context",
+          description:
+            "Escolha o microfone ou uma aba do navegador e transforme uma entrevista, debate ou reunião pública ao vivo em um workspace que você pode examinar.",
+          label: "Abrir o Jiddu Context",
+        },
+      },
+      es: {
+        title:
+          "Qué es la inteligencia en vivo — y cómo Jiddu Context ayuda a seguir el discurso político en tiempo real",
+        seoTitle: "Jiddu Context: inteligencia en vivo para debates políticos",
+        description:
+          "Conoce Jiddu Context, un workspace en vivo que transcribe discursos políticos y organiza entidades, afirmaciones, fuentes, neutralidad y falacias.",
+        excerpt:
+          "El discurso político avanza más rápido que un análisis cuidadoso. Jiddu Context convierte una entrevista o debate en vivo en un workspace que puedes examinar mientras ocurre la conversación.",
+        readingTime: "5 min de lectura",
+        imageAlt:
+          "Jiddu Context analizando una entrevista política brasileña junto a la transcripción, el grafo de entidades y los paneles de fuentes, neutralidad y falacias",
+        imageCaption:
+          "Jiddu Context acompaña una entrevista con la transcripción, el grafo de entidades, las fuentes y los análisis de neutralidad y falacias en la misma sesión.",
+        imageOpenLabel: "Abrir la imagen de Jiddu Context en alta resolución",
+        body: `Una entrevista política puede producir decenas de nombres, cifras, acusaciones, comparaciones y promesas en pocos minutos. Cuando el espectador termina de buscar una afirmación, la conversación ya ha avanzado.
+
+**Jiddu Context** convierte ese flujo de palabras en un workspace. Escucha a través del micrófono o de una pestaña del navegador, transcribe la conversación, mapea las personas y organizaciones mencionadas y organiza afirmaciones, fuentes, temas, señales de neutralidad y posibles falacias mientras se desarrolla la sesión.
+
+> Jiddu Context es un workspace de inteligencia en vivo construido sobre una arquitectura multiagente orquestada.
+
+## ¿Por qué lanzarlo ahora?
+
+El próximo ciclo electoral pondrá un gran volumen de discurso político ante votantes, periodistas, investigadores y observadores de campaña. La primera vuelta de las Elecciones Generales de 2026 en Brasil será el **4 de octubre**, con una posible segunda vuelta el **25 de octubre**, según las [reglas oficiales publicadas por el Tribunal Superior Electoral](https://www.tse.jus.br/legislacao/compilada/res/2026/resolucao-no-23-751-de-26-de-fevereiro-de-2026). La próxima elección federal general de Estados Unidos, que incluye las midterms, será el **3 de noviembre**, según la [Federal Election Commission](https://www.fec.gov/introduction-campaign-finance/election-results-and-voting-information/).
+
+Durante este periodo, los candidatos participarán en debates, entrevistas extensas, ruedas de prensa, pódcasts, programas de radio y transmisiones en vivo. Cada formato dificulta el seguimiento cuidadoso: una afirmación factual puede depender de una estadística antigua, un nombre puede referirse a varias personas y una frase persuasiva puede parecer concluyente sin presentar pruebas.
+
+Context mantiene estos elementos visibles sin obligar al usuario a pausar la conversación y abrir una serie de búsquedas desconectadas.
+
+## Lo que hace Jiddu Context
+
+Una sesión de Context reúne distintas formas de análisis alrededor de la misma transcripción:
+
+1. **Transcripción en vivo:** captura el audio del micrófono o de una pestaña del navegador y mantiene la conversación legible mientras ocurre.
+2. **Identificación de interlocutores:** separa a quienes hablaron y permite revisar sus nombres después de la sesión.
+3. **Grafo de contexto:** mapea personas, organizaciones, instituciones, eventos y las relaciones mencionadas en la conversación.
+4. **Afirmaciones y fuentes:** detecta declaraciones verificables, busca material de apoyo y distingue un veredicto con fuentes de una afirmación que todavía necesita revisión.
+5. **Neutralidad y falacias:** señala fragmentos cuyo lenguaje merece un examen más atento y explica el motivo de la señal.
+6. **Temas y navegación:** agrupa asuntos recurrentes y conecta los hallazgos con el fragmento correspondiente de la transcripción.
+
+El workspace guardado conserva la estructura de la sesión para que el usuario pueda retomar una afirmación, corregir el nombre de un participante, examinar una fuente o comparar partes de la conversación más adelante.
+
+## Por qué usamos varios agentes
+
+La transcripción, la resolución de entidades, la búsqueda de fuentes, la verificación de afirmaciones, el análisis de neutralidad y la detección de falacias son tareas diferentes. En Context, agentes especializados se ocupan de estos trabajos alrededor de una sesión compartida. La transcripción les da una línea de tiempo común y el orquestador mantiene los resultados conectados con las personas y los fragmentos relevantes.
+
+Esta separación también facilita la auditoría de la interfaz. Una fuente aparece junto a la afirmación que pretende respaldar. Una señal de neutralidad o falacia incluye una explicación. Una persona u organización aparece en el grafo con el fragmento que la introdujo. El usuario puede examinar esta cadena en lugar de recibir una única respuesta opaca.
+
+## Un ejemplo práctico durante las elecciones
+
+Imagina que un candidato dice que un indicador cayó un 40 %, atribuye el resultado a un programa de gobierno y menciona la institución responsable de los datos. Context puede conservar las palabras exactas en la transcripción, añadir al candidato y a la institución al grafo, identificar la afirmación numérica y buscar fuentes recientes relacionadas con ella.
+
+Un periodista puede usar el workspace guardado como cuaderno de investigación. Un investigador puede comparar los temas recurrentes de una entrevista. Un votante puede volver a las palabras originales sin depender de un recorte o de un resumen publicado después.
+
+El mismo flujo sirve para debates en Brasil, entrevistas de las midterms en Estados Unidos, audiencias legislativas, reuniones públicas y cualquier conversación en la que importe la relación entre una declaración y sus pruebas.
+
+## Lo que no hace
+
+Context no decide si un candidato es confiable, no infiere intenciones ocultas ni le dice a nadie cómo votar. Sus análisis son automatizados y pueden equivocarse. La transcripción puede confundir un nombre o una cifra; una entidad puede asociarse con la persona equivocada; una fuente reciente puede mencionar el mismo asunto sin demostrar la afirmación; y una señal de neutralidad o falacia puede depender de la interpretación.
+
+Trata cada resultado como un camino para un análisis más cuidadoso. La transcripción, las fuentes citadas y la grabación original siguen siendo más importantes que una etiqueta producida por el sistema.
+
+Puedes [abrir Jiddu Context](/context) e iniciar una sesión desde el micrófono o una pestaña del navegador.`,
+        faq: [
+          {
+            question: "¿Jiddu Context decide si un candidato está mintiendo?",
+            answer:
+              "No. Identifica afirmaciones, busca fuentes relacionadas y muestra las pruebas encontradas. El usuario todavía debe examinar si las fuentes responden a la declaración exacta y si la conclusión está justificada.",
+          },
+          {
+            question: "¿Context puede analizar un debate abierto en el navegador?",
+            answer:
+              "Sí. Puedes seleccionar una pestaña del navegador como fuente de audio. Context también puede escuchar a través del micrófono una conversación presencial o un audio reproducido fuera del navegador.",
+          },
+          {
+            question: "¿Qué puedo revisar después de que termina la sesión?",
+            answer:
+              "Puedes retomar la transcripción, identificar a los interlocutores, examinar entidades y relaciones, abrir las fuentes citadas y revisar los paneles de neutralidad, falacias, hechos y temas guardados en el workspace.",
+          },
+        ],
+        cta: {
+          title: "Sigue la próxima conversación con Context",
+          description:
+            "Elige el micrófono o una pestaña del navegador y convierte una entrevista, debate o reunión pública en vivo en un workspace que puedes examinar.",
+          label: "Abrir Jiddu Context",
+        },
+      },
+    },
+  },
   {
     slug: "what-is-adversarial-review",
     publishedAt: "2026-08-02",
