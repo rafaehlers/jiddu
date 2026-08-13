@@ -7,7 +7,7 @@ import { publicPageMetadata } from "@/lib/social-metadata";
 export const metadata: Metadata = publicPageMetadata({
   title: "Jiddu — how it works",
   description:
-    "Technical walkthrough of Jiddu's pipelines, credit billing, LiteParse PDF ingestion, venue-calibrated adversarial paper review, model routing, privacy, rate limits, and methodology.",
+    "Technical walkthrough of Jiddu's analysis pipelines, Jiddu Context, credit billing, model routing, privacy, limitations, and methodology.",
   path: "/how-it-works",
 });
 

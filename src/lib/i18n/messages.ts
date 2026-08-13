@@ -1183,7 +1183,7 @@ const en: Messages = {
     {
       title: "1. The big picture",
       paragraphs: [
-        "Jiddu offers six independent ways to examine a text or paper: fallacy detection, fact-checking, neutrality assessment, paragraph-by-paragraph explanation, AI-slop pattern detection and adversarial paper review. Live mode adds real-time transcription with selectable fallacy, fact-check claim and neutrality lenses.",
+        "Jiddu offers six independent ways to examine a text or paper: fallacy detection, fact-checking, neutrality assessment, paragraph-by-paragraph explanation, AI-slop pattern detection and adversarial paper review. Live mode adds real-time transcription with selectable context, fallacy, fact-check claim and neutrality lenses. Jiddu Context applies all four lenses in one workspace with an entity graph and saved session timeline.",
         "Analyses return structured, source-linked findings as they become available. Output follows the language selected in the interface, and each feature can be used independently.",
       ],
     },
@@ -1357,13 +1357,23 @@ const en: Messages = {
       title: "13. Live mode (beta)",
       paragraphs: [
         "At [/live](/live), Jiddu transcribes a microphone or, on Chromium browsers, a browser tab with `gpt-live-transcribe`. During capture, audio travels directly from the browser to OpenAI over an encrypted Realtime connection; Jiddu receives the transcript needed for analysis, not the raw audio. After capture, the user can download the browser-local recording or, after confirming the additional cost, explicitly send a temporary copy through Jiddu to OpenAI's `gpt-4o-transcribe-diarize` for speaker labeling. Jiddu does not retain that audio file. The user may separately save the labeled text and edited speaker names to private account history.",
-        "GPT-5.6 Luna or Gemma 4 31B periodically analyzes the growing transcript through the selected Live lenses: logical fallacies, check-worthy claim extraction and neutrality assessment. The user chooses a 10, 20, 30 or 60-second interval; longer intervals give each analysis more context. Results stream into an All feed and dedicated panels, with a badge identifying each type.",
+        "GPT-5.6 Luna or Gemma 4 31B periodically analyzes the growing transcript through the selected Live lenses: context guide, logical fallacies, check-worthy claim extraction and neutrality assessment. The user chooses a 10, 20, 30 or 60-second interval; longer intervals give each analysis more context. Results stream into an All feed and dedicated panels, with a badge identifying each type.",
         "After finalization, each selected lens receives a shareable full viewer. Detected claims can also be verified against web sources directly inside Live, with evidence-backed verdicts and sources, or from the full fact-check viewer.",
         "Sessions are capped at 60 minutes, use Jiddu Credits or included access, and store only the transcript and selected analysis results. Optional speaker identification is billed separately by audio duration. Tab audio is supported in Chrome and Edge; microphone capture works in other compatible browsers.",
       ],
     },
     {
-      title: "14. Explain — paper explainer",
+      title: "14. Jiddu Context (beta)",
+      paragraphs: [
+        "At [/context](/context), Jiddu turns a microphone or Chromium browser tab into a live workspace. `gpt-live-transcribe` provides the shared transcript, while GPT-5.6 Luna or Gemma 4 31B analyzes each interval so the graph and panels update as the conversation continues.",
+        "The context graph maps people, institutions, organizations, countries and events explicitly mentioned in the transcript, along with the relationships stated between them. Each card links back to the relevant passage. Listeners can correct a name, merge duplicates or remove an incorrect entity; later analysis preserves those manual corrections.",
+        "Topics, entities, check-worthy claims, sources, fallacy findings and neutrality findings remain separate inside the workspace. Public profiles and recent related coverage add background, but related coverage is labeled as context rather than proof. Claim verification is an explicit step and returns a verdict with cited sources.",
+        "When the session ends, Jiddu recalculates the final neutrality assessment from the complete transcript and saves the transcript, graph, findings and event timeline to the user's private account history. Optional speaker labeling sends a temporary audio copy to `gpt-4o-transcribe-diarize`; Jiddu does not retain the audio file.",
+        "**Limits.** Context can mishear a name or number, match the wrong public profile or surface a related article that does not support the spoken claim. The graph represents relationships stated in the conversation, not independently established facts. The transcript and cited sources remain the primary evidence.",
+      ],
+    },
+    {
+      title: "15. Explain — paper explainer",
       paragraphs: [
         "Explain takes an academic paper or technical document and produces a Paper Map plus a paragraph-by-paragraph plain-language explanation. The map identifies the paper type, contribution type, central question, contribution, approach, main answer, evidence and any limitation explicitly stated by the authors. Each map statement links back to supporting paragraphs. Each paragraph also gets a role tag (Background / Objective / Method / Result / Interpretation / Limitation / Conclusion) and an explanation written at the chosen audience level.",
         "Audience levels: **Child** (short, concrete explanations with everyday words and no assumed background), **High school** (explicit reasoning with every field-specific term defined), **Undergraduate** (standard academic terminology and introductory research methods assumed), **Expert** (concise peer-level analysis that foregrounds assumptions, evidence strength and limitations). The level changes assumed knowledge, terminology, explanatory depth and prose structure; it does not filter evidence, fact-check claims or validate content.",
@@ -1374,7 +1384,7 @@ const en: Messages = {
       ],
     },
     {
-      title: "15. Adversarial paper review",
+      title: "16. Adversarial paper review",
       paragraphs: [
         "Adversarial review accepts one final PDF plus target venue, edition, track, paper type and optional review date. The result includes a recommendation, summary, strengths, localized weaknesses, questions, reproducibility checklist, references and the venue standard applied.",
         "Methodologically, Jiddu adapts the **SPECS** review dimensions — Story, Presentation, Evaluations, Correctness and Significance — and the staged synthesis/self-critique pattern described in [AI-Assisted Peer Review at Scale: The AAAI-26 AI Review Pilot](https://arxiv.org/abs/2604.13940). Jiddu is an independent implementation with its own claim/evidence ledger, venue calibration, parser, output contract and safeguards; it does not reproduce the AAAI-26 system.",
@@ -1386,7 +1396,7 @@ const en: Messages = {
       ],
     },
     {
-      title: "16. Public API & MCP (for agents)",
+      title: "17. Public API & MCP (for agents)",
       paragraphs: [
         "The text analyses are available through a public REST API, while adversarial review runs as an asynchronous job suitable for longer agent workflows. Requests are tied to a verified Jiddu account and use included access or Jiddu Credits.",
         "The hosted MCP server exposes the text tools plus adversarial review. Compatible clients use [WorkOS AuthKit MCP](https://workos.com/docs/authkit/mcp) for OAuth sign-in and resource-scoped access.",
@@ -1394,7 +1404,7 @@ const en: Messages = {
       ],
     },
     {
-      title: "17. Methodology and evaluation",
+      title: "18. Methodology and evaluation",
       paragraphs: [
         "[Claimify](https://arxiv.org/abs/2502.10855) informs claim extraction, and [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) informs verdict assessment, source tiers and neutrality. [no-ai-slop](https://github.com/petergyang/no-ai-slop) supplies the starting taxonomy for writing-pattern detection.",
         "Adversarial paper review adapts the SPECS dimensions and staged synthesis/self-critique described in [AI-Assisted Peer Review at Scale: The AAAI-26 AI Review Pilot](https://arxiv.org/abs/2604.13940). Jiddu adds its own ledger, LiteParse extraction, DBLP discovery, venue profiles, source validation and retention gate. It is not affiliated with those groups, DBLP or the venues.",
@@ -2198,7 +2208,7 @@ const pt: Messages = {
     {
       title: "1. Visão geral",
       paragraphs: [
-        "O Jiddu oferece seis formas independentes de examinar um texto ou paper: detecção de falácias, checagem de fatos, avaliação de imparcialidade, explicação parágrafo a parágrafo, detecção de padrões de slop e revisão adversarial. O modo Live acrescenta transcrição em tempo real com lentes selecionáveis de falácias, afirmações para fact-check e neutralidade.",
+        "O Jiddu oferece seis formas independentes de examinar um texto ou paper: detecção de falácias, checagem de fatos, avaliação de imparcialidade, explicação parágrafo a parágrafo, detecção de padrões de slop e revisão adversarial. O modo Live acrescenta transcrição em tempo real com lentes selecionáveis de contexto, falácias, afirmações para fact-check e neutralidade. O Jiddu Context aplica as quatro lentes no mesmo workspace, com um grafo de entidades e uma timeline salva da sessão.",
         "As análises retornam achados estruturados e ligados à fonte conforme ficam disponíveis. O resultado segue o idioma selecionado na interface, e cada função pode ser usada de forma independente.",
       ],
     },
@@ -2372,13 +2382,23 @@ const pt: Messages = {
       title: "13. Modo Live (beta)",
       paragraphs: [
         "Em [/live](/live), o Jiddu transcreve um microfone ou, em navegadores Chromium, uma aba com `gpt-live-transcribe`. Durante a captura, o áudio segue diretamente do navegador para a OpenAI por uma conexão Realtime criptografada; o Jiddu recebe a transcrição necessária para a análise, não o áudio bruto. Depois da captura, o usuário pode baixar a gravação local do navegador ou, após confirmar o custo adicional, enviar explicitamente uma cópia temporária pelo Jiddu ao `gpt-4o-transcribe-diarize` da OpenAI para separar os interlocutores. O Jiddu não retém esse arquivo de áudio. O usuário pode salvar separadamente o texto identificado e os nomes editados no histórico privado da conta.",
-        "GPT-5.6 Luna ou Gemma 4 31B analisa periodicamente a transcrição crescente pelas lentes Live selecionadas: falácias lógicas, extração de afirmações verificáveis e neutralidade. O usuário escolhe um intervalo de 10, 20, 30 ou 60 segundos; intervalos maiores dão mais contexto a cada análise. Os resultados aparecem em um feed Todos e em painéis dedicados, com um badge identificando cada tipo.",
+        "GPT-5.6 Luna ou Gemma 4 31B analisa periodicamente a transcrição crescente pelas lentes Live selecionadas: guia de contexto, falácias lógicas, extração de afirmações verificáveis e neutralidade. O usuário escolhe um intervalo de 10, 20, 30 ou 60 segundos; intervalos maiores dão mais contexto a cada análise. Os resultados aparecem em um feed Todos e em painéis dedicados, com um badge identificando cada tipo.",
         "Depois da finalização, cada lente selecionada recebe um viewer completo compartilhável. As afirmações detectadas também podem ser verificadas contra fontes da web diretamente no Live, com vereditos e fontes, ou no viewer completo de fact-check.",
         "As sessões são limitadas a 60 minutos, usam Créditos Jiddu ou acesso incluído e armazenam apenas a transcrição e os resultados selecionados. A identificação opcional de interlocutores é cobrada separadamente pela duração do áudio. Áudio de aba funciona em Chrome e Edge; microfone funciona em outros navegadores compatíveis.",
       ],
     },
     {
-      title: "14. Explain — explicador de artigos",
+      title: "14. Jiddu Context (beta)",
+      paragraphs: [
+        "Em [/context](/context), o Jiddu transforma o áudio de um microfone ou de uma aba do navegador Chromium em um workspace ao vivo. O `gpt-live-transcribe` fornece a transcrição comum, enquanto GPT-5.6 Luna ou Gemma 4 31B analisa cada intervalo para atualizar o grafo e os painéis conforme a conversa avança.",
+        "O grafo de contexto mapeia pessoas, instituições, organizações, países e eventos citados explicitamente na transcrição, além das relações declaradas entre eles. Cada card leva ao trecho relevante. O ouvinte pode corrigir um nome, unir duplicatas ou remover uma entidade incorreta; as análises seguintes preservam essas correções manuais.",
+        "Assuntos, entidades, afirmações verificáveis, fontes, achados de falácia e sinais de neutralidade permanecem separados no workspace. Perfis públicos e notícias recentes relacionadas acrescentam contexto, mas não servem como prova da afirmação. A verificação de uma afirmação é uma etapa explícita e retorna um veredito com fontes citadas.",
+        "Quando a sessão termina, o Jiddu recalcula a avaliação final de neutralidade a partir da transcrição completa e salva a transcrição, o grafo, os achados e a timeline de eventos no histórico privado da conta. A identificação opcional de interlocutores envia uma cópia temporária do áudio ao `gpt-4o-transcribe-diarize`; o Jiddu não retém esse arquivo.",
+        "**Limites.** O Context pode transcrever um nome ou número incorretamente, associar o perfil público errado ou exibir uma notícia relacionada que não sustenta a fala. O grafo representa relações mencionadas na conversa, não fatos comprovados de forma independente. A transcrição e as fontes citadas continuam sendo as evidências principais.",
+      ],
+    },
+    {
+      title: "15. Explain — explicador de artigos",
       paragraphs: [
         "Explain recebe um artigo acadêmico ou documento técnico e produz um Mapa do Paper junto da explicação parágrafo a parágrafo em linguagem simples. O mapa identifica tipo de paper, tipo de contribuição, pergunta central, contribuição, abordagem, resposta principal, evidências e qualquer limitação declarada pelos autores. Cada item aponta para os parágrafos que o sustentam. Cada parágrafo também recebe uma tag de papel (Contexto / Objetivo / Método / Resultado / Interpretação / Limitação / Conclusão) e uma explicação no nível escolhido.",
         "Níveis de audiência: **Criança** (explicações curtas e concretas, com palavras cotidianas e sem conhecimento prévio presumido), **Ensino médio** (raciocínio explícito e definição de todo termo específico da área), **Graduação** (terminologia acadêmica padrão e métodos introdutórios de pesquisa presumidos), **Especialista** (análise concisa entre pares, destacando pressupostos, força das evidências e limitações). O nível muda o conhecimento presumido, a terminologia, a profundidade da explicação e a estrutura da prosa; não filtra evidências, checa afirmações nem valida o conteúdo.",
@@ -2389,7 +2409,7 @@ const pt: Messages = {
       ],
     },
     {
-      title: "15. Revisão adversarial de paper",
+      title: "16. Revisão adversarial de paper",
       paragraphs: [
         "A revisão adversarial aceita um PDF final, venue-alvo, edição, track, tipo de paper e data opcional. O resultado inclui recomendação, resumo, pontos fortes, fraquezas localizadas, perguntas, checklist de reprodutibilidade, referências e o padrão da venue aplicado.",
         "Metodologicamente, o Jiddu adapta as dimensões de revisão **SPECS** — Story, Presentation, Evaluations, Correctness e Significance — e o padrão de síntese e autocrítica em estágios descrito em [AI-Assisted Peer Review at Scale: The AAAI-26 AI Review Pilot](https://arxiv.org/abs/2604.13940). O Jiddu é uma implementação independente, com ledger próprio de claims e evidências, calibração por venue, parser, contrato de saída e salvaguardas; ele não reproduz o sistema da AAAI-26.",
@@ -2401,7 +2421,7 @@ const pt: Messages = {
       ],
     },
     {
-      title: "16. API pública & MCP (para agentes)",
+      title: "17. API pública & MCP (para agentes)",
       paragraphs: [
         "As análises de texto estão disponíveis por uma API REST pública, enquanto a revisão adversarial roda como job assíncrono adequado a fluxos mais longos de agentes. As solicitações ficam ligadas a uma conta Jiddu verificada e usam acesso incluído ou Créditos Jiddu.",
         "O servidor MCP hospedado expõe as ferramentas de texto e a revisão adversarial. Clientes compatíveis usam o [WorkOS AuthKit MCP](https://workos.com/docs/authkit/mcp) para login OAuth e acesso restrito ao recurso.",
@@ -2409,7 +2429,7 @@ const pt: Messages = {
       ],
     },
     {
-      title: "17. Metodologia e avaliação",
+      title: "18. Metodologia e avaliação",
       paragraphs: [
         "O [Claimify](https://arxiv.org/abs/2502.10855) orienta a extração de afirmações, e [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) orienta a avaliação dos vereditos, os tiers de fontes e a imparcialidade. O [no-ai-slop](https://github.com/petergyang/no-ai-slop) fornece a taxonomia inicial da detecção de padrões de escrita.",
         "A revisão adversarial de papers adapta as dimensões SPECS e a síntese e autocrítica por etapas descritas em [AI-Assisted Peer Review at Scale: The AAAI-26 AI Review Pilot](https://arxiv.org/abs/2604.13940). O Jiddu adiciona ledger, extração por LiteParse, descoberta via DBLP, perfis de venue, validação de fontes e gate de retenção próprios. Não tem afiliação com esses grupos, com o DBLP nem com as venues.",
@@ -3215,7 +3235,7 @@ const es: Messages = {
     {
       title: "1. Visión general",
       paragraphs: [
-        "Jiddu ofrece seis formas independientes de examinar un texto o paper: detección de falacias, fact-checking, evaluación de imparcialidad, explicación párrafo por párrafo, detección de patrones de slop y revisión adversarial. El modo Live añade transcripción en tiempo real con lentes seleccionables de falacias, afirmaciones para fact-check y neutralidad.",
+        "Jiddu ofrece seis formas independientes de examinar un texto o paper: detección de falacias, fact-checking, evaluación de imparcialidad, explicación párrafo por párrafo, detección de patrones de slop y revisión adversarial. El modo Live añade transcripción en tiempo real con lentes seleccionables de contexto, falacias, afirmaciones para fact-check y neutralidad. Jiddu Context aplica las cuatro lentes en un mismo workspace, con un grafo de entidades y una línea temporal guardada de la sesión.",
         "Los análisis devuelven hallazgos estructurados y vinculados a la fuente a medida que están disponibles. El resultado sigue el idioma seleccionado en la interfaz y cada función puede utilizarse de forma independiente.",
       ],
     },
@@ -3389,13 +3409,23 @@ const es: Messages = {
       title: "13. Modo Live (beta)",
       paragraphs: [
         "En [/live](/live), Jiddu transcribe un micrófono o, en navegadores Chromium, una pestaña con `gpt-live-transcribe`. Durante la captura, el audio viaja directamente desde el navegador a OpenAI mediante una conexión Realtime cifrada; Jiddu recibe la transcripción necesaria para el análisis, no el audio bruto. Después de la captura, el usuario puede descargar la grabación local del navegador o, tras confirmar el coste adicional, enviar explícitamente una copia temporal mediante Jiddu a `gpt-4o-transcribe-diarize` de OpenAI para separar a los interlocutores. Jiddu no conserva ese archivo de audio. El usuario puede guardar por separado el texto identificado y los nombres editados en el historial privado de la cuenta.",
-        "GPT-5.6 Luna o Gemma 4 31B analiza periódicamente la transcripción creciente mediante las lentes Live seleccionadas: falacias lógicas, extracción de afirmaciones verificables y neutralidad. El usuario elige un intervalo de 10, 20, 30 o 60 segundos; los intervalos más largos aportan más contexto a cada análisis. Los resultados aparecen en un feed Todos y en paneles dedicados, con una insignia que identifica cada tipo.",
+        "GPT-5.6 Luna o Gemma 4 31B analiza periódicamente la transcripción creciente mediante las lentes Live seleccionadas: guía de contexto, falacias lógicas, extracción de afirmaciones verificables y neutralidad. El usuario elige un intervalo de 10, 20, 30 o 60 segundos; los intervalos más largos aportan más contexto a cada análisis. Los resultados aparecen en un feed Todos y en paneles dedicados, con una insignia que identifica cada tipo.",
         "Al finalizar, cada lente seleccionada recibe un visor completo compartible. Las afirmaciones detectadas también pueden verificarse con fuentes web directamente en Live, con veredictos y fuentes, o desde el visor completo de fact-check.",
         "Las sesiones están limitadas a 60 minutos, utilizan Créditos Jiddu o acceso incluido y almacenan solo la transcripción y los resultados seleccionados. La identificación opcional de interlocutores se cobra por separado según la duración del audio. El audio de pestañas funciona en Chrome y Edge; el micrófono funciona en otros navegadores compatibles.",
       ],
     },
     {
-      title: "14. Explain — explicador de artículos",
+      title: "14. Jiddu Context (beta)",
+      paragraphs: [
+        "En [/context](/context), Jiddu convierte el audio de un micrófono o de una pestaña del navegador Chromium en un workspace en vivo. `gpt-live-transcribe` aporta la transcripción común, mientras GPT-5.6 Luna o Gemma 4 31B analiza cada intervalo para actualizar el grafo y los paneles a medida que avanza la conversación.",
+        "El grafo de contexto mapea personas, instituciones, organizaciones, países y eventos mencionados explícitamente en la transcripción, además de las relaciones declaradas entre ellos. Cada tarjeta enlaza con el fragmento relevante. El oyente puede corregir un nombre, unir duplicados o eliminar una entidad incorrecta; los análisis posteriores conservan esas correcciones manuales.",
+        "Los temas, las entidades, las afirmaciones verificables, las fuentes, los hallazgos de falacias y las señales de neutralidad permanecen separados en el workspace. Los perfiles públicos y las noticias recientes relacionadas añaden contexto, pero no prueban la afirmación. Verificar una afirmación es un paso explícito y devuelve un veredicto con fuentes citadas.",
+        "Cuando termina la sesión, Jiddu recalcula la evaluación final de neutralidad a partir de la transcripción completa y guarda la transcripción, el grafo, los hallazgos y la línea temporal de eventos en el historial privado de la cuenta. La identificación opcional de interlocutores envía una copia temporal del audio a `gpt-4o-transcribe-diarize`; Jiddu no conserva ese archivo.",
+        "**Límites.** Context puede transcribir mal un nombre o una cifra, asociar el perfil público equivocado o mostrar una noticia relacionada que no respalda lo dicho. El grafo representa relaciones mencionadas en la conversación, no hechos comprobados de forma independiente. La transcripción y las fuentes citadas siguen siendo las pruebas principales.",
+      ],
+    },
+    {
+      title: "15. Explain — explicador de artículos",
       paragraphs: [
         "Explain recibe un artículo académico o documento técnico y produce un Mapa del Paper junto con una explicación párrafo por párrafo en lenguaje sencillo. El mapa identifica tipo de paper, tipo de contribución, pregunta central, aporte, enfoque, respuesta principal, evidencia y cualquier limitación declarada por los autores. Cada punto enlaza con los párrafos que lo sustentan. Cada párrafo también recibe una etiqueta de función (Contexto / Objetivo / Método / Resultado / Interpretación / Limitación / Conclusión) y una explicación en el nivel elegido.",
         "Niveles de audiencia: **Niño** (explicaciones breves y concretas, con palabras cotidianas y sin conocimientos previos asumidos), **Secundaria** (razonamiento explícito y definición de cada término específico del campo), **Universitario** (terminología académica estándar y métodos introductorios de investigación asumidos), **Experto** (análisis conciso entre pares que destaca supuestos, solidez de la evidencia y limitaciones). El nivel cambia los conocimientos asumidos, la terminología, la profundidad explicativa y la estructura de la prosa; no filtra evidencia, verifica afirmaciones ni valida el contenido.",
@@ -3406,7 +3436,7 @@ const es: Messages = {
       ],
     },
     {
-      title: "15. Revisión adversarial de papers",
+      title: "16. Revisión adversarial de papers",
       paragraphs: [
         "La revisión adversarial acepta un PDF final, venue objetivo, edición, track, tipo de paper y fecha opcional. El resultado incluye recomendación, resumen, fortalezas, debilidades localizadas, preguntas, checklist de reproducibilidad, referencias y el estándar del venue aplicado.",
         "Metodológicamente, Jiddu adapta las dimensiones de revisión **SPECS** — Story, Presentation, Evaluations, Correctness y Significance — y el patrón de síntesis y autocrítica por etapas descrito en [AI-Assisted Peer Review at Scale: The AAAI-26 AI Review Pilot](https://arxiv.org/abs/2604.13940). Jiddu es una implementación independiente, con su propio ledger de afirmaciones y evidencias, calibración por venue, parser, contrato de salida y salvaguardas; no reproduce el sistema de AAAI-26.",
@@ -3418,7 +3448,7 @@ const es: Messages = {
       ],
     },
     {
-      title: "16. API pública & MCP (para agentes)",
+      title: "17. API pública & MCP (para agentes)",
       paragraphs: [
         "Los análisis de texto están disponibles a través de una API REST pública, mientras que la revisión adversarial se ejecuta como un job asíncrono adecuado para flujos de agentes más largos. Las solicitudes están vinculadas a una cuenta Jiddu verificada y utilizan acceso incluido o Créditos Jiddu.",
         "El servidor MCP alojado expone las herramientas de texto y la revisión adversarial. Los clientes compatibles utilizan [WorkOS AuthKit MCP](https://workos.com/docs/authkit/mcp) para el inicio de sesión OAuth y el acceso restringido al recurso.",
@@ -3426,7 +3456,7 @@ const es: Messages = {
       ],
     },
     {
-      title: "17. Metodología y evaluación",
+      title: "18. Metodología y evaluación",
       paragraphs: [
         "[Claimify](https://arxiv.org/abs/2502.10855) orienta la extracción de afirmaciones, y [Distilling Expert Judgment at Scale](https://www.byforum.com/whitepaper-files/distilling-expert-judgment-at-scale.pdf) orienta la evaluación de veredictos, los tiers de fuentes y la imparcialidad. [no-ai-slop](https://github.com/petergyang/no-ai-slop) aporta la taxonomía inicial para detectar patrones de escritura.",
         "La revisión adversarial de papers adapta las dimensiones SPECS y la síntesis y autocrítica por etapas descritas en [AI-Assisted Peer Review at Scale: The AAAI-26 AI Review Pilot](https://arxiv.org/abs/2604.13940). Jiddu añade ledger, extracción con LiteParse, descubrimiento vía DBLP, perfiles de venue, validación de fuentes y gate de retención propios. No está afiliado a esos grupos, DBLP ni los venues.",

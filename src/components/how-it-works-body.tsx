@@ -127,7 +127,7 @@ export function HowItWorksBody() {
 // feedback and integration details. Titles are numbered at render time so all
 // locales stay aligned when a section moves.
 const HOW_IT_WORKS_SECTION_ORDER = [
-  0, 1, 2, 3, 5, 6, 7, 8, 13, 4, 14, 12, 9, 10, 11, 15, 16,
+  0, 1, 2, 3, 5, 6, 7, 8, 14, 4, 15, 12, 13, 9, 10, 11, 16, 17,
 ] as const;
 
 function numberedSectionTitle(title: string, index: number): string {
