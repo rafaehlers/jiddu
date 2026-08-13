@@ -24,10 +24,11 @@ export type BlogPostTranslation = {
   excerpt: string;
   readingTime: string;
   imageAlt: string;
+  thumbnailAlt?: string;
   imageCaption: string;
   imageOpenLabel?: string;
   body: string;
-  faq: BlogFaq[];
+  faq?: BlogFaq[];
   cta?: {
     title: string;
     description: string;
@@ -52,6 +53,12 @@ export type BlogPost = {
       height: number;
       type?: string;
     };
+  };
+  thumbnail?: {
+    src: string;
+    width: number;
+    height: number;
+    type?: string;
   };
   citations?: string[];
   ctaHref?: string;
@@ -137,6 +144,66 @@ export const BLOG_COPY: Localized<BlogCopy> = {
 };
 
 export const blogTags: BlogTag[] = [
+  {
+    slug: "logical-fallacies",
+    translations: {
+      en: {
+        label: "Logical fallacies",
+        description:
+          "Patterns of faulty reasoning and practical ways to recognize them in everyday arguments.",
+      },
+      pt: {
+        label: "Falácias lógicas",
+        description:
+          "Padrões de raciocínio falho e formas práticas de reconhecê-los em argumentos cotidianos.",
+      },
+      es: {
+        label: "Falacias lógicas",
+        description:
+          "Patrones de razonamiento defectuoso y formas prácticas de reconocerlos en argumentos cotidianos.",
+      },
+    },
+  },
+  {
+    slug: "philosophy",
+    translations: {
+      en: {
+        label: "Philosophy",
+        description:
+          "Ideas about truth, knowledge, language, perception, and critical inquiry.",
+      },
+      pt: {
+        label: "Filosofia",
+        description:
+          "Ideias sobre verdade, conhecimento, linguagem, percepção e investigação crítica.",
+      },
+      es: {
+        label: "Filosofía",
+        description:
+          "Ideas sobre verdad, conocimiento, lenguaje, percepción e investigación crítica.",
+      },
+    },
+  },
+  {
+    slug: "critical-reading",
+    translations: {
+      en: {
+        label: "Critical reading",
+        description:
+          "Methods for examining claims, arguments, language, evidence, and perspective.",
+      },
+      pt: {
+        label: "Leitura crítica",
+        description:
+          "Métodos para examinar afirmações, argumentos, linguagem, evidências e perspectivas.",
+      },
+      es: {
+        label: "Lectura crítica",
+        description:
+          "Métodos para examinar afirmaciones, argumentos, lenguaje, evidencias y perspectivas.",
+      },
+    },
+  },
   {
     slug: "live-intelligence",
     translations: {
@@ -241,6 +308,610 @@ export const blogTags: BlogTag[] = [
 
 const posts: BlogPost[] = [
   {
+    slug: "what-are-logical-fallacies",
+    publishedAt: "2026-08-13",
+    updatedAt: "2026-08-13",
+    author: "Jiddu",
+    tags: ["logical-fallacies", "critical-reading"],
+    image: {
+      src: "/blog/logical-fallacies-lenses.webp",
+      width: 1729,
+      height: 910,
+      type: "image/webp",
+    },
+    citations: ["https://jiddu.app/fallacies"],
+    ctaHref: "/fallacies",
+    translations: {
+      en: {
+        title:
+          "What are logical fallacies — and how spotting them helps you think better",
+        seoTitle: "What are logical fallacies? Examples and how to spot them",
+        description:
+          "Learn what logical fallacies are, why recognizing them improves everyday decisions, and how to spot common patterns with practical examples.",
+        excerpt:
+          "A fallacy can make a weak argument sound persuasive. Learning to identify the pattern helps you ask a better question before you accept the conclusion.",
+        readingTime: "6 min read",
+        imageAlt:
+          "Translucent lenses revealing an unsupported jump, a forced fork, a circular loop, and a side track in a chain of reasoning",
+        imageCaption:
+          "Each lens isolates a different break in the connection between reasons and conclusion.",
+        body: `A **logical fallacy** is a recognizable failure in reasoning. It can appear as an irrelevant attack, a distorted version of someone’s position, a forced choice between two options, a causal claim without enough evidence, or a conclusion drawn from a weak sample.
+
+Fallacies matter because weak reasoning often sounds convincing. A confident speaker, an alarming example, or a neat either-or choice can make the conclusion feel settled before the supporting reasons have been examined.
+
+Once you know the patterns, you can stop and inspect the argument. Separate the claim from the way it was presented, find the weak connection, and ask what evidence is missing.
+
+## What counts as a fallacy?
+
+An argument connects reasons, usually called premises, to a conclusion. A fallacy appears when that connection fails in a familiar way. The problem may be relevance, evidence, causation, ambiguity, a hidden assumption, or emotional pressure doing the work of an argument.
+
+A fallacious argument can reach a true conclusion.
+
+> “The medicine works because a famous actor recommends it.”
+>
+> — Example of an appeal to authority
+
+That is poor support even if the medicine happens to work. Emotion and expertise still have legitimate roles. A specialist can supply relevant evidence, and the human consequences of a decision can matter. The fallacy begins when prestige or emotion replaces the support the conclusion needs.
+
+Apply the label to the reasoning rather than the person. Saying “this step is an ad hominem” identifies something that can be checked. Calling someone “fallacious” turns analysis into another personal attack.
+
+## Why this is useful outside a logic class
+
+Most people evaluate arguments every day, even when nobody calls them arguments.
+
+- **At work**, you may hear that a failed launch proves the whole strategy is useless, or that only two plans are possible when several alternatives were never discussed.
+- **In news and politics**, a speaker may answer criticism by attacking the critic, replace a proposal with an extreme version, or treat sequence as proof of cause.
+- **In advertising**, popularity, celebrity, fear, and words such as “natural” can stand in for evidence about quality or safety.
+- **In personal decisions**, one vivid experience can outweigh broader evidence: a friend had a bad result, so the treatment, course, neighborhood, or investment must be bad for everyone.
+- **In your own thinking**, the same patterns can protect a conclusion you already prefer. Recognizing them is a way to audit your reasoning as well as somebody else’s.
+
+You can then say exactly which connection failed and what information is missing.
+
+## A practical way to identify a fallacy
+
+Start by slowing the argument down.
+
+1. **Write the conclusion in one sentence.** What is the speaker asking you to believe or do?
+2. **List the reasons offered.** Remove tone, repetition, status, and confidence. What support remains?
+3. **Test the connection.** Do the reasons address that conclusion, or have they shifted to the person, a different proposal, or an emotional reaction?
+4. **Look for what was excluded.** Are there more options, counterexamples, alternative causes, or relevant sources?
+5. **Ask what would change the conclusion.** If no possible evidence could count against it, the claim may be protected by circular reasoning or an ad hoc exception.
+
+Identify the broken step first. Then use the name to compare it with a known pattern.
+
+## Five common examples
+
+> “Ignore her proposal for the city budget; she cannot even organize her own finances.”
+>
+> — [Ad hominem](/fallacies#ad_hominem)
+
+The person’s private finances do not answer the proposal’s numbers or assumptions.
+
+> “He wants to limit work messages after 10 p.m., so he wants the team to become unreachable.”
+>
+> — [Straw man](/fallacies#straw_man)
+
+The reply replaces a limited proposal with a more extreme one.
+
+> “Either we approve this plan today or we do not care about the project.”
+>
+> — [False dichotomy](/fallacies#false_dichotomy)
+
+Urgency and commitment do not reduce every possible response to two choices.
+
+> “Sales increased after we changed the chat tool, so the new tool caused the growth.”
+>
+> — [Correlation versus causation](/fallacies#correlation_causation)
+
+Timing and correlation leave other causes open.
+
+> “A famous actor says this supplement works, so it must be effective.”
+>
+> — [Appeal to authority](/fallacies#appeal_to_authority)
+
+Fame outside the relevant field does not provide medical evidence.
+
+## Where to use Jiddu’s Fallacy Detector
+
+The detector is available in four places, depending on what you are reading or listening to.
+
+- **[Web app](/):** upload a PDF or screenshot, paste text or an image, or add a URL. You can review an opinion piece, campaign speech, or sales presentation before sharing it.
+- **[Chrome extension](/extension):** select a passage on any website and inspect it without leaving the page. This is useful while reading an article, newsletter, or long social media post.
+- **[Jiddu Live](/live):** turn on the Fallacies lens to monitor the growing transcript as someone speaks. It fits interviews, debates, lectures, and meetings where arguments develop in real time.
+- **[API and MCP](/api-access):** send text to the detector from another product or agent. Teams can add it to an editorial workflow, moderation queue, or research assistant.
+
+In each case, Jiddu highlights the relevant passage, names the pattern, and explains the reasoning. Treat the result as a prompt for review, not a verdict: automated labels can be wrong, and the surrounding context still matters.
+
+## Use the label to ask a better question
+
+Once you have named the pattern, ask which premise is missing, whether the source is relevant, what alternatives were hidden, or what evidence supports the proposed cause. The answer may strengthen the argument, narrow the conclusion, or show that the claim needs to be abandoned.
+
+The [Jiddu Fallacy Guide](/fallacies) organizes the full catalog by relevance, presumption, causation, evidence, ambiguity, and emotional appeal. Each entry includes a short definition and an example. When an argument feels persuasive but the support looks thin, compare the passage with the guide, identify the exact break, and return to the evidence.`,
+        cta: {
+          title: "Inspect the reasoning step by step",
+          description:
+            "Compare an argument with Jiddu’s catalog of fallacies, definitions, and examples.",
+          label: "Open the Fallacy Guide",
+        },
+      },
+      pt: {
+        title:
+          "O que são falácias lógicas — e como identificá-las ajuda a pensar melhor",
+        seoTitle: "O que são falácias lógicas? Exemplos e como identificar",
+        description:
+          "Entenda o que são falácias lógicas, por que reconhecê-las melhora decisões cotidianas e como identificar padrões comuns com exemplos práticos.",
+        excerpt:
+          "Uma falácia pode fazer um argumento fraco parecer convincente. Identificar o padrão ajuda você a formular uma pergunta melhor antes de aceitar a conclusão.",
+        readingTime: "6 min de leitura",
+        imageAlt:
+          "Lentes translúcidas revelando um salto sem apoio, uma bifurcação forçada, um ciclo e um desvio em uma cadeia de raciocínio",
+        imageCaption:
+          "Cada lente isola uma falha diferente na conexão entre as razões e a conclusão.",
+        body: `Uma **falácia lógica** é uma falha reconhecível no raciocínio. Ela pode aparecer como um ataque irrelevante, uma versão distorcida da posição de alguém, uma escolha forçada entre duas opções, uma relação causal sem evidência suficiente ou uma conclusão tirada de uma amostra fraca.
+
+Falácias importam porque raciocínios ruins muitas vezes parecem convincentes. Um interlocutor confiante, um exemplo alarmante ou uma escolha bem arrumada entre “isto ou aquilo” pode encerrar a discussão antes que as razões sejam examinadas.
+
+Quando você conhece os padrões, consegue parar e examinar o argumento. Separe a afirmação da forma como ela foi apresentada, encontre a conexão frágil e pergunte qual evidência está faltando.
+
+## O que caracteriza uma falácia?
+
+Um argumento conecta razões, normalmente chamadas de premissas, a uma conclusão. A falácia aparece quando essa conexão falha de um modo conhecido. O problema pode estar na relevância, na evidência, na causalidade, na ambiguidade, em uma premissa oculta ou no uso de pressão emocional para fazer o trabalho do argumento.
+
+Um argumento falacioso pode chegar a uma conclusão verdadeira.
+
+> “O remédio funciona porque um ator famoso recomenda.”
+>
+> — Exemplo de apelo à autoridade
+
+Esse é um apoio ruim, mesmo que o remédio funcione. Emoção e conhecimento especializado ainda têm papéis legítimos. Um especialista pode fornecer evidência relevante, e as consequências humanas de uma decisão podem importar. A falácia surge quando prestígio ou emoção substituem o apoio necessário à conclusão.
+
+Aplique o rótulo ao raciocínio, não à pessoa. Dizer “este passo contém um ad hominem” identifica algo verificável. Chamar alguém de “falacioso” transforma a análise em outro ataque pessoal.
+
+## Por que isso é útil fora da aula de lógica
+
+Quase todo mundo avalia argumentos diariamente, mesmo quando ninguém os chama de argumentos.
+
+- **No trabalho**, alguém pode dizer que um lançamento ruim prova que toda a estratégia é inútil, ou apresentar apenas dois planos quando outras alternativas nem foram discutidas.
+- **Em notícias e na política**, um interlocutor pode responder a uma crítica atacando quem a fez, substituir uma proposta por uma versão extrema ou tratar sequência temporal como prova de causa.
+- **Na publicidade**, popularidade, celebridade, medo e palavras como “natural” podem ocupar o lugar da evidência sobre qualidade ou segurança.
+- **Em decisões pessoais**, uma experiência marcante pode pesar mais que um conjunto amplo de evidências: um amigo teve um resultado ruim, então o tratamento, o curso, o bairro ou o investimento deve ser ruim para todos.
+- **No próprio pensamento**, os mesmos padrões podem proteger uma conclusão de que você já gosta. Reconhecê-los também permite auditar o próprio raciocínio.
+
+Assim você consegue dizer qual conexão falhou e qual informação está faltando.
+
+## Um método prático para identificar uma falácia
+
+Comece desacelerando o argumento.
+
+1. **Escreva a conclusão em uma frase.** O que o interlocutor quer que você acredite ou faça?
+2. **Liste as razões apresentadas.** Retire tom, repetição, status e confiança. Que apoio resta?
+3. **Teste a conexão.** As razões respondem à conclusão ou mudaram para a pessoa, outra proposta ou uma reação emocional?
+4. **Procure o que foi excluído.** Existem mais opções, contraexemplos, causas alternativas ou fontes relevantes?
+5. **Pergunte o que mudaria a conclusão.** Se nenhuma evidência possível puder contrariá-la, a afirmação pode estar protegida por raciocínio circular ou por uma exceção improvisada.
+
+Encontre primeiro a falha no raciocínio. Depois use o nome para compará-la a um padrão conhecido.
+
+## Cinco exemplos comuns
+
+> “Ignore a proposta dela para o orçamento da cidade; ela nem consegue organizar as próprias finanças.”
+>
+> — [Ad hominem](/fallacies#ad_hominem)
+
+As finanças pessoais não respondem aos números ou às premissas da proposta.
+
+> “Ele quer limitar mensagens de trabalho depois das 22h, então quer deixar a equipe incomunicável.”
+>
+> — [Espantalho](/fallacies#straw_man)
+
+A resposta troca uma proposta limitada por outra mais extrema.
+
+> “Ou aprovamos este plano hoje ou não nos importamos com o projeto.”
+>
+> — [Falso dilema](/fallacies#false_dichotomy)
+
+Urgência e compromisso não reduzem todas as respostas possíveis a duas opções.
+
+> “As vendas cresceram depois que trocamos a ferramenta de chat, então a nova ferramenta causou o crescimento.”
+>
+> — [Correlação versus causalidade](/fallacies#correlation_causation)
+
+Sequência e correlação deixam outras causas em aberto.
+
+> “Um ator famoso disse que este suplemento funciona, então ele deve ser eficaz.”
+>
+> — [Apelo à autoridade](/fallacies#appeal_to_authority)
+
+Fama fora da área relevante não produz evidência médica.
+
+## Onde usar o Detector de Falácias do Jiddu
+
+O detector está disponível em quatro lugares, de acordo com o que você está lendo ou ouvindo.
+
+- **[Aplicativo web](/):** envie um PDF ou screenshot, cole texto ou imagem ou adicione uma URL. Serve, por exemplo, para revisar um artigo de opinião, discurso de campanha ou apresentação comercial antes de compartilhá-los.
+- **[Extensão do Chrome](/extension):** selecione um trecho em qualquer site e examine-o sem sair da página. É útil durante a leitura de uma reportagem, newsletter ou publicação longa em uma rede social.
+- **[Jiddu Live](/live):** ative a lente de Falácias para acompanhar a transcrição enquanto alguém fala. Funciona bem em entrevistas, debates, aulas e reuniões nas quais os argumentos se desenvolvem ao vivo.
+- **[API e MCP](/api-access):** envie texto ao detector a partir de outro produto ou agente. Equipes podem integrá-lo a um fluxo editorial, a uma fila de moderação ou a um assistente de pesquisa.
+
+Em todos os casos, o Jiddu destaca o trecho relevante, identifica o padrão e explica o raciocínio. Trate o resultado como ponto de partida para a revisão, não como veredito: classificações automáticas podem errar, e o contexto continua sendo necessário.
+
+## Use o rótulo para formular uma pergunta melhor
+
+Depois de reconhecer o padrão, pergunte qual premissa está faltando, se a fonte é relevante, quais alternativas foram escondidas ou que evidência sustenta a causa proposta. A resposta pode fortalecer o argumento, limitar a conclusão ou mostrar que a afirmação deve ser abandonada.
+
+O [Guia de Falácias do Jiddu](/fallacies) organiza o catálogo completo por relevância, presunção, causalidade, evidência, ambiguidade e apelo emocional. Cada verbete traz uma definição curta e um exemplo. Quando um argumento parecer convincente, mas o apoio estiver fraco, compare o trecho com o guia, identifique a falha exata e volte às evidências.`,
+        cta: {
+          title: "Examine o raciocínio passo a passo",
+          description:
+            "Compare um argumento com o catálogo de falácias, definições e exemplos do Jiddu.",
+          label: "Abrir o Guia de Falácias",
+        },
+      },
+      es: {
+        title:
+          "Qué son las falacias lógicas — y cómo identificarlas ayuda a pensar mejor",
+        seoTitle: "¿Qué son las falacias lógicas? Ejemplos y cómo detectarlas",
+        description:
+          "Descubre qué son las falacias lógicas, por qué reconocerlas mejora las decisiones cotidianas y cómo detectar patrones comunes con ejemplos prácticos.",
+        excerpt:
+          "Una falacia puede hacer que un argumento débil parezca convincente. Identificar el patrón te ayuda a formular una pregunta mejor antes de aceptar la conclusión.",
+        readingTime: "6 min de lectura",
+        imageAlt:
+          "Lentes translúcidas que revelan un salto sin apoyo, una bifurcación forzada, un ciclo y un desvío en una cadena de razonamiento",
+        imageCaption:
+          "Cada lente aísla un fallo diferente en la conexión entre las razones y la conclusión.",
+        body: `Una **falacia lógica** es un fallo reconocible en el razonamiento. Puede aparecer como un ataque irrelevante, una versión distorsionada de la postura de alguien, una elección forzada entre dos opciones, una relación causal sin evidencia suficiente o una conclusión extraída de una muestra débil.
+
+Las falacias importan porque un razonamiento defectuoso muchas veces parece convincente. Un interlocutor seguro, un ejemplo alarmante o una elección bien ordenada entre “esto o aquello” puede cerrar la discusión antes de que se examinen las razones.
+
+Cuando conoces los patrones, puedes detenerte y examinar el argumento. Separa la afirmación de la forma en que fue presentada, encuentra la conexión frágil y pregunta qué evidencia falta.
+
+## ¿Qué caracteriza una falacia?
+
+Un argumento conecta razones, normalmente llamadas premisas, con una conclusión. La falacia aparece cuando esa conexión falla de una manera conocida. El problema puede estar en la relevancia, la evidencia, la causalidad, la ambigüedad, una premisa oculta o el uso de presión emocional para hacer el trabajo del argumento.
+
+Un argumento falaz puede llegar a una conclusión verdadera.
+
+> “El medicamento funciona porque lo recomienda un actor famoso.”
+>
+> — Ejemplo de apelación a la autoridad
+
+Es un apoyo deficiente, aunque el medicamento funcione. La emoción y el conocimiento especializado siguen teniendo funciones legítimas. Un especialista puede aportar evidencia relevante, y las consecuencias humanas de una decisión pueden importar. La falacia surge cuando el prestigio o la emoción sustituyen el apoyo que necesita la conclusión.
+
+Aplica la etiqueta al razonamiento, no a la persona. Decir “este paso contiene un ad hominem” identifica algo que puede comprobarse. Llamar “falaz” a alguien convierte el análisis en otro ataque personal.
+
+## Por qué sirve fuera de una clase de lógica
+
+Casi todo el mundo evalúa argumentos a diario, aunque nadie los llame argumentos.
+
+- **En el trabajo**, alguien puede decir que un lanzamiento fallido demuestra que toda la estrategia es inútil, o presentar solo dos planes cuando nunca se discutieron otras alternativas.
+- **En las noticias y la política**, un interlocutor puede responder a una crítica atacando a quien la hizo, sustituir una propuesta por una versión extrema o tratar una secuencia temporal como prueba de causa.
+- **En la publicidad**, la popularidad, la celebridad, el miedo y palabras como “natural” pueden ocupar el lugar de la evidencia sobre calidad o seguridad.
+- **En las decisiones personales**, una experiencia llamativa puede pesar más que un conjunto amplio de evidencias: a un amigo le fue mal, por lo tanto el tratamiento, el curso, el barrio o la inversión debe ser malo para todos.
+- **En el propio pensamiento**, los mismos patrones pueden proteger una conclusión que ya prefieres. Reconocerlos también permite auditar el propio razonamiento.
+
+Así puedes decir qué conexión falló y qué información falta.
+
+## Un método práctico para identificar una falacia
+
+Empieza por reducir la velocidad del argumento.
+
+1. **Escribe la conclusión en una frase.** ¿Qué quiere el interlocutor que creas o hagas?
+2. **Enumera las razones presentadas.** Retira el tono, la repetición, el estatus y la seguridad. ¿Qué apoyo queda?
+3. **Comprueba la conexión.** ¿Las razones responden a la conclusión o se han desplazado hacia la persona, otra propuesta o una reacción emocional?
+4. **Busca lo que se ha excluido.** ¿Existen más opciones, contraejemplos, causas alternativas o fuentes relevantes?
+5. **Pregunta qué cambiaría la conclusión.** Si ninguna evidencia posible pudiera contradecirla, la afirmación puede estar protegida por un razonamiento circular o una excepción improvisada.
+
+Encuentra primero el fallo en el razonamiento. Después usa el nombre para compararlo con un patrón conocido.
+
+## Cinco ejemplos comunes
+
+> “Ignora su propuesta para el presupuesto de la ciudad; ni siquiera sabe organizar sus propias finanzas.”
+>
+> — [Ad hominem](/fallacies#ad_hominem)
+
+Las finanzas personales no responden a las cifras o premisas de la propuesta.
+
+> “Quiere limitar los mensajes de trabajo después de las diez de la noche, así que quiere dejar al equipo incomunicado.”
+>
+> — [Hombre de paja](/fallacies#straw_man)
+
+La respuesta sustituye una propuesta limitada por otra más extrema.
+
+> “O aprobamos este plan hoy o no nos importa el proyecto.”
+>
+> — [Falso dilema](/fallacies#false_dichotomy)
+
+La urgencia y el compromiso no reducen todas las respuestas posibles a dos opciones.
+
+> “Las ventas aumentaron después de cambiar la herramienta de chat, así que la nueva herramienta causó el crecimiento.”
+>
+> — [Correlación frente a causalidad](/fallacies#correlation_causation)
+
+La secuencia y la correlación dejan abiertas otras causas.
+
+> “Un actor famoso dice que este suplemento funciona, así que debe ser eficaz.”
+>
+> — [Apelación a la autoridad](/fallacies#appeal_to_authority)
+
+La fama fuera del campo relevante no aporta evidencia médica.
+
+## Dónde usar el Detector de Falacias de Jiddu
+
+El detector está disponible en cuatro lugares, según lo que estés leyendo o escuchando.
+
+- **[Aplicación web](/):** sube un PDF o screenshot, pega texto o una imagen, o añade una URL. Puede servir para revisar un artículo de opinión, un discurso de campaña o una presentación comercial antes de compartirlos.
+- **[Extensión de Chrome](/extension):** selecciona un pasaje en cualquier sitio y examínalo sin salir de la página. Es útil al leer un reportaje, una newsletter o una publicación larga en una red social.
+- **[Jiddu Live](/live):** activa la lente de Falacias para seguir la transcripción mientras alguien habla. Funciona bien en entrevistas, debates, clases y reuniones donde los argumentos se desarrollan en directo.
+- **[API y MCP](/api-access):** envía texto al detector desde otro producto o agente. Los equipos pueden integrarlo en un flujo editorial, una cola de moderación o un asistente de investigación.
+
+En todos los casos, Jiddu resalta el pasaje relevante, identifica el patrón y explica el razonamiento. Trata el resultado como punto de partida para la revisión, no como veredicto: las clasificaciones automáticas pueden equivocarse y el contexto sigue siendo necesario.
+
+## Usa la etiqueta para formular una pregunta mejor
+
+Después de reconocer el patrón, pregunta qué premisa falta, si la fuente es relevante, qué alternativas quedaron ocultas o qué evidencia sostiene la causa propuesta. La respuesta puede reforzar el argumento, limitar la conclusión o mostrar que la afirmación debe abandonarse.
+
+La [Guía de Falacias de Jiddu](/fallacies) organiza el catálogo completo por relevancia, presunción, causalidad, evidencia, ambigüedad y apelación emocional. Cada entrada incluye una definición breve y un ejemplo. Cuando un argumento parezca convincente, pero el apoyo sea débil, compara el pasaje con la guía, identifica el fallo exacto y vuelve a las evidencias.`,
+        cta: {
+          title: "Examina el razonamiento paso a paso",
+          description:
+            "Compara un argumento con el catálogo de falacias, definiciones y ejemplos de Jiddu.",
+          label: "Abrir la Guía de Falacias",
+        },
+      },
+    },
+  },
+  {
+    slug: "what-is-truth-krishnamurti-jiddu-lenses",
+    publishedAt: "2026-08-13",
+    updatedAt: "2026-08-13",
+    author: "Jiddu",
+    tags: ["philosophy", "critical-reading", "responsible-ai"],
+    image: {
+      src: "/blog/truth-through-jiddu-lenses.webp",
+      width: 1729,
+      height: 910,
+      type: "image/webp",
+    },
+    citations: [
+      "https://iep.utm.edu/truth/",
+      "https://kfoundation.org/dissolution-speech/",
+      "https://kfoundation.org/core-of-the-teachings/",
+      "https://kfoundation.org/transcript/dialogue-6-brockwood-park-28-june-1975/",
+      "https://jiddu.app/",
+    ],
+    ctaHref: "/",
+    translations: {
+      en: {
+        title:
+          "What is truth? Krishnamurti and Jiddu’s lenses",
+        seoTitle: "What is truth? Krishnamurti and Jiddu’s lenses",
+        description:
+          "Explore philosophical theories of truth, Krishnamurti’s break with Theosophy, and how Jiddu’s lenses support critical judgment.",
+        excerpt:
+          "Philosophy asks what makes a proposition true; Krishnamurti asks how conditioning affects what we see. Jiddu’s lenses connect those questions without claiming to settle either one.",
+        readingTime: "6 min read",
+        imageAlt:
+          "Transparent optical lenses revealing different aspects of the same open, pathless landscape",
+        imageCaption:
+          "Each lens brings a different part of the same landscape into focus.",
+        body: `The question “What is truth?” works on two levels. One concerns a particular statement: did an event happen, is a number accurate, does a source support a claim? The other asks what we mean whenever we call a statement true.
+
+The [Internet Encyclopedia of Philosophy’s overview of truth](https://iep.utm.edu/truth/) starts at that second level. It asks what can bear a truth-value and how language, belief, and the world connect. Jiddu Krishnamurti starts with the observer. He asks how conditioning shapes what the mind sees. The two inquiries meet where an event becomes a description and the description becomes a judgment.
+
+## Five philosophical lenses on truth
+
+The IEP surveys five major theories. Each handles a different part of the problem.
+
+- **Correspondence** tests whether a proposition matches how the world is. The hard part is explaining correspondence and facts themselves.
+- **Semantic theory**, associated with Alfred Tarski, specifies the conditions under which a sentence is true and separates the language under study from the language used to analyze it.
+- **Coherence** looks at how a belief fits within a consistent system. A coherent story can still describe the world badly.
+- **Pragmatic theory** connects truth with inquiry, testing, and what survives scrutiny in practice. Usefulness alone cannot rescue a false claim.
+- **Deflationary theory** gives the word *true* a lighter job. “It is true that snow is white” may add little to “snow is white.”
+
+Each theory answers a different question. The image of a lens fits because every theory brings something into focus and leaves something at the edge.
+
+## Krishnamurti’s break with Theosophy
+
+Calling Krishnamurti’s mature view “Theosophical” misses the break that defined it. The Theosophical Society presented him as the future “World Teacher” and created the Order of the Star around that expectation. He grew up inside that environment and later rejected its hierarchy, ceremonies, and spiritual authority.
+
+In 1929, Krishnamurti dissolved the organization he led. His [dissolution speech](https://kfoundation.org/dissolution-speech/) contains the line that would define the rest of his work:
+
+> Truth is a pathless land.
+
+Krishnamurti kept a firm distinction between truth and error while denying institutions, creeds, teachers, rituals, and techniques any monopoly over the route to truth. Once a route is treated as guaranteed, followers hand judgment to the people authorized to interpret it.
+
+Krishnamurti’s [summary of his core teaching](https://kfoundation.org/core-of-the-teachings/) turns to relationship, the contents of the mind, and direct observation. Images, fears, beliefs, and memories can distort what we see before any explicit argument begins.
+
+## From propositions to perception
+
+Analytic philosophy usually asks what it means for a proposition to be true. Krishnamurti asks whether perception can be free of authority and psychological conditioning.
+
+They meet at the boundary between an event and its account. In a [1975 dialogue with David Bohm](https://kfoundation.org/transcript/dialogue-6-brockwood-park-28-june-1975/), Krishnamurti puts it plainly: the description is not the described.
+
+A transcript records words from a conversation. A source documents an event from a particular position. A model offers an interpretation. Each is useful, and each remains one step removed from what happened.
+
+## What each Jiddu lens does
+
+Jiddu turns that limit into a product decision. Its lenses stay separate, and each asks a narrower question of the same text:
+
+1. **Fact-check** extracts verifiable claims and searches for sources that support, contradict, complicate, or fail to establish them. The verdict depends on the wording of the claim and the quality of the evidence.
+2. **Fallacies** tests the inference. It can identify a false dilemma, a personal attack, or a distorted account of an opponent’s position. A valid argument can begin with false premises, while a poor argument can reach a true conclusion.
+3. **Neutrality** examines framing, attribution, and source selection. It shows how a text directs attention without deciding which political side is right. A balanced tone says nothing by itself about factual accuracy.
+4. **Explain** clarifies structure and meaning for a chosen audience. Factual validation remains a separate task.
+5. **Slop patterns** identifies generic transitions, inflated language, repetition, and other low-information habits. These findings measure writing habits; factual analysis addresses truth-value.
+6. **Adversarial review** looks for missing evidence, hidden assumptions, alternative explanations, and conclusions that exceed the data.
+
+Live and Context can run several lenses over the same conversation. The outputs stay separate. A cited source remains evidence for a claim; a fallacy label remains an assessment of reasoning; an explanation remains an aid to understanding.
+
+## Where the lenses stop
+
+Every lens keeps its blind spots. A coherent article may be wrong. A well-sourced article may omit decisive context. An automated analysis may misread the passage.
+
+Krishnamurti’s warning becomes a design constraint for Jiddu. A critical-reading tool has to expose its steps, preserve the source, separate one kind of judgment from another, cite evidence, state uncertainty, and leave room for disagreement.
+
+Jiddu makes a narrower promise. It helps readers isolate claims, inspect evidence, notice framing, and challenge arguments. The reader still has to return to the source and decide.`,
+        cta: {
+          title: "Read the claim from more than one angle",
+          description:
+            "Use fact-checking, fallacies, neutrality, explanation, writing-pattern analysis, or adversarial review. Then inspect the evidence and make your own judgment.",
+          label: "Read with Jiddu",
+        },
+      },
+      pt: {
+        title:
+          "O que é a verdade? Krishnamurti e as lentes do Jiddu",
+        seoTitle: "O que é a verdade? Krishnamurti e as lentes do Jiddu",
+        description:
+          "Conheça teorias filosóficas da verdade, a ruptura de Krishnamurti com a Teosofia e como as lentes do Jiddu apoiam o julgamento crítico.",
+        excerpt:
+          "A filosofia pergunta o que torna uma proposição verdadeira; Krishnamurti pergunta como o condicionamento afeta o que vemos. As lentes do Jiddu conectam essas questões sem pretender encerrá-las.",
+        readingTime: "6 min de leitura",
+        imageAlt:
+          "Lentes ópticas transparentes revelando aspectos diferentes da mesma paisagem aberta e sem caminho",
+        imageCaption:
+          "Cada lente coloca uma parte diferente da mesma paisagem em foco.",
+        body: `A pergunta “o que é a verdade?” tem dois sentidos. Um trata de uma afirmação específica: o acontecimento ocorreu, o número está correto, a fonte sustenta a alegação? O outro pergunta o que queremos dizer sempre que chamamos uma afirmação de verdadeira.
+
+O panorama da [Internet Encyclopedia of Philosophy sobre a verdade](https://iep.utm.edu/truth/) começa nesse segundo nível. Ele investiga o que pode receber um valor de verdade e como linguagem, crença e mundo se conectam. Jiddu Krishnamurti começa pelo observador. Sua pergunta é como o condicionamento molda o que a mente vê. As duas investigações se encontram quando um acontecimento vira descrição e a descrição vira julgamento.
+
+## Cinco lentes filosóficas sobre a verdade
+
+A IEP apresenta cinco teorias principais. Cada uma aborda uma parte diferente do problema.
+
+- **Correspondência** testa se uma proposição coincide com o modo como o mundo é. A dificuldade está em explicar a própria correspondência e os fatos.
+- **Teoria semântica**, associada a Alfred Tarski, define as condições em que uma frase é verdadeira e separa a linguagem estudada da linguagem usada para analisá-la.
+- **Coerência** examina como uma crença se integra a um sistema consistente. Uma história coerente ainda pode descrever mal o mundo.
+- **Teoria pragmática** conecta a verdade à investigação, ao teste e àquilo que resiste ao exame na prática. A utilidade não resgata uma afirmação falsa.
+- **Teoria deflacionária** dá um trabalho mais leve à palavra *verdadeiro*. “É verdade que a neve é branca” talvez acrescente pouco a “a neve é branca”.
+
+Cada teoria responde a uma pergunta diferente. A imagem da lente funciona porque toda teoria coloca algo em foco e deixa algo nas bordas.
+
+## A ruptura de Krishnamurti com a Teosofia
+
+Chamar a visão madura de Krishnamurti de “teosófica” apaga a ruptura que a definiu. A Sociedade Teosófica o apresentou como futuro “Mestre Universal” e criou a Ordem da Estrela em torno dessa expectativa. Ele cresceu nesse ambiente e depois rejeitou sua hierarquia, suas cerimônias e sua autoridade espiritual.
+
+Em 1929, Krishnamurti dissolveu a organização que liderava. O [discurso de dissolução](https://kfoundation.org/dissolution-speech/) contém a frase que definiria o restante de seu trabalho:
+
+> A verdade é uma terra sem caminhos.
+
+Krishnamurti mantinha uma distinção firme entre verdade e erro enquanto negava a instituições, credos, mestres, rituais e técnicas qualquer monopólio sobre a rota até a verdade. Quando uma rota é tratada como garantida, o seguidor entrega seu julgamento às pessoas autorizadas a interpretá-la.
+
+O [resumo dos ensinamentos centrais de Krishnamurti](https://kfoundation.org/core-of-the-teachings/) se volta para as relações, o conteúdo da mente e a observação direta. Imagens, medos, crenças e memórias podem distorcer o que vemos antes mesmo de surgir um argumento explícito.
+
+## Das proposições à percepção
+
+A filosofia analítica costuma perguntar o que significa uma proposição ser verdadeira. Krishnamurti pergunta se a percepção pode estar livre de autoridade e condicionamento psicológico.
+
+Elas se encontram na fronteira entre o acontecimento e seu relato. Em um [diálogo de 1975 com David Bohm](https://kfoundation.org/transcript/dialogue-6-brockwood-park-28-june-1975/), Krishnamurti formula o limite de modo direto: a descrição não é o descrito.
+
+Uma transcrição registra palavras de uma conversa. Uma fonte documenta um acontecimento a partir de determinada posição. Um modelo oferece uma interpretação. Cada item tem valor e continua a um passo de distância do que ocorreu.
+
+## O que cada lente do Jiddu faz
+
+O Jiddu transforma esse limite em uma decisão de produto. Suas lentes permanecem separadas, e cada uma faz uma pergunta mais estreita ao mesmo texto:
+
+1. **Fact-check** extrai afirmações verificáveis e procura fontes que as sustentem, contradigam, compliquem ou não consigam comprová-las. O veredito depende da formulação da alegação e da qualidade da evidência.
+2. **Falácias** testa a inferência. Pode identificar um falso dilema, um ataque à pessoa ou uma distorção da posição adversária. Um argumento válido pode partir de premissas falsas, enquanto um argumento ruim pode chegar a uma conclusão verdadeira.
+3. **Neutralidade** examina enquadramento, atribuição e seleção de fontes. Mostra como um texto conduz a atenção sem decidir qual lado político está certo. Um tom equilibrado, sozinho, nada diz sobre a precisão factual.
+4. **Explain** esclarece estrutura e sentido para o público escolhido. A validação factual continua sendo uma tarefa separada.
+5. **Padrões de slop** identifica transições genéricas, linguagem inflada, repetição e outros hábitos de baixa informação. Esses achados medem hábitos de escrita; a análise factual examina o valor de verdade.
+6. **Revisão adversarial** procura evidências ausentes, premissas ocultas, explicações alternativas e conclusões que ultrapassam os dados.
+
+O Live e o Context podem aplicar várias lentes à mesma conversa. Os resultados continuam separados. Uma fonte citada permanece como evidência para uma alegação; um rótulo de falácia permanece como avaliação do raciocínio; uma explicação permanece como auxílio à compreensão.
+
+## Onde as lentes param
+
+Toda lente mantém seus pontos cegos. Um artigo coerente pode estar errado. Um artigo bem documentado pode omitir um contexto decisivo. Uma análise automatizada pode interpretar mal a passagem.
+
+O alerta de Krishnamurti se torna uma restrição de design para o Jiddu. Uma ferramenta de leitura crítica precisa expor suas etapas, preservar a fonte, separar um tipo de julgamento do outro, citar evidências, declarar incerteza e deixar espaço para discordância.
+
+O Jiddu faz uma promessa mais estreita. Ajuda o leitor a isolar afirmações, examinar evidências, perceber enquadramentos e contestar argumentos. O leitor ainda precisa voltar à fonte e decidir.`,
+        cta: {
+          title: "Leia a afirmação por mais de um ângulo",
+          description:
+            "Use fact-check, falácias, neutralidade, explicação, análise de padrões de escrita ou revisão adversarial. Depois examine as evidências e forme seu próprio julgamento.",
+          label: "Ler com o Jiddu",
+        },
+      },
+      es: {
+        title:
+          "¿Qué es la verdad? Krishnamurti y las lentes de Jiddu",
+        seoTitle: "¿Qué es la verdad? Krishnamurti y las lentes de Jiddu",
+        description:
+          "Explora teorías filosóficas de la verdad, la ruptura de Krishnamurti con la Teosofía y cómo las lentes de Jiddu apoyan el juicio crítico.",
+        excerpt:
+          "La filosofía pregunta qué hace verdadera una proposición; Krishnamurti pregunta cómo el condicionamiento afecta lo que vemos. Las lentes de Jiddu conectan ambas preguntas sin pretender cerrarlas.",
+        readingTime: "6 min de lectura",
+        imageAlt:
+          "Lentes ópticas transparentes que revelan aspectos diferentes del mismo paisaje abierto y sin camino",
+        imageCaption:
+          "Cada lente enfoca una parte diferente del mismo paisaje.",
+        body: `La pregunta “¿qué es la verdad?” tiene dos sentidos. Uno se refiere a una afirmación concreta: ¿ocurrió el acontecimiento, es correcta la cifra, respalda la fuente la alegación? El otro pregunta qué queremos decir cada vez que llamamos verdadera a una afirmación.
+
+El panorama de la [Internet Encyclopedia of Philosophy sobre la verdad](https://iep.utm.edu/truth/) comienza en ese segundo nivel. Investiga qué puede recibir un valor de verdad y cómo se conectan lenguaje, creencia y mundo. Jiddu Krishnamurti comienza por el observador. Su pregunta es cómo el condicionamiento moldea lo que ve la mente. Ambas investigaciones se encuentran cuando un acontecimiento se convierte en descripción y la descripción se convierte en juicio.
+
+## Cinco lentes filosóficas sobre la verdad
+
+La IEP presenta cinco teorías principales. Cada una aborda una parte diferente del problema.
+
+- **Correspondencia** comprueba si una proposición coincide con cómo es el mundo. La dificultad consiste en explicar la correspondencia y los propios hechos.
+- **Teoría semántica**, asociada a Alfred Tarski, define las condiciones en las que una frase es verdadera y separa el lenguaje estudiado del lenguaje usado para analizarlo.
+- **Coherencia** examina cómo encaja una creencia en un sistema consistente. Una historia coherente todavía puede describir mal el mundo.
+- **Teoría pragmática** conecta la verdad con la investigación, la prueba y aquello que resiste el examen en la práctica. La utilidad no rescata una afirmación falsa.
+- **Teoría deflacionaria** da un trabajo más ligero a la palabra *verdadero*. “Es verdad que la nieve es blanca” quizá añada poco a “la nieve es blanca”.
+
+Cada teoría responde a una pregunta diferente. La imagen de la lente funciona porque toda teoría enfoca algo y deja algo en los bordes.
+
+## La ruptura de Krishnamurti con la Teosofía
+
+Llamar “teosófica” a la visión madura de Krishnamurti borra la ruptura que la definió. La Sociedad Teosófica lo presentó como futuro “Instructor del Mundo” y creó la Orden de la Estrella alrededor de esa expectativa. Creció en ese ambiente y después rechazó su jerarquía, sus ceremonias y su autoridad espiritual.
+
+En 1929, Krishnamurti disolvió la organización que dirigía. El [discurso de disolución](https://kfoundation.org/dissolution-speech/) contiene la frase que definiría el resto de su trabajo:
+
+> La verdad es una tierra sin caminos.
+
+Krishnamurti mantenía una distinción firme entre verdad y error mientras negaba a instituciones, credos, maestros, rituales y técnicas cualquier monopolio sobre la ruta hacia la verdad. Cuando una ruta se considera garantizada, el seguidor entrega su juicio a las personas autorizadas para interpretarla.
+
+El [resumen de las enseñanzas centrales de Krishnamurti](https://kfoundation.org/core-of-the-teachings/) se ocupa de las relaciones, el contenido de la mente y la observación directa. Imágenes, miedos, creencias y recuerdos pueden distorsionar lo que vemos antes de que aparezca un argumento explícito.
+
+## De las proposiciones a la percepción
+
+La filosofía analítica suele preguntar qué significa que una proposición sea verdadera. Krishnamurti pregunta si la percepción puede estar libre de autoridad y condicionamiento psicológico.
+
+Se encuentran en la frontera entre el acontecimiento y su relato. En un [diálogo de 1975 con David Bohm](https://kfoundation.org/transcript/dialogue-6-brockwood-park-28-june-1975/), Krishnamurti formula el límite con claridad: la descripción no es lo descrito.
+
+Una transcripción registra palabras de una conversación. Una fuente documenta un acontecimiento desde una posición determinada. Un modelo ofrece una interpretación. Cada elemento tiene valor y permanece a un paso de lo que ocurrió.
+
+## Lo que hace cada lente de Jiddu
+
+Jiddu convierte ese límite en una decisión de producto. Sus lentes permanecen separadas, y cada una formula una pregunta más estrecha al mismo texto:
+
+1. **Fact-check** extrae afirmaciones verificables y busca fuentes que las respalden, contradigan, compliquen o no consigan demostrarlas. El veredicto depende de la formulación de la alegación y de la calidad de la evidencia.
+2. **Falacias** pone a prueba la inferencia. Puede identificar un falso dilema, un ataque personal o una distorsión de la postura contraria. Un argumento válido puede partir de premisas falsas, mientras uno torpe puede llegar a una conclusión verdadera.
+3. **Neutralidad** examina el encuadre, la atribución y la selección de fuentes. Muestra cómo un texto dirige la atención sin decidir qué bando político tiene razón. Un tono equilibrado, por sí solo, nada dice sobre la precisión factual.
+4. **Explain** aclara la estructura y el sentido para la audiencia elegida. La validación factual sigue siendo una tarea separada.
+5. **Patrones de slop** identifica transiciones genéricas, lenguaje inflado, repetición y otros hábitos de baja información. Estos hallazgos miden hábitos de escritura; el análisis factual examina el valor de verdad.
+6. **Revisión adversarial** busca evidencias ausentes, premisas ocultas, explicaciones alternativas y conclusiones que van más allá de los datos.
+
+Live y Context pueden aplicar varias lentes a la misma conversación. Los resultados permanecen separados. Una fuente citada sigue siendo evidencia para una alegación; una etiqueta de falacia sigue siendo una evaluación del razonamiento; una explicación sigue siendo una ayuda para comprender.
+
+## Dónde terminan las lentes
+
+Cada lente conserva sus puntos ciegos. Un artículo coherente puede estar equivocado. Un artículo bien documentado puede omitir un contexto decisivo. Un análisis automatizado puede interpretar mal el pasaje.
+
+La advertencia de Krishnamurti se convierte en una restricción de diseño para Jiddu. Una herramienta de lectura crítica debe exponer sus pasos, conservar la fuente, separar un tipo de juicio de otro, citar evidencias, declarar incertidumbre y dejar espacio para discrepar.
+
+Jiddu hace una promesa más acotada. Ayuda al lector a aislar afirmaciones, examinar evidencias, detectar encuadres y cuestionar argumentos. El lector todavía tiene que volver a la fuente y decidir.`,
+        cta: {
+          title: "Lee la afirmación desde más de un ángulo",
+          description:
+            "Usa fact-check, falacias, neutralidad, explicación, análisis de patrones de escritura o revisión adversarial. Después examina la evidencia y forma tu propio juicio.",
+          label: "Leer con Jiddu",
+        },
+      },
+    },
+  },
+  {
     slug: "what-is-live-intelligence",
     publishedAt: "2026-08-09",
     updatedAt: "2026-08-10",
@@ -257,6 +928,12 @@ const posts: BlogPost[] = [
         height: 1519,
         type: "image/png",
       },
+    },
+    thumbnail: {
+      src: "/blog/live-intelligence-lenses.webp",
+      width: 1729,
+      height: 910,
+      type: "image/webp",
     },
     citations: [
       "https://www.tse.jus.br/legislacao/compilada/res/2026/resolucao-no-23-751-de-26-de-fevereiro-de-2026",
@@ -276,6 +953,8 @@ const posts: BlogPost[] = [
         readingTime: "5 min read",
         imageAlt:
           "Jiddu Context analyzing a Brazilian political interview beside a live transcript, entity graph, sources, neutrality, and fallacy panels",
+        thumbnailAlt:
+          "Abstract sound waves passing through optical lenses and resolving into connected context nodes",
         imageCaption:
           "Jiddu Context running beside an interview, with the transcript, entity graph, sources, neutrality, and fallacy analysis in one session.",
         imageOpenLabel: "Open the full-resolution Jiddu Context image",
@@ -362,6 +1041,8 @@ You can [open Jiddu Context](/context) and start a session from your microphone 
         readingTime: "5 min de leitura",
         imageAlt:
           "Jiddu Context analisando uma entrevista política brasileira ao lado da transcrição, do grafo de entidades e dos painéis de fontes, neutralidade e falácias",
+        thumbnailAlt:
+          "Ondas sonoras abstratas atravessando lentes ópticas e se organizando em nós de contexto conectados",
         imageCaption:
           "O Jiddu Context acompanha uma entrevista com a transcrição, o grafo de entidades, as fontes e as análises de neutralidade e falácias na mesma sessão.",
         imageOpenLabel: "Abrir a imagem do Jiddu Context em alta resolução",
@@ -448,6 +1129,8 @@ Você pode [abrir o Jiddu Context](/context) e iniciar uma sessão pelo microfon
         readingTime: "5 min de lectura",
         imageAlt:
           "Jiddu Context analizando una entrevista política brasileña junto a la transcripción, el grafo de entidades y los paneles de fuentes, neutralidad y falacias",
+        thumbnailAlt:
+          "Ondas sonoras abstractas que atraviesan lentes ópticas y se organizan en nodos de contexto conectados",
         imageCaption:
           "Jiddu Context acompaña una entrevista con la transcripción, el grafo de entidades, las fuentes y los análisis de neutralidad y falacias en la misma sesión.",
         imageOpenLabel: "Abrir la imagen de Jiddu Context en alta resolución",
@@ -532,9 +1215,10 @@ Puedes [abrir Jiddu Context](/context) e iniciar una sesión desde el micrófono
     author: "Jiddu",
     tags: ["adversarial-review", "academic-research", "responsible-ai"],
     image: {
-      src: "/blog/adversarial-review-jiddu.jpg",
-      width: 1536,
-      height: 806,
+      src: "/blog/adversarial-review-lenses.webp",
+      width: 1728,
+      height: 910,
+      type: "image/webp",
     },
     translations: {
       en: {
@@ -547,9 +1231,9 @@ Puedes [abrir Jiddu Context](/context) e iniciar una sesión desde el micrófono
           "A deliberately skeptical reading can find blind spots before reviewers do. Learn why adversarial review exists and how it works in Jiddu.",
         readingTime: "4 min read",
         imageAlt:
-          "Academic manuscript examined from two opposing perspectives, with charts and weaknesses marked",
+          "Translucent lenses inspecting a layered paper structure from different angles and revealing weak and strong supports",
         imageCaption:
-          "A good critique does not look for a winner; it looks for the point where the argument needs to become stronger.",
+          "Adversarial review examines the same structure from several angles to find weak assumptions and reliable supports.",
         body: `An **adversarial review** is a deliberately skeptical reading of a piece of work. Instead of merely summarizing what the author intended, it looks for the strongest objections: where the evidence does not support the conclusion, which premise remained implicit, what comparison is missing, and what could invalidate the result.
 
 It does not begin with the assumption that the author is wrong. It begins with the idea that an important argument should survive difficult questions before it is published.
@@ -618,9 +1302,9 @@ You can [start an adversarial review](/review) or read [Jiddu's complete methodo
           "Uma leitura deliberadamente cética pode encontrar pontos cegos antes que eles cheguem aos revisores. Veja por que ela existe e como funciona no Jiddu.",
         readingTime: "4 min de leitura",
         imageAlt:
-          "Manuscrito acadêmico examinado por duas perspectivas opostas, com gráficos e fragilidades marcadas",
+          "Lentes translúcidas examinando uma estrutura de papel em camadas por diferentes ângulos e revelando apoios frágeis e sólidos",
         imageCaption:
-          "Uma boa crítica não procura um vencedor: procura o ponto em que o argumento precisa ficar mais forte.",
+          "A revisão adversarial examina a mesma estrutura por vários ângulos para encontrar premissas frágeis e apoios confiáveis.",
         body: `Uma **revisão adversarial** é uma leitura deliberadamente cética de um trabalho. Em vez de apenas resumir o que o autor quis dizer, ela procura as objeções mais fortes: onde a evidência não sustenta a conclusão, qual premissa ficou implícita, que comparação está faltando e o que poderia invalidar o resultado.
 
 Ela não parte da ideia de que o autor está errado. Parte da ideia de que um argumento importante deve sobreviver a perguntas difíceis antes de ser publicado.
@@ -689,9 +1373,9 @@ Você pode [iniciar uma revisão adversarial](/review) ou consultar [a metodolog
           "Una lectura deliberadamente escéptica puede encontrar puntos ciegos antes que los revisores. Descubre por qué existe y cómo funciona en Jiddu.",
         readingTime: "4 min de lectura",
         imageAlt:
-          "Manuscrito académico examinado desde dos perspectivas opuestas, con gráficos y debilidades señaladas",
+          "Lentes translúcidas que examinan una estructura de papel en capas desde distintos ángulos y revelan apoyos débiles y sólidos",
         imageCaption:
-          "Una buena crítica no busca un ganador: busca el punto en el que el argumento necesita fortalecerse.",
+          "La revisión adversarial examina la misma estructura desde varios ángulos para encontrar premisas débiles y apoyos fiables.",
         body: `Una **revisión adversarial** es una lectura deliberadamente escéptica de un trabajo. En lugar de limitarse a resumir lo que el autor quiso decir, busca las objeciones más fuertes: dónde la evidencia no sostiene la conclusión, qué premisa quedó implícita, qué comparación falta y qué podría invalidar el resultado.
 
 No parte de la idea de que el autor está equivocado. Parte de la idea de que un argumento importante debe sobrevivir a preguntas difíciles antes de publicarse.

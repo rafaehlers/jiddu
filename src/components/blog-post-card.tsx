@@ -20,6 +20,7 @@ export function BlogPostCard({
   const { lang } = useI18n();
   const content = getBlogPostTranslation(post, lang);
   const copy = BLOG_COPY[lang];
+  const cardImage = post.thumbnail ?? post.image;
 
   return (
     <article className="group overflow-hidden rounded-xl border border-rule bg-paper">
@@ -29,8 +30,8 @@ export function BlogPostCard({
         aria-label={`${copy.readArticle}: ${content.title}`}
       >
         <Image
-          src={post.image.src}
-          alt={content.imageAlt}
+          src={cardImage.src}
+          alt={content.thumbnailAlt ?? content.imageAlt}
           fill
           sizes="(min-width: 1024px) 928px, calc(100vw - 3rem)"
           className="object-cover transition-transform duration-500 group-hover:scale-[1.015]"

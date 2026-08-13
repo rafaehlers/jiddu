@@ -48,8 +48,20 @@ const markdownComponents: Components = {
     <strong className="font-semibold text-foreground">{children}</strong>
   ),
   blockquote: ({ children }) => (
-    <blockquote className="my-6 border-l-2 border-accent-hi bg-paper px-4 py-1 font-serif text-lg italic leading-relaxed text-foreground [&>p]:mt-0 [&>p]:text-lg">
-      {children}
+    <blockquote className="relative my-8 overflow-hidden rounded-xl border border-rule bg-paper px-6 py-6 sm:px-8">
+      <span
+        aria-hidden="true"
+        className="absolute inset-y-0 left-0 w-1 bg-accent-hi"
+      />
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute -right-1 -top-6 select-none font-serif text-[7rem] leading-none text-accent-hi/10"
+      >
+        “
+      </span>
+      <div className="relative [&>p]:mt-0 [&>p+p]:mt-4 [&>p:first-child]:font-serif [&>p:first-child]:text-xl [&>p:first-child]:italic [&>p:first-child]:leading-relaxed [&>p:last-child:not(:first-child)]:font-sans [&>p:last-child:not(:first-child)]:text-sm [&>p:last-child:not(:first-child)]:not-italic [&>p:last-child:not(:first-child)]:text-muted">
+        {children}
+      </div>
     </blockquote>
   ),
   a: ({ href = "", children }) => {
@@ -162,14 +174,18 @@ export function BlogPostView({ post }: { post: BlogPost }) {
           },
         ],
       },
-      {
-        "@type": "FAQPage",
-        mainEntity: content.faq.map((item) => ({
-          "@type": "Question",
-          name: item.question,
-          acceptedAnswer: { "@type": "Answer", text: item.answer },
-        })),
-      },
+      ...(content.faq?.length
+        ? [
+            {
+              "@type": "FAQPage",
+              mainEntity: content.faq.map((item) => ({
+                "@type": "Question",
+                name: item.question,
+                acceptedAnswer: { "@type": "Answer", text: item.answer },
+              })),
+            },
+          ]
+        : []),
     ],
   };
 
@@ -242,26 +258,28 @@ export function BlogPostView({ post }: { post: BlogPost }) {
           {content.body}
         </ReactMarkdown>
 
-        <section
-          aria-labelledby="faq-title"
-          className="mt-12 border-t border-rule pt-10"
-        >
-          <h2 id="faq-title" className="font-serif text-xl sm:text-2xl">
-            {copy.faqTitle}
-          </h2>
-          <dl className="mt-6 divide-y divide-rule border-y border-rule">
-            {content.faq.map((item) => (
-              <div key={item.question} className="py-5">
-                <dt className="font-serif text-lg font-semibold">
-                  {item.question}
-                </dt>
-                <dd className="mt-2 text-base leading-relaxed text-muted">
-                  {item.answer}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        </section>
+        {content.faq?.length ? (
+          <section
+            aria-labelledby="faq-title"
+            className="mt-12 border-t border-rule pt-10"
+          >
+            <h2 id="faq-title" className="font-serif text-xl sm:text-2xl">
+              {copy.faqTitle}
+            </h2>
+            <dl className="mt-6 divide-y divide-rule border-y border-rule">
+              {content.faq.map((item) => (
+                <div key={item.question} className="py-5">
+                  <dt className="font-serif text-lg font-semibold">
+                    {item.question}
+                  </dt>
+                  <dd className="mt-2 text-base leading-relaxed text-muted">
+                    {item.answer}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        ) : null}
 
         <footer className="mt-10 border-t border-rule pt-6">
           <p className="text-sm font-medium text-foreground">{copy.tagsTitle}</p>
