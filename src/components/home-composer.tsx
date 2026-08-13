@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CornerRightUp } from "lucide-react";
+import { CornerDownRight, CornerRightUp } from "lucide-react";
 import { AnalysisLoadingDialog } from "@/components/analysis-loading-dialog";
 import { UploadForm, type UploadSourceType } from "@/components/upload-form";
 import { ModeCards } from "@/components/mode-cards";
@@ -14,6 +14,7 @@ import { PageTitle } from "@/components/page-title";
 import { prematureSseEndMessage, readSse } from "@/lib/sse";
 import { useI18n } from "@/lib/i18n/provider";
 import type { Messages } from "@/lib/i18n/messages";
+import type { Lang } from "@/lib/fallacies";
 
 type Mode =
   "detector" | "factcheck" | "neutrality" | "explain" | "slop" | "review";
@@ -32,6 +33,23 @@ type LiveState =
   | { status: "failed"; error: string };
 
 type SubmitErrorState = { message: string; code?: string };
+
+type LatestBlogPost = {
+  slug: string;
+  translations: Record<
+    Lang,
+    {
+      title: string;
+      excerpt: string;
+    }
+  >;
+};
+
+const LATEST_BLOG_COPY: Record<Lang, { heading: string }> = {
+  en: { heading: "Latest from our blog" },
+  pt: { heading: "Últimas do nosso blog" },
+  es: { heading: "Lo último de nuestro blog" },
+};
 
 /**
  * Per-mode wiring for the unified composer. The pipelines share the
@@ -155,10 +173,12 @@ export function HomeComposer({
   initialMode = "detector",
   showOriginNote = false,
   showSignupCta = false,
+  latestBlogPosts = [],
 }: {
   initialMode?: Mode;
   showOriginNote?: boolean;
   showSignupCta?: boolean;
+  latestBlogPosts?: LatestBlogPost[];
 }) {
   const router = useRouter();
   const { t, lang } = useI18n();
@@ -454,6 +474,10 @@ export function HomeComposer({
             </p>
           </aside>
         )}
+
+        {latestBlogPosts.length > 0 ? (
+          <LatestBlogPosts posts={latestBlogPosts} lang={lang} />
+        ) : null}
       </section>
     );
   }
@@ -487,6 +511,53 @@ export function HomeComposer({
       <AnalysisSkeleton />
       <LoadingModal state={live.data} mode={mode} />
     </div>
+  );
+}
+
+function LatestBlogPosts({
+  posts,
+  lang,
+}: {
+  posts: LatestBlogPost[];
+  lang: Lang;
+}) {
+  const copy = LATEST_BLOG_COPY[lang];
+
+  return (
+    <section
+      aria-labelledby="latest-blog-heading"
+      className="pt-2"
+    >
+      <h2
+        id="latest-blog-heading"
+        className="font-serif text-2xl text-foreground"
+      >
+        {copy.heading}
+      </h2>
+
+      <div className="mt-5 flex flex-col gap-6">
+        {posts.map((post) => {
+          const content = post.translations[lang];
+          return (
+            <article
+              key={post.slug}
+              className="grid max-w-3xl grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-2"
+            >
+              <CornerDownRight
+                className="mt-0.5 size-5 shrink-0 text-muted"
+                aria-hidden="true"
+              />
+              <h3 className="font-serif text-xl leading-tight text-foreground">
+                <Link href={`/blog/${post.slug}`}>{content.title}</Link>
+              </h3>
+              <p className="col-start-2 text-sm leading-relaxed text-muted">
+                {content.excerpt}
+              </p>
+            </article>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 

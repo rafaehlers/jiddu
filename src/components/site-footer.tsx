@@ -33,18 +33,6 @@ export function SiteFooter() {
   return (
     <footer className="mt-auto border-t border-rule">
       <div className="mx-auto max-w-5xl px-6 py-6 text-sm text-muted flex flex-col items-center justify-center text-center gap-3">
-        <span className="font-serif italic">
-          {t.footer_quote}{" "}
-          <span className="not-italic">—</span>{" "}
-          <a
-            href="https://en.wikipedia.org/wiki/Jiddu_Krishnamurti"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-accent-hi transition-colors"
-          >
-            J. Krishnamurti
-          </a>
-        </span>
         <nav
           aria-label="Footer"
           className="flex flex-wrap items-center justify-center gap-3"
@@ -165,6 +153,18 @@ export function SiteFooter() {
             Version: {buildVersion}
           </small>
         )}
+        <span className="font-serif italic">
+          {t.footer_quote}{" "}
+          <span className="not-italic">—</span>{" "}
+          <a
+            href="https://en.wikipedia.org/wiki/Jiddu_Krishnamurti"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-accent-hi transition-colors"
+          >
+            J. Krishnamurti
+          </a>
+        </span>
       </div>
     </footer>
   );
