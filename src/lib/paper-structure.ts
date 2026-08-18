@@ -1,6 +1,7 @@
 import type {
   IngestedDocument,
   IngestedPage,
+  IngestedPdfOutlineItem,
   IngestedTextItem,
 } from "./ingest/url";
 import {
@@ -15,6 +16,7 @@ type HeadingCandidate = {
   level: number;
   /** The font that actually produced the heading in the PDF text layer. */
   fontName?: string;
+  source: "outline" | "markdown" | "typography";
 };
 
 type PaperParagraph = {
@@ -40,6 +42,8 @@ const SUBSECTION_HEADING = /^(?:\d+(?:\.\d+)*\.?\s+)?(?:search|busca|b[uú]squed
 const EXCLUDED_HEADING = /^(?:article history|hist[oó]rico do artigo|historial del art[ií]culo|keywords?|palavras-chave|palabras clave|contact\b|contato\b|contacto\b|review$|revis[aã]o$|revisi[oó]n$|doi\b|copyright|correspondence|correspond[eê]ncia|correspondencia|author information|informa[cç][oõ]es dos autores|informaci[oó]n de autores)/i;
 const METADATA_HEADING = /^(?:declaration of interest|declara[cç][aã]o de interesses?|declaraci[oó]n de intereses|conflicts? of interest|conflitos? de interesses?|conflictos? de intereses|acknowledg(?:e)?ments?|agradecimentos?|agradecimientos?)$/i;
 const REFERENCES_HEADING = /^(?:references|bibliography|works cited|literature cited|refer[eê]ncias|referencias|bibliograf[ií]a)$/i;
+const OUTLINE_PREFIX = /^(?:\d+(?:\.\d+)*|[A-Z](?:\.\d+)*)\.?\s+\S/u;
+const POST_REFERENCES_HEADING = /^(?:(?:online\s+)?appendix(?:es)?|supplementary(?:\s+materials?)?|material suplementar|materiales suplementarios)\b/i;
 
 const TABLE_CAPTION = /^(?:table|figure|fig\.)\s+[A-Z]?\d+[.:]?\b/i;
 const INLINE_LABEL = /^[A-Z][A-Za-z -]{1,35}:\s+\S/;
@@ -61,9 +65,16 @@ export function splitExplainDocument(doc: IngestedDocument): Block[] {
     doc.source === "pdf" &&
     doc.pages?.some((page) => (page.textItems?.length ?? 0) > 0)
   ) {
-    const structured = splitAcademicPdf(doc.pages);
+    const structured = splitAcademicPdf(doc.pages, doc.outline);
+    const firstReferencesIndex = structured.findIndex(
+      (block) => block.kind === "references",
+    );
+    const structuralContent =
+      firstReferencesIndex >= 0
+        ? structured.slice(0, firstReferencesIndex)
+        : structured;
     const contentSections = new Set(
-      structured
+      structuralContent
         .filter((block) => block.kind === "content")
         .map((block) => block.sectionId),
     );
@@ -138,8 +149,11 @@ function containsQuotation(text: string): boolean {
   return /(?:“[^”]{2,}”|"[^"]{2,}"|‘[^’]{2,}’|'[^']{2,}')/.test(text);
 }
 
-export function splitAcademicPdf(pages: IngestedPage[]): Block[] {
-  const headingCandidates = collectHeadingCandidates(pages);
+export function splitAcademicPdf(
+  pages: IngestedPage[],
+  outline: IngestedPdfOutlineItem[] = [],
+): Block[] {
+  const headingCandidates = collectHeadingCandidates(pages, outline);
   const furniture = collectRunningFurniture(pages);
   const sections: PaperSection[] = [];
   const headingStack: string[] = [];
@@ -167,6 +181,15 @@ export function splitAcademicPdf(pages: IngestedPage[]): Block[] {
       while (true) {
         const match = headingAtStart(chunk, pageCandidates);
         if (!match) break;
+        // Bibliographies commonly bold each author list using the same font
+        // as real headings. Once References begins, only a high-confidence
+        // appendix/supplement boundary may resume document content.
+        if (
+          current?.kind === "references" &&
+          !isPostReferencesBoundary(match)
+        ) {
+          break;
+        }
         matchedHeading = true;
         insideFloat = false;
         chunk = chunk.slice(match.text.length).trim();
@@ -190,6 +213,7 @@ export function splitAcademicPdf(pages: IngestedPage[]): Block[] {
           current = beginSection(sections, headingStack, {
             text: inlineReferences.heading,
             level: 1,
+            source: "markdown",
           });
           chunk = inlineReferences.remainder;
         }
@@ -221,6 +245,7 @@ export function splitAcademicPdf(pages: IngestedPage[]): Block[] {
 
 function collectHeadingCandidates(
   pages: IngestedPage[],
+  outline: IngestedPdfOutlineItem[],
 ): Map<number, HeadingCandidate[]> {
   const all = pages.flatMap((page) =>
     (page.textItems ?? []).map((item) => ({ page, item })),
@@ -263,6 +288,38 @@ function collectHeadingCandidates(
   }
 
   const result = new Map<number, HeadingCandidate[]>();
+
+  // PDF bookmarks carry the author's intended hierarchy. Match them back to
+  // LiteParse Markdown so numbered prefixes such as "2.1" remain visible.
+  for (const item of outline) {
+    const page = pages.find((candidate) => candidate.pageNumber === item.pageNumber);
+    if (!page) continue;
+    const titleKey = headingKey(item.title);
+    const markdown = parseMarkdownHeadings(page.markdown).find(
+      (heading) =>
+        headingKey(heading.text) === titleKey ||
+        headingKey(stripOutlinePrefix(heading.text)) === titleKey,
+    );
+    if (!markdown) continue;
+    addHeadingCandidate(result, item.pageNumber, {
+      text: markdown.text,
+      level: item.level,
+      source: "outline",
+    });
+  }
+
+  // LiteParse already marks most numbered academic headings accurately even
+  // when the PDF text layer stores the number and title as separate objects.
+  for (const page of pages) {
+    for (const heading of parseMarkdownHeadings(page.markdown)) {
+      if (!isHighConfidenceMarkdownHeading(heading)) continue;
+      addHeadingCandidate(result, page.pageNumber, {
+        ...heading,
+        source: "markdown",
+      });
+    }
+  }
+
   for (const { page, item } of all) {
     const text = normalizeText(item.text);
     if (!looksLikeHeadingText(text) || !isLineStart(page, item)) continue;
@@ -290,13 +347,90 @@ function collectHeadingCandidates(
     }
 
     const level = headingLevel(text, item, topFonts);
-    const list = result.get(page.pageNumber) ?? [];
-    if (!list.some((candidate) => candidate.text.toLowerCase() === text.toLowerCase())) {
-      list.push({ text, level, fontName: item.fontName });
-      result.set(page.pageNumber, list);
-    }
+    addHeadingCandidate(result, page.pageNumber, {
+      text,
+      level,
+      fontName: item.fontName,
+      source: "typography",
+    });
   }
   return result;
+}
+
+function addHeadingCandidate(
+  result: Map<number, HeadingCandidate[]>,
+  pageNumber: number,
+  candidate: HeadingCandidate,
+) {
+  const list = result.get(pageNumber) ?? [];
+  if (
+    !list.some(
+      (item) => item.text.toLocaleLowerCase() === candidate.text.toLocaleLowerCase(),
+    )
+  ) {
+    list.push(candidate);
+    result.set(pageNumber, list);
+  }
+}
+
+function parseMarkdownHeadings(
+  markdown: string,
+): Array<{ text: string; level: number }> {
+  const headings: Array<{ text: string; level: number }> = [];
+  for (const line of markdown.split("\n")) {
+    const match = line.trim().match(/^(#{1,6})\s+(.+?)\s*#*$/);
+    if (!match) continue;
+    const text = normalizeText(
+      match[2]
+        .replace(/\[([^\]]+)]\([^\n)]+\)/g, "$1")
+        .replace(/[*_`]+/g, ""),
+    );
+    if (!text) continue;
+    headings.push({
+      text,
+      level: markdownHeadingLevel(text, match[1].length),
+    });
+  }
+  return headings;
+}
+
+function markdownHeadingLevel(text: string, hashCount: number): number {
+  const outline = text.match(/^(\d+(?:\.\d+)*|[A-Z](?:\.\d+)*)\.?\s+/u);
+  if (outline) return Math.min(6, outline[1].split(".").length);
+  if (TOP_LEVEL_HEADING.test(text) || POST_REFERENCES_HEADING.test(text)) {
+    return 1;
+  }
+  return Math.max(1, hashCount - 1);
+}
+
+function isHighConfidenceMarkdownHeading(heading: {
+  text: string;
+  level: number;
+}): boolean {
+  if (heading.level > 3 || !looksLikeHeadingText(heading.text)) return false;
+  return (
+    OUTLINE_PREFIX.test(heading.text) ||
+    TOP_LEVEL_HEADING.test(heading.text) ||
+    POST_REFERENCES_HEADING.test(heading.text)
+  );
+}
+
+function stripOutlinePrefix(text: string): string {
+  return text.replace(/^(?:\d+(?:\.\d+)*|[A-Z](?:\.\d+)*)\.?\s+/u, "");
+}
+
+function headingKey(text: string): string {
+  return normalizeText(text)
+    .toLocaleLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
+}
+
+function isPostReferencesBoundary(candidate: HeadingCandidate): boolean {
+  return (
+    POST_REFERENCES_HEADING.test(candidate.text) ||
+    /^[A-Z](?:\.\d+)*\.?\s+\S/u.test(candidate.text)
+  );
 }
 
 type LayoutLine = {
@@ -750,7 +884,30 @@ function looksLikeFigureDebris(raw: string): boolean {
 }
 
 function protectReferenceTail(blocks: Block[]): Block[] {
-  if (blocks.some((block) => block.kind === "references")) return blocks;
+  const explicitStart = blocks.findIndex((block) => block.kind === "references");
+  if (explicitStart >= 0) {
+    const reference = blocks[explicitStart];
+    const boundary = blocks.findIndex(
+      (block, index) =>
+        index > explicitStart &&
+        block.kind !== "references" &&
+        POST_REFERENCES_HEADING.test(block.section ?? ""),
+    );
+    const end = boundary >= 0 ? boundary : blocks.length;
+    return blocks.map((block, index) =>
+      index < explicitStart || index >= end
+        ? block
+        : {
+            ...block,
+            section: reference.section ?? "References",
+            sectionId: reference.sectionId,
+            sectionLevel: reference.sectionLevel ?? 1,
+            sectionParent: reference.sectionParent ?? null,
+            sectionPath: reference.sectionPath ?? ["References"],
+            kind: "references" as const,
+          },
+    );
+  }
   const earliest = Math.floor(blocks.length * 0.55);
   const referenceLike = (text: string) => {
     const normalized = normalizeText(text);

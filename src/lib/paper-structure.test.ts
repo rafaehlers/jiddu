@@ -141,6 +141,142 @@ The procedure was preregistered.`,
   );
 });
 
+test("uses numbered Markdown headings when the number and title are separate PDF items", () => {
+  const pages = [
+    page(
+      1,
+      `## Abstract
+
+Summary of the paper.`,
+      [
+        heading("Abstract", 60, 100),
+        body("Summary of the paper.", 60, 130),
+      ],
+    ),
+    page(
+      2,
+      `## 1 Introduction
+
+Opening argument.`,
+      [
+        body("1", 60, 100),
+        heading("Introduction", 80, 100),
+        body("Opening argument.", 60, 130),
+      ],
+    ),
+    page(
+      3,
+      `## 2 Results
+
+Main result.`,
+      [
+        body("2", 60, 100),
+        heading("Results", 80, 100),
+        body("Main result.", 60, 130),
+      ],
+    ),
+  ];
+
+  const blocks = splitAcademicPdf(pages);
+  assert.deepEqual(
+    Array.from(new Set(blocks.map((block) => block.section))),
+    ["Abstract", "1 Introduction", "2 Results"],
+  );
+  assert.equal(blocks.find((block) => block.section === "Abstract")?.sectionLevel, 1);
+});
+
+test("uses the PDF outline for arbitrary author-defined section titles", () => {
+  const pages = [
+    page(
+      1,
+      `## Abstract
+
+Summary of the paper.`,
+      [
+        heading("Abstract", 60, 100),
+        body("Summary of the paper.", 60, 130),
+      ],
+    ),
+    page(
+      2,
+      `## Conceptual lens
+
+The authors define their conceptual lens.`,
+      [
+        body("Conceptual lens", 60, 100),
+        body("The authors define their conceptual lens.", 60, 130),
+      ],
+    ),
+  ];
+
+  const blocks = splitAcademicPdf(pages, [
+    { title: "Conceptual lens", pageNumber: 2, level: 1 },
+  ]);
+  assert.deepEqual(
+    Array.from(new Set(blocks.map((block) => block.section))),
+    ["Abstract", "Conceptual lens"],
+  );
+});
+
+test("keeps bold bibliography entries inside References until the appendix", () => {
+  const authorHeading =
+    "Butinda, Lewis Dunia, Aimable A Lameke, Nathan Nunn, Max Posch, and Raul Sanchez";
+  const pages = [
+    page(
+      1,
+      `## Abstract
+
+Summary of the paper.`,
+      [
+        heading("Abstract", 60, 100),
+        body("Summary of the paper.", 60, 130),
+      ],
+    ),
+    page(
+      2,
+      `## References
+
+Angelucci, Manuela and Daniel Bennett. A cited work.`,
+      [
+        heading("References", 60, 100),
+        heading("Angelucci, Manuela and Daniel Bennett", 60, 130),
+        body("A cited work.", 60, 150),
+      ],
+    ),
+    page(
+      3,
+      `#### ${authorHeading}
+
+de la Sierra. A second cited work, 2023.`,
+      [
+        heading(authorHeading, 60, 100),
+        body("de la Sierra. A second cited work, 2023.", 60, 130),
+      ],
+    ),
+    page(
+      4,
+      `## Online Appendix
+
+Supplementary analysis.`,
+      [
+        heading("Online Appendix", 60, 100),
+        body("Supplementary analysis.", 60, 130),
+      ],
+    ),
+  ];
+
+  const blocks = splitAcademicPdf(pages);
+  assert.deepEqual(
+    Array.from(new Set(blocks.map((block) => block.section))),
+    ["Abstract", "References", "Online Appendix"],
+  );
+  assert.ok(
+    blocks
+      .filter((block) => block.text.includes("Butinda"))
+      .every((block) => block.kind === "references"),
+  );
+});
+
 test("uses first-line indents instead of artificial character cuts", () => {
   const pages = [
     page(

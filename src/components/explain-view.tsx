@@ -116,6 +116,8 @@ export function ExplainView({
     () => sections.filter((section) => section.isReferences),
     [sections],
   );
+  const singleReferenceSection =
+    referenceSections.length === 1 ? referenceSections[0] : null;
   const sectionNavigationRows = useMemo(() => {
     const rows: Array<
       | { kind: "group"; id: string; title: string; level: number }
@@ -848,7 +850,9 @@ export function ExplainView({
               {sections.map((section, index) => (
                 <option key={section.id} value={section.id}>
                   {section.isReferences
-                    ? `${t.explain_references_label} · ${sectionTitle(section, index)}`
+                    ? referenceSections.length === 1
+                      ? t.explain_references_label
+                      : `${t.explain_references_label} · ${sectionTitle(section, index)}`
                     : section.path.length > 1
                       ? section.path.join(" › ")
                       : sectionTitle(section, index)}
@@ -910,7 +914,39 @@ export function ExplainView({
                 );
               })}
 
-              {referenceSections.length > 0 && (
+              {singleReferenceSection && (
+                <div className="mt-1 border-t border-rule pt-2">
+                  <button
+                    type="button"
+                    aria-current={
+                      selectedSection?.id === singleReferenceSection.id
+                        ? "true"
+                        : undefined
+                    }
+                    onClick={() => selectSection(singleReferenceSection.id)}
+                    className={cn(
+                      "flex w-full items-start justify-between gap-2 rounded-md border px-2.5 py-2 text-left text-sm leading-snug transition-colors",
+                      selectedSection?.id === singleReferenceSection.id
+                        ? "border-foreground bg-foreground text-background"
+                        : "border-transparent text-muted hover:border-rule hover:text-foreground",
+                    )}
+                  >
+                    <span>{t.explain_references_label}</span>
+                    <span
+                      className={cn(
+                        "shrink-0 font-mono text-[10px]",
+                        selectedSection?.id === singleReferenceSection.id
+                          ? "text-background/70"
+                          : "text-muted",
+                      )}
+                    >
+                      {sectionMeta(singleReferenceSection)}
+                    </span>
+                  </button>
+                </div>
+              )}
+
+              {referenceSections.length > 1 && (
                 <details
                   className="group mt-1 border-t border-rule pt-2"
                   open={selectedSection?.isReferences || undefined}
@@ -951,13 +987,15 @@ export function ExplainView({
               <div className="min-w-0">
                 <span className="text-[11px] uppercase tracking-wide text-muted">
                   {selectedSection?.isReferences
-                    ? t.explain_references_label
+                    ? t.explain_reader_label
                     : selectedSection && selectedSection.path.length > 1
                       ? selectedSection.path.slice(0, -1).join(" › ")
                       : t.explain_reader_label}
                 </span>
                 <h3 className="mt-1 font-serif text-xl leading-tight">
-                  {selectedSection
+                  {selectedSection?.isReferences
+                    ? t.explain_references_label
+                    : selectedSection
                     ? sectionTitle(
                         selectedSection,
                         sections.findIndex((section) => section.id === selectedSection.id),

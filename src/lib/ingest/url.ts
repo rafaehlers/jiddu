@@ -16,8 +16,15 @@ export type IngestedDocument = {
   sourceRef: string;
   editorial?: IngestedEditorialDocument;
   pages?: IngestedPage[];
+  outline?: IngestedPdfOutlineItem[];
   parser?: "liteparse" | "pdfjs";
   complexity?: PdfPageComplexity[];
+};
+
+export type IngestedPdfOutlineItem = {
+  title: string;
+  pageNumber: number;
+  level: number;
 };
 
 export type EditorialBlockKind =

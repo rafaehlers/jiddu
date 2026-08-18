@@ -1,6 +1,7 @@
 import type {
   IngestedDocument,
   IngestedPage,
+  IngestedPdfOutlineItem,
   PdfPageComplexity,
 } from "./url";
 
@@ -103,6 +104,7 @@ async function ingestWithLiteParse(
     ocrFailureFatal: false,
   });
   const result = await parser.parse(bytes);
+  const outline = academic ? await extractPdfOutline(bytes) : [];
   const pages: IngestedPage[] = result.pages.map((page) => ({
     pageNumber: page.pageNum,
     text: page.text.trim(),
@@ -144,6 +146,7 @@ async function ingestWithLiteParse(
     source: "pdf",
     sourceRef: filename,
     pages,
+    outline,
     parser: "liteparse",
     complexity,
   };
@@ -225,6 +228,7 @@ async function ingestWithPdfJs(
   }
 
   const metadata = await doc.getMetadata().catch(() => null);
+  const outline = await readPdfJsOutline(doc);
   const info = metadata?.info as Record<string, unknown> | undefined;
   const title =
     (typeof info?.Title === "string" && info.Title.trim()) ||
@@ -237,8 +241,75 @@ async function ingestWithPdfJs(
     source: "pdf",
     sourceRef: filename,
     pages,
+    outline,
     parser: "pdfjs",
   };
+}
+
+type PdfJsOutlineItem = {
+  title?: string;
+  dest?: string | unknown[] | null;
+  items?: PdfJsOutlineItem[];
+};
+
+type PdfJsDocument = {
+  getDestination(name: string): Promise<unknown[] | null>;
+  getOutline(): Promise<PdfJsOutlineItem[] | null>;
+  getPageIndex(ref: never): Promise<number>;
+};
+
+async function extractPdfOutline(
+  bytes: Uint8Array,
+): Promise<IngestedPdfOutlineItem[]> {
+  try {
+    const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+    const loadingTask = pdfjs.getDocument({
+      data: bytes.slice(),
+      useSystemFonts: true,
+      disableFontFace: true,
+    });
+    const doc = await loadingTask.promise;
+    try {
+      return await readPdfJsOutline(doc);
+    } finally {
+      await doc.destroy();
+    }
+  } catch (err) {
+    console.warn(
+      "[ingestPdf] PDF outline extraction failed:",
+      err instanceof Error ? err.message : err,
+    );
+    return [];
+  }
+}
+
+async function readPdfJsOutline(
+  doc: PdfJsDocument,
+): Promise<IngestedPdfOutlineItem[]> {
+  const root = await doc.getOutline().catch(() => null);
+  if (!root?.length) return [];
+
+  const result: IngestedPdfOutlineItem[] = [];
+  const visit = async (items: PdfJsOutlineItem[], level: number) => {
+    for (const item of items) {
+      const title = item.title?.replace(/\s+/g, " ").trim();
+      let destination = item.dest ?? null;
+      if (typeof destination === "string") {
+        destination = await doc.getDestination(destination).catch(() => null);
+      }
+      const pageRef = Array.isArray(destination) ? destination[0] : null;
+      if (title && pageRef && typeof pageRef === "object") {
+        const pageIndex = await doc.getPageIndex(pageRef as never).catch(() => -1);
+        if (pageIndex >= 0) {
+          result.push({ title, pageNumber: pageIndex + 1, level });
+        }
+      }
+      if (item.items?.length) await visit(item.items, level + 1);
+    }
+  };
+
+  await visit(root, 1);
+  return result;
 }
 
 function inferTitle(pages: IngestedPage[], filename: string): string {
