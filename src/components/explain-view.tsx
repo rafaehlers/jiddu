@@ -406,7 +406,7 @@ export function ExplainView({
   }> = paperMap?.quickScan
     ? [
         {
-          label: t.explain_map_paper_type,
+          label: t.explain_quick_category,
           statement: paperMap.quickScan.category,
         },
         {

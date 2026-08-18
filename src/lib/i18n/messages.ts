@@ -219,6 +219,7 @@ export type Messages = {
   explain_mode_understand: string;
   explain_mode_challenge: string;
   explain_quick_label: string;
+  explain_quick_category: string;
   explain_quick_context: string;
   explain_quick_correctness: string;
   explain_quick_clarity: string;
@@ -880,7 +881,9 @@ const en: Messages = {
   explain_mode_quick: "Quick scan",
   explain_mode_understand: "Understand",
   explain_mode_challenge: "Challenge",
-  explain_quick_label: "First pass · five Cs",
+  explain_quick_label:
+    "First pass · the 5 Cs (category, context, apparent correctness, contribution, and clarity)",
+  explain_quick_category: "Paper category",
   explain_quick_context: "Context",
   explain_quick_correctness: "Apparent correctness",
   explain_quick_clarity: "Clarity",
@@ -1904,7 +1907,9 @@ const pt: Messages = {
   explain_mode_quick: "Visão rápida",
   explain_mode_understand: "Compreender",
   explain_mode_challenge: "Questionar",
-  explain_quick_label: "Primeira passagem · cinco Cs",
+  explain_quick_label:
+    "Primeira passagem · os 5 Cs (categoria, contexto, correção aparente, contribuição e clareza)",
+  explain_quick_category: "Categoria do paper",
   explain_quick_context: "Contexto",
   explain_quick_correctness: "Correção aparente",
   explain_quick_clarity: "Clareza",
@@ -2930,7 +2935,9 @@ const es: Messages = {
   explain_mode_quick: "Vista rápida",
   explain_mode_understand: "Comprender",
   explain_mode_challenge: "Cuestionar",
-  explain_quick_label: "Primera pasada · cinco Cs",
+  explain_quick_label:
+    "Primera pasada · las 5 C (categoría, contexto, corrección aparente, contribución y claridad)",
+  explain_quick_category: "Categoría del paper",
   explain_quick_context: "Contexto",
   explain_quick_correctness: "Corrección aparente",
   explain_quick_clarity: "Claridad",

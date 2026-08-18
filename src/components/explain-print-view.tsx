@@ -93,7 +93,7 @@ export function ExplainPrintView({
       paperMapRows.length > 0);
   const quickScanRows = paperMap?.quickScan
     ? [
-        { label: t.explain_map_paper_type, statement: paperMap.quickScan.category },
+        { label: t.explain_quick_category, statement: paperMap.quickScan.category },
         { label: t.explain_quick_context, statement: paperMap.quickScan.context },
         {
           label: t.explain_quick_correctness,
