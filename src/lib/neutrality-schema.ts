@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { LiveParticipantRoleSchema } from "./live-analysis-config";
 
 // Eight neutrality-failure patterns, distilled from Goldfarb et al.
 // ("Distilling Expert Judgment at Scale", Forum AI / Stanford, 2025).
@@ -48,6 +49,9 @@ export const NeutralityFindingSchema = z.object({
   severity: SeveritySchema,
   quote: z.string(),
   explanation: z.string(),
+  speakerId: z.string().optional(),
+  speakerName: z.string().optional(),
+  speakerRole: LiveParticipantRoleSchema.optional(),
 });
 export type NeutralityFinding = z.infer<typeof NeutralityFindingSchema>;
 

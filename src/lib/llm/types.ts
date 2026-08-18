@@ -20,6 +20,7 @@ import type {
   LiveContextWindow,
 } from "../live-context-schema";
 import type { EditorialMetadata } from "../ingest/url";
+import type { LiveAnalysisConfig } from "../live-analysis-config";
 
 export type ProviderId = "anthropic" | "openai";
 
@@ -37,6 +38,8 @@ export type AnalyzeInput = {
   sourceUrl?: string | null;
   /** Publisher metadata recovered from an ingested article URL. */
   documentMetadata?: EditorialMetadata;
+  /** Listener-selected spoken-content format and known participants. */
+  analysisConfig?: LiveAnalysisConfig;
 };
 
 export type AnalyzeOutput = {

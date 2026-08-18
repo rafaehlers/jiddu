@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { mergeLiveContext, type LiveContext } from "./live-context-schema";
+import {
+  EMPTY_LIVE_CONTEXT,
+  mergeLiveContext,
+  type LiveContext,
+} from "./live-context-schema";
 import type { LiveClaim } from "./live/use-live-analysis";
+import { applyLiveAnalysisConfig } from "./live-analysis-context";
 import {
   mergeContextEntities,
   removeContextEntity,
@@ -10,6 +15,7 @@ import {
 } from "./context-session-mutations";
 
 const context: LiveContext = {
+  ...EMPTY_LIVE_CONTEXT,
   tags: [],
   relatedLinks: [],
   dismissedEntityNames: [],
@@ -116,6 +122,60 @@ test("merges duplicate entities, redirects and deduplicates their relations", ()
   assert.equal(result.context.relations[0].sourceEntityId, "danielle");
   assert.deepEqual(result.context.relations[0].sentenceIds, ["s2", "s3"]);
   assert.equal(result.context.relations[0].confidence, 0.9);
+});
+
+test("keeps a configured speaker authoritative when its graph card is merged", () => {
+  const configured: LiveContext = {
+    ...context,
+    analysisConfig: {
+      mode: "speech",
+      participants: [
+        {
+          entityId: "speaker",
+          name: "Candidato Silva",
+          role: "primary_speaker",
+          placeholder: false,
+        },
+      ],
+    },
+    entities: [
+      {
+        id: "speaker",
+        name: "Candidato Silva",
+        kind: "person",
+        description: "Discursante configurado.",
+        aliases: [],
+        sentenceIds: [],
+        confidence: 1,
+        importance: 1,
+        participantRole: "primary_speaker",
+        userSupplied: true,
+        placeholder: false,
+      },
+      context.entities[0],
+    ],
+    relations: [],
+  };
+
+  const merged = mergeContextEntities(configured, "speaker", "emily");
+  const speaker = merged.context.entities.find((entity) => entity.id === "emily");
+  const participant = merged.context.analysisConfig.participants[0];
+
+  assert.equal(speaker?.userSupplied, true);
+  assert.equal(speaker?.participantRole, "primary_speaker");
+  assert.equal(speaker?.placeholder, false);
+  assert.equal(participant.entityId, "emily");
+  assert.equal(participant.name, "Emily Chow");
+
+  const reapplied = applyLiveAnalysisConfig(
+    merged.context,
+    merged.context.analysisConfig,
+    "pt",
+  );
+  assert.equal(
+    reapplied.entities.filter((entity) => entity.id === "emily").length,
+    1,
+  );
 });
 
 test("removes an incorrect entity, its relations and remembers the dismissal", () => {

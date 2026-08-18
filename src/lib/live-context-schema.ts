@@ -1,4 +1,9 @@
 import { z } from "zod";
+import {
+  DEFAULT_LIVE_ANALYSIS_CONFIG,
+  LiveAnalysisConfigSchema,
+  LiveParticipantRoleSchema,
+} from "./live-analysis-config";
 
 export const LIVE_CONTEXT_TERM_KINDS = [
   "slang",
@@ -115,6 +120,11 @@ export const LiveContextSegmentSchema = LiveContextWindowSegmentSchema.extend({
 
 export const LiveContextEntitySchema = LiveContextWindowEntitySchema.extend({
   id: z.string(),
+  // Listener-configured participants exist before the first sentence.
+  sentenceIds: z.array(z.string()),
+  participantRole: LiveParticipantRoleSchema.optional(),
+  userSupplied: z.boolean().optional(),
+  placeholder: z.boolean().optional(),
   // Manual session-level corrections are authoritative over later model
   // windows, while remaining private to the analysis that produced them.
   userCorrectedName: z.boolean().optional(),
@@ -133,6 +143,9 @@ export const LiveContextRelationSchema = z.object({
 });
 
 export const LiveContextSchema = z.object({
+  analysisConfig: LiveAnalysisConfigSchema.default(
+    DEFAULT_LIVE_ANALYSIS_CONFIG,
+  ),
   // `default` keeps recaps created before broad tags were introduced valid.
   tags: z.array(LiveContextTagSchema).default([]),
   relatedLinks: z.array(LiveRelatedLinkSchema).default([]),
@@ -157,6 +170,7 @@ export type LiveContextRelation = z.infer<typeof LiveContextRelationSchema>;
 export type LiveContext = z.infer<typeof LiveContextSchema>;
 
 export const EMPTY_LIVE_CONTEXT: LiveContext = {
+  analysisConfig: DEFAULT_LIVE_ANALYSIS_CONFIG,
   tags: [],
   relatedLinks: [],
   dismissedEntityNames: [],
@@ -267,15 +281,17 @@ export function mergeLiveContext(
       existing.sentenceIds = union(existing.sentenceIds, candidate.sentenceIds);
       existing.aliases = unionLabels(
         existing.aliases,
-        existing.userCorrectedName
+        existing.userCorrectedName || existing.userSupplied
           ? [candidate.name, ...candidate.aliases]
           : candidate.aliases,
       );
       existing.importance = Math.max(existing.importance, candidate.importance);
       if (candidate.confidence >= existing.confidence) {
-        if (!existing.userCorrectedName) existing.name = candidate.name;
+        if (!existing.userCorrectedName && !existing.userSupplied) {
+          existing.name = candidate.name;
+          existing.description = candidate.description;
+        }
         existing.kind = candidate.kind;
-        existing.description = candidate.description;
         existing.confidence = candidate.confidence;
       }
       continue;
@@ -352,6 +368,7 @@ export function mergeLiveContext(
   }
 
   return {
+    analysisConfig: current.analysisConfig,
     relatedLinks,
     dismissedEntityNames,
     tags,

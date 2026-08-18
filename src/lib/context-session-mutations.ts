@@ -4,6 +4,7 @@ import type {
   LiveContextRelation,
 } from "./live-context-schema";
 import type { LiveClaim } from "./live/use-live-analysis";
+import { DEFAULT_LIVE_ANALYSIS_CONFIG } from "./live-analysis-config";
 
 export function renameContextEntity(
   context: LiveContext,
@@ -22,6 +23,16 @@ export function renameContextEntity(
     currentName,
     context: {
       ...context,
+      analysisConfig: {
+        ...(context.analysisConfig ?? DEFAULT_LIVE_ANALYSIS_CONFIG),
+        participants: (
+          context.analysisConfig ?? DEFAULT_LIVE_ANALYSIS_CONFIG
+        ).participants.map((participant) =>
+          participant.entityId === entityId
+            ? { ...participant, name: currentName, placeholder: false }
+            : participant,
+        ),
+      },
       entities: context.entities.map((entity) =>
         entity.id === entityId
           ? {
@@ -68,6 +79,14 @@ export function removeContextEntity(
     removedName: entity.name,
     context: {
       ...context,
+      analysisConfig: {
+        ...(context.analysisConfig ?? DEFAULT_LIVE_ANALYSIS_CONFIG),
+        participants: (
+          context.analysisConfig ?? DEFAULT_LIVE_ANALYSIS_CONFIG
+        ).participants.filter(
+          (participant) => participant.entityId !== entityId,
+        ),
+      },
       dismissedEntityNames: uniqueLabels([
         ...context.dismissedEntityNames,
         entity.name,
@@ -129,6 +148,11 @@ export function mergeContextEntities(
     sentenceIds: uniqueStrings([...target.sentenceIds, ...source.sentenceIds]),
     confidence: Math.max(target.confidence, source.confidence),
     importance: Math.max(target.importance, source.importance),
+    participantRole: target.participantRole ?? source.participantRole,
+    userSupplied:
+      target.userSupplied || source.userSupplied ? true : undefined,
+    placeholder:
+      target.userSupplied || source.userSupplied ? false : undefined,
     userCorrectedName:
       target.userCorrectedName || source.userCorrectedName || undefined,
     userCorrectedAt: latestIsoDate(
@@ -149,6 +173,30 @@ export function mergeContextEntities(
     mergedName,
     context: {
       ...context,
+      analysisConfig: {
+        ...(context.analysisConfig ?? DEFAULT_LIVE_ANALYSIS_CONFIG),
+        participants: (
+          context.analysisConfig ?? DEFAULT_LIVE_ANALYSIS_CONFIG
+        ).participants
+          .map((participant) =>
+            participant.entityId === sourceEntityId
+              ? {
+                  ...participant,
+                  entityId: targetEntityId,
+                  name: mergedName,
+                  placeholder: false,
+                }
+              : participant.entityId === targetEntityId
+                ? { ...participant, name: mergedName, placeholder: false }
+                : participant,
+          )
+          .filter(
+            (participant, index, participants) =>
+              participants.findIndex(
+                (candidate) => candidate.entityId === participant.entityId,
+              ) === index,
+          ),
+      },
       entities: context.entities
         .filter((entity) => entity.id !== sourceEntityId)
         .map((entity) =>
@@ -184,6 +232,13 @@ export function replaceEntityNamesInClaims(
         replaceEntityName(value, replacement.from, replacement.to),
       claim.rationale,
     ),
+    speakerName: claim.speakerName
+      ? replacements.reduce(
+          (value, replacement) =>
+            replaceEntityName(value, replacement.from, replacement.to),
+          claim.speakerName,
+        )
+      : undefined,
   }));
 }
 
@@ -233,7 +288,7 @@ function deduplicateRelations(
   return [...byKey.values()];
 }
 
-function replaceEntityName(value: string, from: string, to: string): string {
+export function replaceEntityName(value: string, from: string, to: string): string {
   const search = from.trim();
   const replacement = to.trim();
   if (!search || !replacement || normalize(search) === normalize(replacement)) {

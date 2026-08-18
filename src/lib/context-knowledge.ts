@@ -101,6 +101,7 @@ export async function syncContextKnowledgeMentions(input: {
 }): Promise<void> {
   const entityIds = new Map<string, string>();
   for (const entity of input.context.entities) {
+    if (entity.placeholder) continue;
     const stored = await upsertKnowledgeEntityFromLive(entity);
     entityIds.set(entity.id, stored.id);
     await upsertKnowledgeEntityMention({

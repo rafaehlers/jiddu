@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { FALLACY_IDS } from "./fallacies";
+import { LiveParticipantRoleSchema } from "./live-analysis-config";
 
 export const SentenceSchema = z.object({
   id: z.string(),
@@ -30,6 +31,9 @@ export const FindingSchema = z.object({
   severity: SeveritySchema,
   quote: z.string(),
   explanation: z.string(),
+  speakerId: z.string().optional(),
+  speakerName: z.string().optional(),
+  speakerRole: LiveParticipantRoleSchema.optional(),
 });
 export type Finding = z.infer<typeof FindingSchema>;
 

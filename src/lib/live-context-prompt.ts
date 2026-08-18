@@ -1,6 +1,10 @@
 import type { Lang } from "./fallacies";
 import type { LiveContext } from "./live-context-schema";
 import type { Sentence } from "./schema";
+import {
+  buildLiveAnalysisSetupPrompt,
+  type LiveAnalysisConfig,
+} from "./live-analysis-config";
 
 const LANG_NAME: Record<Lang, string> = {
   en: "English",
@@ -38,7 +42,7 @@ TERMS:
 ENTITIES:
 - Return at most 8 consequential named entities from the current window: people, institutions, organizations, countries or specific events.
 - Use the most canonical name supported by the transcript. Put other explicit names, acronyms or unambiguous short forms in aliases; never invent aliases.
-- Names marked userCorrectedName in previous context were corrected by the listener. Treat that name as authoritative and use transcript variants only as aliases.
+- Names marked userCorrectedName or userSupplied in previous context came from the listener. Treat that name as authoritative and use transcript variants only as aliases.
 - Names listed in dismissedEntityNames were explicitly removed by the listener. Do not emit them again.
 - The description must state only who or what the entity is according to this conversation. Do not add outside knowledge or imply independent verification.
 - Re-emit a previously known entity when it participates in a new relation, attaching only current-window sentence ids.
@@ -72,6 +76,7 @@ export function buildLiveContextUserPrompt(input: {
   lang?: Lang;
   finalize?: boolean;
   sourceUrl?: string | null;
+  analysisConfig?: LiveAnalysisConfig;
 }): string {
   const lang = input.lang ?? "en";
   const numbered = input.sentences
@@ -90,11 +95,22 @@ export function buildLiveContextUserPrompt(input: {
       explanation,
     })),
     entities: input.previous.entities.map(
-      ({ name, kind, aliases, userCorrectedName }) => ({
+      ({
+        name,
+        kind,
+        aliases,
+        userCorrectedName,
+        userSupplied,
+        participantRole,
+        placeholder,
+      }) => ({
         name,
         kind,
         aliases,
         userCorrectedName: Boolean(userCorrectedName),
+        userSupplied: Boolean(userSupplied),
+        participantRole,
+        placeholder: Boolean(placeholder),
       }),
     ),
     dismissedEntityNames: input.previous.dismissedEntityNames,
@@ -115,6 +131,7 @@ export function buildLiveContextUserPrompt(input: {
     })),
     summary: input.previous.summary,
   });
+  const liveSetup = buildLiveAnalysisSetupPrompt(input.analysisConfig);
 
   return `Analyze the newest transcript window. The listener interface is in ${LANG_NAME[lang]}.
 
@@ -133,7 +150,9 @@ ${contextOnly}
 ${input.sourceUrl || "(none supplied)"}
 </captured_source_page>
 
-The captured source page was supplied by the listener. Its publisher, URL path and page topic may be used only as a disambiguation hint for names and subject matter. It is not evidence that any statement in the transcript is true, and the URL itself must never override the transcript.
+The captured source page was supplied by the listener. Its publisher, URL path and page topic may be used only as a disambiguation hint for names and subject matter. It is not evidence that any statement in the transcript is true, and the URL itself must never override the transcript.${liveSetup}
+
+When the setup identifies a single speaker, keep that configured participant in the entity graph and use that participant as the source endpoint for explicit first-person relationships. Re-emit the configured participant with current-window sentence ids whenever a relationship uses that endpoint. Never infer that the participant has a relationship merely because another entity was mentioned.
 
 <text_to_analyze>
 ${numbered}

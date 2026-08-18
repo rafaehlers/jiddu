@@ -8,6 +8,7 @@ import {
   HelpCircle,
   Loader2,
   ShieldCheck,
+  UserRound,
   X,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n/provider";
@@ -161,6 +162,12 @@ function LiveClaimCard({
           <span className="rounded border border-blue-500/40 px-2 py-0.5 text-xs text-blue-500">
             {t[CLAIM_LABEL[claim.type]] as string}
           </span>
+          {claim.speakerName ? (
+            <span className="inline-flex items-center gap-1 rounded-full border border-sky-500/35 bg-sky-500/5 px-2 py-0.5 text-xs text-sky-500">
+              <UserRound className="size-3" />
+              {claim.speakerName}
+            </span>
+          ) : null}
         </div>
 
         {verifying ? (

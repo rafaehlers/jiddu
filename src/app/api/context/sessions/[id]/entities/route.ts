@@ -4,6 +4,7 @@ import {
   mergeContextEntities,
   removeContextEntity,
   renameContextEntity,
+  replaceEntityName,
   replaceEntityNamesInClaims,
 } from "@/lib/context-session-mutations";
 import { syncContextKnowledgeMentions } from "@/lib/context-knowledge";
@@ -12,6 +13,9 @@ import { prisma } from "@/lib/db";
 import type { Prisma } from "@/generated/prisma/client";
 import { readLiveContext } from "@/lib/live-context-schema";
 import type { LiveClaim } from "@/lib/live/use-live-analysis";
+import type { Finding } from "@/lib/schema";
+import type { NeutralityFinding } from "@/lib/neutrality-schema";
+import { liveSpeakerAttribution } from "@/lib/live-analysis-config";
 
 export const runtime = "nodejs";
 
@@ -105,6 +109,8 @@ export async function PATCH(
     return Response.json({
       context: result.context,
       claims: result.claims,
+      findings: result.findings,
+      neutralityFindings: result.neutralityFindings,
       verdicts: [],
       verificationReset: result.verificationReset,
     });
@@ -126,14 +132,19 @@ async function mutateEntitySerializable(input: {
   mutation: MutationPayload;
 }) {
   return serializableTransaction(async (tx) => {
-    const [analysis, factCheck] = await Promise.all([
+    const [analysis, factCheck, neutrality] = await Promise.all([
       tx.analysis.findFirst({
         where: {
           id: input.analysisId,
           ownerWorkosUserId: input.ownerWorkosUserId,
           source: "live",
         },
-        select: { id: true, liveContext: true, audioDurationMs: true },
+        select: {
+          id: true,
+          liveContext: true,
+          findings: true,
+          audioDurationMs: true,
+        },
       }),
       tx.factCheck.findFirst({
         where: {
@@ -141,6 +152,13 @@ async function mutateEntitySerializable(input: {
           ownerWorkosUserId: input.ownerWorkosUserId,
         },
         select: { claims: true, verifyStatus: true },
+      }),
+      tx.neutrality.findFirst({
+        where: {
+          id: input.analysisId,
+          ownerWorkosUserId: input.ownerWorkosUserId,
+        },
+        select: { findings: true },
       }),
     ]);
     if (!analysis) throw new ContextMutationRequestError("Not found", 404);
@@ -156,6 +174,7 @@ async function mutateEntitySerializable(input: {
     let context;
     let claims: LiveClaim[];
     let verificationReset = false;
+    let replacements: Array<{ from: string; to: string }> = [];
     if (input.mutation.action === "rename") {
       const renamed = renameContextEntity(
         currentContext,
@@ -166,6 +185,9 @@ async function mutateEntitySerializable(input: {
       claims = replaceEntityNamesInClaims(currentClaims, [
         { from: renamed.previousName, to: renamed.currentName },
       ]);
+      replacements = [
+        { from: renamed.previousName, to: renamed.currentName },
+      ];
       verificationReset = true;
     } else if (input.mutation.action === "merge") {
       const merged = mergeContextEntities(
@@ -178,6 +200,10 @@ async function mutateEntitySerializable(input: {
         { from: merged.sourceName, to: merged.mergedName },
         { from: merged.previousTargetName, to: merged.mergedName },
       ]);
+      replacements = [
+        { from: merged.sourceName, to: merged.mergedName },
+        { from: merged.previousTargetName, to: merged.mergedName },
+      ];
       verificationReset = true;
     } else {
       context = removeContextEntity(
@@ -186,11 +212,32 @@ async function mutateEntitySerializable(input: {
       ).context;
       claims = currentClaims;
     }
+    const speakerAttribution = liveSpeakerAttribution(
+      context.analysisConfig,
+    );
+    if (speakerAttribution) {
+      claims = claims.map((claim) => ({ ...claim, ...speakerAttribution }));
+    }
+    const findings = applySpeakerAttribution(
+      replaceNamesInAttributedFindings(
+        parseArray<Finding>(analysis.findings),
+        replacements,
+      ),
+      speakerAttribution,
+    );
+    const neutralityFindings = applySpeakerAttribution(
+      replaceNamesInAttributedFindings(
+        parseArray<NeutralityFinding>(neutrality?.findings),
+        replacements,
+      ),
+      speakerAttribution,
+    );
 
     await tx.analysis.update({
       where: { id: input.analysisId },
       data: {
         liveContext: JSON.stringify(context),
+        findings: JSON.stringify(findings),
         contextRevision: { increment: 1 },
       },
     });
@@ -209,6 +256,12 @@ async function mutateEntitySerializable(input: {
         },
       });
     }
+    if (neutrality && replacements.length > 0) {
+      await tx.neutrality.update({
+        where: { id: input.analysisId },
+        data: { findings: JSON.stringify(neutralityFindings) },
+      });
+    }
     await tx.knowledgeRelationMention.deleteMany({
       where: {
         analysisId: input.analysisId,
@@ -225,10 +278,50 @@ async function mutateEntitySerializable(input: {
     return {
       context,
       claims,
+      findings,
+      neutralityFindings,
       verificationReset,
       audioDurationMs: analysis.audioDurationMs,
     };
   });
+}
+
+function replaceNamesInAttributedFindings<
+  T extends { explanation: string; speakerName?: string },
+>(values: T[], replacements: ReadonlyArray<{ from: string; to: string }>): T[] {
+  return values.map((value) => ({
+    ...value,
+    explanation: replacements.reduce(
+      (text, replacement) =>
+        replaceEntityName(text, replacement.from, replacement.to),
+      value.explanation,
+    ),
+    speakerName: value.speakerName
+      ? replacements.reduce(
+          (text, replacement) =>
+            replaceEntityName(text, replacement.from, replacement.to),
+          value.speakerName,
+        )
+      : undefined,
+  }));
+}
+
+function applySpeakerAttribution<T extends Record<string, unknown>>(
+  values: T[],
+  attribution: ReturnType<typeof liveSpeakerAttribution>,
+): T[] {
+  if (!attribution) return values;
+  return values.map((value) => ({ ...value, ...attribution }));
+}
+
+function parseArray<T>(raw: string | null | undefined): T[] {
+  if (!raw) return [];
+  try {
+    const value = JSON.parse(raw);
+    return Array.isArray(value) ? (value as T[]) : [];
+  } catch {
+    return [];
+  }
 }
 
 async function serializableTransaction<T>(

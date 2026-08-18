@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { LiveParticipantRoleSchema } from "./live-analysis-config";
 
 export const CLAIM_TYPES = [
   "numeric",
@@ -29,6 +30,9 @@ export const ClaimSchema = z.object({
   statement: z.string().min(1),
   type: ClaimTypeSchema,
   rationale: z.string().min(1),
+  speakerId: z.string().optional(),
+  speakerName: z.string().optional(),
+  speakerRole: LiveParticipantRoleSchema.optional(),
 });
 export type Claim = z.infer<typeof ClaimSchema>;
 

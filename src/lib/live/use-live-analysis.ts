@@ -9,6 +9,11 @@ import type {
   NeutralityVerdictValue,
 } from "@/lib/neutrality-schema";
 import type { LiveLens } from "@/lib/live-lenses";
+import type { LiveAnalysisConfig } from "@/lib/live-analysis-config";
+import {
+  applyLiveAnalysisConfig,
+  createLiveContextForAnalysis,
+} from "@/lib/live-analysis-context";
 import {
   EMPTY_LIVE_CONTEXT,
   LiveContextSchema,
@@ -40,6 +45,7 @@ type Options = {
   timerMinDeltaChars?: number;
   /** Periodic analysis cadence in milliseconds. */
   intervalMs?: number;
+  analysisConfig?: LiveAnalysisConfig;
 };
 
 type Result = {
@@ -65,6 +71,14 @@ type Result = {
   finalize: (audioDurationMs?: number) => Promise<string | null>;
   /** Apply an owner-authored correction returned by the context session API. */
   applyContextMutation: (context: LiveContext, claims: LiveClaim[]) => void;
+  /** Apply listener-supplied session structure immediately to the live graph. */
+  updateAnalysisConfig: (config: LiveAnalysisConfig) => void;
+  applyAnalysisConfiguration: (value: {
+    context: LiveContext;
+    claims: LiveClaim[];
+    findings: Finding[];
+    neutralityFindings: NeutralityFinding[];
+  }) => void;
 };
 
 export function useLiveAnalysis({
@@ -77,6 +91,7 @@ export function useLiveAnalysis({
   lenses,
   timerMinDeltaChars = 120,
   intervalMs = 30_000,
+  analysisConfig = EMPTY_LIVE_CONTEXT.analysisConfig,
 }: Options): Result {
   const [findings, setFindings] = useState<Finding[]>([]);
   const [claims, setClaims] = useState<LiveClaim[]>([]);
@@ -105,6 +120,7 @@ export function useLiveAnalysis({
   const elapsedMsRef = useRef(elapsedMs);
   const lensesRef = useRef(lenses);
   const billingReservationIdRef = useRef(billingReservationId);
+  const analysisConfigRef = useRef(analysisConfig);
   useEffect(() => {
     transcriptRef.current = transcript;
     languageRef.current = language;
@@ -112,6 +128,7 @@ export function useLiveAnalysis({
     elapsedMsRef.current = elapsedMs;
     lensesRef.current = lenses;
     billingReservationIdRef.current = billingReservationId;
+    analysisConfigRef.current = analysisConfig;
   });
   const sessionIdRef = useRef<string | null>(null);
   const lastAnalyzedLengthRef = useRef(0);
@@ -131,7 +148,12 @@ export function useLiveAnalysis({
       setClaims([]);
       setNeutralityFindings([]);
       setNeutralityVerdict(null);
-      setContext(EMPTY_LIVE_CONTEXT);
+      setContext(
+        createLiveContextForAnalysis(
+          analysisConfigRef.current,
+          languageRef.current,
+        ),
+      );
       setScore(null);
       setSessionId(null);
       setModel(null);
@@ -193,6 +215,7 @@ export function useLiveAnalysis({
             elapsedMs: elapsedMsRef.current,
             finalize,
             audioDurationMs: finalize ? audioDurationMs : undefined,
+            analysisConfig: analysisConfigRef.current,
           }),
           signal: ctrl.signal,
         });
@@ -378,8 +401,32 @@ export function useLiveAnalysis({
 
   const applyContextMutation = useCallback(
     (nextContext: LiveContext, nextClaims: LiveClaim[]) => {
+      analysisConfigRef.current = nextContext.analysisConfig;
       setContext(nextContext);
       setClaims(nextClaims);
+    },
+    [],
+  );
+
+  const updateAnalysisConfig = useCallback((nextConfig: LiveAnalysisConfig) => {
+    analysisConfigRef.current = nextConfig;
+    setContext((current) =>
+      applyLiveAnalysisConfig(current, nextConfig, languageRef.current),
+    );
+  }, []);
+
+  const applyAnalysisConfiguration = useCallback(
+    (value: {
+      context: LiveContext;
+      claims: LiveClaim[];
+      findings: Finding[];
+      neutralityFindings: NeutralityFinding[];
+    }) => {
+      analysisConfigRef.current = value.context.analysisConfig;
+      setContext(value.context);
+      setClaims(value.claims);
+      setFindings(value.findings);
+      setNeutralityFindings(value.neutralityFindings);
     },
     [],
   );
@@ -399,6 +446,8 @@ export function useLiveAnalysis({
     lensErrors,
     finalize,
     applyContextMutation,
+    updateAnalysisConfig,
+    applyAnalysisConfiguration,
   };
 }
 

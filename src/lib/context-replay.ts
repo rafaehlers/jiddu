@@ -225,11 +225,12 @@ function filterContext(
   context: LiveContext,
   isVisible: (sentenceIds: string[]) => boolean,
 ): LiveContext {
-  const entities = context.entities.filter((entity) =>
-    isVisible(entity.sentenceIds),
+  const entities = context.entities.filter(
+    (entity) => entity.userSupplied || isVisible(entity.sentenceIds),
   );
   const visibleEntityIds = new Set(entities.map((entity) => entity.id));
   return {
+    analysisConfig: context.analysisConfig,
     tags: context.tags.filter((tag) => isVisible(tag.sentenceIds)),
     relatedLinks: [],
     dismissedEntityNames: [],

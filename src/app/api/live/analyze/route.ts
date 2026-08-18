@@ -36,7 +36,6 @@ import { buildLiveAnalysisTitle } from "@/lib/live-title";
 import { normalizeLiveDurationMs } from "@/lib/live-billing";
 import { normalizeLiveLenses, type LiveLens } from "@/lib/live-lenses";
 import {
-  EMPTY_LIVE_CONTEXT,
   mergeLiveContext,
   readLiveContext,
   sanitizeLiveContextWindow,
@@ -48,6 +47,14 @@ import { recordContextSessionEvents } from "@/lib/context-session-events";
 import { normalizeCapturedSourceUrl } from "@/lib/live-source-context";
 import { resolveLiveNeutrality } from "@/lib/live-neutrality";
 import { replaceEntityNamesInClaims } from "@/lib/context-session-mutations";
+import {
+  liveSpeakerAttribution,
+  normalizeLiveAnalysisConfig,
+} from "@/lib/live-analysis-config";
+import {
+  applyLiveAnalysisConfig,
+  createLiveContextForAnalysis,
+} from "@/lib/live-analysis-context";
 import {
   createServerSseWriter,
   type ServerSseWriter,
@@ -73,6 +80,7 @@ type Body = {
   finalize?: boolean;
   audioDurationMs?: number;
   elapsedMs?: number;
+  analysisConfig?: unknown;
 };
 
 type ClaimWithId = Claim & { id: string };
@@ -98,6 +106,10 @@ export async function POST(req: NextRequest) {
     return jsonError("Invalid captured source URL", 400);
   }
   const lang = normalizeLang(body.lang);
+  const requestedAnalysisConfig = normalizeLiveAnalysisConfig(
+    body.analysisConfig,
+    lang,
+  );
   const lenses = normalizeLiveLenses(body.lenses);
   const finalize = body.finalize === true;
   const billingReservationId =
@@ -143,6 +155,10 @@ export async function POST(req: NextRequest) {
       );
     }
     const id = nanoid(10);
+    const initialLiveContext = createLiveContextForAnalysis(
+      requestedAnalysisConfig,
+      lang,
+    );
     row = await prisma.analysis.create({
       data: {
         id,
@@ -158,7 +174,7 @@ export async function POST(req: NextRequest) {
         model: llm.defaultModel,
         score: 0,
         summary: null,
-        liveContext: JSON.stringify(EMPTY_LIVE_CONTEXT),
+        liveContext: JSON.stringify(initialLiveContext),
         sentences: JSON.stringify([]),
         findings: JSON.stringify([]),
       },
@@ -173,7 +189,7 @@ export async function POST(req: NextRequest) {
             kind: "context_snapshot",
             elapsedMs: 0,
             sentenceIds: [],
-            payload: EMPTY_LIVE_CONTEXT,
+            payload: initialLiveContext,
           },
         ],
       });
@@ -189,7 +205,17 @@ export async function POST(req: NextRequest) {
   // ── Compute what's new and worth analyzing ───────────────────────────
   const existingSentences = safeJsonArray<Sentence>(row.sentences);
   const existingFindings = safeJsonArray<Finding>(row.findings);
-  const existingLiveContext = readLiveContext(row.liveContext);
+  const storedLiveContext = readLiveContext(row.liveContext);
+  const analysisConfig =
+    body.analysisConfig === undefined
+      ? storedLiveContext.analysisConfig
+      : requestedAnalysisConfig;
+  const existingLiveContext = applyLiveAnalysisConfig(
+    storedLiveContext,
+    analysisConfig,
+    lang,
+  );
+  const speakerAttribution = liveSpeakerAttribution(analysisConfig);
 
   const allSentences = splitSentences(text);
 
@@ -434,6 +460,7 @@ export async function POST(req: NextRequest) {
                         lang,
                         contextSentences,
                         previous: existingLiveContext,
+                        analysisConfig,
                         finalize,
                         sourceUrl: capturedSourceUrl,
                       },
@@ -517,7 +544,12 @@ export async function POST(req: NextRequest) {
                   );
                   try {
                     for await (const event of llm.analyzeStream(
-                      { sentences: toAnalyze, lang, contextSentences },
+                      {
+                        sentences: toAnalyze,
+                        lang,
+                        contextSentences,
+                        analysisConfig,
+                      },
                       {
                         signal: abortController.signal,
                         onUsage: (usage) => usages.push(usage),
@@ -536,8 +568,12 @@ export async function POST(req: NextRequest) {
                         const parsed = FindingSchema.safeParse(event.finding);
                         if (!parsed.success) continue;
                         seen.add(key);
-                        newFindings.push(parsed.data);
-                        send("finding", parsed.data);
+                        const stored = {
+                          ...parsed.data,
+                          ...(speakerAttribution ?? {}),
+                        };
+                        newFindings.push(stored);
+                        send("finding", stored);
                       } else if (event.type === "score") {
                         windowScore = event.score;
                       } else if (event.type === "summary") {
@@ -570,6 +606,7 @@ export async function POST(req: NextRequest) {
                         lang,
                         contextSentences,
                         sourceUrl: capturedSourceUrl,
+                        analysisConfig,
                       },
                       {
                         signal: abortController.signal,
@@ -599,6 +636,7 @@ export async function POST(req: NextRequest) {
                       const stored = {
                         id: `c${++claimCounter}`,
                         ...parsed.data,
+                        ...(speakerAttribution ?? {}),
                       };
                       newClaims.push(stored);
                       // Make the individual verification action usable the
@@ -656,6 +694,7 @@ export async function POST(req: NextRequest) {
                         sentences: neutralitySentences,
                         lang,
                         contextSentences: finalize ? [] : contextSentences,
+                        analysisConfig,
                       },
                       {
                         signal: abortController.signal,
@@ -683,8 +722,12 @@ export async function POST(req: NextRequest) {
                         if (seen.has(key)) continue;
                         beginFinalAssessment();
                         seen.add(key);
-                        newNeutralityFindings.push(parsed.data);
-                        send("neutralityFinding", parsed.data);
+                        const stored = {
+                          ...parsed.data,
+                          ...(speakerAttribution ?? {}),
+                        };
+                        newNeutralityFindings.push(stored);
+                        send("neutralityFinding", stored);
                       } else if (event.type === "verdict") {
                         beginFinalAssessment();
                         if (finalize) finalNeutralityRecalculated = true;

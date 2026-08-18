@@ -4,6 +4,7 @@ import { FALLACY_BY_ID } from "@/lib/fallacies";
 import type { Finding } from "@/lib/schema";
 import { useI18n } from "@/lib/i18n/provider";
 import { LiveResultTypeBadge } from "./result-type-badge";
+import { UserRound } from "lucide-react";
 
 type Props = {
   findings: Finding[];
@@ -44,6 +45,12 @@ export function FindingsList({ findings, lang, showLensBadge = false }: Props) {
                 >
                   {name}
                 </span>
+                {f.speakerName ? (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-sky-500/35 bg-sky-500/5 px-2 py-0.5 text-xs text-sky-500">
+                    <UserRound className="size-3" />
+                    {f.speakerName}
+                  </span>
+                ) : null}
               </div>
               <span
                 className={

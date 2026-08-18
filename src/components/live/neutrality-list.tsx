@@ -9,6 +9,7 @@ import {
   NEUTRALITY_VERDICT_META,
 } from "@/components/neutrality-visuals";
 import { LiveResultTypeBadge } from "./result-type-badge";
+import { UserRound } from "lucide-react";
 
 type Props = {
   findings: NeutralityFinding[];
@@ -94,6 +95,12 @@ export function LiveNeutralityList({
                     <IssueIcon aria-hidden="true" className="size-3" />
                     {t[issueMeta.labelKey] as string}
                   </span>
+                  {finding.speakerName ? (
+                    <span className="inline-flex items-center gap-1 rounded-full border border-sky-500/35 bg-sky-500/5 px-2 py-0.5 text-xs text-sky-500">
+                      <UserRound className="size-3" />
+                      {finding.speakerName}
+                    </span>
+                  ) : null}
                 </div>
                 <span className="text-xs uppercase tracking-wide text-muted">
                   {finding.severity === "high"

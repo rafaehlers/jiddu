@@ -67,6 +67,11 @@ import {
   useContextTheme,
 } from "./context-theme-control";
 import { ContextUiStoreProvider } from "./context-ui-store-provider";
+import {
+  ContextAnalysisSetupButton,
+  ContextAnalysisSetupDialog,
+} from "./context-analysis-setup";
+import { updateContextAnalysisConfiguration } from "./context-analysis-configuration";
 
 type Props = {
   id: string;
@@ -123,7 +128,11 @@ function ContextReviewWorkspaceContent({
     "replay" | "speakers"
   >(diarization ? "speakers" : "replay");
   const [currentContext, setCurrentContext] = useState(context);
+  const [currentFindings, setCurrentFindings] = useState(findings);
   const [currentClaims, setCurrentClaims] = useState(claims);
+  const [currentNeutralityFindings, setCurrentNeutralityFindings] =
+    useState(neutralityFindings);
+  const [analysisSetupOpen, setAnalysisSetupOpen] = useState(false);
   const [currentVerdicts, setCurrentVerdicts] = useState(verdicts);
   const [entityMap, setEntityMap] = useState(
     () => new Map<string, KnowledgeEntityDTO>(enrichedEntities),
@@ -147,10 +156,10 @@ function ContextReviewWorkspaceContent({
       sentences,
       audioDurationMs,
       context: currentContext,
-      findings,
+      findings: currentFindings,
       claims: currentClaims,
       verdicts: finalVerdicts,
-      neutralityFindings,
+      neutralityFindings: currentNeutralityFindings,
       neutralityVerdict,
       events: replayEvents,
     }),
@@ -159,8 +168,8 @@ function ContextReviewWorkspaceContent({
       currentClaims,
       currentContext,
       finalVerdicts,
-      findings,
-      neutralityFindings,
+      currentFindings,
+      currentNeutralityFindings,
       neutralityVerdict,
       replayEvents,
       sentences,
@@ -242,6 +251,8 @@ function ContextReviewWorkspaceContent({
       const result = await mutateContextEntity(id, mutation);
       setCurrentContext(result.context);
       setCurrentClaims(result.claims);
+      setCurrentFindings(result.findings);
+      setCurrentNeutralityFindings(result.neutralityFindings);
       if (result.verificationReset) setCurrentVerdicts([]);
       setRelationMap(new Map());
       if (result.verificationReset) verification.reset();
@@ -293,6 +304,28 @@ function ContextReviewWorkspaceContent({
     [applyMutation],
   );
 
+  const saveAnalysisConfiguration = useCallback(
+    async (nextConfig: LiveContext["analysisConfig"]) => {
+      const result = await updateContextAnalysisConfiguration({
+        sessionId: id,
+        config: nextConfig,
+        lang,
+        elapsedMs: audioDurationMs ?? undefined,
+      });
+      setCurrentContext(result.context);
+      setCurrentFindings(result.findings);
+      setCurrentClaims(result.claims);
+      setCurrentNeutralityFindings(result.neutralityFindings);
+      if (result.verificationReset) {
+        setCurrentVerdicts([]);
+        verification.reset();
+      }
+      timeline.showFinal();
+      setAnalysisSetupOpen(false);
+    },
+    [audioDurationMs, id, lang, timeline, verification],
+  );
+
   return (
     <main
       style={contextThemeStyle(contextTheme)}
@@ -326,6 +359,11 @@ function ContextReviewWorkspaceContent({
             theme={contextTheme}
             onChange={setContextTheme}
             copy={copy}
+          />
+          <ContextAnalysisSetupButton
+            config={currentContext.analysisConfig}
+            lang={lang}
+            onClick={() => setAnalysisSetupOpen(true)}
           />
           <label className="inline-flex items-center gap-1 rounded-md border border-rule bg-paper px-2 py-1.5 text-xs text-muted">
             <Languages className="size-3.5" />
@@ -541,6 +579,15 @@ function ContextReviewWorkspaceContent({
           }}
         />
       </section>
+      <ContextAnalysisSetupDialog
+        key={analysisSetupOpen ? "analysis-setup-open" : "analysis-setup-closed"}
+        open={analysisSetupOpen}
+        action="save"
+        config={currentContext.analysisConfig}
+        lang={lang}
+        onClose={() => setAnalysisSetupOpen(false)}
+        onConfirm={saveAnalysisConfiguration}
+      />
     </main>
   );
 }

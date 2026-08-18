@@ -86,7 +86,8 @@ export function ContextEntityNodeCard({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const Icon = ICONS[entity.kind];
-  const isLoading = !enriched || enriched.profileStatus === "pending";
+  const isLoading =
+    !entity.placeholder && (!enriched || enriched.profileStatus === "pending");
   const profileCompatible =
     enriched !== null && isPublicProfileCompatible(entity, enriched);
   const correctedAt = entity.userCorrectedAt
@@ -199,7 +200,7 @@ export function ContextEntityNodeCard({
                   <Pencil className="size-3" />
                 </button>
               ) : null}
-              {editable && onRemoveEntity ? (
+              {editable && onRemoveEntity && !entity.userSupplied ? (
                 <button
                   type="button"
                   title={copy.removeEntity}
@@ -218,7 +219,9 @@ export function ContextEntityNodeCard({
               <span
                 className={`rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider ${COLORS[entity.kind]}`}
               >
-                {copy.types[entity.kind]}
+                {entity.participantRole
+                  ? copy.participantRoles[entity.participantRole]
+                  : copy.types[entity.kind]}
               </span>
               <span className="text-[10px] text-muted">
                 {Math.round(entity.confidence * 100)}% {copy.confidence}
@@ -227,6 +230,11 @@ export function ContextEntityNodeCard({
             {entity.userCorrectedName ? (
               <span className="mt-1 inline-block text-[9px] font-medium uppercase tracking-wider text-emerald-500">
                 {copy.correctedName}
+              </span>
+            ) : null}
+            {entity.userSupplied ? (
+              <span className="mt-1 inline-block text-[9px] font-medium uppercase tracking-wider text-sky-500">
+                {copy.configuredParticipant}
               </span>
             ) : null}
           </div>

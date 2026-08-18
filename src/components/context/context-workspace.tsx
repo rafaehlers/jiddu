@@ -36,6 +36,11 @@ import {
   type TranscriptStreamHandle,
 } from "@/components/live/transcript-stream";
 import { useI18n } from "@/lib/i18n/provider";
+import {
+  DEFAULT_LIVE_ANALYSIS_CONFIG,
+  liveAnalysisNeedsDiarization,
+  type LiveAnalysisConfig,
+} from "@/lib/live-analysis-config";
 import type { LiveDiarizationBillingConfig } from "@/lib/live-diarization-billing";
 import {
   groupDiarizedSegments,
@@ -73,6 +78,11 @@ import {
   useContextSessionStoreApi,
 } from "./context-session-store-provider";
 import { useContextSessionBridge } from "./use-context-session-bridge";
+import {
+  ContextAnalysisSetupButton,
+  ContextAnalysisSetupDialog,
+} from "./context-analysis-setup";
+import { updateContextAnalysisConfiguration } from "./context-analysis-configuration";
 
 const MAX_SESSION_MS = 60 * 60 * 1_000;
 
@@ -101,6 +111,13 @@ function ContextWorkspaceContent({
   const pathname = usePathname();
   const [source, setSource] = useState<LiveSource>("mic");
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [analysisConfig, setAnalysisConfig] = useState<LiveAnalysisConfig>(
+    DEFAULT_LIVE_ANALYSIS_CONFIG,
+  );
+  const [analysisSetupOpen, setAnalysisSetupOpen] = useState(false);
+  const [analysisSetupAction, setAnalysisSetupAction] = useState<
+    "start" | "save"
+  >("start");
   const transcriptRef = useRef<TranscriptStreamHandle>(null);
   const diarizedTranscriptRef =
     useRef<SavedDiarizedTranscriptHandle>(null);
@@ -126,6 +143,7 @@ function ContextWorkspaceContent({
     elapsedMs: session.elapsedMs,
     lenses: DEFAULT_LIVE_LENSES,
     intervalMs: contextSettings.settings.analysisIntervalMs,
+    analysisConfig,
   });
   const captureView = useContextSessionStore((state) => state.capture);
   const sessionEvents = useContextSessionStore((state) => state.events);
@@ -203,10 +221,19 @@ function ContextWorkspaceContent({
   );
 
   useEffect(() => {
-    if (!speakerPromptPendingRef.current || !diarization.available) return;
+    if (!liveAnalysisNeedsDiarization(analysisConfig)) {
+      speakerPromptPendingRef.current = false;
+      return;
+    }
+    if (
+      !speakerPromptPendingRef.current ||
+      !diarization.available
+    ) {
+      return;
+    }
     speakerPromptPendingRef.current = false;
     diarization.requestSpeakerIdentification();
-  }, [diarization]);
+  }, [analysisConfig, diarization]);
 
   const isRunning =
     session.state === "live" ||
@@ -267,7 +294,8 @@ function ContextWorkspaceContent({
         sessionStore
           .getState()
           .commitEntityMutation(operationId, result.context, result.claims);
-        analysis.applyContextMutation(result.context, result.claims);
+        setAnalysisConfig(result.context.analysisConfig);
+        analysis.applyAnalysisConfiguration(result);
         if (result.verificationReset) verification.reset();
       } catch (error) {
         sessionStore.getState().rollbackEntityMutation(operationId);
@@ -293,7 +321,8 @@ function ContextWorkspaceContent({
         sessionStore
           .getState()
           .commitEntityMutation(operationId, result.context, result.claims);
-        analysis.applyContextMutation(result.context, result.claims);
+        setAnalysisConfig(result.context.analysisConfig);
+        analysis.applyAnalysisConfiguration(result);
         if (result.verificationReset) verification.reset();
       } catch (error) {
         sessionStore.getState().rollbackEntityMutation(operationId);
@@ -318,7 +347,8 @@ function ContextWorkspaceContent({
         sessionStore
           .getState()
           .commitEntityMutation(operationId, result.context, result.claims);
-        analysis.applyContextMutation(result.context, result.claims);
+        setAnalysisConfig(result.context.analysisConfig);
+        analysis.applyAnalysisConfiguration(result);
         if (result.verificationReset) verification.reset();
       } catch (error) {
         sessionStore.getState().rollbackEntityMutation(operationId);
@@ -334,21 +364,66 @@ function ContextWorkspaceContent({
       setAuthModalOpen(true);
       return;
     }
-    verification.reset();
-    speakerPromptPendingRef.current = false;
-    setSavedDiarization(null);
-    setTranscriptView("live");
-    clearContextRecoveryMarker();
-    sessionStore.getState().resetSession(source);
-    void session.start(source);
+    setAnalysisSetupAction("start");
+    setAnalysisSetupOpen(true);
   };
 
+  const startWithConfiguration = useCallback(
+    (nextConfig: LiveAnalysisConfig) => {
+      setAnalysisConfig(nextConfig);
+      analysis.updateAnalysisConfig(nextConfig);
+      verification.reset();
+      speakerPromptPendingRef.current = false;
+      setSavedDiarization(null);
+      setTranscriptView("live");
+      clearContextRecoveryMarker();
+      sessionStore.getState().resetSession(source);
+      setAnalysisSetupOpen(false);
+      void session.start(source);
+    },
+    [analysis, session, sessionStore, source, verification],
+  );
+
+  const saveAnalysisConfiguration = useCallback(
+    async (nextConfig: LiveAnalysisConfig) => {
+      if (!analysis.sessionId) {
+        setAnalysisConfig(nextConfig);
+        analysis.updateAnalysisConfig(nextConfig);
+        setAnalysisSetupOpen(false);
+        return;
+      }
+      const result = await updateContextAnalysisConfiguration({
+        sessionId: analysis.sessionId,
+        config: nextConfig,
+        lang,
+        elapsedMs: session.elapsedMs,
+      });
+      setAnalysisConfig(result.context.analysisConfig);
+      analysis.applyAnalysisConfiguration(result);
+      if (result.verificationReset) verification.reset();
+      setAnalysisSetupOpen(false);
+    },
+    [analysis, lang, session.elapsedMs, verification],
+  );
+
+  const handleAnalysisSetupConfirm = useCallback(
+    async (nextConfig: LiveAnalysisConfig) => {
+      if (analysisSetupAction === "start") {
+        startWithConfiguration(nextConfig);
+        return;
+      }
+      await saveAnalysisConfiguration(nextConfig);
+    },
+    [analysisSetupAction, saveAnalysisConfiguration, startWithConfiguration],
+  );
+
   const handleStop = useCallback(async () => {
-    speakerPromptPendingRef.current = true;
+    speakerPromptPendingRef.current =
+      liveAnalysisNeedsDiarization(analysisConfig);
     const audioDurationMs = await session.stop();
     const analysisId = await analysis.finalize(audioDurationMs);
     await session.finish(analysisId);
-  }, [analysis, session]);
+  }, [analysis, analysisConfig, session]);
 
   useEffect(() => {
     const reachedLimit =
@@ -542,6 +617,14 @@ function ContextWorkspaceContent({
                   </span>
                 ) : null}
               </div>
+              <ContextAnalysisSetupButton
+                config={analysisConfig}
+                lang={lang}
+                onClick={() => {
+                  setAnalysisSetupAction("save");
+                  setAnalysisSetupOpen(true);
+                }}
+              />
               <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
                 <ContextPanelsControl
                   state={dockview}
@@ -581,7 +664,8 @@ function ContextWorkspaceContent({
                   controller={diarization}
                   variant="header"
                 />
-                {diarization.available ? (
+                {diarization.available &&
+                liveAnalysisNeedsDiarization(analysisConfig) ? (
                   <SessionDiarizationAction
                     controller={diarization}
                     personSuggestions={speakerPersonSuggestions}
@@ -786,6 +870,15 @@ function ContextWorkspaceContent({
         open={authModalOpen}
         returnTo={pathname}
         onClose={() => setAuthModalOpen(false)}
+      />
+      <ContextAnalysisSetupDialog
+        key={analysisSetupOpen ? "analysis-setup-open" : "analysis-setup-closed"}
+        open={analysisSetupOpen}
+        action={analysisSetupAction}
+        config={analysisConfig}
+        lang={lang}
+        onClose={() => setAnalysisSetupOpen(false)}
+        onConfirm={handleAnalysisSetupConfirm}
       />
     </main>
   );

@@ -1,5 +1,7 @@
 import { LiveContextSchema, type LiveContext } from "@/lib/live-context-schema";
 import type { LiveClaim } from "@/lib/live/use-live-analysis";
+import type { Finding } from "@/lib/schema";
+import type { NeutralityFinding } from "@/lib/neutrality-schema";
 
 export type ContextEntityMutation =
   | {
@@ -19,6 +21,8 @@ export type ContextEntityMutation =
 export type ContextEntityMutationResult = {
   context: LiveContext;
   claims: LiveClaim[];
+  findings: Finding[];
+  neutralityFindings: NeutralityFinding[];
   verificationReset: boolean;
 };
 
@@ -34,6 +38,8 @@ export async function mutateContextEntity(
   const payload = (await response.json().catch(() => null)) as {
     context?: unknown;
     claims?: unknown;
+    findings?: unknown;
+    neutralityFindings?: unknown;
     error?: string;
     verificationReset?: unknown;
   } | null;
@@ -41,12 +47,19 @@ export async function mutateContextEntity(
     throw new Error(payload?.error ?? `Request failed (${response.status})`);
   }
   const context = LiveContextSchema.safeParse(payload?.context);
-  if (!context.success || !Array.isArray(payload?.claims)) {
+  if (
+    !context.success ||
+    !Array.isArray(payload?.claims) ||
+    !Array.isArray(payload?.findings) ||
+    !Array.isArray(payload?.neutralityFindings)
+  ) {
     throw new Error("Invalid context mutation response");
   }
   return {
     context: context.data,
     claims: payload.claims as LiveClaim[],
+    findings: payload.findings as Finding[],
+    neutralityFindings: payload.neutralityFindings as NeutralityFinding[],
     verificationReset: payload?.verificationReset === true,
   };
 }

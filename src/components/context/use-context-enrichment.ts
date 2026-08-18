@@ -62,7 +62,9 @@ export function useContextEnrichment(input: {
   useEffect(() => {
     if (!input.sessionId) return;
     const pending = input.context.entities.filter(
-      (entity) => !profileRequested.current.has(entityRequestKey(entity)),
+      (entity) =>
+        !entity.placeholder &&
+        !profileRequested.current.has(entityRequestKey(entity)),
     );
     for (const entity of pending) {
       const key = entityRequestKey(entity);
@@ -253,7 +255,7 @@ export function useContextEnrichment(input: {
         };
       });
     const entityTargets = input.context.entities
-      .filter((entity) => entity.importance >= 0.78)
+      .filter((entity) => !entity.placeholder && entity.importance >= 0.78)
       .map((entity) => ({
         key: `entity:${entity.id}:${requestKey(entity.name)}:${entity.userCorrectedAt ?? "model"}`,
         baseKey: `entity:${entity.id}:`,
