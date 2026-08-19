@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Background,
   BackgroundVariant,
+  type Edge,
+  type EdgeChange,
   Controls,
   MarkerType,
   MiniMap,
@@ -11,8 +13,6 @@ import {
   ReactFlowProvider,
   useEdgesState,
   useNodesState,
-  type Edge,
-  type EdgeChange,
   type NodeChange,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
@@ -24,10 +24,16 @@ import type {
   LiveContext,
   LiveContextEntityKind,
 } from "@/lib/live-context-schema";
+import { groupContextRelations } from "@/lib/context-relation-groups";
 import type { ContextCopy } from "./context-copy";
 import { ContextEntityNodeCard, type ContextEntityNode } from "./entity-node";
+import {
+  ContextRelationEdgeView,
+  type ContextRelationEdge,
+} from "./context-relation-edge";
 
 const nodeTypes = { contextEntity: ContextEntityNodeCard };
+const edgeTypes = { contextRelation: ContextRelationEdgeView };
 const KIND_COLUMN: Record<LiveContextEntityKind, number> = {
   person: 0,
   organization: 1,
@@ -77,7 +83,8 @@ function ContextGraphInner({
   animateRelations = true,
 }: Props) {
   const [nodes, setNodes, onNodesChange] = useNodesState<ContextEntityNode>([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+  const [edges, setEdges, onEdgesChange] =
+    useEdgesState<ContextRelationEdge>([]);
   const [selectedRelationId, setSelectedRelationId] = useState<string | null>(
     null,
   );
@@ -108,11 +115,15 @@ function ContextGraphInner({
   );
 
   const handleEdgesChange = useCallback(
-    (changes: EdgeChange<Edge>[]) => {
+    (changes: EdgeChange<ContextRelationEdge>[]) => {
       onEdgesChange(changes.filter((change) => change.type === "select"));
     },
     [onEdgesChange],
   );
+
+  const handleSelectRelation = useCallback((relationId: string) => {
+    setSelectedRelationId(relationId);
+  }, []);
 
   useEffect(() => {
     setNodes((current) => {
@@ -165,26 +176,43 @@ function ContextGraphInner({
 
   useEffect(() => {
     setEdges(
-      context.relations.map((relation) => ({
-        id: relation.id,
-        source: relation.sourceEntityId,
-        target: relation.targetEntityId,
-        label: relation.label,
-        type: "smoothstep",
-        animated: animateRelations && relation.importance >= 0.82,
+      groupContextRelations(context.relations).map((group) => ({
+        id: group.id,
+        source: group.sourceEntityId,
+        target: group.targetEntityId,
+        type: "contextRelation",
+        animated:
+          animateRelations &&
+          group.relations.some((relation) => relation.importance >= 0.82),
         markerEnd: { type: MarkerType.ArrowClosed, color: "var(--muted)" },
-        style: { stroke: "var(--muted)", strokeWidth: 1.5 },
-        labelStyle: {
-          fill: "var(--foreground)",
-          fontSize: 11,
-          fontWeight: 600,
+        style: {
+          stroke: group.relations.some(
+            (relation) => relation.id === selectedRelationId,
+          )
+            ? "var(--accent)"
+            : "var(--muted)",
+          strokeWidth: 1.5,
         },
-        labelBgStyle: { fill: "var(--background)", fillOpacity: 0.92 },
-        labelBgPadding: [6, 4] as [number, number],
-        labelBgBorderRadius: 5,
+        data: {
+          relations: group.relations.map((relation) => ({
+            id: relation.id,
+            label: relation.label,
+          })),
+          relationsLabel: copy.relations,
+          selectedRelationId,
+          onSelectRelation: handleSelectRelation,
+        },
       })),
     );
-  }, [animateRelations, context.relations, edgeIdentity, setEdges]);
+  }, [
+    animateRelations,
+    context.relations,
+    copy.relations,
+    edgeIdentity,
+    handleSelectRelation,
+    selectedRelationId,
+    setEdges,
+  ]);
 
   const selectedRelation = useMemo(
     () =>
@@ -197,7 +225,10 @@ function ContextGraphInner({
     ? (enrichedRelations.get(selectedRelation.id) ?? null)
     : null;
   const handleEdgeClick = useCallback(
-    (_event: React.MouseEvent, edge: Edge) => setSelectedRelationId(edge.id),
+    (_event: React.MouseEvent, edge: Edge) => {
+      const firstRelation = (edge as ContextRelationEdge).data?.relations[0];
+      setSelectedRelationId(firstRelation?.id ?? null);
+    },
     [],
   );
 
@@ -220,6 +251,7 @@ function ContextGraphInner({
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         onNodesChange={handleNodesChange}
         onEdgesChange={handleEdgesChange}
         onEdgeClick={handleEdgeClick}
