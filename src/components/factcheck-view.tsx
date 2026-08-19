@@ -26,11 +26,11 @@ import { onActivate } from "@/lib/a11y";
 import { ReportDeliveryActions } from "@/components/report-delivery-actions";
 import { ShareLinkBar } from "@/components/share-link-bar";
 import { StructuredDocumentText } from "@/components/structured-document-text";
+import { FactCheckStatusFilterBar } from "@/components/factcheck-status-filter-bar";
 import { useI18n } from "@/lib/i18n/provider";
 import type { Messages } from "@/lib/i18n/messages";
 import type { Block } from "@/lib/paragraphs";
 import {
-  FACTCHECK_STATUS_FILTERS,
   factCheckClaimMatchesStatus,
   factCheckStatusCounts,
   type FactCheckStatusFilter,
@@ -127,27 +127,6 @@ const VERDICT_META: Record<
     labelKey: "vd_unverified",
     cls: "border-rule text-muted bg-paper",
   },
-};
-
-const FILTER_META: Record<
-  FactCheckStatusFilter,
-  { labelKey: keyof Messages; dotClass: string }
-> = {
-  all: { labelKey: "fc_filter_all", dotClass: "bg-foreground" },
-  supported: {
-    labelKey: "fc_filter_supported",
-    dotClass: "bg-emerald-500",
-  },
-  contradicted: {
-    labelKey: "fc_filter_contradicted",
-    dotClass: "bg-red-500",
-  },
-  mixed: { labelKey: "fc_filter_mixed", dotClass: "bg-amber-500" },
-  unverified: {
-    labelKey: "fc_filter_unverified",
-    dotClass: "bg-zinc-400",
-  },
-  pending: { labelKey: "fc_filter_pending", dotClass: "bg-blue-500" },
 };
 
 function statusLabel(t: Messages, s: string): string {
@@ -486,44 +465,11 @@ export function FactCheckView({
               {t.fc_claims_header} ({claims.length})
             </h2>
             {claims.length > 0 && (
-              <div
-                className="flex flex-wrap gap-1.5"
-                role="group"
-                aria-label={t.fc_filter_label}
-              >
-                {FACTCHECK_STATUS_FILTERS.map((filter) => {
-                  const meta = FILTER_META[filter];
-                  const selected = statusFilter === filter;
-                  return (
-                    <button
-                      key={filter}
-                      type="button"
-                      aria-pressed={selected}
-                      onClick={() => setStatusFilter(filter)}
-                      className={cn(
-                        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
-                        selected
-                          ? "border-foreground bg-foreground text-background"
-                          : "border-rule bg-paper text-muted hover:border-foreground/40 hover:text-foreground",
-                      )}
-                    >
-                      <span
-                        aria-hidden="true"
-                        className={cn("size-1.5 rounded-full", meta.dotClass)}
-                      />
-                      <span>{String(t[meta.labelKey])}</span>
-                      <span
-                        className={cn(
-                          "inline-flex min-w-5 items-center justify-center rounded-full px-1 tabular-nums",
-                          selected ? "bg-background/15" : "bg-foreground/5",
-                        )}
-                      >
-                        {statusCounts[filter]}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+              <FactCheckStatusFilterBar
+                value={statusFilter}
+                counts={statusCounts}
+                onChange={setStatusFilter}
+              />
             )}
           </div>
           {claims.length === 0 ? (

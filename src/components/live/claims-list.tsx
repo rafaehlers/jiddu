@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   AlertTriangle,
   Check,
@@ -12,10 +12,16 @@ import {
   X,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n/provider";
+import { FactCheckStatusFilterBar } from "@/components/factcheck-status-filter-bar";
 import type { Messages } from "@/lib/i18n/messages";
 import type { ClaimType } from "@/lib/claims-schema";
 import type { LiveClaim } from "@/lib/live/use-live-analysis";
 import type { Verdict, VerdictValue } from "@/lib/verdict-schema";
+import {
+  factCheckClaimMatchesStatus,
+  factCheckStatusCounts,
+  type FactCheckStatusFilter,
+} from "@/lib/factcheck-status-filter";
 import { LiveResultTypeBadge } from "./result-type-badge";
 
 type Props = {
@@ -25,6 +31,7 @@ type Props = {
   showLensBadge?: boolean;
   maxSources?: number;
   sourcesInitiallyOpen?: boolean;
+  showStatusFilter?: boolean;
   verificationActions?: {
     onVerify: (claimId: string) => void;
     verifyingClaimIds: ReadonlySet<string>;
@@ -80,9 +87,24 @@ export function LiveClaimsList({
   showLensBadge = false,
   maxSources = Number.POSITIVE_INFINITY,
   sourcesInitiallyOpen = false,
+  showStatusFilter = false,
   verificationActions,
 }: Props) {
   const { t } = useI18n();
+  const [statusFilter, setStatusFilter] =
+    useState<FactCheckStatusFilter>("all");
+  const statusCounts = useMemo(
+    () => factCheckStatusCounts(claims.map((claim) => claim.id), verdicts),
+    [claims, verdicts],
+  );
+  const visibleClaims = useMemo(
+    () =>
+      claims.filter((claim) =>
+        factCheckClaimMatchesStatus(claim.id, verdicts, statusFilter),
+      ),
+    [claims, verdicts, statusFilter],
+  );
+
   if (claims.length === 0) {
     return (
       <div className="text-sm italic text-muted">{t.live_no_claims_yet}</div>
@@ -90,36 +112,53 @@ export function LiveClaimsList({
   }
 
   return (
-    <ul className="space-y-2">
-      {claims.map((claim) => {
-        const verdict = verdicts.get(claim.id) ?? null;
-        const verifyingThisClaim =
-          (verifying && !verdict) ||
-          verificationActions?.verifyingClaimIds.has(claim.id) === true;
-        return (
-          <LiveClaimCard
-            key={`${claim.id}:${sourcesInitiallyOpen ? "open" : "closed"}`}
-            claim={claim}
-            verdict={verdict}
-            verifying={verifyingThisClaim}
-            showLensBadge={showLensBadge}
-            maxSources={maxSources}
-            sourcesInitiallyOpen={sourcesInitiallyOpen}
-            verificationActions={
-              verificationActions
-                ? {
-                    onVerify: verificationActions.onVerify,
-                    error: verificationActions.errors.get(claim.id) ?? null,
-                    verifyLabel: verificationActions.verifyLabel,
-                    reverifyLabel: verificationActions.reverifyLabel,
-                    verifyingLabel: verificationActions.verifyingLabel,
-                  }
-                : null
-            }
-          />
-        );
-      })}
-    </ul>
+    <div className="space-y-2">
+      {showStatusFilter ? (
+        <FactCheckStatusFilterBar
+          value={statusFilter}
+          counts={statusCounts}
+          onChange={setStatusFilter}
+          className="pb-1"
+        />
+      ) : null}
+      {visibleClaims.length === 0 ? (
+        <div className="rounded-md border border-rule bg-paper p-3 text-sm text-muted">
+          {t.fc_filter_empty}
+        </div>
+      ) : (
+        <ul className="space-y-2">
+          {visibleClaims.map((claim) => {
+            const verdict = verdicts.get(claim.id) ?? null;
+            const verifyingThisClaim =
+              (verifying && !verdict) ||
+              verificationActions?.verifyingClaimIds.has(claim.id) === true;
+            return (
+              <LiveClaimCard
+                key={`${claim.id}:${sourcesInitiallyOpen ? "open" : "closed"}`}
+                claim={claim}
+                verdict={verdict}
+                verifying={verifyingThisClaim}
+                showLensBadge={showLensBadge}
+                maxSources={maxSources}
+                sourcesInitiallyOpen={sourcesInitiallyOpen}
+                verificationActions={
+                  verificationActions
+                    ? {
+                        onVerify: verificationActions.onVerify,
+                        error:
+                          verificationActions.errors.get(claim.id) ?? null,
+                        verifyLabel: verificationActions.verifyLabel,
+                        reverifyLabel: verificationActions.reverifyLabel,
+                        verifyingLabel: verificationActions.verifyingLabel,
+                      }
+                    : null
+                }
+              />
+            );
+          })}
+        </ul>
+      )}
+    </div>
   );
 }
 

@@ -83,6 +83,7 @@ import {
   ContextAnalysisSetupDialog,
 } from "./context-analysis-setup";
 import { updateContextAnalysisConfiguration } from "./context-analysis-configuration";
+import { ContextClaimRecoveryAction } from "./context-claim-recovery";
 
 const MAX_SESSION_MS = 60 * 60 * 1_000;
 
@@ -805,12 +806,25 @@ function ContextWorkspaceContent({
               toneClass: "bg-blue-500",
               content: (
                 <>
+                  {concluded && analysis.sessionId ? (
+                    <ContextClaimRecoveryAction
+                      sessionId={analysis.sessionId}
+                      lang={lang}
+                      onRecovered={(claims) =>
+                        analysis.applyContextMutation(
+                          analysis.context,
+                          claims,
+                        )
+                      }
+                    />
+                  ) : null}
                   <p className="mb-2 rounded-md border border-blue-500/20 bg-blue-500/5 p-2 text-[10px] leading-snug text-muted">
                     {copy.detectedHint}
                   </p>
                   <LiveClaimsList
                     claims={analysisView.claims}
                     verdicts={verificationView.verdicts}
+                    showStatusFilter
                     maxSources={contextSettings.settings.factSourceLimit}
                     sourcesInitiallyOpen={
                       contextSettings.settings.expandFactSources

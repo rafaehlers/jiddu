@@ -72,6 +72,10 @@ import {
   ContextAnalysisSetupDialog,
 } from "./context-analysis-setup";
 import { updateContextAnalysisConfiguration } from "./context-analysis-configuration";
+import {
+  ContextClaimRecoveryAction,
+  hasCompletedClaimRecovery,
+} from "./context-claim-recovery";
 
 type Props = {
   id: string;
@@ -134,6 +138,10 @@ function ContextReviewWorkspaceContent({
     useState(neutralityFindings);
   const [analysisSetupOpen, setAnalysisSetupOpen] = useState(false);
   const [currentVerdicts, setCurrentVerdicts] = useState(verdicts);
+  const claimRecoveryInitiallyComplete = useMemo(
+    () => hasCompletedClaimRecovery(replayEvents),
+    [replayEvents],
+  );
   const [entityMap, setEntityMap] = useState(
     () => new Map<string, KnowledgeEntityDTO>(enrichedEntities),
   );
@@ -522,12 +530,21 @@ function ContextReviewWorkspaceContent({
               toneClass: "bg-blue-500",
               content: (
                 <>
+                  {frame.atEnd ? (
+                    <ContextClaimRecoveryAction
+                      sessionId={id}
+                      lang={lang}
+                      initiallyComplete={claimRecoveryInitiallyComplete}
+                      onRecovered={setCurrentClaims}
+                    />
+                  ) : null}
                   <p className="mb-2 rounded-md border border-blue-500/20 bg-blue-500/5 p-2 text-[10px] leading-snug text-muted">
                     {copy.detectedHint}
                   </p>
                   <LiveClaimsList
                     claims={frame.claims}
                     verdicts={verdictMap}
+                    showStatusFilter
                     maxSources={contextSettings.settings.factSourceLimit}
                     sourcesInitiallyOpen={
                       contextSettings.settings.expandFactSources
