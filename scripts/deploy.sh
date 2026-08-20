@@ -44,7 +44,7 @@ if [[ -n "$(git status --porcelain)" ]]; then
 fi
 
 EXPECTED_SHA="$(git rev-parse HEAD)"
-BUILD_STAMP="$(TZ=America/Sao_Paulo date '+%Y-%m-%d_%H:%S')"
+BUILD_STAMP="$(TZ=America/Sao_Paulo date '+%Y-%m-%d_%H:%M')"
 BUILD_DATE="${BUILD_STAMP%%_*}"
 BUILD_TIME="${BUILD_STAMP#*_}"
 BUILD_HASH="${EXPECTED_SHA:0:7}"
