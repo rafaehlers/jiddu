@@ -543,7 +543,13 @@ function ContextReviewWorkspaceContent({
               title: copy.fallacies,
               count: frame.findings.length,
               toneClass: "bg-rose-500",
-              content: <FindingsList findings={frame.findings} lang={lang} />,
+              content: (
+                <FindingsList
+                  findings={frame.findings}
+                  lang={lang}
+                  showFallacyFilter
+                />
+              ),
             },
             facts: {
               title: copy.facts,

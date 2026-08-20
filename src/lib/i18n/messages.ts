@@ -104,6 +104,8 @@ export type Messages = {
   neutrality_filter_label: string;
   neutrality_filter_all: string;
   neutrality_filter_empty: string;
+  fallacy_filter_label: string;
+  fallacy_filter_all: string;
   fc_extracting: string;
   fc_no_claims: string;
   fc_verify_panel_title: string;
@@ -758,6 +760,8 @@ const en: Messages = {
   neutrality_filter_label: "Filter neutrality findings by type",
   neutrality_filter_all: "All",
   neutrality_filter_empty: "No neutrality findings have this type.",
+  fallacy_filter_label: "Filter fallacies by type",
+  fallacy_filter_all: "All",
   fc_extracting: "Extracting claims…",
   fc_no_claims: "No verifiable claims were extracted from this text.",
   fc_verify_panel_title: "Verify these claims",
@@ -1787,6 +1791,8 @@ const pt: Messages = {
   neutrality_filter_label: "Filtrar ocorrências de neutralidade por tipo",
   neutrality_filter_all: "Todas",
   neutrality_filter_empty: "Nenhuma ocorrência de neutralidade possui este tipo.",
+  fallacy_filter_label: "Filtrar falácias por tipo",
+  fallacy_filter_all: "Todas",
   fc_extracting: "Extraindo afirmações…",
   fc_no_claims: "Nenhuma afirmação verificável foi extraída deste texto.",
   fc_verify_panel_title: "Verificar estas afirmações",
@@ -2817,6 +2823,8 @@ const es: Messages = {
   neutrality_filter_label: "Filtrar hallazgos de neutralidad por tipo",
   neutrality_filter_all: "Todos",
   neutrality_filter_empty: "Ningún hallazgo de neutralidad tiene este tipo.",
+  fallacy_filter_label: "Filtrar falacias por tipo",
+  fallacy_filter_all: "Todas",
   fc_extracting: "Extrayendo afirmaciones…",
   fc_no_claims: "No se extrajeron afirmaciones verificables de este texto.",
   fc_verify_panel_title: "Verificar estas afirmaciones",

@@ -797,7 +797,11 @@ function ContextWorkspaceContent({
               count: analysisView.findings.length,
               toneClass: "bg-rose-500",
               content: (
-                <FindingsList findings={analysisView.findings} lang={lang} />
+                <FindingsList
+                  findings={analysisView.findings}
+                  lang={lang}
+                  showFallacyFilter
+                />
               ),
             },
             facts: {
