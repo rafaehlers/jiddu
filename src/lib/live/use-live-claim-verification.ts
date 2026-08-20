@@ -13,6 +13,7 @@ export type LiveClaimVerification = {
   isVerifying: boolean;
   verifyingClaimIds: ReadonlySet<string>;
   claimErrors: ReadonlyMap<string, string>;
+  refreshCounts: Readonly<Record<string, number>>;
   progress: { done: number; total: number };
   error: string | null;
   start: () => Promise<void>;
@@ -24,6 +25,8 @@ export function useLiveClaimVerification(
   factCheckId: string | null,
   claims: LiveClaim[],
   elapsedMs?: number,
+  initialRefreshCounts: Record<string, number> = {},
+  maxRefreshPerClaim = Number.POSITIVE_INFINITY,
 ): LiveClaimVerification {
   const [verdicts, setVerdicts] = useState<Map<string, Verdict>>(new Map());
   const [status, setStatus] = useState<LiveVerifyStatus>("none");
@@ -32,6 +35,9 @@ export function useLiveClaimVerification(
   );
   const [claimErrors, setClaimErrors] = useState<Map<string, string>>(
     new Map(),
+  );
+  const [refreshCounts, setRefreshCounts] = useState<Record<string, number>>(
+    () => ({ ...initialRefreshCounts }),
   );
   const [progress, setProgress] = useState({ done: 0, total: 0 });
   const [error, setError] = useState<string | null>(null);
@@ -54,6 +60,7 @@ export function useLiveClaimVerification(
     setStatus("none");
     setVerifyingClaimIds(new Set());
     setClaimErrors(new Map());
+    setRefreshCounts({});
     setProgress({ done: 0, total: 0 });
     setError(null);
   }
@@ -73,7 +80,11 @@ export function useLiveClaimVerification(
       !factCheckId ||
       claims.length === 0 ||
       status === "running" ||
-      claimAbortRefs.current.size > 0
+      claimAbortRefs.current.size > 0 ||
+      claims.every(
+        (claim) =>
+          (refreshCounts[claim.id] ?? 0) >= maxRefreshPerClaim,
+      )
     ) {
       return;
     }
@@ -91,12 +102,28 @@ export function useLiveClaimVerification(
         method: "POST",
         signal: controller.signal,
       });
-      if (!response.ok || !response.body) {
+      if (!response.ok) {
         const data = (await response.json().catch(() => null)) as {
           error?: string;
+          code?: string;
+          maxRefreshPerClaim?: number;
         } | null;
+        if (data && "code" in data && data.code === "max_refresh_cap") {
+          const limit = data.maxRefreshPerClaim ?? maxRefreshPerClaim;
+          setRefreshCounts((current) =>
+            Object.fromEntries(
+              claims.map((claim) => [
+                claim.id,
+                Math.max(current[claim.id] ?? 0, limit),
+              ]),
+            ),
+          );
+          setStatus("complete");
+          return;
+        }
         throw new Error(data?.error ?? `Request failed (${response.status})`);
       }
+      if (!response.body) throw new Error("Verification response was empty");
 
       let completed = false;
       for await (const event of readSse(response, controller.signal)) {
@@ -110,6 +137,10 @@ export function useLiveClaimVerification(
             next.set(verdict.claimId, verdict);
             return next;
           });
+          setRefreshCounts((current) => ({
+            ...current,
+            [verdict.claimId]: (current[verdict.claimId] ?? 0) + 1,
+          }));
           setProgress((current) => ({
             ...current,
             done: current.done + 1,
@@ -160,7 +191,8 @@ export function useLiveClaimVerification(
       !factCheckId ||
       status === "running" ||
       claimAbortRefs.current.has(claimId) ||
-      !claims.some((claim) => claim.id === claimId)
+      !claims.some((claim) => claim.id === claimId) ||
+      (refreshCounts[claimId] ?? 0) >= maxRefreshPerClaim
     ) {
       return;
     }
@@ -190,16 +222,38 @@ export function useLiveClaimVerification(
         },
       );
       const data = (await response.json().catch(() => null)) as
-        (Verdict & { error?: never }) | { error?: string } | null;
+        | (Verdict & {
+            error?: never;
+            refreshCount?: number;
+            maxRefreshPerClaim?: number;
+          })
+        | {
+            error?: string;
+            code?: string;
+            maxRefreshPerClaim?: number;
+          }
+        | null;
       if (!response.ok) {
+        if (data && "code" in data && data.code === "max_refresh_cap") {
+          const limit = data.maxRefreshPerClaim ?? maxRefreshPerClaim;
+          setRefreshCounts((current) => ({
+            ...current,
+            [claimId]: Math.max(current[claimId] ?? 0, limit),
+          }));
+          return;
+        }
         throw new Error(data?.error ?? `Request failed (${response.status})`);
       }
-      const verdict = data as Verdict;
+      const verdict = data as Verdict & { refreshCount?: number };
       setVerdicts((current) => {
         const next = new Map(current);
         next.set(claimId, verdict);
         return next;
       });
+      setRefreshCounts((current) => ({
+        ...current,
+        [claimId]: verdict.refreshCount ?? (current[claimId] ?? 0) + 1,
+      }));
     } catch (verificationError) {
       if (controller.signal.aborted) return;
       setClaimErrors((current) => {
@@ -231,6 +285,7 @@ export function useLiveClaimVerification(
     isVerifying: status === "running" || verifyingClaimIds.size > 0,
     verifyingClaimIds,
     claimErrors,
+    refreshCounts,
     progress,
     error,
     start,

@@ -36,6 +36,9 @@ type Props = {
     onVerify: (claimId: string) => void;
     verifyingClaimIds: ReadonlySet<string>;
     errors: ReadonlyMap<string, string>;
+    refreshCounts?: Readonly<Record<string, number>>;
+    maxRefreshPerClaim?: number;
+    limitReachedLabel?: (limit: number) => string;
     verifyLabel: string;
     reverifyLabel: string;
     verifyingLabel: string;
@@ -132,6 +135,13 @@ export function LiveClaimsList({
             const verifyingThisClaim =
               (verifying && !verdict) ||
               verificationActions?.verifyingClaimIds.has(claim.id) === true;
+            const verificationLimitReached = Boolean(
+              verificationActions &&
+                verificationActions.refreshCounts &&
+                verificationActions.maxRefreshPerClaim != null &&
+                (verificationActions.refreshCounts[claim.id] ?? 0) >=
+                  verificationActions.maxRefreshPerClaim,
+            );
             return (
               <LiveClaimCard
                 key={`${claim.id}:${sourcesInitiallyOpen ? "open" : "closed"}`}
@@ -148,6 +158,11 @@ export function LiveClaimsList({
                         onVerify: verificationActions.onVerify,
                         error:
                           verificationActions.errors.get(claim.id) ?? null,
+                        limitReached: verificationLimitReached,
+                        limitReachedLabel:
+                          verificationActions.limitReachedLabel?.(
+                            verificationActions.maxRefreshPerClaim ?? 0,
+                          ) ?? "",
                         verifyLabel: verificationActions.verifyLabel,
                         reverifyLabel: verificationActions.reverifyLabel,
                         verifyingLabel: verificationActions.verifyingLabel,
@@ -183,6 +198,8 @@ function LiveClaimCard({
   verificationActions: {
     onVerify: (claimId: string) => void;
     error: string | null;
+    limitReached: boolean;
+    limitReachedLabel: string;
     verifyLabel: string;
     reverifyLabel: string;
     verifyingLabel: string;
@@ -239,9 +256,17 @@ function LiveClaimCard({
 
       {verificationActions ? (
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-rule pt-2">
-          {verificationActions.error ? (
-            <p className="min-w-0 flex-1 text-xs text-red-500">
-              {verificationActions.error}
+          {verificationActions.error || verificationActions.limitReached ? (
+            <p
+              className={`min-w-0 flex-1 text-xs ${
+                verificationActions.limitReached
+                  ? "text-amber-500"
+                  : "text-red-500"
+              }`}
+            >
+              {verificationActions.limitReached
+                ? verificationActions.limitReachedLabel
+                : verificationActions.error}
             </p>
           ) : (
             <span />
@@ -249,8 +274,17 @@ function LiveClaimCard({
           <button
             type="button"
             onClick={() => verificationActions.onVerify(claim.id)}
-            disabled={verifying || verificationLocked}
-            className="inline-flex shrink-0 items-center gap-1 rounded-md border border-blue-500/40 px-2 py-1 text-xs font-medium text-blue-500 transition-colors hover:bg-blue-500/10 disabled:cursor-wait disabled:opacity-60"
+            disabled={
+              verifying ||
+              verificationLocked ||
+              verificationActions.limitReached
+            }
+            title={
+              verificationActions.limitReached
+                ? verificationActions.limitReachedLabel
+                : undefined
+            }
+            className="inline-flex shrink-0 items-center gap-1 rounded-md border border-blue-500/40 px-2 py-1 text-xs font-medium text-blue-500 transition-colors hover:bg-blue-500/10 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {verifying ? (
               <Loader2 className="size-3 animate-spin" />

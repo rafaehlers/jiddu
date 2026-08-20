@@ -97,6 +97,8 @@ type Props = {
   findings: Finding[];
   claims: LiveClaim[];
   verdicts: Verdict[];
+  initialRefreshCounts: Record<string, number>;
+  maxRefreshPerClaim: number;
   neutralityFindings: NeutralityFinding[];
   neutralityVerdict: LiveNeutralityVerdict | null;
   enrichedEntities: ReadonlyArray<readonly [string, KnowledgeEntityDTO]>;
@@ -124,6 +126,8 @@ function ContextReviewWorkspaceContent({
   findings,
   claims,
   verdicts,
+  initialRefreshCounts,
+  maxRefreshPerClaim,
   neutralityFindings,
   neutralityVerdict,
   enrichedEntities,
@@ -157,7 +161,23 @@ function ContextReviewWorkspaceContent({
   const [relationMap, setRelationMap] = useState(
     () => new Map<string, KnowledgeRelationDTO>(enrichedRelations),
   );
-  const verification = useLiveClaimVerification(id, currentClaims);
+  const verification = useLiveClaimVerification(
+    id,
+    currentClaims,
+    undefined,
+    initialRefreshCounts,
+    maxRefreshPerClaim,
+  );
+  const allClaimsAtVerificationLimit = useMemo(
+    () =>
+      currentClaims.length > 0 &&
+      currentClaims.every(
+        (claim) =>
+          (verification.refreshCounts[claim.id] ?? 0) >=
+          maxRefreshPerClaim,
+      ),
+    [currentClaims, maxRefreshPerClaim, verification.refreshCounts],
+  );
   const finalVerdicts = useMemo(() => {
     const result = new Map<string, Verdict>(
       currentVerdicts.map((verdict) => [verdict.claimId, verdict]),
@@ -579,8 +599,16 @@ function ContextReviewWorkspaceContent({
                       <button
                         type="button"
                         onClick={() => void verification.start()}
-                        disabled={verification.isVerifying}
-                        className="inline-flex shrink-0 items-center gap-1 rounded-md bg-blue-500 px-2.5 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-wait disabled:opacity-60"
+                        disabled={
+                          verification.isVerifying ||
+                          allClaimsAtVerificationLimit
+                        }
+                        title={
+                          allClaimsAtVerificationLimit
+                            ? copy.verifyAllLimitReached(maxRefreshPerClaim)
+                            : undefined
+                        }
+                        className="inline-flex shrink-0 items-center gap-1 rounded-md bg-blue-500 px-2.5 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {verification.status === "running" ? (
                           <Loader2 className="size-3 animate-spin" />
@@ -593,7 +621,11 @@ function ContextReviewWorkspaceContent({
                       </button>
                     ) : null}
                   </div>
-                  {verification.error ? (
+                  {canManage && frame.atEnd && allClaimsAtVerificationLimit ? (
+                    <p className="mb-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2 text-xs text-amber-500">
+                      {copy.verifyAllLimitReached(maxRefreshPerClaim)}
+                    </p>
+                  ) : verification.error ? (
                     <p
                       role="alert"
                       className="mb-2 rounded-md border border-red-500/30 bg-red-500/10 p-2 text-xs text-red-500"
@@ -618,6 +650,9 @@ function ContextReviewWorkspaceContent({
                             verifyingClaimIds:
                               verification.verifyingClaimIds,
                             errors: verification.claimErrors,
+                            refreshCounts: verification.refreshCounts,
+                            maxRefreshPerClaim,
+                            limitReachedLabel: copy.verifyLimitReached,
                             verifyLabel: copy.verifyOne,
                             reverifyLabel: copy.reverifyOne,
                             verifyingLabel: copy.verifying,

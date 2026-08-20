@@ -89,6 +89,10 @@ export async function POST(
     return jsonError(
       `All claims have hit the max-refresh cap (${maxRefreshPerClaim}). Increase factcheck.maxRefreshPerClaim in admin settings or wait.`,
       429,
+      {
+        code: "max_refresh_cap",
+        maxRefreshPerClaim,
+      },
     );
   }
 
@@ -282,8 +286,12 @@ export async function POST(
   });
 }
 
-function jsonError(message: string, status: number) {
-  return new Response(JSON.stringify({ error: message }), {
+function jsonError(
+  message: string,
+  status: number,
+  details: Record<string, unknown> = {},
+) {
+  return new Response(JSON.stringify({ error: message, ...details }), {
     status,
     headers: { "content-type": "application/json" },
   });

@@ -72,6 +72,10 @@ const COPY = {
     verifyOne: "Verify this fact",
     reverifyOne: "Verify again",
     verifying: "Verifying",
+    verifyLimitReached: (limit: number) =>
+      `This fact has reached the limit of ${limit} verifications.`,
+    verifyAllLimitReached: (limit: number) =>
+      `All facts have reached the limit of ${limit} verifications.`,
     noEntities: "No named entities yet",
     relation: "Connection mentioned",
     profileSource: "Wikipedia profile",
@@ -228,6 +232,10 @@ const COPY = {
     verifyOne: "Verificar este fato",
     reverifyOne: "Verificar novamente",
     verifying: "Verificando",
+    verifyLimitReached: (limit: number) =>
+      `Este fato já atingiu o limite de ${limit} verificações.`,
+    verifyAllLimitReached: (limit: number) =>
+      `Todos os fatos já atingiram o limite de ${limit} verificações.`,
     noEntities: "Nenhuma entidade mencionada ainda",
     relation: "Conexão mencionada",
     profileSource: "Perfil da Wikipedia",
@@ -385,6 +393,10 @@ const COPY = {
     verifyOne: "Verificar este hecho",
     reverifyOne: "Verificar nuevamente",
     verifying: "Verificando",
+    verifyLimitReached: (limit: number) =>
+      `Este hecho ya alcanzó el límite de ${limit} verificaciones.`,
+    verifyAllLimitReached: (limit: number) =>
+      `Todos los hechos ya alcanzaron el límite de ${limit} verificaciones.`,
     noEntities: "Aún no se mencionaron entidades",
     relation: "Conexión mencionada",
     profileSource: "Perfil de Wikipedia",

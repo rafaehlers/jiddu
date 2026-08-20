@@ -81,6 +81,10 @@ export async function POST(
     return jsonError(
       `This claim has reached the max-refresh cap (${maxRefreshPerClaim}).`,
       429,
+      {
+        code: "max_refresh_cap",
+        maxRefreshPerClaim,
+      },
     );
   }
 
@@ -198,8 +202,12 @@ function parseRefreshCounts(raw: string): Record<string, number> {
   return {};
 }
 
-function jsonError(message: string, status: number) {
-  return new Response(JSON.stringify({ error: message }), {
+function jsonError(
+  message: string,
+  status: number,
+  details: Record<string, unknown> = {},
+) {
+  return new Response(JSON.stringify({ error: message, ...details }), {
     status,
     headers: { "content-type": "application/json" },
   });
