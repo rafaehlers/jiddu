@@ -201,6 +201,7 @@ function ContextGraphInner({
           relationsLabel: copy.relations,
           selectedRelationId,
           onSelectRelation: handleSelectRelation,
+          reciprocalLabelOffset: group.reciprocalLabelOffset,
         },
       })),
     );

@@ -48,6 +48,27 @@ test("keeps reverse and unrelated directions as separate connections", () => {
     groups.map(groupEndpoints),
     ["speaker->brazil", "brazil->speaker", "speaker->economy"],
   );
+  assert.ok(groups[0]!.reciprocalLabelOffset > 0);
+  assert.equal(
+    groups[0]!.reciprocalLabelOffset,
+    groups[1]!.reciprocalLabelOffset,
+  );
+  assert.equal(groups[2]!.reciprocalLabelOffset, 0);
+});
+
+test("reserves enough room for the larger reciprocal relation card", () => {
+  const groups = groupContextRelations([
+    relation("r1", "child", "mother"),
+    relation("r2", "child", "mother"),
+    relation("r3", "child", "mother"),
+    relation("r4", "child", "mother"),
+    relation("r5", "child", "mother"),
+    relation("r6", "mother", "child"),
+  ]);
+
+  assert.equal(groups.length, 2);
+  assert.equal(groups[0]!.reciprocalLabelOffset, 122);
+  assert.equal(groups[1]!.reciprocalLabelOffset, 122);
 });
 
 function groupEndpoints(group: ContextRelationGroup): string {
