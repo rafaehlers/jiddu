@@ -148,11 +148,6 @@ export function SiteFooter() {
             </a>
           </span>
         </nav>
-        {buildVersion && (
-          <small className="font-mono text-[9px] leading-none text-muted/60 tabular-nums">
-            Version: {buildVersion}
-          </small>
-        )}
         <span className="font-serif italic">
           {t.footer_quote}{" "}
           <span className="not-italic">—</span>{" "}
@@ -165,6 +160,11 @@ export function SiteFooter() {
             J. Krishnamurti
           </a>
         </span>
+        {buildVersion && (
+          <small className="font-mono text-[9px] leading-none text-muted/60 tabular-nums">
+            Version: {buildVersion}
+          </small>
+        )}
       </div>
     </footer>
   );
