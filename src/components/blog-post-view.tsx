@@ -2,9 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { FallacyModal } from "@/components/fallacy-modal";
 import { JsonLd } from "@/components/json-ld";
+import { FALLACY_BY_ID } from "@/lib/fallacies";
 import type { BlogPost } from "@/lib/blog";
 import {
   BLOG_COPY,
@@ -89,6 +92,7 @@ const markdownComponents: Components = {
 
 export function BlogPostView({ post }: { post: BlogPost }) {
   const { lang } = useI18n();
+  const [modalFallacyId, setModalFallacyId] = useState<string | null>(null);
   const copy = BLOG_COPY[lang];
   const content = getBlogPostTranslation(post, lang);
   const localizedTags = post.tags.flatMap((tagSlug) => {
@@ -100,6 +104,47 @@ export function BlogPostView({ post }: { post: BlogPost }) {
     title: copy.ctaTitle,
     description: copy.ctaDescription,
     label: copy.ctaLabel,
+  };
+  const articleMarkdownComponents: Components = {
+    ...markdownComponents,
+    a: ({ href = "", children }) => {
+      const fallacyId = href.startsWith("/fallacies#")
+        ? href.slice("/fallacies#".length)
+        : null;
+
+      if (fallacyId && FALLACY_BY_ID[fallacyId]) {
+        return (
+          <button
+            type="button"
+            aria-haspopup="dialog"
+            onClick={() => setModalFallacyId(fallacyId)}
+            className="cursor-pointer text-accent-hi underline decoration-rule underline-offset-4 transition-colors hover:text-foreground"
+          >
+            {children}
+          </button>
+        );
+      }
+
+      const className =
+        "text-accent-hi underline decoration-rule underline-offset-4 transition-colors hover:text-foreground";
+      if (href.startsWith("/")) {
+        return (
+          <Link href={href} className={className}>
+            {children}
+          </Link>
+        );
+      }
+      return (
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={className}
+        >
+          {children}
+        </a>
+      );
+    },
   };
   const postImage = (
     <Image
@@ -134,7 +179,11 @@ export function BlogPostView({ post }: { post: BlogPost }) {
         datePublished: post.publishedAt,
         dateModified: post.updatedAt,
         inLanguage: blogLanguageTag(lang),
-        author: { "@type": "Organization", name: post.author, url: SITE_URL },
+        author: {
+          "@type": post.authorType ?? "Organization",
+          name: post.author,
+          url: post.authorUrl ?? SITE_URL,
+        },
         publisher: {
           "@type": "Organization",
           name: "Jiddu",
@@ -253,7 +302,7 @@ export function BlogPostView({ post }: { post: BlogPost }) {
       <div className="w-full">
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
-          components={markdownComponents}
+          components={articleMarkdownComponents}
         >
           {content.body}
         </ReactMarkdown>
@@ -309,6 +358,11 @@ export function BlogPostView({ post }: { post: BlogPost }) {
           </Link>
         </aside>
       </div>
+
+      <FallacyModal
+        fallacyId={modalFallacyId}
+        onClose={() => setModalFallacyId(null)}
+      />
     </article>
   );
 }

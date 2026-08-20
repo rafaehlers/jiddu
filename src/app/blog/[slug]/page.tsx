@@ -35,7 +35,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: content.seoTitle,
     description: content.description,
     keywords: tagLabels,
-    authors: [{ name: post.author, url: SITE_URL }],
+    authors: [{ name: post.author, url: post.authorUrl ?? SITE_URL }],
     alternates: { canonical: url },
     openGraph: {
       title: content.title,

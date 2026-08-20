@@ -41,6 +41,8 @@ export type BlogPost = {
   publishedAt: string;
   updatedAt: string;
   author: string;
+  authorType?: "Organization" | "Person";
+  authorUrl?: string;
   tags: string[];
   image: {
     src: string;
@@ -307,6 +309,347 @@ export const blogTags: BlogTag[] = [
 ];
 
 const posts: BlogPost[] = [
+  {
+    slug: "lula-flavio-campaign-speeches-fallacies",
+    publishedAt: "2026-08-20",
+    updatedAt: "2026-08-20",
+    author: "Rafael M. Ehlers",
+    authorType: "Person",
+    authorUrl: "https://rafaelmehlers.com.br",
+    tags: [
+      "elections",
+      "logical-fallacies",
+      "critical-reading",
+      "responsible-ai",
+    ],
+    image: {
+      src: "/blog/lula-flavio-campaign-fallacies-lenses.png",
+      width: 1727,
+      height: 910,
+      type: "image/png",
+    },
+    citations: [
+      "https://jiddu.app/context/5BvqeTuHoc",
+      "https://jiddu.app/context/NPs4zsq_0b",
+      "https://jiddu.app/how-it-works",
+      "https://apnews.com/article/brazil-lula-flavio-bolsonaro-campaign-opens-8f4ad67b107cb05736f450f67198b190",
+    ],
+    ctaHref: "/context",
+    translations: {
+      en: {
+        title:
+          "69 minutes of campaigning: what the fallacies in Lula and Flávio Bolsonaro’s speeches reveal",
+        seoTitle:
+          "Lula vs. Flávio: fallacies in their first 2026 campaign speeches",
+        description:
+          "Jiddu analyzed the first 2026 campaign speeches by Lula and Flávio Bolsonaro. Compare fallacy density, severity, loaded language, and the limits of automated analysis.",
+        excerpt:
+          "Across 69 minutes of campaign speech, Jiddu detected 53 possible fallacies in Lula’s address and 95 in Flávio Bolsonaro’s. The difference grew after adjusting for speech length and severity.",
+        readingTime: "7 min read",
+        imageAlt:
+          "A smaller red optical lens with a sparse reasoning network beside a larger blue and green lens with a denser network",
+        imageCaption:
+          "The red lens represents Lula’s 11.1 detected fallacies per thousand words; the denser blue and green lens represents Flávio Bolsonaro’s 28.6.",
+        body: `My vote is for Lula. I am stating that preference before the numbers because it affects what I notice and what I consider important.
+
+On August 16, 2026, President Luiz Inácio Lula da Silva and Senator Flávio Bolsonaro opened their campaigns in political strongholds. Lula spoke at Vila Euclides Stadium in São Bernardo do Campo. Flávio addressed supporters on Copacabana Beach in Rio de Janeiro. The [Associated Press described them as Brazil’s two main presidential candidates](https://apnews.com/article/brazil-lula-flavio-bolsonaro-campaign-opens-8f4ad67b107cb05736f450f67198b190).
+
+I captured both speeches with Jiddu Context and compared the complete transcripts. Together they contained **69 minutes and 15 seconds of speech, 8,084 words, and 597 sentences**.
+
+The fallacy analysis produced the clearest difference between the two addresses.
+
+## The central figures
+
+In Lula’s 36-minute speech, Jiddu detected:
+
+- **53 possible fallacies**;
+- **11.1 findings per thousand words**;
+- **4 high-severity findings**;
+- **8 instances of [loaded language](/fallacies#loaded_language)**.
+
+In Flávio Bolsonaro’s 32-minute speech, it detected:
+
+- **95 possible fallacies**;
+- **28.6 findings per thousand words**;
+- **40 high-severity findings**;
+- **30 instances of [loaded language](/fallacies#loaded_language)**.
+
+Flávio’s speech was shorter and still produced 42 more findings. After adjusting for the number of words, its fallacy density was **2.6 times higher**. The gap in high-severity findings was tenfold.
+
+## What the detector found
+
+[Loaded language](/fallacies#loaded_language) was the most frequent pattern in Flávio’s speech, with 30 occurrences. [Non sequitur](/fallacies#non_sequitur) appeared 14 times, [hasty generalization](/fallacies#hasty_generalization) 10 times, [appeal to emotion](/fallacies#appeal_to_emotion) 9 times, [scapegoating](/fallacies#scapegoating) 6 times, and [false dichotomy](/fallacies#false_dichotomy) 5 times.
+
+In Lula’s speech, [non sequitur](/fallacies#non_sequitur) led with 12 findings. [Loaded language](/fallacies#loaded_language) appeared 8 times, [hasty generalization](/fallacies#hasty_generalization) 6 times, and [appeal to emotion](/fallacies#appeal_to_emotion) 5 times. Most of Lula’s findings were classified as low severity; Flávio’s result was split much more heavily toward high severity.
+
+A fallacy label does not mean that a sentence is false. It identifies a possible failure in the path from reasons to conclusion. A candidate can use a bad argument to defend a true proposition, just as a polished argument can begin with a false premise. Fact-checking and fallacy detection answer different questions.
+
+## Two ways of building a campaign speech
+
+The difference also appears in the kinds of claims extracted from each transcript. Numbers and dates accounted for 33.2% of Lula’s claims and 17.4% of Flávio’s. Categorical and causal claims made up 74.2% of Flávio’s claims, compared with 55.9% of Lula’s.
+
+Lula built much of his speech around personal history, the labor movement, education programs, and comparisons between governments. Flávio relied more on conflict, public safety, blame directed at the current government, economic anxiety, and promises of decisive action.
+
+Both speeches were classified as explicitly partisan with 99% confidence. That is unsurprising at campaign rallies. The useful comparison lies in how each candidate tried to persuade an audience already inclined to applaud.
+
+## Why this weighs on my vote
+
+I already intended to vote for Lula. These results reinforce one reason for that choice: in these two speeches, his argument depended less on reasoning shortcuts, especially the severe ones.
+
+Political speech will always use emotion, repetition, symbols, and selective emphasis. Those devices are part of persuasion. I become concerned when fear, false choices, broad accusations, or an unsupported causal leap carry more weight than the reasons offered to the voter.
+
+A president needs to defend decisions outside a friendly rally. Arguments eventually face Congress, the press, courts, public data, and people who do not share the speaker’s assumptions. A speech with fewer reasoning failures does not guarantee a better government. It does give the audience more material to examine.
+
+## What these figures do not prove
+
+Jiddu’s analysis is automated. The detector compares passages with a closed catalog of fallacies, keeps the original excerpt, and explains why it applied a label. It can still misread irony, omit context, split a sentence badly, or treat campaign shorthand too literally. Jiddu has [not published a human-labeled accuracy benchmark for the fallacy detector](https://jiddu.app/how-it-works#4-fallacy-detector), so every finding remains open to human review.
+
+I also chose not to turn the fact-check verdicts from these sessions into a truthfulness ranking. Some extracted claims still confuse verification of the underlying proposition with confirmation that the candidate pronounced the words. A political comparison should not hide that limitation merely because the current result favors my candidate.
+
+The numbers describe these two speeches, not the candidates’ entire careers or every future campaign appearance. Repeating the analysis across debates, interviews, and new rallies will show whether the difference persists.
+
+## Examine the passages yourself
+
+The complete sessions remain public. Each finding links to the part of the transcript that prompted it, so readers can agree, disagree, or report a classification that looks wrong.
+
+- [Open Lula’s complete analysis](https://jiddu.app/context/5BvqeTuHoc)
+- [Open Flávio Bolsonaro’s complete analysis](https://jiddu.app/context/NPs4zsq_0b)
+
+I plan to repeat this comparison during the campaign. The next useful result will come from applying the same method to more speeches and publishing the passages behind every number.`,
+        faq: [
+          {
+            question: "Does a fallacy mean that a candidate lied?",
+            answer:
+              "No. A fallacy concerns the reasoning that connects premises to a conclusion. Truthfulness requires a separate review of the underlying factual claim and its evidence.",
+          },
+          {
+            question: "Why compare findings per thousand words?",
+            answer:
+              "The speeches had different lengths. Normalizing by word count makes the density of detected reasoning problems more comparable than raw totals alone.",
+          },
+          {
+            question: "Did Jiddu choose a candidate?",
+            answer:
+              "No. Jiddu labeled passages under the same fallacy catalog. The author’s support for Lula is disclosed, and readers can inspect the transcripts and challenge individual findings.",
+          },
+        ],
+        cta: {
+          title: "Analyze the next campaign speech",
+          description:
+            "Capture a debate, interview, or rally with Jiddu Context and keep the transcript, claims, fallacies, and sources together for review.",
+          label: "Open Jiddu Context",
+        },
+      },
+      pt: {
+        title:
+          "69 minutos de campanha: o que as falácias nos discursos de Lula e Flávio Bolsonaro revelam",
+        seoTitle:
+          "Lula x Flávio: falácias nos primeiros discursos de 2026",
+        description:
+          "O Jiddu analisou os primeiros discursos de campanha de Lula e Flávio Bolsonaro em 2026. Compare densidade, gravidade, linguagem carregada e os limites da análise automatizada.",
+        excerpt:
+          "Em 69 minutos de campanha, o Jiddu detectou 53 possíveis falácias no discurso de Lula e 95 no de Flávio Bolsonaro. A diferença cresceu quando ajustada pelo tamanho e pela gravidade.",
+        readingTime: "7 min de leitura",
+        imageAlt:
+          "Uma lente óptica vermelha menor com uma rede de raciocínio esparsa ao lado de uma lente azul e verde maior com uma rede mais densa",
+        imageCaption:
+          "A lente vermelha representa os 11,1 achados por mil palavras de Lula; a lente azul e verde, mais densa, representa os 28,6 de Flávio Bolsonaro.",
+        body: `Meu voto é Lula. Declaro essa preferência antes dos números porque ela influencia o que observo e o que considero importante.
+
+Em 16 de agosto de 2026, o presidente Luiz Inácio Lula da Silva e o senador Flávio Bolsonaro abriram suas campanhas em redutos políticos. Lula falou no Estádio da Vila Euclides, em São Bernardo do Campo. Flávio reuniu apoiadores na Praia de Copacabana, no Rio de Janeiro. A [Associated Press os descreveu como os dois principais candidatos à Presidência](https://apnews.com/article/brazil-lula-flavio-bolsonaro-campaign-opens-8f4ad67b107cb05736f450f67198b190).
+
+Registrei os dois discursos com o Jiddu Context e comparei as transcrições completas. Somados, foram **69 minutos e 15 segundos de fala, 8.084 palavras e 597 frases**.
+
+A análise de falácias mostrou a diferença mais clara entre os dois discursos.
+
+## Os números centrais
+
+Nos 36 minutos de Lula, o Jiddu detectou:
+
+- **53 possíveis falácias**;
+- **11,1 achados por mil palavras**;
+- **4 achados de alta gravidade**;
+- **8 ocorrências de [linguagem carregada](/fallacies#loaded_language)**.
+
+Nos 32 minutos de Flávio Bolsonaro, detectou:
+
+- **95 possíveis falácias**;
+- **28,6 achados por mil palavras**;
+- **40 achados de alta gravidade**;
+- **30 ocorrências de [linguagem carregada](/fallacies#loaded_language)**.
+
+O discurso de Flávio foi mais curto e produziu 42 achados a mais. Ajustada pelo número de palavras, a densidade de falácias foi **2,6 vezes maior**. Nos achados de alta gravidade, a diferença foi de dez para um.
+
+## O que o detector encontrou
+
+[Linguagem carregada](/fallacies#loaded_language) foi o padrão mais frequente no discurso de Flávio, com 30 ocorrências. [Non sequitur](/fallacies#non_sequitur) apareceu 14 vezes, [generalização apressada](/fallacies#hasty_generalization) 10, [apelo à emoção](/fallacies#appeal_to_emotion) 9, [bode expiatório](/fallacies#scapegoating) 6 e [falso dilema](/fallacies#false_dichotomy) 5.
+
+No discurso de Lula, [non sequitur](/fallacies#non_sequitur) liderou com 12 achados. [Linguagem carregada](/fallacies#loaded_language) apareceu 8 vezes, [generalização apressada](/fallacies#hasty_generalization) 6 e [apelo à emoção](/fallacies#appeal_to_emotion) 5. A maior parte dos achados de Lula recebeu gravidade baixa; em Flávio, o resultado se deslocou muito mais para a alta gravidade.
+
+O rótulo de falácia não significa que a frase seja falsa. Ele identifica uma possível falha no caminho entre razões e conclusão. Um candidato pode usar um argumento ruim para defender uma proposição verdadeira, assim como um argumento bem organizado pode partir de uma premissa falsa. Fact-check e detecção de falácias respondem a perguntas diferentes.
+
+## Duas formas de construir um discurso de campanha
+
+A diferença também aparece nos tipos de afirmação extraídos de cada transcrição. Números e datas representaram 33,2% das afirmações de Lula e 17,4% das de Flávio. Afirmações categóricas e causais formaram 74,2% das afirmações de Flávio, contra 55,9% das de Lula.
+
+Lula construiu boa parte da fala com memória pessoal, movimento sindical, políticas de educação e comparações entre governos. Flávio recorreu mais a conflito, segurança pública, culpa atribuída ao governo atual, ansiedade econômica e promessas de ação decisiva.
+
+Os dois discursos foram classificados como explicitamente partidários, com 99% de confiança. Isso é esperado em comícios. A comparação útil está na maneira como cada candidato tentou convencer uma plateia já disposta a aplaudi-lo.
+
+## Por que isso pesa no meu voto
+
+Eu já pretendia votar em Lula. Os resultados reforçam uma razão para essa escolha: nestes dois discursos, a argumentação dele dependeu menos de atalhos de raciocínio, principalmente dos mais graves.
+
+O discurso político sempre usará emoção, repetição, símbolos e ênfase seletiva. Esses recursos fazem parte da persuasão. Minha preocupação começa quando medo, escolhas falsas, acusações amplas ou saltos causais sem sustentação carregam mais peso que as razões oferecidas ao eleitor.
+
+Um presidente precisa defender decisões fora de um comício amigável. Os argumentos acabam passando pelo Congresso, pela imprensa, pelos tribunais, pelos dados públicos e por pessoas que não compartilham as premissas do discursante. Um discurso com menos falhas de raciocínio não garante um governo melhor. Ele oferece mais material para o público examinar.
+
+## O que esses números não provam
+
+A análise do Jiddu é automatizada. O detector compara passagens com um catálogo fechado de falácias, preserva o trecho original e explica por que aplicou o rótulo. Ainda pode interpretar mal uma ironia, perder contexto, dividir uma frase de forma ruim ou levar uma simplificação de palanque ao pé da letra. O Jiddu [ainda não publicou um benchmark com rótulos humanos para o detector de falácias](https://jiddu.app/how-it-works#4-fallacy-detector), portanto cada achado continua aberto à revisão humana.
+
+Também decidi não transformar os vereditos de fact-check dessas sessões em um ranking de veracidade. Algumas afirmações extraídas ainda confundem a verificação da proposição subjacente com a confirmação de que o candidato pronunciou aquelas palavras. Uma comparação política não deveria esconder essa limitação só porque o resultado atual favorece meu candidato.
+
+Os números descrevem estes dois discursos. Eles não resumem a carreira inteira dos candidatos nem antecipam todas as falas da campanha. Repetir a análise em debates, entrevistas e novos comícios mostrará se a diferença persiste.
+
+## Examine os trechos
+
+As sessões completas continuam públicas. Cada achado aponta para o trecho da transcrição que o originou, permitindo concordar, discordar ou denunciar uma classificação que pareça errada.
+
+- [Abrir a análise completa de Lula](https://jiddu.app/context/5BvqeTuHoc)
+- [Abrir a análise completa de Flávio Bolsonaro](https://jiddu.app/context/NPs4zsq_0b)
+
+Pretendo repetir essa comparação durante a campanha. O próximo resultado útil virá da aplicação do mesmo método a mais discursos, sempre com as passagens por trás de cada número abertas para inspeção.`,
+        faq: [
+          {
+            question: "Uma falácia significa que o candidato mentiu?",
+            answer:
+              "Não. A falácia trata do raciocínio que conecta premissas e conclusão. A veracidade exige uma análise separada da afirmação factual e das evidências disponíveis.",
+          },
+          {
+            question: "Por que comparar achados por mil palavras?",
+            answer:
+              "Os discursos têm durações diferentes. Normalizar pelo número de palavras permite comparar a densidade dos problemas de raciocínio detectados, em vez de olhar apenas para os totais brutos.",
+          },
+          {
+            question: "O Jiddu escolheu um candidato?",
+            answer:
+              "Não. O Jiddu classificou passagens usando o mesmo catálogo de falácias. O apoio do autor a Lula está declarado, e qualquer leitor pode examinar as transcrições e contestar cada achado.",
+          },
+        ],
+        cta: {
+          title: "Analise o próximo discurso de campanha",
+          description:
+            "Registre um debate, entrevista ou comício com o Jiddu Context e mantenha transcrição, afirmações, falácias e fontes reunidas para revisão.",
+          label: "Abrir o Jiddu Context",
+        },
+      },
+      es: {
+        title:
+          "69 minutos de campaña: qué revelan las falacias en los discursos de Lula y Flávio Bolsonaro",
+        seoTitle:
+          "Lula vs. Flávio: falacias en sus primeros discursos de 2026",
+        description:
+          "Jiddu analizó los primeros discursos de campaña de Lula y Flávio Bolsonaro en 2026. Compara densidad, gravedad, lenguaje cargado y los límites del análisis automatizado.",
+        excerpt:
+          "En 69 minutos de campaña, Jiddu detectó 53 posibles falacias en el discurso de Lula y 95 en el de Flávio Bolsonaro. La diferencia creció al ajustarla por extensión y gravedad.",
+        readingTime: "7 min de lectura",
+        imageAlt:
+          "Una lente óptica roja más pequeña con una red de razonamiento dispersa junto a una lente azul y verde más grande con una red más densa",
+        imageCaption:
+          "La lente roja representa los 11,1 hallazgos por cada mil palabras de Lula; la lente azul y verde, más densa, representa los 28,6 de Flávio Bolsonaro.",
+        body: `Mi voto es por Lula. Declaro esa preferencia antes de presentar las cifras porque influye en lo que observo y en lo que considero importante.
+
+El 16 de agosto de 2026, el presidente Luiz Inácio Lula da Silva y el senador Flávio Bolsonaro abrieron sus campañas en bastiones políticos. Lula habló en el Estadio Vila Euclides, en São Bernardo do Campo. Flávio reunió a sus seguidores en la playa de Copacabana, en Río de Janeiro. Associated Press [los describió como los dos principales candidatos a la Presidencia](https://apnews.com/article/brazil-lula-flavio-bolsonaro-campaign-opens-8f4ad67b107cb05736f450f67198b190).
+
+Registré ambos discursos con Jiddu Context y comparé las transcripciones completas. En conjunto fueron **69 minutos y 15 segundos de discurso, 8.084 palabras y 597 frases**.
+
+El análisis de falacias mostró la diferencia más clara entre los dos discursos.
+
+## Las cifras centrales
+
+En los 36 minutos de Lula, Jiddu detectó:
+
+- **53 posibles falacias**;
+- **11,1 hallazgos por cada mil palabras**;
+- **4 hallazgos de gravedad alta**;
+- **8 casos de [lenguaje cargado](/fallacies#loaded_language)**.
+
+En los 32 minutos de Flávio Bolsonaro, detectó:
+
+- **95 posibles falacias**;
+- **28,6 hallazgos por cada mil palabras**;
+- **40 hallazgos de gravedad alta**;
+- **30 casos de [lenguaje cargado](/fallacies#loaded_language)**.
+
+El discurso de Flávio fue más corto y produjo 42 hallazgos más. Ajustada por el número de palabras, la densidad de falacias fue **2,6 veces mayor**. En los hallazgos de gravedad alta, la diferencia fue de diez a uno.
+
+## Lo que encontró el detector
+
+[El lenguaje cargado](/fallacies#loaded_language) fue el patrón más frecuente en el discurso de Flávio, con 30 casos. [Non sequitur](/fallacies#non_sequitur) apareció 14 veces, [generalización apresurada](/fallacies#hasty_generalization) 10, [apelación a la emoción](/fallacies#appeal_to_emotion) 9, [chivo expiatorio](/fallacies#scapegoating) 6 y [falso dilema](/fallacies#false_dichotomy) 5.
+
+En el discurso de Lula, [non sequitur](/fallacies#non_sequitur) encabezó la lista con 12 hallazgos. [El lenguaje cargado](/fallacies#loaded_language) apareció 8 veces, [la generalización apresurada](/fallacies#hasty_generalization) 6 y [la apelación a la emoción](/fallacies#appeal_to_emotion) 5. La mayoría de los hallazgos de Lula recibió gravedad baja; en Flávio, el resultado se desplazó mucho más hacia la gravedad alta.
+
+La etiqueta de falacia no significa que la frase sea falsa. Identifica un posible fallo en el camino entre las razones y la conclusión. Un candidato puede usar un mal argumento para defender una proposición verdadera, del mismo modo que un argumento bien organizado puede partir de una premisa falsa. La verificación de hechos y la detección de falacias responden a preguntas diferentes.
+
+## Dos maneras de construir un discurso de campaña
+
+La diferencia también aparece en los tipos de afirmaciones extraídas de cada transcripción. Los números y las fechas representaron el 33,2% de las afirmaciones de Lula y el 17,4% de las de Flávio. Las afirmaciones categóricas y causales formaron el 74,2% de las afirmaciones de Flávio, frente al 55,9% de las de Lula.
+
+Lula construyó buena parte de su discurso con memoria personal, movimiento sindical, políticas educativas y comparaciones entre gobiernos. Flávio recurrió más al conflicto, la seguridad pública, la culpa atribuida al gobierno actual, la ansiedad económica y las promesas de acción decisiva.
+
+Ambos discursos fueron clasificados como explícitamente partidistas, con un 99% de confianza. Es un resultado esperable en mítines. La comparación útil está en cómo cada candidato intentó convencer a un público que ya estaba dispuesto a aplaudirlo.
+
+## Por qué esto pesa en mi voto
+
+Ya tenía la intención de votar por Lula. Los resultados refuerzan una razón para esa elección: en estos dos discursos, su argumentación dependió menos de atajos de razonamiento, sobre todo de los más graves.
+
+El discurso político siempre usará emoción, repetición, símbolos y énfasis selectivo. Estos recursos forman parte de la persuasión. Mi preocupación comienza cuando el miedo, las falsas elecciones, las acusaciones generales o los saltos causales sin sustento pesan más que las razones ofrecidas al elector.
+
+Un presidente necesita defender decisiones fuera de un mitin amistoso. Los argumentos terminan pasando por el Congreso, la prensa, los tribunales, los datos públicos y las personas que no comparten las premisas del orador. Un discurso con menos fallos de razonamiento no garantiza un gobierno mejor. Ofrece más material para que el público lo examine.
+
+## Lo que estas cifras no demuestran
+
+El análisis de Jiddu es automatizado. El detector compara pasajes con un catálogo cerrado de falacias, conserva el fragmento original y explica por qué aplicó la etiqueta. Aun así, puede interpretar mal una ironía, perder contexto, dividir mal una frase o tomar demasiado literalmente una simplificación de mitin. Jiddu [todavía no ha publicado un benchmark con etiquetas humanas para el detector de falacias](https://jiddu.app/how-it-works#4-fallacy-detector), por lo que cada hallazgo sigue abierto a revisión humana.
+
+También decidí no convertir los veredictos de fact-check de estas sesiones en una clasificación de veracidad. Algunas afirmaciones extraídas todavía confunden la verificación de la proposición subyacente con la confirmación de que el candidato pronunció esas palabras. Una comparación política no debería ocultar esa limitación solo porque el resultado actual favorece a mi candidato.
+
+Las cifras describen estos dos discursos. No resumen toda la trayectoria de los candidatos ni anticipan todas sus intervenciones durante la campaña. Repetir el análisis en debates, entrevistas y nuevos mítines mostrará si la diferencia persiste.
+
+## Examina los pasajes
+
+Las sesiones completas siguen siendo públicas. Cada hallazgo apunta al fragmento de la transcripción que lo originó, lo que permite estar de acuerdo, discrepar o denunciar una clasificación que parezca errónea.
+
+- [Abrir el análisis completo de Lula](https://jiddu.app/context/5BvqeTuHoc)
+- [Abrir el análisis completo de Flávio Bolsonaro](https://jiddu.app/context/NPs4zsq_0b)
+
+Pienso repetir esta comparación durante la campaña. El próximo resultado útil vendrá de aplicar el mismo método a más discursos y mantener abiertos a inspección los pasajes que hay detrás de cada cifra.`,
+        faq: [
+          {
+            question: "¿Una falacia significa que el candidato mintió?",
+            answer:
+              "No. La falacia se refiere al razonamiento que conecta las premisas con la conclusión. La veracidad exige una revisión separada de la afirmación factual y de las pruebas disponibles.",
+          },
+          {
+            question: "¿Por qué comparar hallazgos por cada mil palabras?",
+            answer:
+              "Los discursos tienen duraciones diferentes. Normalizar por el número de palabras permite comparar la densidad de los problemas de razonamiento detectados, en lugar de observar solo los totales brutos.",
+          },
+          {
+            question: "¿Jiddu eligió a un candidato?",
+            answer:
+              "No. Jiddu clasificó pasajes mediante el mismo catálogo de falacias. El apoyo del autor a Lula está declarado, y cualquier lector puede examinar las transcripciones y cuestionar cada hallazgo.",
+          },
+        ],
+        cta: {
+          title: "Analiza el próximo discurso de campaña",
+          description:
+            "Registra un debate, una entrevista o un mitin con Jiddu Context y conserva la transcripción, las afirmaciones, las falacias y las fuentes en un mismo espacio de revisión.",
+          label: "Abrir Jiddu Context",
+        },
+      },
+    },
+  },
   {
     slug: "what-are-logical-fallacies",
     publishedAt: "2026-08-13",
