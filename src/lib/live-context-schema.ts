@@ -19,6 +19,9 @@ export const LIVE_CONTEXT_ENTITY_KINDS = [
   "institution",
   "organization",
   "country",
+  "city",
+  "region",
+  "place",
   "event",
 ] as const;
 
@@ -129,6 +132,8 @@ export const LiveContextEntitySchema = LiveContextWindowEntitySchema.extend({
   // windows, while remaining private to the analysis that produced them.
   userCorrectedName: z.boolean().optional(),
   userCorrectedAt: z.string().datetime().optional(),
+  userCorrectedKind: z.boolean().optional(),
+  userCorrectedKindAt: z.string().datetime().optional(),
 });
 
 export const LiveContextRelationSchema = z.object({
@@ -291,7 +296,7 @@ export function mergeLiveContext(
           existing.name = candidate.name;
           existing.description = candidate.description;
         }
-        existing.kind = candidate.kind;
+        if (!existing.userCorrectedKind) existing.kind = candidate.kind;
         existing.confidence = candidate.confidence;
       }
       continue;
@@ -399,9 +404,11 @@ export function sanitizeLiveContextWindow(
     ids.length > 0 && ids.every((id) => allowedSentenceIds.has(id));
   if (!anchored(value.segment.sentenceIds)) return null;
 
-  const entities = value.entities.filter(
-    (entity) => entity.confidence >= 0.72 && anchored(entity.sentenceIds),
-  );
+  const entities = value.entities
+    .filter(
+      (entity) => entity.confidence >= 0.72 && anchored(entity.sentenceIds),
+    )
+    .map(refineGeographicEntityKind);
   const windowEntityNames = new Set(
     entities.flatMap((entity) =>
       [entity.name, ...entity.aliases].map(normalizeLabel),
@@ -461,12 +468,46 @@ function findMatchingEntity(
   const candidateNames = new Set(
     [candidate.name, ...candidate.aliases].map(normalizeLabel).filter(Boolean),
   );
-  return entities.find((entity) => {
-    if (entity.kind !== candidate.kind) return false;
-    return [entity.name, ...entity.aliases]
+  const nameMatches = (entity: LiveContextEntity) =>
+    [entity.name, ...entity.aliases]
       .map(normalizeLabel)
       .some((name) => candidateNames.has(name));
-  });
+  return (
+    entities.find((entity) => entity.userCorrectedKind && nameMatches(entity)) ??
+    entities.find(
+      (entity) => entity.kind === candidate.kind && nameMatches(entity),
+    )
+  );
+}
+
+function refineGeographicEntityKind(
+  entity: z.infer<typeof LiveContextWindowEntitySchema>,
+): z.infer<typeof LiveContextWindowEntitySchema> {
+  if (
+    !["country", "city", "region", "place", "event"].includes(entity.kind)
+  ) {
+    return entity;
+  }
+  const description = normalizeLabel(entity.description);
+  let kind: LiveContextEntityKind | null = null;
+  if (
+    /^(cidade|municipio|capital|city|municipality|town|ciudad)\b/.test(
+      description,
+    )
+  ) {
+    kind = "city";
+  } else if (
+    /^(regiao|estado|provincia|territorio|region|state|province|territory|localizacao regional|ubicacion regional)\b/.test(
+      description,
+    )
+  ) {
+    kind = "region";
+  } else if (/^(pais|nacao|country|nation)\b/.test(description)) {
+    kind = "country";
+  } else if (/^(local|localizacao|lugar|location|place|site)\b/.test(description)) {
+    kind = "place";
+  }
+  return kind && kind !== entity.kind ? { ...entity, kind } : entity;
 }
 
 function findEntityByName(

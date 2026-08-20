@@ -4,6 +4,7 @@ import type { Lang } from "./fallacies";
 import {
   buildContextualWikipediaQuery,
   isPublicProfileCompatible,
+  isWikidataTypeCompatible,
   scorePublicProfileMatch,
   type EntityProfileHint,
 } from "./context-profile-match";
@@ -39,6 +40,9 @@ type WikipediaResponse = {
 type WikidataEntity = {
   claims?: {
     P31?: Array<{
+      mainsnak?: { datavalue?: { value?: { id?: string } } };
+    }>;
+    P279?: Array<{
       mainsnak?: { datavalue?: { value?: { id?: string } } };
     }>;
   };
@@ -140,23 +144,57 @@ async function selectCompatiblePage(
         rightScore - leftScore || (left.index ?? 999) - (right.index ?? 999)
       );
     });
-  if (entity.kind !== "person") return compatible[0] ?? null;
+  if (!entity.kind) return compatible[0] ?? null;
 
-  const humanIds = await getHumanWikidataIds(
+  const compatibleIds = await getTypeCompatibleWikidataIds(
     compatible
       .map((page) => normalizeWikidataId(page.pageprops?.wikibase_item))
       .filter((id): id is string => Boolean(id)),
+    entity.kind,
   );
   return (
     compatible.find((page) => {
       const id = normalizeWikidataId(page.pageprops?.wikibase_item);
-      return id ? humanIds.has(id) : false;
+      return id ? compatibleIds.has(id) : false;
     }) ?? null
   );
 }
 
-async function getHumanWikidataIds(ids: string[]): Promise<Set<string>> {
+async function getTypeCompatibleWikidataIds(
+  ids: string[],
+  kind: NonNullable<EntityProfileHint["kind"]>,
+): Promise<Set<string>> {
   if (!ids.length) return new Set();
+  const candidates = await fetchWikidataEntities(ids);
+  const parentMap = new Map<string, string[]>();
+  let frontier = new Set(
+    Object.values(candidates).flatMap((entity) => claimIds(entity, "P31")),
+  );
+  for (let depth = 0; depth < 3 && frontier.size > 0; depth += 1) {
+    const classes = await fetchWikidataEntities([...frontier]);
+    const next = new Set<string>();
+    for (const [id, entity] of Object.entries(classes)) {
+      const parents = claimIds(entity, "P279");
+      parentMap.set(id.toUpperCase(), parents);
+      for (const parent of parents) {
+        if (!parentMap.has(parent)) next.add(parent);
+      }
+    }
+    frontier = next;
+  }
+
+  const result = new Set<string>();
+  for (const [id, entity] of Object.entries(candidates)) {
+    const closure = typeClosure(claimIds(entity, "P31"), parentMap);
+    if (isWikidataTypeCompatible(kind, closure)) result.add(id.toUpperCase());
+  }
+  return result;
+}
+
+async function fetchWikidataEntities(
+  ids: string[],
+): Promise<Record<string, WikidataEntity>> {
+  if (!ids.length) return {};
   const url = new URL("https://www.wikidata.org/w/api.php");
   url.search = new URLSearchParams({
     action: "wbgetentities",
@@ -176,15 +214,36 @@ async function getHumanWikidataIds(ids: string[]): Promise<Set<string>> {
   }
 
   const payload = (await response.json()) as WikidataResponse;
-  return new Set(
-    Object.entries(payload.entities ?? {})
-      .filter(([, wikidataEntity]) =>
-        (wikidataEntity.claims?.P31 ?? []).some(
-          (claim) => claim.mainsnak?.datavalue?.value?.id === "Q5",
-        ),
-      )
-      .map(([id]) => id.toUpperCase()),
-  );
+  return payload.entities ?? {};
+}
+
+function claimIds(
+  entity: WikidataEntity,
+  property: "P31" | "P279",
+): string[] {
+  return (entity.claims?.[property] ?? [])
+    .map((claim) => normalizeWikidataId(claim.mainsnak?.datavalue?.value?.id))
+    .filter((id): id is string => Boolean(id));
+}
+
+function typeClosure(
+  directTypes: string[],
+  parentMap: ReadonlyMap<string, string[]>,
+): Set<string> {
+  const closure = new Set(directTypes.map((id) => id.toUpperCase()));
+  let frontier = [...closure];
+  while (frontier.length > 0) {
+    const next: string[] = [];
+    for (const id of frontier) {
+      for (const parent of parentMap.get(id) ?? []) {
+        if (closure.has(parent)) continue;
+        closure.add(parent);
+        next.push(parent);
+      }
+    }
+    frontier = next;
+  }
+  return closure;
 }
 
 function isCompleteWikipediaPage(

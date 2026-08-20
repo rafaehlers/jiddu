@@ -322,6 +322,16 @@ export async function runKnowledgeEntityProfileJob(
     const searchEntity = profileHint ?? {
       name: job.entity.canonicalName,
     };
+    const previousCanonicalName = normalizeKnowledgeName(
+      job.entity.canonicalName,
+    );
+    const previousProfileWasIncompatible = !isPublicProfileCompatible(
+      searchEntity,
+      {
+        canonicalName: job.entity.canonicalName,
+        description: job.entity.description,
+      },
+    );
     const profile = await findWikipediaProfile(
       searchEntity,
       language,
@@ -335,6 +345,9 @@ export async function runKnowledgeEntityProfileJob(
         prisma.knowledgeEntity.update({
           where: { id: job.entity.id },
           data: {
+            canonicalName: previousProfileWasIncompatible
+              ? searchEntity.name.trim().slice(0, 240)
+              : undefined,
             profileStatus: "not_found",
             profileFetchedAt: fetchedAt,
             profileExpiresAt: expiresAt,
@@ -351,6 +364,14 @@ export async function runKnowledgeEntityProfileJob(
           data: { status: "complete", completedAt: fetchedAt, lockedAt: null },
         }),
       ]);
+      if (previousProfileWasIncompatible) {
+        await prisma.knowledgeEntityAlias.deleteMany({
+          where: {
+            entityId: job.entity.id,
+            normalizedName: previousCanonicalName,
+          },
+        });
+      }
       return;
     }
 
@@ -386,14 +407,6 @@ export async function runKnowledgeEntityProfileJob(
       searchEntity.name,
       ...(searchEntity.aliases ?? []),
     ]);
-    const previousProfileWasIncompatible = !isPublicProfileCompatible(
-      searchEntity,
-      {
-        canonicalName: job.entity.canonicalName,
-        description: job.entity.description,
-      },
-    );
-
     await prisma.knowledgeEntityAlias.createMany({
       data: uniqueNames([...observedNames, profile.canonicalName]).map(
         (displayName) => ({
@@ -459,9 +472,6 @@ export async function runKnowledgeEntityProfileJob(
         data: { status: "complete", completedAt: fetchedAt, lockedAt: null },
       }),
     ]);
-    const previousCanonicalName = normalizeKnowledgeName(
-      job.entity.canonicalName,
-    );
     if (
       previousProfileWasIncompatible &&
       !observedNames.map(normalizeKnowledgeName).includes(previousCanonicalName)

@@ -1,4 +1,8 @@
-import { LiveContextSchema, type LiveContext } from "@/lib/live-context-schema";
+import {
+  LiveContextSchema,
+  type LiveContext,
+  type LiveContextEntityKind,
+} from "@/lib/live-context-schema";
 import type { LiveClaim } from "@/lib/live/use-live-analysis";
 import type { Finding } from "@/lib/schema";
 import type { NeutralityFinding } from "@/lib/neutrality-schema";
@@ -8,6 +12,12 @@ export type ContextEntityMutation =
       action: "rename";
       localEntityId: string;
       name: string;
+      elapsedMs?: number;
+    }
+  | {
+      action: "retype";
+      localEntityId: string;
+      kind: LiveContextEntityKind;
       elapsedMs?: number;
     }
   | {

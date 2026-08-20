@@ -8,6 +8,7 @@ import {
   mergeContextEntities,
   removeContextEntity,
   renameContextEntity,
+  retypeContextEntity,
   replaceEntityNamesInClaims,
 } from "@/lib/context-session-mutations";
 import {
@@ -511,6 +512,9 @@ function mutationEvent(
   if (mutation.action === "rename") {
     return { kind: "entity_renamed", elapsedMs, payload: mutation };
   }
+  if (mutation.action === "retype") {
+    return { kind: "entity_retyped", elapsedMs, payload: mutation };
+  }
   if (mutation.action === "merge") {
     return { kind: "entities_merged", elapsedMs, payload: mutation };
   }
@@ -536,6 +540,12 @@ function applyPendingMutations(
         claims = replaceEntityNamesInClaims(claims, [
           { from: result.previousName, to: result.currentName },
         ]);
+      } else if (mutation.action === "retype") {
+        context = retypeContextEntity(
+          context,
+          mutation.localEntityId,
+          mutation.kind,
+        ).context;
       } else if (mutation.action === "merge") {
         const result = mergeContextEntities(
           context,

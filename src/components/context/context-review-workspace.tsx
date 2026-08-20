@@ -32,7 +32,10 @@ import {
 import type { ContextReplayEvent } from "@/lib/context-replay-schema";
 import type { Lang } from "@/lib/fallacies";
 import { useI18n } from "@/lib/i18n/provider";
-import type { LiveContext } from "@/lib/live-context-schema";
+import type {
+  LiveContext,
+  LiveContextEntityKind,
+} from "@/lib/live-context-schema";
 import {
   groupDiarizedSegments,
   type SavedDiarization,
@@ -294,7 +297,9 @@ function ContextReviewWorkspaceContent({
       setRelationMap(new Map());
       if (result.verificationReset) verification.reset();
       const affectedEntityId =
-        mutation.action === "rename" || mutation.action === "remove"
+        mutation.action === "rename" ||
+        mutation.action === "retype" ||
+        mutation.action === "remove"
           ? mutation.localEntityId
           : mutation.targetLocalEntityId;
       setEntityMap((current) => {
@@ -324,6 +329,11 @@ function ContextReviewWorkspaceContent({
   const handleRenameEntity = useCallback(
     (entityId: string, name: string) =>
       applyMutation({ action: "rename", localEntityId: entityId, name }),
+    [applyMutation],
+  );
+  const handleRetypeEntity = useCallback(
+    (entityId: string, kind: LiveContextEntityKind) =>
+      applyMutation({ action: "retype", localEntityId: entityId, kind }),
     [applyMutation],
   );
   const handleMergeEntities = useCallback(
@@ -491,6 +501,7 @@ function ContextReviewWorkspaceContent({
                   canManage && frame.atEnd && !verification.isVerifying
                 }
                 onRenameEntity={handleRenameEntity}
+                onRetypeEntity={handleRetypeEntity}
                 onMergeEntities={handleMergeEntities}
                 onRemoveEntity={handleRemoveEntity}
                 colorMode={contextTheme}

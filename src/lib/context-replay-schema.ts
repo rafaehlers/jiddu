@@ -10,6 +10,7 @@ export const CONTEXT_REPLAY_EVENT_KINDS = [
   "neutrality_assessed",
   "claim_verified",
   "entity_renamed",
+  "entity_retyped",
   "entities_merged",
   "entity_removed",
   "operation_started",

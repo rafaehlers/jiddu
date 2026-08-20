@@ -122,16 +122,25 @@ export function ContextReplayTimeline({
             aria-label={copy.timeline}
             className="relative z-10 h-4 w-full cursor-pointer accent-accent"
           />
-          {events.map((event) => (
-            <span
-              key={event.id}
-              aria-hidden
-              className={`pointer-events-none absolute bottom-0 size-1 -translate-x-1/2 rounded-full ${eventTone(event.kind)}`}
-              style={{
-                left: `${Math.min(100, (event.elapsedMs / durationMs) * 100)}%`,
-              }}
-            />
-          ))}
+          {events.map((event) => {
+            const correctionTitle = correctionEventTitle(event, copy);
+            return (
+              <span
+                key={event.id}
+                aria-hidden={correctionTitle ? undefined : true}
+                aria-label={correctionTitle}
+                title={correctionTitle}
+                className={`absolute bottom-0 -translate-x-1/2 rounded-full ${eventTone(event.kind)} ${
+                  correctionTitle
+                    ? "size-2 cursor-help ring-1 ring-background"
+                    : "pointer-events-none size-1"
+                }`}
+                style={{
+                  left: `${Math.min(100, (event.elapsedMs / durationMs) * 100)}%`,
+                }}
+              />
+            );
+          })}
         </div>
         <label className="hidden items-center rounded-md border border-rule bg-paper px-1.5 py-1 text-[10px] text-muted sm:inline-flex">
           <span className="sr-only">{copy.replaySpeed}</span>
@@ -189,4 +198,37 @@ function eventTone(kind: ContextReplayEvent["kind"]): string {
   if (kind === "capture_state_changed") return "bg-cyan-500";
   if (kind.startsWith("operation_")) return "bg-neutral-500";
   return "bg-violet-500";
+}
+
+function correctionEventTitle(
+  event: ContextReplayEvent,
+  copy: ContextCopy,
+): string | undefined {
+  const payload =
+    event.payload && typeof event.payload === "object"
+      ? (event.payload as Record<string, unknown>)
+      : {};
+  let label: string | undefined;
+  if (event.kind === "entity_renamed") {
+    label = copy.entityRenamedEvent;
+    if (typeof payload.name === "string") label += `: ${payload.name}`;
+  } else if (event.kind === "entity_retyped") {
+    label = copy.entityRetypedEvent;
+    const previous = String(payload.previousKind ?? "");
+    const current = String(payload.currentKind ?? payload.kind ?? "");
+    if (previous in copy.types && current in copy.types) {
+      label += `: ${copy.types[previous as keyof typeof copy.types]} → ${
+        copy.types[current as keyof typeof copy.types]
+      }`;
+    }
+  } else if (event.kind === "entities_merged") {
+    label = copy.entitiesMergedEvent;
+  } else if (event.kind === "entity_removed") {
+    label = copy.entityRemovedEvent;
+  }
+  if (!label) return undefined;
+  const occurredAt = new Date(event.createdAt);
+  return Number.isNaN(occurredAt.getTime())
+    ? label
+    : `${label} · ${occurredAt.toLocaleString()}`;
 }

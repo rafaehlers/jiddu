@@ -40,13 +40,14 @@ TERMS:
 - Be conservative. Confidence must be at least 0.72; otherwise omit the term.
 
 ENTITIES:
-- Return at most 8 consequential named entities from the current window: people, institutions, organizations, countries or specific events.
+- Return at most 8 consequential named entities from the current window: people, institutions, organizations, countries, cities, regions, other named places or specific events.
+- Classify sovereign states as country; cities and municipalities as city; states, provinces and geographic regions as region; and other named physical locations as place. Never label a city or region as country or event.
 - Use the most canonical name supported by the transcript. Put other explicit names, acronyms or unambiguous short forms in aliases; never invent aliases.
-- Names marked userCorrectedName or userSupplied in previous context came from the listener. Treat that name as authoritative and use transcript variants only as aliases.
+- Names marked userCorrectedName or userSupplied in previous context came from the listener. Treat that name as authoritative and use transcript variants only as aliases. Types marked userCorrectedKind are also authoritative.
 - Names listed in dismissedEntityNames were explicitly removed by the listener. Do not emit them again.
 - The description must state only who or what the entity is according to this conversation. Do not add outside knowledge or imply independent verification.
 - Re-emit a previously known entity when it participates in a new relation, attaching only current-window sentence ids.
-- Confidence expresses identity-resolution confidence. Importance expresses how useful it would be to enrich this entity with a public profile or recent coverage.
+- Confidence expresses joint confidence in both the identity resolution and the entity type; use the lower confidence when either is uncertain. Importance expresses how useful it would be to enrich this entity with a public profile or recent coverage.
 - Do not emit vague groups ("people", "the government") unless the passage clearly identifies a specific named institution.
 
 RELATIONS:
@@ -100,6 +101,7 @@ export function buildLiveContextUserPrompt(input: {
         kind,
         aliases,
         userCorrectedName,
+        userCorrectedKind,
         userSupplied,
         participantRole,
         placeholder,
@@ -108,6 +110,7 @@ export function buildLiveContextUserPrompt(input: {
         kind,
         aliases,
         userCorrectedName: Boolean(userCorrectedName),
+        userCorrectedKind: Boolean(userCorrectedKind),
         userSupplied: Boolean(userSupplied),
         participantRole,
         placeholder: Boolean(placeholder),

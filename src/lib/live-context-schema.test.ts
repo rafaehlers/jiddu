@@ -108,6 +108,44 @@ test("filters low-confidence and unanchored context", () => {
   assert.deepEqual(sanitized.terms.map((term) => term.term), ["paid"]);
 });
 
+test("repairs clear geographic type contradictions in entity descriptions", () => {
+  const sanitized = sanitizeLiveContextWindow(
+    {
+      ...firstWindow,
+      entities: [
+        {
+          name: "Fortaleza",
+          kind: "event",
+          description: "Cidade mencionada como destino da água.",
+          aliases: [],
+          sentenceIds: ["s1"],
+          confidence: 0.99,
+          importance: 0.8,
+        },
+        {
+          name: "Rio de Janeiro",
+          kind: "country",
+          description: "Localização regional associada ao instituto.",
+          aliases: [],
+          sentenceIds: ["s1"],
+          confidence: 0.95,
+          importance: 0.7,
+        },
+      ],
+    },
+    new Set(["s1"]),
+  );
+
+  assert.ok(sanitized);
+  assert.deepEqual(
+    sanitized.entities.map((entity) => [entity.name, entity.kind]),
+    [
+      ["Fortaleza", "city"],
+      ["Rio de Janeiro", "region"],
+    ],
+  );
+});
+
 test("reads context created before broad tags existed", () => {
   const legacy = readLiveContext(
     JSON.stringify({
@@ -346,5 +384,46 @@ test("keeps a listener-corrected entity name across later analysis windows", () 
   assert.equal(next.entities.length, 1);
   assert.equal(next.entities[0].name, "Emily Zhao");
   assert.equal(next.entities[0].userCorrectedName, true);
+  assert.deepEqual(next.entities[0].sentenceIds, ["s1", "s2"]);
+});
+
+test("keeps a listener-corrected entity type across later analysis windows", () => {
+  const corrected = mergeLiveContext(EMPTY_LIVE_CONTEXT, {
+    ...firstWindow,
+    entities: [
+      {
+        name: "Fortaleza",
+        kind: "city",
+        description: "Cidade mencionada na conversa.",
+        aliases: [],
+        sentenceIds: ["s1"],
+        confidence: 0.9,
+        importance: 0.8,
+      },
+    ],
+  });
+  corrected.entities[0] = {
+    ...corrected.entities[0],
+    userCorrectedKind: true,
+  };
+
+  const next = mergeLiveContext(corrected, {
+    ...firstWindow,
+    entities: [
+      {
+        name: "Fortaleza",
+        kind: "event",
+        description: "Entidade classificada incorretamente novamente.",
+        aliases: [],
+        sentenceIds: ["s2"],
+        confidence: 0.99,
+        importance: 0.9,
+      },
+    ],
+    segment: { ...firstWindow.segment, sentenceIds: ["s2"] },
+  });
+
+  assert.equal(next.entities.length, 1);
+  assert.equal(next.entities[0].kind, "city");
   assert.deepEqual(next.entities[0].sentenceIds, ["s1", "s2"]);
 });

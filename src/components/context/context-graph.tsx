@@ -39,6 +39,9 @@ const KIND_COLUMN: Record<LiveContextEntityKind, number> = {
   organization: 1,
   institution: 1,
   country: 2,
+  city: 2,
+  region: 2,
+  place: 2,
   event: 2,
 };
 
@@ -50,6 +53,10 @@ type Props = {
   onJumpToSentence?: (sentenceId: string) => void;
   editable?: boolean;
   onRenameEntity?: (entityId: string, name: string) => Promise<void>;
+  onRetypeEntity?: (
+    entityId: string,
+    kind: LiveContextEntityKind,
+  ) => Promise<void>;
   onMergeEntities?: (
     sourceEntityId: string,
     targetEntityId: string,
@@ -76,6 +83,7 @@ function ContextGraphInner({
   onJumpToSentence,
   editable = false,
   onRenameEntity,
+  onRetypeEntity,
   onMergeEntities,
   onRemoveEntity,
   colorMode = "dark",
@@ -155,6 +163,7 @@ function ContextGraphInner({
                 candidate.id !== entity.id && candidate.kind === entity.kind,
             ),
             onRenameEntity,
+            onRetypeEntity,
             onMergeEntities,
             onRemoveEntity,
           },
@@ -170,6 +179,7 @@ function ContextGraphInner({
     onMergeEntities,
     onRemoveEntity,
     onRenameEntity,
+    onRetypeEntity,
     nodeIdentity,
     setNodes,
   ]);

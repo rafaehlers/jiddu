@@ -1,6 +1,7 @@
 import type {
   LiveContext,
   LiveContextEntity,
+  LiveContextEntityKind,
   LiveContextRelation,
 } from "./live-context-schema";
 import type { LiveClaim } from "./live/use-live-analysis";
@@ -103,6 +104,42 @@ export function removeContextEntity(
   };
 }
 
+export function retypeContextEntity(
+  context: LiveContext,
+  entityId: string,
+  kind: LiveContextEntityKind,
+  correctedAt = new Date(),
+): {
+  context: LiveContext;
+  previousKind: LiveContextEntityKind;
+  currentKind: LiveContextEntityKind;
+} {
+  const current = context.entities.find((entity) => entity.id === entityId);
+  if (!current) throw new Error("Entity not found");
+  if (current.userSupplied || current.participantRole) {
+    throw new Error("Configured participants must remain people");
+  }
+  if (current.kind === kind) throw new Error("Entity already has this type");
+
+  return {
+    previousKind: current.kind,
+    currentKind: kind,
+    context: {
+      ...context,
+      entities: context.entities.map((entity) =>
+        entity.id === entityId
+          ? {
+              ...entity,
+              kind,
+              userCorrectedKind: true,
+              userCorrectedKindAt: correctedAt.toISOString(),
+            }
+          : entity,
+      ),
+    },
+  };
+}
+
 export function mergeContextEntities(
   context: LiveContext,
   sourceEntityId: string,
@@ -158,6 +195,12 @@ export function mergeContextEntities(
     userCorrectedAt: latestIsoDate(
       target.userCorrectedAt,
       source.userCorrectedAt,
+    ),
+    userCorrectedKind:
+      target.userCorrectedKind || source.userCorrectedKind || undefined,
+    userCorrectedKindAt: latestIsoDate(
+      target.userCorrectedKindAt,
+      source.userCorrectedKindAt,
     ),
   };
 

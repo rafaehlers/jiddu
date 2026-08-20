@@ -11,6 +11,7 @@ import {
   mergeContextEntities,
   removeContextEntity,
   renameContextEntity,
+  retypeContextEntity,
   replaceEntityNamesInClaims,
 } from "./context-session-mutations";
 
@@ -108,6 +109,32 @@ test("marks a corrected name as authoritative and preserves the old transcriptio
     entity.description,
     "Emily Zhao foi mencionada como investidora.",
   );
+});
+
+test("marks a corrected entity type as authoritative", () => {
+  const correctedAt = new Date("2026-08-20T12:00:00.000Z");
+  const result = retypeContextEntity(
+    {
+      ...context,
+      entities: [
+        {
+          ...context.entities[3],
+          id: "fortaleza",
+          name: "Fortaleza",
+          kind: "event",
+        },
+      ],
+    },
+    "fortaleza",
+    "city",
+    correctedAt,
+  );
+  const entity = result.context.entities[0];
+
+  assert.equal(result.previousKind, "event");
+  assert.equal(entity.kind, "city");
+  assert.equal(entity.userCorrectedKind, true);
+  assert.equal(entity.userCorrectedKindAt, correctedAt.toISOString());
 });
 
 test("merges duplicate entities, redirects and deduplicates their relations", () => {

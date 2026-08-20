@@ -22,6 +22,9 @@ const KIND_SEARCH_TERMS: Record<
     institution: "institution",
     organization: "organization",
     country: "country",
+    city: "city",
+    region: "region",
+    place: "place",
     event: "event",
   },
   pt: {
@@ -29,6 +32,9 @@ const KIND_SEARCH_TERMS: Record<
     institution: "instituição",
     organization: "organização",
     country: "país",
+    city: "cidade",
+    region: "região",
+    place: "local",
     event: "evento",
   },
   es: {
@@ -36,8 +42,36 @@ const KIND_SEARCH_TERMS: Record<
     institution: "institución",
     organization: "organización",
     country: "país",
+    city: "ciudad",
+    region: "región",
+    place: "lugar",
     event: "evento",
   },
+};
+
+const WIKIDATA_KIND_ROOTS: Record<
+  LiveContextEntityKind,
+  ReadonlySet<string>
+> = {
+  person: new Set(["Q5"]),
+  institution: new Set(["Q178706", "Q2385804", "Q327333", "Q43229"]),
+  organization: new Set(["Q43229"]),
+  country: new Set(["Q6256", "Q3624078"]),
+  city: new Set(["Q515", "Q15284", "Q200250", "Q3184121"]),
+  region: new Set(["Q82794", "Q56061"]),
+  place: new Set([
+    "Q2221906",
+    "Q618123",
+    "Q515",
+    "Q15284",
+    "Q200250",
+    "Q3184121",
+    "Q82794",
+    "Q56061",
+    "Q6256",
+    "Q3624078",
+  ]),
+  event: new Set(["Q1656682", "Q1190554"]),
 };
 
 const CONTEXT_STOP_WORDS = new Set([
@@ -108,7 +142,7 @@ export function isPublicProfileCompatible(
     if (
       containsPhrase(canonicalName, identityName) ||
       containsPhrase(identityName, canonicalName) ||
-      containsPhrase(description, identityName)
+      isExplicitAlias(description, identityName)
     ) {
       return true;
     }
@@ -116,18 +150,25 @@ export function isPublicProfileCompatible(
     const identityTokens = significantIdentityTokens(identityName);
     if (!identityTokens.length) return false;
     const canonicalTokens = new Set(significantIdentityTokens(canonicalName));
-    const descriptionTokens = new Set(significantIdentityTokens(description));
     const canonicalMatches = identityTokens.filter((token) =>
       canonicalTokens.has(token),
     ).length;
 
     if (identityTokens.length === 1) {
       const [token] = identityTokens;
-      return canonicalTokens.has(token) || descriptionTokens.has(token);
+      return canonicalTokens.has(token);
     }
 
     return canonicalMatches >= Math.ceil(identityTokens.length / 2);
   });
+}
+
+export function isWikidataTypeCompatible(
+  kind: LiveContextEntityKind,
+  typeClosure: ReadonlySet<string>,
+): boolean {
+  const accepted = WIKIDATA_KIND_ROOTS[kind];
+  return [...typeClosure].some((id) => accepted.has(id.toUpperCase()));
 }
 
 export function buildContextualWikipediaQuery(
@@ -196,6 +237,18 @@ export function scorePublicProfileMatch(
 function containsPhrase(haystack: string, needle: string): boolean {
   if (!haystack || !needle) return false;
   return ` ${haystack} `.includes(` ${needle} `);
+}
+
+function isExplicitAlias(description: string, identityName: string): boolean {
+  return [
+    `known as ${identityName}`,
+    `also known as ${identityName}`,
+    `commonly known as ${identityName}`,
+    `conhecido como ${identityName}`,
+    `conhecida como ${identityName}`,
+    `conocido como ${identityName}`,
+    `conocida como ${identityName}`,
+  ].some((phrase) => containsPhrase(description, phrase));
 }
 
 function significantIdentityTokens(value: string): string[] {

@@ -8,7 +8,9 @@ import {
   Flag,
   Landmark,
   Loader2,
+  Map as MapIcon,
   MapPin,
+  MapPinned,
   Network,
   GitMerge,
   Pencil,
@@ -20,9 +22,10 @@ import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
 import { useState } from "react";
 import type { KnowledgeEntityDTO } from "@/lib/context-knowledge-schema";
 import { isPublicProfileCompatible } from "@/lib/context-profile-match";
-import type {
-  LiveContextEntity,
-  LiveContextEntityKind,
+import {
+  LIVE_CONTEXT_ENTITY_KINDS,
+  type LiveContextEntity,
+  type LiveContextEntityKind,
 } from "@/lib/live-context-schema";
 import type { ContextCopy } from "./context-copy";
 import {
@@ -38,6 +41,10 @@ export type ContextEntityNodeData = Record<string, unknown> & {
   editable: boolean;
   mergeCandidates: LiveContextEntity[];
   onRenameEntity?: (entityId: string, name: string) => Promise<void>;
+  onRetypeEntity?: (
+    entityId: string,
+    kind: LiveContextEntityKind,
+  ) => Promise<void>;
   onMergeEntities?: (
     sourceEntityId: string,
     targetEntityId: string,
@@ -52,6 +59,9 @@ const ICONS: Record<LiveContextEntityKind, typeof UserRound> = {
   institution: Landmark,
   organization: Building2,
   country: Flag,
+  city: MapPin,
+  region: MapIcon,
+  place: MapPinned,
   event: CalendarDays,
 };
 
@@ -60,6 +70,9 @@ const COLORS: Record<LiveContextEntityKind, string> = {
   institution: "border-violet-500/55 bg-violet-500/10 text-violet-500",
   organization: "border-amber-500/55 bg-amber-500/10 text-amber-500",
   country: "border-emerald-500/55 bg-emerald-500/10 text-emerald-500",
+  city: "border-teal-500/55 bg-teal-500/10 text-teal-500",
+  region: "border-cyan-500/55 bg-cyan-500/10 text-cyan-500",
+  place: "border-lime-500/55 bg-lime-500/10 text-lime-500",
   event: "border-rose-500/55 bg-rose-500/10 text-rose-500",
 };
 
@@ -75,13 +88,15 @@ export function ContextEntityNodeCard({
     editable,
     mergeCandidates,
     onRenameEntity,
+    onRetypeEntity,
     onMergeEntities,
     onRemoveEntity,
   } = data;
-  const [editor, setEditor] = useState<"rename" | "merge" | "remove" | null>(
-    null,
-  );
+  const [editor, setEditor] = useState<
+    "rename" | "retype" | "merge" | "remove" | null
+  >(null);
   const [draftName, setDraftName] = useState(entity.name);
+  const [draftKind, setDraftKind] = useState(entity.kind);
   const [mergeTargetId, setMergeTargetId] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -90,8 +105,12 @@ export function ContextEntityNodeCard({
     !entity.placeholder && (!enriched || enriched.profileStatus === "pending");
   const profileCompatible =
     enriched !== null && isPublicProfileCompatible(entity, enriched);
-  const correctedAt = entity.userCorrectedAt
-    ? Date.parse(entity.userCorrectedAt)
+  const correctionTimes = [entity.userCorrectedAt, entity.userCorrectedKindAt]
+    .filter((value): value is string => Boolean(value))
+    .map(Date.parse)
+    .filter(Number.isFinite);
+  const correctedAt = correctionTimes.length
+    ? Math.max(...correctionTimes)
     : null;
   const news =
     enriched?.sources.filter(
@@ -134,6 +153,23 @@ export function ContextEntityNodeCard({
       setEditor(null);
     } catch {
       setError(copy.mergeError);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveType() {
+    if (!onRetypeEntity || draftKind === entity.kind) {
+      setEditor(null);
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await onRetypeEntity(entity.id, draftKind);
+      setEditor(null);
+    } catch {
+      setError(copy.typeCorrectionError);
     } finally {
       setBusy(false);
     }
@@ -216,13 +252,30 @@ export function ContextEntityNodeCard({
               ) : null}
             </div>
             <div className="mt-1 flex items-center justify-between gap-2">
-              <span
-                className={`rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider ${COLORS[entity.kind]}`}
-              >
-                {entity.participantRole
-                  ? copy.participantRoles[entity.participantRole]
-                  : copy.types[entity.kind]}
-              </span>
+              {editable && onRetypeEntity && !entity.participantRole ? (
+                <button
+                  type="button"
+                  title={copy.editType}
+                  aria-label={copy.editType}
+                  className={`nodrag nopan inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider ${COLORS[entity.kind]}`}
+                  onClick={() => {
+                    setDraftKind(entity.kind);
+                    setEditor(editor === "retype" ? null : "retype");
+                    setError(null);
+                  }}
+                >
+                  {copy.types[entity.kind]}
+                  <ChevronDown className="size-2.5" />
+                </button>
+              ) : (
+                <span
+                  className={`rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider ${COLORS[entity.kind]}`}
+                >
+                  {entity.participantRole
+                    ? copy.participantRoles[entity.participantRole]
+                    : copy.types[entity.kind]}
+                </span>
+              )}
               <span className="text-[10px] text-muted">
                 {Math.round(entity.confidence * 100)}% {copy.confidence}
               </span>
@@ -230,6 +283,11 @@ export function ContextEntityNodeCard({
             {entity.userCorrectedName ? (
               <span className="mt-1 inline-block text-[9px] font-medium uppercase tracking-wider text-emerald-500">
                 {copy.correctedName}
+              </span>
+            ) : null}
+            {entity.userCorrectedKind ? (
+              <span className="mt-1 inline-block text-[9px] font-medium uppercase tracking-wider text-emerald-500">
+                {copy.correctedType}
               </span>
             ) : null}
             {entity.userSupplied ? (
@@ -269,6 +327,48 @@ export function ContextEntityNodeCard({
                 type="button"
                 disabled={busy || !draftName.trim()}
                 onClick={() => void saveName()}
+                className="inline-flex items-center gap-1 rounded bg-accent px-2 py-1 text-[10px] font-medium text-background disabled:opacity-50"
+              >
+                {busy ? <Loader2 className="size-3 animate-spin" /> : null}
+                {copy.save}
+              </button>
+            </div>
+          </div>
+        ) : null}
+
+        {editor === "retype" ? (
+          <div className="nodrag nopan mt-3 rounded-lg border border-rule bg-paper/50 p-2">
+            <label className="block text-[10px] font-semibold uppercase tracking-wider text-muted">
+              {copy.correctType}
+              <select
+                autoFocus
+                value={draftKind}
+                disabled={busy}
+                onChange={(event) =>
+                  setDraftKind(event.target.value as LiveContextEntityKind)
+                }
+                className="mt-1 w-full rounded-md border border-rule bg-background px-2 py-1.5 text-xs font-normal normal-case tracking-normal text-foreground outline-none focus:border-accent"
+              >
+                {LIVE_CONTEXT_ENTITY_KINDS.map((kind) => (
+                  <option key={kind} value={kind}>
+                    {copy.types[kind]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="mt-2 flex justify-end gap-1.5">
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => setEditor(null)}
+                className="rounded px-2 py-1 text-[10px] text-muted hover:bg-background"
+              >
+                {copy.cancel}
+              </button>
+              <button
+                type="button"
+                disabled={busy || draftKind === entity.kind}
+                onClick={() => void saveType()}
                 className="inline-flex items-center gap-1 rounded bg-accent px-2 py-1 text-[10px] font-medium text-background disabled:opacity-50"
               >
                 {busy ? <Loader2 className="size-3 animate-spin" /> : null}

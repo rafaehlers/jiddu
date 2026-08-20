@@ -4,6 +4,7 @@ import {
   mergeContextEntities,
   removeContextEntity,
   renameContextEntity,
+  retypeContextEntity,
   replaceEntityName,
   replaceEntityNamesInClaims,
 } from "@/lib/context-session-mutations";
@@ -11,7 +12,10 @@ import { syncContextKnowledgeMentions } from "@/lib/context-knowledge";
 import { recordContextSessionEvents } from "@/lib/context-session-events";
 import { prisma } from "@/lib/db";
 import type { Prisma } from "@/generated/prisma/client";
-import { readLiveContext } from "@/lib/live-context-schema";
+import {
+  LIVE_CONTEXT_ENTITY_KINDS,
+  readLiveContext,
+} from "@/lib/live-context-schema";
 import type { LiveClaim } from "@/lib/live/use-live-analysis";
 import type { Finding } from "@/lib/schema";
 import type { NeutralityFinding } from "@/lib/neutrality-schema";
@@ -24,6 +28,12 @@ const MutationSchema = z.discriminatedUnion("action", [
     action: z.literal("rename"),
     localEntityId: z.string().trim().min(1).max(120),
     name: z.string().trim().min(1).max(240),
+    elapsedMs: z.number().int().nonnegative().optional(),
+  }),
+  z.object({
+    action: z.literal("retype"),
+    localEntityId: z.string().trim().min(1).max(120),
+    kind: z.enum(LIVE_CONTEXT_ENTITY_KINDS),
     elapsedMs: z.number().int().nonnegative().optional(),
   }),
   z.object({
@@ -80,16 +90,11 @@ export async function PATCH(
         ownerWorkosUserId: user.id,
         events: [
           {
-            kind:
-              payload.data.action === "rename"
-                ? "entity_renamed"
-                : payload.data.action === "merge"
-                  ? "entities_merged"
-                  : "entity_removed",
+            kind: mutationEventKind(payload.data.action),
             elapsedMs:
               payload.data.elapsedMs ?? result.audioDurationMs ?? 0,
             sentenceIds: [],
-            payload: payload.data,
+            payload: result.auditPayload,
           },
           {
             kind: "context_snapshot",
@@ -119,7 +124,7 @@ export async function PATCH(
       return Response.json({ error: error.message }, { status: error.status });
     }
     const message = error instanceof Error ? error.message : "Mutation failed";
-    const status = /not found|same type|itself|empty/i.test(message)
+    const status = /not found|same type|itself|empty|already|configured participant/i.test(message)
       ? 422
       : 500;
     return Response.json({ error: message }, { status });
@@ -175,6 +180,7 @@ async function mutateEntitySerializable(input: {
     let claims: LiveClaim[];
     let verificationReset = false;
     let replacements: Array<{ from: string; to: string }> = [];
+    let auditPayload: Record<string, unknown> = input.mutation;
     if (input.mutation.action === "rename") {
       const renamed = renameContextEntity(
         currentContext,
@@ -189,6 +195,19 @@ async function mutateEntitySerializable(input: {
         { from: renamed.previousName, to: renamed.currentName },
       ];
       verificationReset = true;
+    } else if (input.mutation.action === "retype") {
+      const retyped = retypeContextEntity(
+        currentContext,
+        input.mutation.localEntityId,
+        input.mutation.kind,
+      );
+      context = retyped.context;
+      claims = currentClaims;
+      auditPayload = {
+        ...input.mutation,
+        previousKind: retyped.previousKind,
+        currentKind: retyped.currentKind,
+      };
     } else if (input.mutation.action === "merge") {
       const merged = mergeContextEntities(
         currentContext,
@@ -281,9 +300,19 @@ async function mutateEntitySerializable(input: {
       findings,
       neutralityFindings,
       verificationReset,
+      auditPayload,
       audioDurationMs: analysis.audioDurationMs,
     };
   });
+}
+
+function mutationEventKind(
+  action: MutationPayload["action"],
+): "entity_renamed" | "entity_retyped" | "entities_merged" | "entity_removed" {
+  if (action === "rename") return "entity_renamed";
+  if (action === "retype") return "entity_retyped";
+  if (action === "merge") return "entities_merged";
+  return "entity_removed";
 }
 
 function replaceNamesInAttributedFindings<

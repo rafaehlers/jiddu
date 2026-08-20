@@ -48,6 +48,7 @@ import {
 } from "@/lib/live/diarization";
 import { resolveDiarizedTurnTimeForSentence } from "@/lib/live/diarized-transcript-navigation";
 import { DEFAULT_LIVE_LENSES } from "@/lib/live-lenses";
+import type { LiveContextEntityKind } from "@/lib/live-context-schema";
 import { useLiveAnalysis } from "@/lib/live/use-live-analysis";
 import { useLiveClaimVerification } from "@/lib/live/use-live-claim-verification";
 import { useLiveSession, type LiveSource } from "@/lib/live/use-live-session";
@@ -314,6 +315,33 @@ function ContextWorkspaceContent({
         action: "merge",
         sourceLocalEntityId: sourceEntityId,
         targetLocalEntityId: targetEntityId,
+        elapsedMs: session.elapsedMs,
+      } as const;
+      sessionStore.getState().beginEntityMutation(operationId, mutation);
+      try {
+        const result = await mutateContextEntity(analysis.sessionId, mutation);
+        sessionStore
+          .getState()
+          .commitEntityMutation(operationId, result.context, result.claims);
+        setAnalysisConfig(result.context.analysisConfig);
+        analysis.applyAnalysisConfiguration(result);
+        if (result.verificationReset) verification.reset();
+      } catch (error) {
+        sessionStore.getState().rollbackEntityMutation(operationId);
+        throw error;
+      }
+    },
+    [analysis, session.elapsedMs, sessionStore, verification],
+  );
+
+  const handleRetypeEntity = useCallback(
+    async (entityId: string, kind: LiveContextEntityKind) => {
+      if (!analysis.sessionId) throw new Error("Session is not ready");
+      const operationId = createMutationOperationId();
+      const mutation = {
+        action: "retype",
+        localEntityId: entityId,
+        kind,
         elapsedMs: session.elapsedMs,
       } as const;
       sessionStore.getState().beginEntityMutation(operationId, mutation);
@@ -716,6 +744,7 @@ function ContextWorkspaceContent({
                   Boolean(analysis.sessionId) && !verification.isVerifying
                 }
                 onRenameEntity={handleRenameEntity}
+                onRetypeEntity={handleRetypeEntity}
                 onMergeEntities={handleMergeEntities}
                 onRemoveEntity={handleRemoveEntity}
                 colorMode={contextTheme}

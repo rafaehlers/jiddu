@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   buildContextualWikipediaQuery,
   isPublicProfileCompatible,
+  isWikidataTypeCompatible,
   scorePublicProfileMatch,
 } from "./context-profile-match";
 
@@ -31,6 +32,34 @@ test("accepts the canonical profile when it contains the live identity", () => {
       description:
         "Luiz Inácio Lula da Silva, mais conhecido como Lula, é um político brasileiro.",
     }),
+    true,
+  );
+});
+
+test("rejects a profile that only mentions the entity name in its description", () => {
+  assert.equal(
+    isPublicProfileCompatible(
+      {
+        name: "Nordeste",
+        aliases: [],
+        description: "Região brasileira afetada pela seca.",
+        kind: "region",
+      },
+      {
+        canonicalName: "Acidente nuclear de Fukushima I",
+        description:
+          "Desastre ocorrido em uma usina na costa nordeste do Japão.",
+      },
+    ),
+    false,
+  );
+});
+
+test("validates resolved Wikidata classes against the requested entity type", () => {
+  assert.equal(isWikidataTypeCompatible("city", new Set(["Q515"])), true);
+  assert.equal(isWikidataTypeCompatible("country", new Set(["Q515"])), false);
+  assert.equal(
+    isWikidataTypeCompatible("event", new Set(["Q1656682"])),
     true,
   );
 });

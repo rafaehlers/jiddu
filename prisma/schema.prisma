@@ -419,7 +419,7 @@ model KnowledgeEntity {
   id                 String    @id @default(cuid())
   canonicalKey       String    @unique
   canonicalName      String
-  type               String // person | institution | organization | country | event
+  type               String // person | institution | organization | country | city | region | place | event
   description        String?
   imageUrl           String?
   wikipediaUrl       String?
