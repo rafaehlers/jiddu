@@ -140,6 +140,8 @@ test("speech prompts resolve first person to the configured name", () => {
   assert.match(setup, /single-speaker speech/i);
   assert.match(setup, /João Silva/);
   assert.match(setup, /Resolve first-person pronouns/);
+  assert.match(setup, /do not turn P into/);
+  assert.match(setup, /non-quote factual claims/i);
   assert.match(claims, /listener_supplied_analysis_setup/);
   assert.match(claims, /Do not call this person merely "the speaker"/);
 });

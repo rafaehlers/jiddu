@@ -10,8 +10,10 @@ import {
   type VerdictSource,
 } from "../verdict-schema";
 import {
+  buildVerificationTarget,
   buildVerifySystemPrompt,
   buildVerifyUserPrompt,
+  VERIFY_PROMPT_VERSION,
 } from "../verify-claim-prompt";
 import type { Claim } from "../claims-schema";
 import type { Lang } from "../fallacies";
@@ -52,7 +54,20 @@ export async function verifyClaim(
   // read but still write the fresh result back so subsequent calls hit.
   const sourceUrl = normalizeCapturedSourceUrl(opts.sourceUrl);
   const model = opts.model ?? FACTCHECK_FAST_MODEL;
-  const hash = claimCacheKey(claim.statement, opts.lang, sourceUrl, model);
+  const verificationTarget = buildVerificationTarget(
+    claim.statement,
+    claim.type,
+    claim.speakerName,
+  );
+  const cacheContext = [sourceUrl, VERIFY_PROMPT_VERSION]
+    .filter(Boolean)
+    .join("\n");
+  const hash = claimCacheKey(
+    verificationTarget,
+    opts.lang,
+    cacheContext,
+    model,
+  );
   if (!opts.force) {
     const cached = await getCachedVerdict(hash);
     if (cached) {
@@ -76,6 +91,7 @@ export async function verifyClaim(
             claim.statement,
             claim.type,
             sourceUrl,
+            claim.speakerName,
           ),
         },
       ],
@@ -140,7 +156,12 @@ export async function verifyClaim(
   // Cache the result. Failures are non-fatal — we'd rather return a fresh
   // verdict than fail the request on a write error.
   if (opts.persistCache !== false) {
-    putCachedVerdict(hash, claim, verdict, opts.lang).catch((err) => {
+    putCachedVerdict(
+      hash,
+      { ...claim, statement: verificationTarget },
+      verdict,
+      opts.lang,
+    ).catch((err) => {
       console.warn(
         `[verifyClaim] failed to cache verdict for claim ${claim.id}:`,
         err instanceof Error ? err.message : err,

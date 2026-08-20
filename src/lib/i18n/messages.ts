@@ -101,6 +101,9 @@ export type Messages = {
   fc_filter_unverified: string;
   fc_filter_pending: string;
   fc_filter_empty: string;
+  neutrality_filter_label: string;
+  neutrality_filter_all: string;
+  neutrality_filter_empty: string;
   fc_extracting: string;
   fc_no_claims: string;
   fc_verify_panel_title: string;
@@ -752,6 +755,9 @@ const en: Messages = {
   fc_filter_unverified: "Unverified",
   fc_filter_pending: "Pending",
   fc_filter_empty: "No claims have this status.",
+  neutrality_filter_label: "Filter neutrality findings by type",
+  neutrality_filter_all: "All",
+  neutrality_filter_empty: "No neutrality findings have this type.",
   fc_extracting: "Extracting claims…",
   fc_no_claims: "No verifiable claims were extracted from this text.",
   fc_verify_panel_title: "Verify these claims",
@@ -1778,6 +1784,9 @@ const pt: Messages = {
   fc_filter_unverified: "Não verificadas",
   fc_filter_pending: "Pendentes",
   fc_filter_empty: "Nenhuma afirmação possui este status.",
+  neutrality_filter_label: "Filtrar ocorrências de neutralidade por tipo",
+  neutrality_filter_all: "Todas",
+  neutrality_filter_empty: "Nenhuma ocorrência de neutralidade possui este tipo.",
   fc_extracting: "Extraindo afirmações…",
   fc_no_claims: "Nenhuma afirmação verificável foi extraída deste texto.",
   fc_verify_panel_title: "Verificar estas afirmações",
@@ -2805,6 +2814,9 @@ const es: Messages = {
   fc_filter_unverified: "No verificadas",
   fc_filter_pending: "Pendientes",
   fc_filter_empty: "Ninguna afirmación tiene este estado.",
+  neutrality_filter_label: "Filtrar hallazgos de neutralidad por tipo",
+  neutrality_filter_all: "Todos",
+  neutrality_filter_empty: "Ningún hallazgo de neutralidad tiene este tipo.",
   fc_extracting: "Extrayendo afirmaciones…",
   fc_no_claims: "No se extrajeron afirmaciones verificables de este texto.",
   fc_verify_panel_title: "Verificar estas afirmaciones",

@@ -863,6 +863,7 @@ function ContextWorkspaceContent({
                 <LiveNeutralityList
                   findings={analysisView.neutralityFindings}
                   verdict={analysisView.neutralityVerdict}
+                  showIssueFilter
                   verdictLabel={
                     concluded ? copy.finalAssessment : copy.currentAssessment
                   }

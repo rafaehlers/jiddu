@@ -42,7 +42,7 @@ Follow this four-stage process for each sentence:
 
 3. DECOMPOSITION — If a sentence contains multiple distinct factual claims, emit one claim per fact. Do not over-split: do not separate "California and New York banned plastic bags" into "California exists" + "California banned plastic bags". Stop at the level where each claim is independently checkable.
 
-4. DECONTEXTUALIZATION — Each "statement" must stand alone. A reader who sees only the statement (no surrounding text) must be able to understand the subject, scope, and timeframe. Resolve pronouns and demonstratives. Add the source's name when a quote is attributed. Add the year/period when a number depends on it.
+4. DECONTEXTUALIZATION — Each "statement" must stand alone. A reader who sees only the statement (no surrounding text) must be able to understand the subject, scope, and timeframe. Resolve pronouns and demonstratives. Add the year/period when a number depends on it. For numeric, date, causal, and categorical claims, write the underlying proposition directly: turn "Person said that P" into "P" and do not use the speech act as the claim. A report that Person said P does not establish P. Preserve the source's name in the statement only for quote claims, when the exact wording or attribution is itself what must be checked.
 
 CLAIM TYPES (use exactly one per claim):
 - numeric: contains a number, percentage, or statistical value (e.g. "Brazilian GDP grew 2.9% in 2024").

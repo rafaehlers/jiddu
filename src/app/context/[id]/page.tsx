@@ -1,12 +1,14 @@
 import { withAuth } from "@workos-inc/authkit-nextjs";
 import type { Metadata } from "next";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { ContextReviewWorkspace } from "@/components/context/context-review-workspace";
 import {
   getKnowledgeEntityDTO,
   getKnowledgeRelationDTO,
 } from "@/lib/context-knowledge";
 import { parseContextReplayEvent } from "@/lib/context-replay-schema";
+import { canManageContextSession } from "@/lib/context-session-access";
+import { isWorkOSConfigured } from "@/lib/auth-config";
 import { prisma } from "@/lib/db";
 import { readLiveContext } from "@/lib/live-context-schema";
 import { readSavedDiarization } from "@/lib/live/diarization";
@@ -29,12 +31,12 @@ export const metadata: Metadata = {
 
 export default async function SavedContextPage({ params }: Props) {
   const { id } = await params;
-  const { user } = await withAuth();
-  if (!user)
-    redirect(`/login?returnTo=${encodeURIComponent(`/context/${id}`)}`);
+  const { user } = isWorkOSConfigured()
+    ? await withAuth()
+    : { user: null };
 
   const analysis = await prisma.analysis.findFirst({
-    where: { id, ownerWorkosUserId: user.id, source: "live" },
+    where: { id, source: "live" },
     include: {
       knowledgeEntityMentions: true,
       knowledgeRelationMentions: true,
@@ -44,10 +46,18 @@ export default async function SavedContextPage({ params }: Props) {
     },
   });
   if (!analysis) notFound();
+  const canManage = canManageContextSession(
+    user?.id,
+    analysis.ownerWorkosUserId,
+  );
 
   const [factCheck, neutrality] = await Promise.all([
-    prisma.factCheck.findFirst({ where: { id, ownerWorkosUserId: user.id } }),
-    prisma.neutrality.findFirst({ where: { id, ownerWorkosUserId: user.id } }),
+    prisma.factCheck.findFirst({
+      where: { id, ownerWorkosUserId: analysis.ownerWorkosUserId },
+    }),
+    prisma.neutrality.findFirst({
+      where: { id, ownerWorkosUserId: analysis.ownerWorkosUserId },
+    }),
   ]);
   const entityPairs = await Promise.all(
     analysis.knowledgeEntityMentions.map(async (mention) => {
@@ -68,6 +78,7 @@ export default async function SavedContextPage({ params }: Props) {
   return (
     <ContextReviewWorkspace
       id={analysis.id}
+      canManage={canManage}
       title={
         resolveAnalysisTitle({
           title: analysis.title,

@@ -76,9 +76,11 @@ import {
   ContextClaimRecoveryAction,
   hasCompletedClaimRecovery,
 } from "./context-claim-recovery";
+import { ContextSessionTitleEditor } from "./context-session-title-editor";
 
 type Props = {
   id: string;
+  canManage: boolean;
   title: string;
   transcript: string;
   diarization: SavedDiarization | null;
@@ -105,6 +107,7 @@ export function ContextReviewWorkspace(props: Props) {
 
 function ContextReviewWorkspaceContent({
   id,
+  canManage,
   title,
   transcript,
   diarization,
@@ -353,11 +356,25 @@ function ContextReviewWorkspaceContent({
             <span className="hidden sm:inline">{copy.newSession}</span>
           </Link>
           <div className="min-w-0 flex-1">
-            <div className="flex items-baseline gap-2">
-              <h1 className="truncate font-serif text-lg font-semibold sm:text-xl">
-                {title}
-              </h1>
-              <span className="rounded border border-accent/40 px-1.5 py-0.5 text-[9px] uppercase tracking-wider text-accent">
+            <div className="flex min-w-0 items-baseline gap-2">
+              {canManage ? (
+                <ContextSessionTitleEditor
+                  sessionId={id}
+                  title={title}
+                  labels={{
+                    edit: copy.editSessionTitle,
+                    input: copy.sessionTitleLabel,
+                    save: copy.saveSessionTitle,
+                    cancel: copy.cancelSessionTitleEdit,
+                    error: copy.sessionTitleSaveError,
+                  }}
+                />
+              ) : (
+                <h1 className="min-w-0 flex-1 truncate font-serif text-lg font-semibold sm:text-xl">
+                  {title}
+                </h1>
+              )}
+              <span className="shrink-0 rounded border border-accent/40 px-1.5 py-0.5 text-[9px] uppercase tracking-wider text-accent">
                 {copy.saved}
               </span>
             </div>
@@ -368,11 +385,13 @@ function ContextReviewWorkspaceContent({
             onChange={setContextTheme}
             copy={copy}
           />
-          <ContextAnalysisSetupButton
-            config={currentContext.analysisConfig}
-            lang={lang}
-            onClick={() => setAnalysisSetupOpen(true)}
-          />
+          {canManage ? (
+            <ContextAnalysisSetupButton
+              config={currentContext.analysisConfig}
+              lang={lang}
+              onClick={() => setAnalysisSetupOpen(true)}
+            />
+          ) : null}
           <label className="inline-flex items-center gap-1 rounded-md border border-rule bg-paper px-2 py-1.5 text-xs text-muted">
             <Languages className="size-3.5" />
             <select
@@ -442,7 +461,9 @@ function ContextReviewWorkspaceContent({
                 enrichedRelations={relationMap}
                 copy={copy}
                 onJumpToSentence={jumpToSentence}
-                editable={frame.atEnd && !verification.isVerifying}
+                editable={
+                  canManage && frame.atEnd && !verification.isVerifying
+                }
                 onRenameEntity={handleRenameEntity}
                 onMergeEntities={handleMergeEntities}
                 onRemoveEntity={handleRemoveEntity}
@@ -530,7 +551,7 @@ function ContextReviewWorkspaceContent({
               toneClass: "bg-blue-500",
               content: (
                 <>
-                  {frame.atEnd ? (
+                  {canManage && frame.atEnd ? (
                     <ContextClaimRecoveryAction
                       sessionId={id}
                       lang={lang}
@@ -550,7 +571,7 @@ function ContextReviewWorkspaceContent({
                       contextSettings.settings.expandFactSources
                     }
                     verificationActions={
-                      frame.atEnd
+                      canManage && frame.atEnd
                         ? {
                             onVerify: (claimId) =>
                               void verification.startClaim(claimId),
@@ -587,6 +608,7 @@ function ContextReviewWorkspaceContent({
                 <LiveNeutralityList
                   findings={frame.neutralityFindings}
                   verdict={frame.neutralityVerdict}
+                  showIssueFilter
                   verdictLabel={
                     frame.atEnd ? copy.finalAssessment : copy.currentAssessment
                   }
@@ -596,15 +618,19 @@ function ContextReviewWorkspaceContent({
           }}
         />
       </section>
-      <ContextAnalysisSetupDialog
-        key={analysisSetupOpen ? "analysis-setup-open" : "analysis-setup-closed"}
-        open={analysisSetupOpen}
-        action="save"
-        config={currentContext.analysisConfig}
-        lang={lang}
-        onClose={() => setAnalysisSetupOpen(false)}
-        onConfirm={saveAnalysisConfiguration}
-      />
+      {canManage ? (
+        <ContextAnalysisSetupDialog
+          key={
+            analysisSetupOpen ? "analysis-setup-open" : "analysis-setup-closed"
+          }
+          open={analysisSetupOpen}
+          action="save"
+          config={currentContext.analysisConfig}
+          lang={lang}
+          onClose={() => setAnalysisSetupOpen(false)}
+          onConfirm={saveAnalysisConfiguration}
+        />
+      ) : null}
     </main>
   );
 }
