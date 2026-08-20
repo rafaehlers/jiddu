@@ -68,7 +68,7 @@ const COPY = {
     detected: "Extracted from the transcript",
     detectedHint:
       "Detected claims are not verified until a verdict and sources appear.",
-    verify: "Verify extracted claims",
+    verify: "Verify all",
     verifyOne: "Verify this fact",
     reverifyOne: "Verify again",
     verifying: "Verifying",
@@ -224,7 +224,7 @@ const COPY = {
     detected: "Extraído da transcrição",
     detectedHint:
       "Uma afirmação detectada só foi verificada quando exibe veredito e fontes.",
-    verify: "Verificar afirmações extraídas",
+    verify: "Verificar todos",
     verifyOne: "Verificar este fato",
     reverifyOne: "Verificar novamente",
     verifying: "Verificando",
@@ -381,7 +381,7 @@ const COPY = {
     detected: "Extraído de la transcripción",
     detectedHint:
       "Una afirmación detectada solo está verificada cuando muestra veredicto y fuentes.",
-    verify: "Verificar afirmaciones extraídas",
+    verify: "Verificar todas",
     verifyOne: "Verificar este hecho",
     reverifyOne: "Verificar nuevamente",
     verifying: "Verificando",

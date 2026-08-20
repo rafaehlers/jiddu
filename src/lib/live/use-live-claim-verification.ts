@@ -84,6 +84,7 @@ export function useLiveClaimVerification(
     setStatus("running");
     setProgress({ done: 0, total: claims.length });
     setError(null);
+    setClaimErrors(new Map());
 
     try {
       const response = await fetch(`/api/factcheck/${factCheckId}/verify`, {
@@ -114,6 +115,17 @@ export function useLiveClaimVerification(
             done: current.done + 1,
           }));
         } else if (event.event === "claimError") {
+          const data = JSON.parse(event.data) as {
+            claimId?: string;
+            message?: string;
+          };
+          if (data.claimId) {
+            setClaimErrors((current) => {
+              const next = new Map(current);
+              next.set(data.claimId!, data.message ?? "Verification failed");
+              return next;
+            });
+          }
           setProgress((current) => ({
             ...current,
             done: current.done + 1,

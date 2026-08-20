@@ -1,6 +1,12 @@
 "use client";
 
-import { ArrowLeft, Languages, Users } from "lucide-react";
+import {
+  ArrowLeft,
+  Languages,
+  Loader2,
+  ShieldCheck,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { LiveClaimsList } from "@/components/live/claims-list";
@@ -565,12 +571,40 @@ function ContextReviewWorkspaceContent({
                       onRecovered={setCurrentClaims}
                     />
                   ) : null}
-                  <p className="mb-2 rounded-md border border-blue-500/20 bg-blue-500/5 p-2 text-[10px] leading-snug text-muted">
-                    {copy.detectedHint}
-                  </p>
+                  <div className="mb-2 flex items-center gap-2 rounded-md border border-blue-500/20 bg-blue-500/5 p-2">
+                    <p className="min-w-0 flex-1 text-[10px] leading-snug text-muted">
+                      {copy.detectedHint}
+                    </p>
+                    {canManage && frame.atEnd && frame.claims.length > 0 ? (
+                      <button
+                        type="button"
+                        onClick={() => void verification.start()}
+                        disabled={verification.isVerifying}
+                        className="inline-flex shrink-0 items-center gap-1 rounded-md bg-blue-500 px-2.5 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-wait disabled:opacity-60"
+                      >
+                        {verification.status === "running" ? (
+                          <Loader2 className="size-3 animate-spin" />
+                        ) : (
+                          <ShieldCheck className="size-3" />
+                        )}
+                        {verification.status === "running"
+                          ? `${copy.verifying} ${verification.progress.done}/${verification.progress.total}`
+                          : copy.verify}
+                      </button>
+                    ) : null}
+                  </div>
+                  {verification.error ? (
+                    <p
+                      role="alert"
+                      className="mb-2 rounded-md border border-red-500/30 bg-red-500/10 p-2 text-xs text-red-500"
+                    >
+                      {verification.error}
+                    </p>
+                  ) : null}
                   <LiveClaimsList
                     claims={frame.claims}
                     verdicts={verdictMap}
+                    verifying={verification.status === "running"}
                     showStatusFilter
                     maxSources={contextSettings.settings.factSourceLimit}
                     sourcesInitiallyOpen={

@@ -138,6 +138,7 @@ export function LiveClaimsList({
                 claim={claim}
                 verdict={verdict}
                 verifying={verifyingThisClaim}
+                verificationLocked={verifying}
                 showLensBadge={showLensBadge}
                 maxSources={maxSources}
                 sourcesInitiallyOpen={sourcesInitiallyOpen}
@@ -166,6 +167,7 @@ function LiveClaimCard({
   claim,
   verdict,
   verifying,
+  verificationLocked,
   showLensBadge,
   maxSources,
   sourcesInitiallyOpen,
@@ -174,6 +176,7 @@ function LiveClaimCard({
   claim: LiveClaim;
   verdict: Verdict | null;
   verifying: boolean;
+  verificationLocked: boolean;
   showLensBadge: boolean;
   maxSources: number;
   sourcesInitiallyOpen: boolean;
@@ -246,7 +249,7 @@ function LiveClaimCard({
           <button
             type="button"
             onClick={() => verificationActions.onVerify(claim.id)}
-            disabled={verifying}
+            disabled={verifying || verificationLocked}
             className="inline-flex shrink-0 items-center gap-1 rounded-md border border-blue-500/40 px-2 py-1 text-xs font-medium text-blue-500 transition-colors hover:bg-blue-500/10 disabled:cursor-wait disabled:opacity-60"
           >
             {verifying ? (
