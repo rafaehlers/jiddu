@@ -9,6 +9,7 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       disallow: [
         "/admin", // WorkOS-authenticated operator console
+        "/visual", // owner-only internal codebase atlas
         "/invite", // private invitation claim and acceptance flow
         "/api/", // JSON endpoints, not pages — the public v1 API is documented at /api-access, not meant to be crawled
         "/context/*", // private saved Context workspaces
