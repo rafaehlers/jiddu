@@ -8,7 +8,10 @@ import { SiteFooter } from "@/components/site-footer";
 import { ScrollIndicator } from "@/components/scroll-indicator";
 import { SkeletonReveal } from "@/components/skeleton-reveal";
 import { AnalysisSkeleton } from "@/components/analysis-skeleton";
-import type { SlopFinding } from "@/lib/slop-schema";
+import {
+  sanitizeSlopFindings,
+  type SlopFinding,
+} from "@/lib/slop-schema";
 import type { Sentence } from "@/lib/schema";
 import { analysisSocialMetadata } from "@/lib/social-metadata";
 import { readAnalysisBlocks } from "@/lib/analysis-document";
@@ -50,7 +53,9 @@ export default async function SlopPage({ params }: Props) {
 
   const sentences = JSON.parse(s.sentences) as Sentence[];
   const blocks = readAnalysisBlocks(s.blocks, s.text);
-  const findings = JSON.parse(s.findings) as SlopFinding[];
+  const findings = sanitizeSlopFindings(
+    JSON.parse(s.findings) as SlopFinding[],
+  );
 
   return (
     <main className="flex-1 flex flex-col">

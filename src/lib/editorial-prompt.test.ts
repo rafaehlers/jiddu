@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { buildClaimsUserPrompt } from "./claims-prompt";
 import { buildNeutralityUserPrompt } from "./neutrality-prompt";
+import { stripEditorialPromptArtifacts } from "./editorial-prompt";
 import { buildSystemPrompt, buildUserPrompt } from "./prompt";
 import type { EditorialMetadata } from "./ingest/url";
 import type { Sentence } from "./schema";
@@ -70,5 +71,19 @@ test("teaches claims and neutrality to distinguish speakers from narration", () 
   assert.match(
     neutrality,
     /do not present a quoted speaker's wording as the journalist's own wording/,
+  );
+});
+
+test("removes prompt-only structure from a multi-sentence model quote", () => {
+  const quote =
+    'The interface is not merely a layer on top of the software. [s4][block="b1";kind=paragraph;section="A speculative essay"] It is the product.';
+
+  assert.equal(
+    stripEditorialPromptArtifacts(quote),
+    "The interface is not merely a layer on top of the software. It is the product.",
+  );
+  assert.equal(
+    stripEditorialPromptArtifacts("A literal [s4] reference remains."),
+    "A literal [s4] reference remains.",
   );
 });

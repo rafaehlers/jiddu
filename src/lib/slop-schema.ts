@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { SLOP_IDS } from "./slop";
+import { stripEditorialPromptArtifacts } from "./editorial-prompt";
 
 // Mirrors src/lib/schema.ts (fallacy pipeline) — same Sentence unit, same
 // finding shape, same 0-100 score contract — with the pattern enum swapped
@@ -18,10 +19,21 @@ export const SlopFindingSchema = z.object({
   sentenceIds: z.array(z.string()).min(1),
   pattern: z.enum(SLOP_IDS as [string, ...string[]]),
   severity: SeveritySchema,
-  quote: z.string(),
+  quote: z.string().transform(stripEditorialPromptArtifacts),
   explanation: z.string(),
 });
 export type SlopFinding = z.infer<typeof SlopFindingSchema>;
+
+export function sanitizeSlopFinding(finding: SlopFinding): SlopFinding {
+  const quote = stripEditorialPromptArtifacts(finding.quote);
+  return quote === finding.quote ? finding : { ...finding, quote };
+}
+
+export function sanitizeSlopFindings(
+  findings: SlopFinding[],
+): SlopFinding[] {
+  return findings.map(sanitizeSlopFinding);
+}
 
 export const SlopResultSchema = z.object({
   language: z.string().nullable().optional(),

@@ -1,7 +1,10 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { SlopPrintView } from "@/components/slop-print-view";
-import type { SlopFinding } from "@/lib/slop-schema";
+import {
+  sanitizeSlopFindings,
+  type SlopFinding,
+} from "@/lib/slop-schema";
 import type { Sentence } from "@/lib/schema";
 import { readAnalysisBlocks } from "@/lib/analysis-document";
 
@@ -20,7 +23,9 @@ export default async function SlopPrintPage({ params }: Props) {
 
   const sentences = JSON.parse(s.sentences) as Sentence[];
   const blocks = readAnalysisBlocks(s.blocks, s.text);
-  const findings = JSON.parse(s.findings) as SlopFinding[];
+  const findings = sanitizeSlopFindings(
+    JSON.parse(s.findings) as SlopFinding[],
+  );
 
   return (
     <SlopPrintView
