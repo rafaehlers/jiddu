@@ -14,6 +14,8 @@ type ContactCopy = {
   email: string;
   errors: Record<EmailFormErrorCode, string>;
   intro: string;
+  guidanceTitle: string;
+  guidance: string[];
   message: string;
   messagePlaceholder: string;
   name: string;
@@ -31,6 +33,12 @@ const COPY: Record<Lang, ContactCopy> = {
     title: "Contact",
     intro:
       "Questions, feedback or partnership ideas? Send us a message and Jiddu Support will reply by email.",
+    guidanceTitle: "How to reach Jiddu",
+    guidance: [
+      "Use this channel for corrections to a public analysis, privacy or deletion requests, account and billing questions, partnership ideas, and integration problems involving the REST API, OpenAPI contract, Chrome extension, or hosted MCP server.",
+      "Include the relevant public report URL, endpoint, approximate time, and a concise description of what happened. Never paste an API key, OAuth token, payment credential, confidential manuscript, or other secret into this form. Jiddu Support may ask for additional non-secret diagnostic information by email.",
+      "Jiddu is operated by Rafael de Menezes Ehlers in Brazil. You can also write to support@emails.jiddu.app. Automated analyses can be wrong; a correction request triggers review but does not guarantee that a finding, verdict, or source will be changed.",
+    ],
     name: "Name",
     namePlaceholder: "Your name",
     email: "Email",
@@ -54,6 +62,12 @@ const COPY: Record<Lang, ContactCopy> = {
     title: "Contato",
     intro:
       "Dúvidas, feedback ou ideias de parceria? Envie uma mensagem e o Suporte Jiddu responderá por e-mail.",
+    guidanceTitle: "Como falar com o Jiddu",
+    guidance: [
+      "Use este canal para correções de uma análise pública, solicitações de privacidade ou exclusão, questões de conta e cobrança, ideias de parceria e problemas de integração com a REST API, o contrato OpenAPI, a extensão do Chrome ou o servidor MCP hospedado.",
+      "Inclua a URL pública do relatório, o endpoint, o horário aproximado e uma descrição objetiva do ocorrido. Nunca cole neste formulário uma chave de API, token OAuth, credencial de pagamento, manuscrito confidencial ou outro segredo. O Suporte Jiddu pode pedir por e-mail informações adicionais de diagnóstico que não sejam secretas.",
+      "O Jiddu é operado por Rafael de Menezes Ehlers no Brasil. Você também pode escrever para support@emails.jiddu.app. As análises automatizadas podem errar; uma solicitação de correção inicia uma revisão, mas não garante a alteração de um achado, veredito ou fonte.",
+    ],
     name: "Nome",
     namePlaceholder: "Seu nome",
     email: "E-mail",
@@ -77,6 +91,12 @@ const COPY: Record<Lang, ContactCopy> = {
     title: "Contacto",
     intro:
       "¿Tienes preguntas, comentarios o ideas de colaboración? Envíanos un mensaje y el soporte de Jiddu responderá por correo electrónico.",
+    guidanceTitle: "Cómo contactar con Jiddu",
+    guidance: [
+      "Usa este canal para correcciones de un análisis público, solicitudes de privacidad o eliminación, preguntas de cuenta y facturación, ideas de colaboración y problemas de integración con la API REST, el contrato OpenAPI, la extensión de Chrome o el servidor MCP alojado.",
+      "Incluye la URL pública del informe, el endpoint, la hora aproximada y una descripción concisa de lo ocurrido. Nunca pegues en este formulario una clave de API, token OAuth, credencial de pago, manuscrito confidencial u otro secreto. El soporte de Jiddu puede pedir por correo información adicional de diagnóstico que no sea secreta.",
+      "Jiddu es operado por Rafael de Menezes Ehlers en Brasil. También puedes escribir a support@emails.jiddu.app. Los análisis automatizados pueden equivocarse; una solicitud de corrección inicia una revisión, pero no garantiza que se cambie un hallazgo, veredicto o fuente.",
+    ],
     name: "Nombre",
     namePlaceholder: "Tu nombre",
     email: "Correo electrónico",
@@ -119,6 +139,15 @@ export function ContactForm() {
           {copy.intro}
         </p>
       </header>
+
+      <section className="flex max-w-3xl flex-col gap-3 rounded-lg border border-rule bg-paper p-5 sm:p-7">
+        <h2 className="font-serif text-2xl">{copy.guidanceTitle}</h2>
+        {copy.guidance.map((paragraph) => (
+          <p key={paragraph} className="text-sm leading-relaxed text-foreground/85">
+            {paragraph}
+          </p>
+        ))}
+      </section>
 
       <form
         ref={formRef}

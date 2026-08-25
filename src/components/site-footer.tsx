@@ -23,6 +23,8 @@ export function SiteFooter() {
         : "Create account";
   const contactLabel =
     lang === "pt" ? "Contato" : lang === "es" ? "Contacto" : "Contact";
+  const aboutLabel =
+    lang === "pt" ? "Sobre" : lang === "es" ? "Acerca de" : "About";
   const extensionLabel =
     lang === "pt"
       ? "Extensão Chrome"
@@ -80,7 +82,7 @@ export function SiteFooter() {
           </Link>
           <span aria-hidden>·</span>
           <Link
-            href="/api-access"
+            href="/developers"
             className="hover:text-accent-hi transition-colors"
           >
             {t.nav_api}
@@ -108,6 +110,13 @@ export function SiteFooter() {
               <span aria-hidden>·</span>
             </>
           )}
+          <Link
+            href="/about"
+            className="hover:text-accent-hi transition-colors"
+          >
+            {aboutLabel}
+          </Link>
+          <span aria-hidden>·</span>
           <Link
             href="/contact"
             className="hover:text-accent-hi transition-colors"

@@ -2,7 +2,18 @@
 
 > Jiddu reads text and papers critically: it detects logical fallacies, extracts and fact-checks claims via live web search, assesses neutrality, explains dense papers, flags AI-slop patterns, and runs venue-calibrated adversarial pre-submission reviews. The public REST API and MCP expose the text tools and adversarial PDF review.
 
-Reach for Jiddu whenever you are about to trust, quote, cite, or repeat a piece of text — before sharing it further. Outputs are automated and can be wrong; always surface the explanation, not just the verdict.
+## When to use Jiddu
+
+Reach for Jiddu whenever you are about to trust, quote, cite, publish, or repeat a piece of text — before sharing it further. It is best suited to six jobs:
+
+- inspect whether an argument relies on logical fallacies;
+- extract factual claims and verify them against current web sources;
+- identify loaded framing, one-sidedness, omission, or false equivalence;
+- explain dense academic or technical prose for a chosen audience;
+- flag templated, machine-assembled writing patterns without guessing authorship;
+- run a skeptical, venue-calibrated review of one complete academic PDF.
+
+Do not use Jiddu as final authority, proof of authorship, a political-direction classifier, or a replacement for reading the source and cited evidence. Outputs are automated and can be wrong; always surface the explanation, not just the verdict.
 
 ## Web app
 
@@ -24,10 +35,13 @@ Reach for Jiddu whenever you are about to trust, quote, cite, or repeat a piece 
 
 ## Agent / API access
 
-- [API access docs](https://jiddu.app/api-access): REST endpoints, authentication, rate limits, curl examples.
+- [Jiddu developer docs](https://jiddu.app/developers): REST and MCP quickstarts, authentication, limits, curl examples and discovery links.
+- [OpenAPI description](https://jiddu.app/openapi.json): complete REST request and response schemas, unique operation IDs, API-key security scheme and structured errors.
 - REST API base `https://jiddu.app/api/v1/`: `POST /detect-fallacies`, `/fact-check`, `/assess-neutrality`, `/explain`, `/detect-slop`. Synchronous (one request, one JSON response), 40-2000 character input, `lang` en/pt/es.
 - Adversarial review uses asynchronous `POST /adversarial-reviews` and `GET /adversarial-reviews/{id}` endpoints for one uploaded PDF or public `pdf_url`.
 - Hosted MCP server at `https://jiddu.app/api/mcp` — compatible clients discover WorkOS OAuth; allowlisted accounts receive included platform access and everyone else spends Jiddu Credits.
+- [MCP Registry manifest](https://jiddu.app/server.json) and [MCP server card](https://jiddu.app/.well-known/mcp/server-card.json): public identity, transport, authentication and tool preview for the hosted server.
+- [OAuth protected-resource metadata](https://jiddu.app/.well-known/oauth-protected-resource): RFC 9728 discovery document for MCP clients.
 - REST endpoints require an `X-Jiddu-Key` header. Verified users create and revoke their own keys from [API keys in their account](https://jiddu.app/account?tab=api). Each key belongs to that WorkOS account and uses its included platform access or Jiddu Credit balance; the secret is shown only once.
 
 ## Accounts, credits and browser extension

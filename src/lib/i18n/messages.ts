@@ -350,6 +350,10 @@ export type Messages = {
   not_found_title: string;
   not_found_subtitle: string;
   not_found_cta: string;
+  not_found_recovery: string;
+  not_found_sitemap: string;
+  not_found_agents: string;
+  not_found_developers: string;
 
   // Errors
   analysis_failed: string;
@@ -1062,6 +1066,13 @@ const en: Messages = {
     "Five synchronous text-analysis tools plus asynchronous adversarial PDF review for code and agents.",
   api_access_sections: [
     {
+      title: "Machine-readable contracts",
+      paragraphs: [
+        "Start with the [Jiddu OpenAPI description](/openapi.json) for the complete REST request and response schemas, unique operation IDs, authentication, limits, and error contracts. MCP clients can discover the hosted server through the [MCP Registry manifest](/server.json), [server card](/.well-known/mcp/server-card.json), and [OAuth protected-resource metadata](/.well-known/oauth-protected-resource).",
+        "Use Jiddu when an agent needs to inspect reasoning, verify factual claims, assess framing, explain dense prose, detect templated writing patterns, or review one complete academic PDF. Do not use an automated verdict as a substitute for reading the source and cited evidence.",
+      ],
+    },
+    {
       title: "Endpoints",
       paragraphs: [
         "Jiddu exposes its five analysis pipelines as a public REST API. Every endpoint takes a JSON body with a `text` field (40–2000 characters; up to 10000 for `fact-check`) plus an optional `lang` (`en` / `pt` / `es`), and returns structured JSON.",
@@ -1442,6 +1453,10 @@ const en: Messages = {
   not_found_subtitle:
     "Truth is a pathless land — but this is just a broken link. The page you were looking for isn't here.",
   not_found_cta: "Back to solid ground",
+  not_found_recovery: "Looking for a machine-readable route?",
+  not_found_sitemap: "Sitemap",
+  not_found_agents: "Agent instructions",
+  not_found_developers: "Developer docs",
 
   analysis_failed: "Analysis failed",
   try_again: "Try again",
@@ -2098,6 +2113,13 @@ const pt: Messages = {
     "Cinco ferramentas síncronas de texto mais revisão adversarial assíncrona de PDF para código e agentes.",
   api_access_sections: [
     {
+      title: "Contratos legíveis por máquina",
+      paragraphs: [
+        "Comece pela [descrição OpenAPI do Jiddu](/openapi.json) para consultar schemas completos de requisição e resposta da REST, operation IDs únicos, autenticação, limites e contratos de erro. Clientes MCP podem descobrir o servidor hospedado pelo [manifesto do MCP Registry](/server.json), [server card](/.well-known/mcp/server-card.json) e [metadados OAuth do recurso protegido](/.well-known/oauth-protected-resource).",
+        "Use o Jiddu quando um agente precisar inspecionar raciocínio, verificar afirmações factuais, avaliar enquadramento, explicar prosa densa, detectar padrões de escrita formulaica ou revisar um paper acadêmico completo. Não trate um veredito automatizado como substituto da leitura do original e das evidências citadas.",
+      ],
+    },
+    {
       title: "Endpoints",
       paragraphs: [
         "O Jiddu expõe seus cinco pipelines de análise como uma REST API pública. Todo endpoint recebe um corpo JSON com um campo `text` (40–2000 caracteres; até 10000 no `fact-check`) e um `lang` opcional (`en` / `pt` / `es`), e retorna JSON estruturado.",
@@ -2479,6 +2501,10 @@ const pt: Messages = {
   not_found_subtitle:
     "A verdade é uma terra sem caminhos — mas isso aqui é só um link quebrado. A página que você procurava não está aqui.",
   not_found_cta: "Voltar ao chão firme",
+  not_found_recovery: "Procurando uma rota legível por máquina?",
+  not_found_sitemap: "Mapa do site",
+  not_found_agents: "Instruções para agentes",
+  not_found_developers: "Documentação para desenvolvedores",
 
   analysis_failed: "Falha na análise",
   try_again: "Tentar novamente",
@@ -3137,6 +3163,13 @@ const es: Messages = {
     "Cinco herramientas síncronas de texto más revisión adversarial asíncrona de PDF para código y agentes.",
   api_access_sections: [
     {
+      title: "Contratos legibles por máquinas",
+      paragraphs: [
+        "Empieza con la [descripción OpenAPI de Jiddu](/openapi.json) para consultar los schemas completos de solicitud y respuesta REST, operation IDs únicos, autenticación, límites y contratos de error. Los clientes MCP pueden descubrir el servidor alojado mediante el [manifiesto del MCP Registry](/server.json), la [server card](/.well-known/mcp/server-card.json) y los [metadatos OAuth del recurso protegido](/.well-known/oauth-protected-resource).",
+        "Usa Jiddu cuando un agente necesite inspeccionar razonamientos, verificar afirmaciones fácticas, evaluar el encuadre, explicar prosa densa, detectar patrones de escritura formularia o revisar un paper académico completo. No uses un veredicto automatizado como sustituto de leer el original y la evidencia citada.",
+      ],
+    },
+    {
       title: "Endpoints",
       paragraphs: [
         "Jiddu expone sus cinco pipelines de análisis como una REST API pública. Cada endpoint recibe un cuerpo JSON con un campo `text` (40–2000 caracteres; hasta 10000 para `fact-check`) y un `lang` opcional (`en` / `pt` / `es`), y devuelve JSON estructurado.",
@@ -3518,6 +3551,10 @@ const es: Messages = {
   not_found_subtitle:
     "La verdad es una tierra sin caminos — pero esto es solo un enlace roto. La página que buscabas no está aquí.",
   not_found_cta: "Volver a tierra firme",
+  not_found_recovery: "¿Buscas una ruta legible por máquinas?",
+  not_found_sitemap: "Mapa del sitio",
+  not_found_agents: "Instrucciones para agentes",
+  not_found_developers: "Documentación para desarrolladores",
 
   analysis_failed: "Falló el análisis",
   try_again: "Reintentar",

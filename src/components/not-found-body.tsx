@@ -37,6 +37,25 @@ export function NotFoundBody() {
         <ArrowLeft className="h-4 w-4" />
         {t.not_found_cta}
       </Link>
+      <nav
+        aria-label={t.not_found_recovery}
+        className="mt-8 flex flex-col items-center gap-2 text-sm text-muted"
+      >
+        <p>{t.not_found_recovery}</p>
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <Link className="underline decoration-rule hover:decoration-foreground" href="/sitemap.xml">
+            {t.not_found_sitemap}
+          </Link>
+          <span aria-hidden>·</span>
+          <Link className="underline decoration-rule hover:decoration-foreground" href="/llms.txt">
+            {t.not_found_agents}
+          </Link>
+          <span aria-hidden>·</span>
+          <Link className="underline decoration-rule hover:decoration-foreground" href="/developers">
+            {t.not_found_developers}
+          </Link>
+        </div>
+      </nav>
     </article>
   );
 }

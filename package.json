@@ -16,6 +16,7 @@
     "seed:demos": "node --env-file-if-exists=.env scripts/seed-all-demos.mjs",
     "eval:paper-review": "node --import tsx evals/run-paper-review-evals.ts",
     "eval:factcheck-models": "node --import tsx scripts/benchmark-politifact.mts --sample=24 --models=perplexity/sonar,perplexity/sonar-reasoning-pro",
+    "smoke:agent-readiness": "node --import tsx scripts/check-agent-readiness.mts",
     "smoke:openrouter-postgres": "node --import tsx scripts/smoke-openrouter-postgres.mts",
     "deploy": "bash scripts/deploy.sh"
   },
