@@ -11,6 +11,7 @@ import { onActivate } from "@/lib/a11y";
 import { useI18n } from "@/lib/i18n/provider";
 import { MobileHintModal } from "@/components/mobile-hint-modal";
 import { ReportDeliveryActions } from "@/components/report-delivery-actions";
+import { ReportTitle } from "@/components/report-title";
 import { ShareLinkBar } from "@/components/share-link-bar";
 import { StructuredDocumentText } from "@/components/structured-document-text";
 import { useMobileHint } from "@/lib/mobile-hint";
@@ -25,6 +26,7 @@ const MOBILE_BREAKPOINT = 1024; // matches Tailwind's `lg`
 // fallacy modals, which are hard-wired to FALLACY_BY_ID and the guide page.
 
 type Props = {
+  canEditTitle: boolean;
   canEmail: boolean;
   id: string;
   title: string | null;
@@ -43,6 +45,7 @@ type Props = {
 type FindingWithKey = SlopFinding & { key: string };
 
 export function SlopView({
+  canEditTitle,
   canEmail,
   id,
   title,
@@ -182,9 +185,14 @@ export function SlopView({
     <div className="flex-1 flex flex-col">
       <div className="mx-auto max-w-5xl w-full px-4 sm:px-6 py-6 flex flex-col gap-4">
         <div className="flex flex-col gap-1 min-w-0">
-          <h1 className="font-serif text-2xl md:text-3xl tracking-tight">
-            {title ?? "Untitled"}
-          </h1>
+          <ReportTitle
+            canEdit={canEditTitle}
+            className="font-serif text-2xl tracking-tight md:text-3xl"
+            fallback={t.fc_untitled}
+            id={id}
+            kind="s"
+            title={title}
+          />
           {sourceRef && (
             <p className="text-sm text-muted truncate">
               {source === "url" ? (

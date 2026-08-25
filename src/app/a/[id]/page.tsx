@@ -11,7 +11,7 @@ import { AnalysisSkeleton } from "@/components/analysis-skeleton";
 import { analysisSocialMetadata } from "@/lib/social-metadata";
 import { resolveAnalysisTitle } from "@/lib/live-title";
 import { readAnalysisBlocks } from "@/lib/analysis-document";
-import { canEmailOwnedReport } from "@/lib/report-email-access";
+import { getOwnedReportAccess } from "@/lib/report-email-access";
 import type { Finding, Sentence } from "@/lib/schema";
 
 type Props = { params: Promise<{ id: string }> };
@@ -54,7 +54,9 @@ export default async function AnalysisPage({ params }: Props) {
   const { id } = await params;
   const a = await prisma.analysis.findUnique({ where: { id } });
   if (!a) notFound();
-  const canEmail = await canEmailOwnedReport(a.ownerWorkosUserId);
+  const { canEditTitle, canEmail } = await getOwnedReportAccess(
+    a.ownerWorkosUserId,
+  );
 
   const sentences = JSON.parse(a.sentences) as Sentence[];
   const blocks = readAnalysisBlocks(a.blocks, a.text);
@@ -74,6 +76,7 @@ export default async function AnalysisPage({ params }: Props) {
 
       <SkeletonReveal skeleton={<AnalysisSkeleton />}>
         <AnalysisView
+          canEditTitle={canEditTitle}
           canEmail={canEmail}
           id={a.id}
           title={title}

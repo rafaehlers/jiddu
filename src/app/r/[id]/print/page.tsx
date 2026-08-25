@@ -16,6 +16,7 @@ export default async function PaperReviewPrintPage({ params }: Props) {
   return (
     <PaperReviewPrintView
       review={review}
+      title={row.title?.trim() || review.paper}
       model={row.model}
       id={row.id}
       venueProfile={parseStoredVenueProfile(row.venueProfile)}

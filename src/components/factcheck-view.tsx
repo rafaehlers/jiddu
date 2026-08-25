@@ -24,6 +24,7 @@ import { prematureSseEndMessage, readSse } from "@/lib/sse";
 import { cn } from "@/lib/utils";
 import { onActivate } from "@/lib/a11y";
 import { ReportDeliveryActions } from "@/components/report-delivery-actions";
+import { ReportTitle } from "@/components/report-title";
 import { ShareLinkBar } from "@/components/share-link-bar";
 import { StructuredDocumentText } from "@/components/structured-document-text";
 import { FactCheckStatusFilterBar } from "@/components/factcheck-status-filter-bar";
@@ -39,6 +40,7 @@ import {
 type ClaimWithId = Claim & { id: string };
 
 type Props = {
+  canEditTitle: boolean;
   canEmail: boolean;
   id: string;
   title: string | null;
@@ -143,6 +145,7 @@ function statusLabel(t: Messages, s: string): string {
 }
 
 export function FactCheckView({
+  canEditTitle,
   canEmail,
   id,
   title,
@@ -361,9 +364,14 @@ export function FactCheckView({
     <div className="mx-auto max-w-5xl w-full px-4 sm:px-6 py-6 sm:py-8 flex flex-col gap-6">
       {/* Header */}
       <header className="flex flex-col gap-2">
-        <h1 className="font-serif text-2xl sm:text-3xl leading-tight">
-          {title ?? t.fc_untitled}
-        </h1>
+        <ReportTitle
+          canEdit={canEditTitle}
+          className="font-serif text-2xl leading-tight sm:text-3xl"
+          fallback={t.fc_untitled}
+          id={id}
+          kind="f"
+          title={title}
+        />
         {sourceRef && source === "url" && (
           <a
             href={sourceRef}

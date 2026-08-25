@@ -90,6 +90,11 @@ export type Messages = {
 
   // Fact-check viewer
   fc_untitled: string;
+  report_title_edit: string;
+  report_title_input: string;
+  report_title_save: string;
+  report_title_cancel: string;
+  report_title_save_error: string;
   fc_claims_one_extracted: string;
   fc_claims_many_extracted: string;
   fc_claims_header: string;
@@ -746,6 +751,11 @@ const en: Messages = {
   mode_live: "Live",
 
   fc_untitled: "Untitled",
+  report_title_edit: "Edit report title",
+  report_title_input: "Report title",
+  report_title_save: "Save title",
+  report_title_cancel: "Cancel title editing",
+  report_title_save_error: "The title could not be saved. Try again.",
   fc_claims_one_extracted: "claim extracted",
   fc_claims_many_extracted: "claims extracted",
   fc_claims_header: "Claims",
@@ -1777,6 +1787,11 @@ const pt: Messages = {
   mode_live: "Live",
 
   fc_untitled: "Sem título",
+  report_title_edit: "Editar título do relatório",
+  report_title_input: "Título do relatório",
+  report_title_save: "Salvar título",
+  report_title_cancel: "Cancelar edição do título",
+  report_title_save_error: "Não foi possível salvar o título. Tente novamente.",
   fc_claims_one_extracted: "afirmação extraída",
   fc_claims_many_extracted: "afirmações extraídas",
   fc_claims_header: "Afirmações",
@@ -2809,6 +2824,11 @@ const es: Messages = {
   mode_live: "Live",
 
   fc_untitled: "Sin título",
+  report_title_edit: "Editar título del informe",
+  report_title_input: "Título del informe",
+  report_title_save: "Guardar título",
+  report_title_cancel: "Cancelar la edición del título",
+  report_title_save_error: "No se pudo guardar el título. Inténtalo de nuevo.",
   fc_claims_one_extracted: "afirmación extraída",
   fc_claims_many_extracted: "afirmaciones extraídas",
   fc_claims_header: "Afirmaciones",

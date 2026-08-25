@@ -6,6 +6,7 @@ import { ArrowLeft, MessageSquareText } from "lucide-react";
 import type { LiveContext } from "@/lib/live-context-schema";
 import { useI18n } from "@/lib/i18n/provider";
 import { ReportDeliveryActions } from "@/components/report-delivery-actions";
+import { ReportTitle } from "@/components/report-title";
 import { ShareLinkBar } from "@/components/share-link-bar";
 import { LiveContextPanel } from "./context-panel";
 import {
@@ -14,6 +15,7 @@ import {
 } from "./transcript-stream";
 
 type Props = {
+  canEditTitle: boolean;
   canEmail: boolean;
   id: string;
   title: string;
@@ -23,6 +25,7 @@ type Props = {
 };
 
 export function LiveContextRecapView({
+  canEditTitle,
   canEmail,
   id,
   title,
@@ -46,9 +49,14 @@ export function LiveContextRecapView({
         Jiddu Live
       </Link>
       <header className="mb-6">
-        <h1 className="font-serif text-3xl tracking-tight sm:text-4xl">
-          {title}
-        </h1>
+        <ReportTitle
+          canEdit={canEditTitle}
+          className="font-serif text-3xl tracking-tight sm:text-4xl"
+          fallback="Jiddu Live"
+          id={id}
+          kind="live"
+          title={title}
+        />
         {audioDurationMs ? (
           <p className="mt-2 text-sm text-muted">
             {formatDuration(audioDurationMs)}

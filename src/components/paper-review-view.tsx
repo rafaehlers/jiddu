@@ -12,6 +12,7 @@ import {
 import { ShareLinkBar } from "@/components/share-link-bar";
 import { DownloadMarkdownButton } from "@/components/download-markdown-button";
 import { ReportDeliveryActions } from "@/components/report-delivery-actions";
+import { ReportTitle } from "@/components/report-title";
 import { VenueStandardCard } from "@/components/venue-standard-card";
 import { PAPER_REVIEW_DISCLAIMER } from "@/lib/paper-review-markdown";
 import type {
@@ -22,8 +23,10 @@ import { cn } from "@/lib/utils";
 import type { ResolvedVenueProfile } from "@/lib/venues";
 
 type Props = {
+  canEditTitle: boolean;
   canEmail: boolean;
   id: string;
+  title: string;
   review: PaperReviewResult;
   model: string;
   parser: string | null;
@@ -41,8 +44,10 @@ const SEVERITY_STYLE: Record<ReviewSeverity, string> = {
 };
 
 export function PaperReviewView({
+  canEditTitle,
   canEmail,
   id,
+  title,
   review,
   model,
   parser,
@@ -55,9 +60,14 @@ export function PaperReviewView({
         <span className="text-xs uppercase tracking-[0.16em] text-muted">
           AI Paper Review
         </span>
-        <h1 className="font-serif text-3xl sm:text-4xl leading-tight">
-          {review.paper}
-        </h1>
+        <ReportTitle
+          canEdit={canEditTitle}
+          className="font-serif text-3xl leading-tight sm:text-4xl"
+          fallback={review.paper}
+          id={id}
+          kind="r"
+          title={title}
+        />
         <p className="text-foreground/80">{review.author}</p>
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
           <span>{review.venueTarget}</span>

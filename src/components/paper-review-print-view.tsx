@@ -9,11 +9,13 @@ import type { ResolvedVenueProfile } from "@/lib/venues";
 
 export function PaperReviewPrintView({
   review,
+  title,
   model,
   id,
   venueProfile,
 }: {
   review: PaperReviewResult;
+  title: string;
   model: string;
   id: string;
   venueProfile: ResolvedVenueProfile | null;
@@ -29,7 +31,7 @@ export function PaperReviewPrintView({
       <style>{PRINT_CSS}</style>
       <header>
         <div className="brand">Jiddu · AI Paper Review</div>
-        <h1>{review.paper}</h1>
+        <h1>{title}</h1>
         <dl>
           <dt>Author</dt>
           <dd>{review.author}</dd>

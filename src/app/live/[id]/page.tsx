@@ -8,7 +8,7 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { LiveContextRecapView } from "@/components/live/context-recap-view";
 import { ResultPageCta } from "@/components/result-page-cta";
-import { canEmailOwnedReport } from "@/lib/report-email-access";
+import { getOwnedReportAccess } from "@/lib/report-email-access";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -33,12 +33,15 @@ export default async function LiveContextRecapPage({ params }: Props) {
   if (!analysis || analysis.source !== "live" || !analysis.liveContext) {
     notFound();
   }
-  const canEmail = await canEmailOwnedReport(analysis.ownerWorkosUserId);
+  const { canEditTitle, canEmail } = await getOwnedReportAccess(
+    analysis.ownerWorkosUserId,
+  );
 
   return (
     <main className="flex min-h-screen flex-1 flex-col">
       <SiteHeader variant="viewer" />
       <LiveContextRecapView
+        canEditTitle={canEditTitle}
         canEmail={canEmail}
         id={analysis.id}
         title={liveTitle(analysis)}

@@ -10,6 +10,7 @@ import { FallacyModal } from "@/components/fallacy-modal";
 import { FindingModal } from "@/components/finding-modal";
 import { MobileHintModal } from "@/components/mobile-hint-modal";
 import { ReportDeliveryActions } from "@/components/report-delivery-actions";
+import { ReportTitle } from "@/components/report-title";
 import { ShareLinkBar } from "@/components/share-link-bar";
 import { StructuredDocumentText } from "@/components/structured-document-text";
 import { useMobileHint } from "@/lib/mobile-hint";
@@ -18,6 +19,7 @@ import type { Block } from "@/lib/paragraphs";
 const MOBILE_BREAKPOINT = 1024; // matches Tailwind's `lg`
 
 type Props = {
+  canEditTitle: boolean;
   canEmail: boolean;
   id: string;
   title: string | null;
@@ -36,6 +38,7 @@ type Props = {
 type FindingWithKey = Finding & { key: string };
 
 export function AnalysisView({
+  canEditTitle,
   canEmail,
   id,
   title,
@@ -189,9 +192,14 @@ export function AnalysisView({
     <div className="flex-1 flex flex-col">
       <div className="mx-auto max-w-5xl w-full px-4 sm:px-6 py-6 flex flex-col gap-4">
         <div className="flex flex-col gap-1 min-w-0">
-          <h1 className="font-serif text-2xl md:text-3xl tracking-tight">
-            {title ?? "Untitled"}
-          </h1>
+          <ReportTitle
+            canEdit={canEditTitle}
+            className="font-serif text-2xl tracking-tight md:text-3xl"
+            fallback={t.fc_untitled}
+            id={id}
+            kind="a"
+            title={title}
+          />
           {sourceRef && (
             <p className="text-sm text-muted truncate">
               {source === "url" ? (
