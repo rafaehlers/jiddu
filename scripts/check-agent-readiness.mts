@@ -25,17 +25,49 @@ const registryManifest = await get("/server.json");
 assert.equal(registryManifest.response.status, 200);
 assert.equal(JSON.parse(registryManifest.body).name, "app.jiddu/jiddu");
 
-const serverCard = await get("/.well-known/mcp/server-card.json");
+const serverCard = await get("/api/mcp/server-card");
 assert.equal(serverCard.response.status, 200);
 assert.match(
   serverCard.response.headers.get("content-type") ?? "",
   /application\/mcp-server-card\+json/,
 );
-assert.equal(JSON.parse(serverCard.body).tools.length, 7);
+assert.equal(serverCard.response.headers.get("access-control-allow-origin"), "*");
+const serverCardEtag = serverCard.response.headers.get("etag");
+assert.ok(serverCardEtag);
+const serverCardBody = JSON.parse(serverCard.body);
+assert.equal(
+  serverCardBody.$schema,
+  "https://static.modelcontextprotocol.io/schemas/v1/server-card.schema.json",
+);
+assert.equal(serverCardBody.remotes[0].url, "https://jiddu.app/api/mcp");
+assert.equal("tools" in serverCardBody, false);
 
-const serverCardAlias = await get("/mcp/server-card");
-assert.equal(serverCardAlias.response.status, 200);
-assert.deepEqual(JSON.parse(serverCardAlias.body), JSON.parse(serverCard.body));
+const cachedServerCard = await get("/api/mcp/server-card", {
+  headers: { "If-None-Match": serverCardEtag },
+});
+assert.equal(cachedServerCard.response.status, 304);
+
+const aiCatalog = await get("/.well-known/ai-catalog.json");
+assert.equal(aiCatalog.response.status, 200);
+assert.match(
+  aiCatalog.response.headers.get("content-type") ?? "",
+  /application\/ai-catalog\+json/,
+);
+const aiCatalogBody = JSON.parse(aiCatalog.body);
+assert.equal(aiCatalogBody.specVersion, "1.0");
+assert.equal(aiCatalogBody.entries[0].url, "https://jiddu.app/api/mcp/server-card");
+
+for (const legacyPath of [
+  "/.well-known/mcp/server-card.json",
+  "/mcp/server-card",
+]) {
+  const legacyCard = await get(legacyPath);
+  assert.equal(legacyCard.response.status, 308);
+  assert.equal(
+    new URL(legacyCard.response.headers.get("location") ?? "", baseUrl).pathname,
+    "/api/mcp/server-card",
+  );
+}
 
 const protectedResource = await get("/.well-known/oauth-protected-resource");
 assert.equal(protectedResource.response.status, 200);
@@ -45,6 +77,13 @@ assert.deepEqual(JSON.parse(protectedResource.body).scopes_supported, [
   "email",
   "offline_access",
 ]);
+
+const unauthorizedMcp = await get("/api/mcp");
+assert.equal(unauthorizedMcp.response.status, 401);
+assert.match(
+  unauthorizedMcp.response.headers.get("www-authenticate") ?? "",
+  /resource_metadata=/,
+);
 
 const llms = await get("/llms.txt");
 assert.equal(llms.response.status, 200);

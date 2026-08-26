@@ -1068,7 +1068,7 @@ const en: Messages = {
     {
       title: "Machine-readable contracts",
       paragraphs: [
-        "Start with the [Jiddu OpenAPI description](/openapi.json) for the complete REST request and response schemas, unique operation IDs, authentication, limits, and error contracts. MCP clients can discover the hosted server through the [MCP Registry manifest](/server.json), [server card](/.well-known/mcp/server-card.json), and [OAuth protected-resource metadata](/.well-known/oauth-protected-resource).",
+        "Start with the [Jiddu OpenAPI description](/openapi.json) for the complete REST request and response schemas, unique operation IDs, authentication, limits, and error contracts. MCP clients can discover the hosted server through the [AI catalog](/.well-known/ai-catalog.json), which points to the canonical [server card](/api/mcp/server-card). The [MCP Registry manifest](/server.json) and [OAuth protected-resource metadata](/.well-known/oauth-protected-resource) provide registry and authorization discovery.",
         "Use Jiddu when an agent needs to inspect reasoning, verify factual claims, assess framing, explain dense prose, detect templated writing patterns, or review one complete academic PDF. Do not use an automated verdict as a substitute for reading the source and cited evidence.",
       ],
     },
@@ -2115,7 +2115,7 @@ const pt: Messages = {
     {
       title: "Contratos legíveis por máquina",
       paragraphs: [
-        "Comece pela [descrição OpenAPI do Jiddu](/openapi.json) para consultar schemas completos de requisição e resposta da REST, operation IDs únicos, autenticação, limites e contratos de erro. Clientes MCP podem descobrir o servidor hospedado pelo [manifesto do MCP Registry](/server.json), [server card](/.well-known/mcp/server-card.json) e [metadados OAuth do recurso protegido](/.well-known/oauth-protected-resource).",
+        "Comece pela [descrição OpenAPI do Jiddu](/openapi.json) para consultar schemas completos de requisição e resposta da REST, operation IDs únicos, autenticação, limites e contratos de erro. Clientes MCP podem descobrir o servidor hospedado pelo [catálogo de IA](/.well-known/ai-catalog.json), que aponta para o [server card](/api/mcp/server-card) canônico. O [manifesto do MCP Registry](/server.json) e os [metadados OAuth do recurso protegido](/.well-known/oauth-protected-resource) fornecem descoberta de registro e autorização.",
         "Use o Jiddu quando um agente precisar inspecionar raciocínio, verificar afirmações factuais, avaliar enquadramento, explicar prosa densa, detectar padrões de escrita formulaica ou revisar um paper acadêmico completo. Não trate um veredito automatizado como substituto da leitura do original e das evidências citadas.",
       ],
     },
@@ -3165,7 +3165,7 @@ const es: Messages = {
     {
       title: "Contratos legibles por máquinas",
       paragraphs: [
-        "Empieza con la [descripción OpenAPI de Jiddu](/openapi.json) para consultar los schemas completos de solicitud y respuesta REST, operation IDs únicos, autenticación, límites y contratos de error. Los clientes MCP pueden descubrir el servidor alojado mediante el [manifiesto del MCP Registry](/server.json), la [server card](/.well-known/mcp/server-card.json) y los [metadatos OAuth del recurso protegido](/.well-known/oauth-protected-resource).",
+        "Empieza con la [descripción OpenAPI de Jiddu](/openapi.json) para consultar los schemas completos de solicitud y respuesta REST, operation IDs únicos, autenticación, límites y contratos de error. Los clientes MCP pueden descubrir el servidor alojado mediante el [catálogo de IA](/.well-known/ai-catalog.json), que apunta a la [server card](/api/mcp/server-card) canónica. El [manifiesto del MCP Registry](/server.json) y los [metadatos OAuth del recurso protegido](/.well-known/oauth-protected-resource) proporcionan descubrimiento de registro y autorización.",
         "Usa Jiddu cuando un agente necesite inspeccionar razonamientos, verificar afirmaciones fácticas, evaluar el encuadre, explicar prosa densa, detectar patrones de escritura formularia o revisar un paper académico completo. No uses un veredicto automatizado como sustituto de leer el original y la evidencia citada.",
       ],
     },

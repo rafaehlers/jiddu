@@ -40,7 +40,8 @@ Do not use Jiddu as final authority, proof of authorship, a political-direction 
 - REST API base `https://jiddu.app/api/v1/`: `POST /detect-fallacies`, `/fact-check`, `/assess-neutrality`, `/explain`, `/detect-slop`. Synchronous (one request, one JSON response), 40-2000 character input, `lang` en/pt/es.
 - Adversarial review uses asynchronous `POST /adversarial-reviews` and `GET /adversarial-reviews/{id}` endpoints for one uploaded PDF or public `pdf_url`.
 - Hosted MCP server at `https://jiddu.app/api/mcp` — compatible clients discover WorkOS OAuth; allowlisted accounts receive included platform access and everyone else spends Jiddu Credits.
-- [MCP Registry manifest](https://jiddu.app/server.json) and [MCP server card](https://jiddu.app/.well-known/mcp/server-card.json): public identity, transport, authentication and tool preview for the hosted server.
+- [AI catalog](https://jiddu.app/.well-known/ai-catalog.json): domain-level discovery document pointing clients to the canonical [MCP server card](https://jiddu.app/api/mcp/server-card), which publishes the hosted server's public identity and transport.
+- [MCP Registry manifest](https://jiddu.app/server.json): registry metadata for the same hosted server.
 - [OAuth protected-resource metadata](https://jiddu.app/.well-known/oauth-protected-resource): RFC 9728 discovery document for MCP clients.
 - REST endpoints require an `X-Jiddu-Key` header. Verified users create and revoke their own keys from [API keys in their account](https://jiddu.app/account?tab=api). Each key belongs to that WorkOS account and uses its included platform access or Jiddu Credit balance; the secret is shown only once.
 

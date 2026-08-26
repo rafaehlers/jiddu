@@ -1,7 +1,10 @@
-import { mcpServerCardResponse } from "@/lib/mcp-public-metadata";
+import {
+  legacyMcpServerCardRedirect,
+  publicDiscoveryOptionsResponse,
+} from "@/lib/mcp-public-metadata";
 
-export const dynamic = "force-static";
-
-export function GET() {
-  return mcpServerCardResponse();
+export function GET(request: Request) {
+  return legacyMcpServerCardRedirect(request.url);
 }
+
+export const OPTIONS = publicDiscoveryOptionsResponse;

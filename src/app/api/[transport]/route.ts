@@ -70,7 +70,11 @@ import {
   type JidduCreditFeature,
 } from "@/lib/jiddu-credit-rates";
 import { DEFAULT_MODEL_CHAIN } from "@/lib/llm/fallback";
-import { jidduMcpTool } from "@/lib/mcp-public-metadata";
+import {
+  JIDDU_MCP_NAME,
+  JIDDU_MCP_VERSION,
+  jidduMcpTool,
+} from "@/lib/mcp-public-metadata";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -671,7 +675,12 @@ const mcpHandler = createMcpHandler(
       },
     );
   },
-  {},
+  {
+    serverInfo: {
+      name: JIDDU_MCP_NAME,
+      version: JIDDU_MCP_VERSION,
+    },
+  },
   { basePath: "/api", maxDuration: 300 },
 );
 

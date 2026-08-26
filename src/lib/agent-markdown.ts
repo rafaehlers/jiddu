@@ -42,7 +42,8 @@ Jiddu exposes five synchronous text-analysis operations and one asynchronous adv
 
 - [OpenAPI description](https://jiddu.app/openapi.json)
 - [MCP Registry manifest](https://jiddu.app/server.json)
-- [MCP server card](https://jiddu.app/.well-known/mcp/server-card.json)
+- [AI catalog](https://jiddu.app/.well-known/ai-catalog.json)
+- [MCP server card](https://jiddu.app/api/mcp/server-card)
 - [OAuth protected-resource metadata](https://jiddu.app/.well-known/oauth-protected-resource)
 - [Agent instructions](https://jiddu.app/llms.txt)
 

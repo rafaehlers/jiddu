@@ -11,9 +11,14 @@ import {
   negotiateAgentRepresentation,
 } from "./markdown-negotiation";
 import {
+  JIDDU_AI_CATALOG,
+  JIDDU_AI_CATALOG_URL,
   JIDDU_MCP_REGISTRY_MANIFEST,
   JIDDU_MCP_SERVER_CARD,
+  JIDDU_MCP_SERVER_CARD_URL,
   JIDDU_MCP_TOOLS,
+  aiCatalogResponse,
+  mcpServerCardResponse,
 } from "./mcp-public-metadata";
 import { HOME_JSON_LD } from "./site-json-ld";
 
@@ -73,7 +78,31 @@ test("publishes consistent MCP discovery metadata", () => {
     "https://jiddu.app/api/mcp",
   );
   assert.match(JIDDU_MCP_REGISTRY_MANIFEST.$schema, /server\.schema\.json$/);
-  assert.equal(JIDDU_MCP_SERVER_CARD.tools, JIDDU_MCP_TOOLS);
+  assert.equal(
+    JIDDU_MCP_SERVER_CARD.$schema,
+    "https://static.modelcontextprotocol.io/schemas/v1/server-card.schema.json",
+  );
+  assert.equal(JIDDU_MCP_SERVER_CARD.name, JIDDU_MCP_REGISTRY_MANIFEST.name);
+  assert.equal(JIDDU_MCP_SERVER_CARD.title, JIDDU_MCP_REGISTRY_MANIFEST.title);
+  assert.equal(
+    JIDDU_MCP_SERVER_CARD.description,
+    JIDDU_MCP_REGISTRY_MANIFEST.description,
+  );
+  assert.equal(JIDDU_MCP_SERVER_CARD.version, JIDDU_MCP_REGISTRY_MANIFEST.version);
+  assert.deepEqual(JIDDU_MCP_SERVER_CARD.icons, JIDDU_MCP_REGISTRY_MANIFEST.icons);
+  assert.deepEqual(JIDDU_MCP_SERVER_CARD.remotes, JIDDU_MCP_REGISTRY_MANIFEST.remotes);
+  assert.ok(JIDDU_MCP_SERVER_CARD.description.length <= 100);
+  assert.equal("tools" in JIDDU_MCP_SERVER_CARD, false);
+  assert.equal("authentication" in JIDDU_MCP_SERVER_CARD, false);
+
+  assert.equal(JIDDU_AI_CATALOG.specVersion, "1.0");
+  assert.equal(JIDDU_AI_CATALOG.entries.length, 1);
+  assert.equal(
+    JIDDU_AI_CATALOG.entries[0].type,
+    "application/mcp-server-card+json",
+  );
+  assert.equal(JIDDU_AI_CATALOG.entries[0].url, JIDDU_MCP_SERVER_CARD_URL);
+
   assert.equal(JIDDU_MCP_TOOLS.length, 7);
   assert.equal(
     new Set(JIDDU_MCP_TOOLS.map((tool) => tool.name)).size,
@@ -83,6 +112,35 @@ test("publishes consistent MCP discovery metadata", () => {
     assert.ok(tool.description.length >= 70);
     assert.equal(typeof tool.annotations.readOnlyHint, "boolean");
   }
+});
+
+test("serves cacheable MCP discovery documents with browser-safe CORS", async () => {
+  const request = new Request(JIDDU_MCP_SERVER_CARD_URL);
+  const card = mcpServerCardResponse(request);
+  assert.equal(card.status, 200);
+  assert.match(
+    card.headers.get("content-type") ?? "",
+    /application\/mcp-server-card\+json/,
+  );
+  assert.equal(card.headers.get("access-control-allow-origin"), "*");
+  assert.match(card.headers.get("cache-control") ?? "", /max-age=3600/);
+  const etag = card.headers.get("etag");
+  assert.ok(etag);
+  assert.deepEqual(await card.json(), JIDDU_MCP_SERVER_CARD);
+
+  const notModified = mcpServerCardResponse(
+    new Request(JIDDU_MCP_SERVER_CARD_URL, {
+      headers: { "if-none-match": etag },
+    }),
+  );
+  assert.equal(notModified.status, 304);
+
+  const catalog = aiCatalogResponse(new Request(JIDDU_AI_CATALOG_URL));
+  assert.match(
+    catalog.headers.get("content-type") ?? "",
+    /application\/ai-catalog\+json/,
+  );
+  assert.deepEqual(await catalog.json(), JIDDU_AI_CATALOG);
 });
 
 test("homepage JSON-LD identifies the operator, product, and contact route", () => {
@@ -106,5 +164,7 @@ test("llms.txt gives agents task and discovery guidance", async () => {
   assert.match(contents, /## When to use Jiddu/);
   assert.match(contents, /https:\/\/jiddu\.app\/openapi\.json/);
   assert.match(contents, /https:\/\/jiddu\.app\/server\.json/);
-  assert.match(contents, /https:\/\/jiddu\.app\/\.well-known\/mcp\/server-card\.json/);
+  assert.match(contents, /https:\/\/jiddu\.app\/\.well-known\/ai-catalog\.json/);
+  assert.match(contents, /https:\/\/jiddu\.app\/api\/mcp\/server-card/);
+  assert.doesNotMatch(contents, /\.well-known\/mcp\/server-card\.json/);
 });

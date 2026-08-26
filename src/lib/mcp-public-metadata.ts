@@ -1,5 +1,31 @@
+import { createHash } from "node:crypto";
+
+export const JIDDU_MCP_NAME = "app.jiddu/jiddu";
 export const JIDDU_MCP_VERSION = "1.0.0";
+export const JIDDU_MCP_TITLE = "Jiddu Critical Reading";
+export const JIDDU_MCP_DESCRIPTION =
+  "Critical-reading tools for text analysis and adversarial PDF review.";
 export const JIDDU_MCP_URL = "https://jiddu.app/api/mcp";
+export const JIDDU_MCP_SERVER_CARD_PATH = "/api/mcp/server-card";
+export const JIDDU_MCP_SERVER_CARD_URL =
+  `https://jiddu.app${JIDDU_MCP_SERVER_CARD_PATH}`;
+export const JIDDU_AI_CATALOG_URL =
+  "https://jiddu.app/.well-known/ai-catalog.json";
+
+const JIDDU_MCP_REMOTES = [
+  {
+    type: "streamable-http",
+    url: JIDDU_MCP_URL,
+  },
+] as const;
+
+const JIDDU_MCP_ICONS = [
+  {
+    src: "https://jiddu.app/icon.png",
+    mimeType: "image/png",
+    sizes: ["256x256"],
+  },
+] as const;
 
 export const JIDDU_MCP_TOOLS = [
   {
@@ -92,50 +118,109 @@ export function jidduMcpTool(name: JidduMcpToolName) {
 export const JIDDU_MCP_REGISTRY_MANIFEST = {
   $schema:
     "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  name: "app.jiddu/jiddu",
-  title: "Jiddu Critical Reading",
-  description:
-    "Critical-reading tools for text analysis and adversarial PDF review.",
+  name: JIDDU_MCP_NAME,
+  title: JIDDU_MCP_TITLE,
+  description: JIDDU_MCP_DESCRIPTION,
   version: JIDDU_MCP_VERSION,
   websiteUrl: "https://jiddu.app/developers",
-  icons: [
-    {
-      src: "https://jiddu.app/icon.png",
-      mimeType: "image/png",
-      sizes: ["256x256"],
-    },
-  ],
-  remotes: [
-    {
-      type: "streamable-http",
-      url: JIDDU_MCP_URL,
-    },
-  ],
+  icons: JIDDU_MCP_ICONS,
+  remotes: JIDDU_MCP_REMOTES,
 } as const;
 
 export const JIDDU_MCP_SERVER_CARD = {
-  name: "app.jiddu/jiddu",
-  title: "Jiddu Critical Reading",
-  description:
-    "Use Jiddu when an agent needs to inspect the reasoning, factual claims, framing, clarity, or writing patterns in text, or run an adversarial review of a complete academic PDF.",
+  $schema:
+    "https://static.modelcontextprotocol.io/schemas/v1/server-card.schema.json",
+  name: JIDDU_MCP_NAME,
+  title: JIDDU_MCP_TITLE,
+  description: JIDDU_MCP_DESCRIPTION,
   version: JIDDU_MCP_VERSION,
-  serverUrl: JIDDU_MCP_URL,
-  transport: "streamable-http",
-  authentication: {
-    type: "oauth2",
-    protectedResourceMetadata:
-      "https://jiddu.app/.well-known/oauth-protected-resource",
-  },
-  documentationUrl: "https://jiddu.app/developers",
-  privacyUrl: "https://jiddu.app/privacy",
-  tools: JIDDU_MCP_TOOLS,
+  websiteUrl: "https://jiddu.app/developers",
+  icons: JIDDU_MCP_ICONS,
+  remotes: JIDDU_MCP_REMOTES,
 } as const;
 
-export function mcpServerCardResponse() {
-  return new Response(JSON.stringify(JIDDU_MCP_SERVER_CARD), {
+export const JIDDU_AI_CATALOG = {
+  specVersion: "1.0",
+  entries: [
+    {
+      identifier: "urn:air:jiddu.app:mcp:jiddu",
+      type: "application/mcp-server-card+json",
+      url: JIDDU_MCP_SERVER_CARD_URL,
+    },
+  ],
+} as const;
+
+const MCP_SERVER_CARD_BODY = JSON.stringify(JIDDU_MCP_SERVER_CARD);
+const AI_CATALOG_BODY = JSON.stringify(JIDDU_AI_CATALOG);
+
+export function mcpServerCardResponse(request?: Request) {
+  return publicDiscoveryResponse(
+    MCP_SERVER_CARD_BODY,
+    "application/mcp-server-card+json; charset=utf-8",
+    request,
+  );
+}
+
+export function aiCatalogResponse(request?: Request) {
+  return publicDiscoveryResponse(
+    AI_CATALOG_BODY,
+    "application/ai-catalog+json; charset=utf-8",
+    request,
+  );
+}
+
+export function publicDiscoveryOptionsResponse() {
+  return new Response(null, {
+    status: 204,
+    headers: corsHeaders(),
+  });
+}
+
+export function legacyMcpServerCardRedirect(requestUrl: string) {
+  const location = new URL(JIDDU_MCP_SERVER_CARD_PATH, requestUrl).toString();
+  return new Response(null, {
+    status: 308,
     headers: {
-      "cache-control": "public, max-age=300",
-      "content-type": "application/mcp-server-card+json; charset=utf-8",
+      ...corsHeaders(),
+      "cache-control": "public, max-age=86400",
+      location,
     },
   });
+}
+
+function publicDiscoveryResponse(
+  body: string,
+  contentType: string,
+  request?: Request,
+) {
+  const etag = `"${createHash("sha256").update(body).digest("base64url")}"`;
+  const headers = {
+    ...corsHeaders(),
+    "access-control-expose-headers": "ETag",
+    "cache-control": "public, max-age=3600",
+    "content-type": contentType,
+    etag,
+  };
+
+  if (request && matchesEtag(request.headers.get("if-none-match"), etag)) {
+    return new Response(null, { status: 304, headers });
+  }
+
+  return new Response(body, { headers });
+}
+
+function corsHeaders() {
+  return {
+    "access-control-allow-headers": "Content-Type, If-None-Match",
+    "access-control-allow-methods": "GET, OPTIONS",
+    "access-control-allow-origin": "*",
+  };
+}
+
+function matchesEtag(ifNoneMatch: string | null, etag: string) {
+  if (!ifNoneMatch) return false;
+  return ifNoneMatch
+    .split(",")
+    .map((value) => value.trim())
+    .some((value) => value === "*" || value === etag || value === `W/${etag}`);
 }
