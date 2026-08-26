@@ -18,6 +18,7 @@ import {
   JIDDU_MCP_SERVER_CARD_URL,
   JIDDU_MCP_TOOLS,
   aiCatalogResponse,
+  legacyMcpServerCardRedirect,
   mcpServerCardResponse,
 } from "./mcp-public-metadata";
 import { HOME_JSON_LD } from "./site-json-ld";
@@ -141,6 +142,12 @@ test("serves cacheable MCP discovery documents with browser-safe CORS", async ()
     /application\/ai-catalog\+json/,
   );
   assert.deepEqual(await catalog.json(), JIDDU_AI_CATALOG);
+});
+
+test("redirects legacy MCP server-card routes to the public canonical URL", () => {
+  const response = legacyMcpServerCardRedirect();
+  assert.equal(response.status, 308);
+  assert.equal(response.headers.get("location"), JIDDU_MCP_SERVER_CARD_URL);
 });
 
 test("homepage JSON-LD identifies the operator, product, and contact route", () => {

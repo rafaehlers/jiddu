@@ -176,14 +176,13 @@ export function publicDiscoveryOptionsResponse() {
   });
 }
 
-export function legacyMcpServerCardRedirect(requestUrl: string) {
-  const location = new URL(JIDDU_MCP_SERVER_CARD_PATH, requestUrl).toString();
+export function legacyMcpServerCardRedirect() {
   return new Response(null, {
     status: 308,
     headers: {
       ...corsHeaders(),
       "cache-control": "public, max-age=86400",
-      location,
+      location: JIDDU_MCP_SERVER_CARD_URL,
     },
   });
 }
