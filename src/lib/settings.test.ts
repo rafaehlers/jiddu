@@ -9,6 +9,7 @@ import {
   isAnalysisModelSetting,
   isAnalysisProviderSetting,
 } from "./settings";
+import { ANALYSIS_MODEL_CATALOG } from "./analysis-models";
 
 test("offers Gemma instead of retired DeepSeek for paper review routing", () => {
   assert.equal(PAPER_REVIEW_MODEL_OPTIONS.includes("gemma-4-31b-it"), true);
@@ -17,6 +18,20 @@ test("offers Gemma instead of retired DeepSeek for paper review routing", () => 
       (model: string) => model === "deepseek-v4-flash-0731",
     ),
     false,
+  );
+});
+
+test("keeps Paper review specialist selects aligned with the analysis catalog", () => {
+  assert.deepEqual(
+    PAPER_REVIEW_MODEL_OPTIONS,
+    ANALYSIS_MODEL_CATALOG.map((model) => model.id),
+  );
+  assert.equal(PAPER_REVIEW_MODEL_OPTIONS.includes("gpt-5.6-sol-pro"), true);
+  assert.equal(PAPER_REVIEW_MODEL_OPTIONS.includes("claude-opus-5"), true);
+  assert.equal(PAPER_REVIEW_MODEL_OPTIONS.includes("claude-opus-4.8"), false);
+  assert.equal(
+    DEFAULT_STRING_SETTINGS["paperReview.criticModel"],
+    "claude-opus-5",
   );
 });
 

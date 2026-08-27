@@ -70,12 +70,12 @@ test("deep paper review reserves selected, reasoning, critic and repair calls", 
     selectedModel: "gpt-5.6-luna",
   });
   assert.equal(gptModels.length, 11);
-  assert.equal(creditsForModels(gptModels), 42);
+  assert.equal(creditsForModels(gptModels), 49);
 
   const gemmaModels = paperReviewMaximumModels({
     depth: "deep",
     selectedModel: "gemma-4-31b-it",
   });
   assert.equal(gemmaModels.length, 11);
-  assert.equal(creditsForModels(gemmaModels), 42);
+  assert.equal(creditsForModels(gemmaModels), 49);
 });

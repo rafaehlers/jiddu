@@ -14,6 +14,7 @@ import {
   type SettingKey,
 } from "@/lib/settings";
 import { resetSettingsAction, saveSettingsAction } from "./actions";
+import { ANALYSIS_MODEL_CATALOG } from "@/lib/analysis-models";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
@@ -229,15 +230,12 @@ const GROUPS: Group[] = [
   },
 ];
 
-const MODEL_LABELS: Record<
-  (typeof PAPER_REVIEW_MODEL_OPTIONS)[number],
-  string
-> = {
-  "gpt-5.6-luna-pro": "GPT-5.6 Luna Pro",
-  "claude-opus-4.8": "Claude Opus 4.8",
-  "gpt-5.6-luna": "GPT-5.6 Luna",
-  "gemma-4-31b-it": "Gemma 4 31B",
-};
+const MODEL_LABELS = Object.fromEntries(
+  ANALYSIS_MODEL_CATALOG.map((model) => [
+    model.id,
+    `${model.flag ?? ""} ${model.label}`.trim(),
+  ]),
+) as Record<string, string>;
 
 const DELAY_LABELS: Record<
   (typeof LIVE_TRANSCRIPTION_DELAY_OPTIONS)[number],

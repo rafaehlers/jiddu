@@ -63,7 +63,7 @@ Choose the lens that fits the reading: logical fallacies, factual claims, neutra
 - **Safe quantitative verification** — Evaluation and Correctness specialists can propose whitelisted arithmetic checks (rates, means, percentage changes, precision/recall/F1). Jiddu recalculates them deterministically and never executes code from the manuscript.
 - **Source + quality audit** — cited URLs are SSRF-checked, fetched with bounded redirects/bytes, compared with observed title metadata and classified as published work, preprint, documentation or unknown. An independent critic then audits support, severity, recommendation, citation reliability and bias.
 - **Retention gate** — every retained MAJOR/MODERATE specialist finding must be represented in a final weakness or explicitly dismissed by the critic; a repair pass and deterministic fallback prevent synthesis loss.
-- **Standard and Deep modes** — Standard uses the selected economical model throughout and another catalog model as critic. Deep routes evaluation, correctness, significance, synthesis and repair to GPT-5.6 Luna Pro and uses Claude Opus 4.8 as the independent critic. Both internal model ids can be changed through environment variables.
+- **Standard and Deep modes** — Standard uses the configured primary model throughout and another catalog model as critic. Deep routes evaluation, correctness, significance, synthesis and repair to GPT-5.6 Luna Pro and uses Claude Opus 5 as the independent critic. Both models can be changed at runtime in Admin Settings or supplied as installation defaults through environment variables.
 - **Localized evidence** — every substantive weakness carries manuscript page/section references and a `MAJOR` / `MODERATE` / `MINOR` severity.
 - **Markdown + PDF export** — deterministic Markdown follows the required `AI Paper Review` format and the print route supports browser “Save as PDF”.
 - **Curated synthetic demos** in 3 languages (`/r/demo-en`, `/r/demo-pt`, `/r/demo-es`) exercise the full results viewer without uploading a paper or spending API credits.
@@ -149,7 +149,7 @@ Open <http://localhost:3000>. Try `/a/demo-en`, `/e/demo-en`, or `/r/demo-en`
 | `OPENAI_LIVE_TRANSCRIPTION_USD_PER_MINUTE` | Installation default for GPT Live Transcribe provider cost per audio minute. Defaults to `0.017`; the admin can override it at runtime. |
 | `OPENAI_LIVE_DIARIZATION_USD_PER_MINUTE` | Installation default for post-session OpenAI speaker diarization per audio minute. Defaults to `0.006`; the admin can override it at runtime. |
 | `PAPER_REVIEW_DEEP_MODEL` | Optional internal model id for Deep specialist/synthesis stages. Defaults to `gpt-5.6-luna-pro`. |
-| `PAPER_REVIEW_CRITIC_MODEL` | Optional independent Deep critic model id. Defaults to `claude-opus-4.8`. |
+| `PAPER_REVIEW_CRITIC_MODEL` | Optional independent Deep critic model id. Defaults to `claude-opus-5`. |
 | `JIDDU_FACTCHECK_FAST_MODEL` | Installation default for first-pass, bulk and API/MCP fact verification. Defaults to `perplexity/sonar`; the admin can override it at runtime. |
 | `JIDDU_FACTCHECK_DEEP_MODEL` | Installation default for explicit fact rechecks. Defaults to `perplexity/sonar`; the admin can select Reasoning Pro at runtime. |
 | `JIDDU_CONTEXT_NEWS_MODEL` | Installation default for Context news enrichment. Defaults to `perplexity/sonar`; the admin can override it at runtime. |

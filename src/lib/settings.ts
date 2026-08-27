@@ -115,12 +115,13 @@ export type SettingKey = keyof typeof DEFAULT_SETTINGS;
 
 const KEYS = Object.keys(DEFAULT_SETTINGS) as SettingKey[];
 
-export const PAPER_REVIEW_MODEL_OPTIONS = [
-  "gpt-5.6-luna-pro",
-  "claude-opus-4.8",
-  "gpt-5.6-luna",
-  "gemma-4-31b-it",
-] as const;
+// Paper-review specialist routing uses the same compatibility catalog as the
+// primary/fallback analysis chain so Admin never presents two drifting model
+// lists. Historical models remain resolvable internally, but are not offered
+// for new runtime configuration.
+export const PAPER_REVIEW_MODEL_OPTIONS = ANALYSIS_MODEL_CATALOG.map(
+  (model) => model.id,
+);
 
 export const LIVE_TRANSCRIPTION_DELAY_OPTIONS = [
   "minimal",
@@ -139,8 +140,7 @@ export const ANALYSIS_MODEL_OPTIONS = ANALYSIS_MODEL_CATALOG.map(
   (model) => model.id,
 );
 
-export type PaperReviewModelSetting =
-  (typeof PAPER_REVIEW_MODEL_OPTIONS)[number];
+export type PaperReviewModelSetting = string;
 export type LiveTranscriptionDelaySetting =
   (typeof LIVE_TRANSCRIPTION_DELAY_OPTIONS)[number];
 export type PerplexitySearchModelSetting =
@@ -178,7 +178,7 @@ export const DEFAULT_STRING_SETTINGS = {
   "paperReview.criticModel": supportedStringDefault(
     process.env.PAPER_REVIEW_CRITIC_MODEL,
     PAPER_REVIEW_MODEL_OPTIONS,
-    "claude-opus-4.8",
+    "claude-opus-5",
   ),
   "live.transcriptionDelay": supportedStringDefault(
     process.env.OPENAI_LIVE_TRANSCRIBE_DELAY,

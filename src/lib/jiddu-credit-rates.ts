@@ -96,7 +96,7 @@ export const JIDDU_CREDIT_RATE_TABLE: CreditRateRow[] = [
     feature: "Adversarial review — Deep",
     unit: "Per review run",
     detail:
-      "With default GPT-5.6 Luna Pro and Claude Opus 4.8 routing, up to 42 credits (39 without repair).",
+      "With default GPT-5.6 Luna Pro and Claude Opus 5 routing, up to 49 credits (46 without repair).",
   },
   {
     feature: "Live transcription",
@@ -158,7 +158,7 @@ export function paperReviewMaximumModels(input: {
   }
 
   const deep = input.deepModel || "gpt-5.6-luna-pro";
-  const critic = input.criticModel || "claude-opus-4.8";
+  const critic = input.criticModel || "claude-opus-5";
   return [
     ...Array.from({ length: 3 }, () => selected),
     ...Array.from({ length: 6 }, () => deep),
