@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AdminPage } from "@/components/admin/admin-page";
 import { CreditPricingSimulator } from "@/components/admin/credit-pricing-simulator";
+import { AnalysisModelRoutingFields } from "@/components/admin/analysis-model-routing-fields";
 import { getInvitationAdminStats } from "@/lib/invitations";
 import {
   DEFAULT_SETTINGS,
@@ -287,13 +288,32 @@ export default async function AdminSettingsPage({
         )}
         {error && (
           <div className="mb-4 rounded-md border border-[var(--severity-high)]/40 p-3 text-sm text-[var(--severity-high)]">
-            {error === "incomplete_invites"
+            {error === "invalid_analysis_routing"
+              ? "Choose two different supported models and a provider option that belongs to each model."
+              : error === "incomplete_invites"
               ? "Set both the per-user limit and acceptance credits above zero before enabling invitations."
               : "Invitation settings must be whole numbers greater than or equal to zero."}
           </div>
         )}
 
         <form action={saveSettingsAction} className="flex flex-col gap-8">
+          <fieldset className="flex flex-col gap-4 rounded-lg border border-rule bg-paper p-5">
+            <legend className="flex flex-col gap-1">
+              <span className="font-medium">Default analysis routing</span>
+              <span className="text-xs text-muted">
+                One operator-controlled model chain for the public analysis
+                features. The chosen models are intentionally hidden from the
+                public form.
+              </span>
+            </legend>
+            <AnalysisModelRoutingFields
+              primaryModel={currentStrings["analysis.primaryModel"]}
+              primaryProvider={currentStrings["analysis.primaryProvider"]}
+              fallbackModel={currentStrings["analysis.fallbackModel"]}
+              fallbackProvider={currentStrings["analysis.fallbackProvider"]}
+            />
+          </fieldset>
+
           <fieldset className="flex flex-col gap-4 rounded-lg border border-rule bg-paper p-5">
             <legend className="flex flex-col gap-1">
               <span className="font-medium">Paper review and Live routing</span>

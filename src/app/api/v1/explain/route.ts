@@ -12,7 +12,7 @@ import {
   isApiCreditResponse,
 } from "@/lib/api/credit-billing";
 import { maxCreditsForCalls } from "@/lib/jiddu-credit-rates";
-import { DEFAULT_MODEL_CHAIN } from "@/lib/llm/fallback";
+import { loadAnalysisRouting } from "@/lib/analysis-routing";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -21,7 +21,10 @@ export async function POST(req: NextRequest) {
   const auth = await requireApiKey(req);
   if (auth instanceof Response) return auth;
 
-  const settings = await loadSettings();
+  const [settings, analysisRouting] = await Promise.all([
+    loadSettings(),
+    loadAnalysisRouting(),
+  ]);
   const rl = consume(`v1:explain:${auth.id}`, bucketFor(settings, "rate.api", auth));
   if (!rl.allowed) return rateLimitResponse(rl.retryAfterSec);
 
@@ -33,7 +36,7 @@ export async function POST(req: NextRequest) {
   const lang = normalizeLang(body?.lang);
   const level = normalizeLevel(body?.level);
   const meter = await createApiCreditMeter(auth, {
-    amount: maxCreditsForCalls(DEFAULT_MODEL_CHAIN, 1),
+    amount: maxCreditsForCalls(analysisRouting.modelChain, 1),
     feature: "explain",
     metadata: { apiKeyId: auth.id, level },
   });
@@ -55,6 +58,7 @@ export async function POST(req: NextRequest) {
       level,
       signal: req.signal,
       apiKey: auth.apiKey,
+      analysisRouting,
       onModelUsed(model) {
         meter.recordModel(model);
         history.recordModel(model);

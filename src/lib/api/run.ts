@@ -33,6 +33,7 @@ import type { ExplainFinding, ExplainLevel } from "@/lib/explain-schema";
 import type { SlopFinding } from "@/lib/slop-schema";
 import type { Verdict } from "@/lib/verdict-schema";
 import type { OpenRouterUsage } from "@/lib/openrouter-usage";
+import type { AnalysisRouting } from "@/lib/analysis-routing";
 
 export type RunOpts = {
   lang?: Lang;
@@ -46,13 +47,23 @@ export type RunOpts = {
     usage?: OpenRouterUsage;
   }) => void;
   factCheckModel?: PerplexitySearchModelSetting;
+  analysisRouting?: AnalysisRouting;
 };
 
 const VERIFY_CONCURRENCY = 6;
 
 // Build the default model chain (the public API does not expose model choice).
-function modelChain(): string[] {
+function modelChain(opts?: RunOpts): string[] {
+  if (opts?.analysisRouting) return opts.analysisRouting.modelChain;
   return [...DEFAULT_MODEL_CHAIN];
+}
+
+function analysisProvider(chain: string[], opts?: RunOpts) {
+  return getProvider(
+    chain[0],
+    opts?.apiKey,
+    opts?.analysisRouting?.providerRoutingByModel,
+  );
 }
 
 // Shared prep: clean + validate the text (throws IngestError on <40 chars),
@@ -80,8 +91,8 @@ export async function runFallacies(
   const sentences = splitSentences(clean);
   if (sentences.length === 0) throw new NoUnitsError();
 
-  const chain = modelChain();
-  const llm = getProvider(chain[0], opts?.apiKey);
+  const chain = modelChain(opts);
+  const llm = analysisProvider(chain, opts);
 
   const findings: Finding[] = [];
   let score = 0;
@@ -125,8 +136,8 @@ export async function runSlop(
   const sentences = splitSentences(clean);
   if (sentences.length === 0) throw new NoUnitsError();
 
-  const chain = modelChain();
-  const llm = getProvider(chain[0], opts?.apiKey);
+  const chain = modelChain(opts);
+  const llm = analysisProvider(chain, opts);
 
   const findings: SlopFinding[] = [];
   let score = 0;
@@ -172,8 +183,8 @@ export async function runNeutrality(
   const sentences = splitSentences(clean);
   if (sentences.length === 0) throw new NoUnitsError();
 
-  const chain = modelChain();
-  const llm = getProvider(chain[0], opts?.apiKey);
+  const chain = modelChain(opts);
+  const llm = analysisProvider(chain, opts);
 
   const findings: NeutralityFinding[] = [];
   let verdict: NeutralityVerdictValue = "neutral";
@@ -226,8 +237,8 @@ export async function runExplain(
   // while the web paper reader groups real PDF subsections.
   const sections = buildParagraphExplainInputSections(blocks);
 
-  const chain = modelChain();
-  const llm = getProvider(chain[0], opts?.apiKey);
+  const chain = modelChain(opts);
+  const llm = analysisProvider(chain, opts);
 
   const findings: ExplainFinding[] = [];
   let overview = "";
@@ -275,8 +286,8 @@ export async function runFactCheck(
   const sentences = splitSentences(clean);
   if (sentences.length === 0) throw new NoUnitsError();
 
-  const chain = modelChain();
-  const llm = getProvider(chain[0], opts?.apiKey);
+  const chain = modelChain(opts);
+  const llm = analysisProvider(chain, opts);
 
   // 1. Extract claims (assign stable ids, cap to maxClaims).
   const extracted: Claim[] = [];

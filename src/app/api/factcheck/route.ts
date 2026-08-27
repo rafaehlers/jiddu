@@ -6,8 +6,9 @@ import { ingestAnalysisFile } from "@/lib/ingest/file";
 import { ingestText } from "@/lib/ingest/text";
 import { prepareAnalysisDocument } from "@/lib/analysis-document";
 import { chunkSentences } from "@/lib/chunker";
-import { getProvider, resolveModel } from "@/lib/llm";
-import { DEFAULT_MODEL_CHAIN, withModelFallback } from "@/lib/llm/fallback";
+import { getProvider } from "@/lib/llm";
+import { withModelFallback } from "@/lib/llm/fallback";
+import { loadAnalysisRouting } from "@/lib/analysis-routing";
 import { consume, ipFromRequest, rateLimitResponse } from "@/lib/rate-limit";
 import { bucketFromSettings, loadSettings } from "@/lib/settings";
 import type { IngestedDocument } from "@/lib/ingest/url";
@@ -47,7 +48,10 @@ export async function POST(req: NextRequest) {
   const access = await requireWebAnalysisAccess();
   if (isAccessResponse(access)) return access;
 
-  const settings = await loadSettings();
+  const [settings, analysisRouting] = await Promise.all([
+    loadSettings(),
+    loadAnalysisRouting(),
+  ]);
   const rl = consume(
     `factcheck:${ipFromRequest(req)}`,
     bucketFromSettings(settings, "rate.factcheck"),
@@ -60,7 +64,6 @@ export async function POST(req: NextRequest) {
   );
 
   let doc: IngestedDocument;
-  let modelId: string | undefined;
   let lang: Lang = "en";
   const id = nanoid(10);
 
@@ -68,7 +71,6 @@ export async function POST(req: NextRequest) {
     const ct = req.headers.get("content-type") ?? "";
     if (ct.includes("multipart/form-data")) {
       const form = await req.formData();
-      modelId = normalizeString(form.get("model"));
       lang = normalizeLang(form.get("lang"));
       const file = form.get("file");
       if (!(file instanceof File)) return jsonError("Missing 'file' field", 400);
@@ -76,7 +78,7 @@ export async function POST(req: NextRequest) {
         access,
         feature: "factcheck_extract",
         resourceId: id,
-        modelId,
+        routing: analysisRouting,
         lang,
         signal: req.signal,
       });
@@ -84,10 +86,9 @@ export async function POST(req: NextRequest) {
       doc = ingested;
     } else {
       const body = (await req.json().catch(() => null)) as
-        | { type?: string; url?: string; text?: string; model?: string; title?: string; lang?: string }
+        | { type?: string; url?: string; text?: string; title?: string; lang?: string }
         | null;
       if (!body) return jsonError("Invalid JSON", 400);
-      modelId = body.model ?? undefined;
       lang = normalizeLang(body.lang);
       if (body.type === "url" && body.url) {
         doc = await ingestUrl(body.url);
@@ -112,16 +113,15 @@ export async function POST(req: NextRequest) {
   const { blocks, sentences } = preparedDocument;
   if (sentences.length === 0) return jsonError("No sentences detected", 422);
 
-  // Build the fallback chain. If the caller explicitly picked a model we
-  // honour it as the first try and tack the default chain on for resiliency.
-  // Otherwise we use the default chain (GPT-5.6 Luna → Gemma 4 31B).
-  const modelChain: string[] = modelId
-    ? Array.from(new Set([resolveModel(modelId).id, ...DEFAULT_MODEL_CHAIN]))
-    : [...DEFAULT_MODEL_CHAIN];
+  const modelChain = analysisRouting.modelChain;
 
   let llm;
   try {
-    llm = getProvider(modelChain[0], access.apiKey);
+    llm = getProvider(
+      modelChain[0],
+      access.apiKey,
+      analysisRouting.providerRoutingByModel,
+    );
   } catch (err) {
     return jsonError(err instanceof Error ? err.message : "Provider error", 400);
   }
@@ -351,12 +351,6 @@ function jsonError(message: string, status: number) {
     status,
     headers: { "content-type": "application/json" },
   });
-}
-
-function normalizeString(v: FormDataEntryValue | string | undefined | null): string | undefined {
-  if (typeof v !== "string") return undefined;
-  const s = v.trim();
-  return s.length > 0 ? s : undefined;
 }
 
 function normalizeLang(v: FormDataEntryValue | string | undefined | null): Lang {

@@ -75,6 +75,13 @@ import type {
   ProviderId,
 } from "./types";
 import { readOpenRouterUsage } from "../openrouter-usage";
+import {
+  ANALYSIS_MODEL_CATALOG,
+  providerRoutingPayload,
+  resolveAnalysisModel,
+  type ModelChoice,
+  type ProviderRoutingPreference,
+} from "../analysis-models";
 import type {
   ClaimStreamEvent,
   ExplainStreamEvent,
@@ -83,70 +90,8 @@ import type {
   StreamEvent,
 } from "./stream";
 
-// Curated catalog of OpenRouter models exposed in the UI dropdown. Each entry
-// pairs a stable internal id (used as the value in DB + form) with the
-// upstream OpenRouter slug.
-export type ModelChoice = {
-  id: string;
-  label: string;
-  // Country-of-origin emoji shown next to the model name in the UI. It makes
-  // the upstream model family explicit because training choices can affect
-  // borderline interpretations.
-  flag?: string;
-  family:
-    | ProviderId
-    | "google"
-    | "meta"
-    | "mistral"
-    | "deepseek"
-    | "qwen"
-    | "moonshot"
-    | "zhipu";
-  openrouter: string;
-  // Most upstreams honour a forced tool_choice; Qwen rejects it and only
-  // works with "auto". Default is forced.
-  toolMode?: "forced" | "auto";
-  // Pin OpenRouter's upstream routing when a model needs a specific provider.
-  providerOrder?: string[];
-  // Only route to endpoints that support every parameter in the request.
-  requireParameters?: boolean;
-  reasoningEffort?: "low" | "medium" | "high" | "xhigh";
-  supportsVision?: boolean;
-};
-
-export const MODEL_CATALOG: ModelChoice[] = [
-  {
-    id: "gpt-5.6-luna",
-    label: "GPT-5.6 Luna",
-    flag: "🇺🇸",
-    family: "openai",
-    openrouter: "openai/gpt-5.6-luna",
-    reasoningEffort: "high",
-    supportsVision: true,
-  },
-  {
-    id: "gemma-4-31b-it",
-    label: "Gemma 4 31B",
-    flag: "🇺🇸",
-    family: "google",
-    openrouter: "google/gemma-4-31b-it",
-    requireParameters: true,
-    supportsVision: true,
-  },
-];
-
-const MODEL_BY_ID: Record<string, ModelChoice> = Object.fromEntries(
-  MODEL_CATALOG.map((m) => [m.id, m]),
-);
+export const MODEL_CATALOG = ANALYSIS_MODEL_CATALOG;
 const PAPER_REVIEW_INTERNAL_MODELS: Record<string, ModelChoice> = {
-  "gpt-5.6-luna-pro": {
-    id: "gpt-5.6-luna-pro",
-    label: "GPT-5.6 Luna Pro",
-    flag: "🇺🇸",
-    family: "openai",
-    openrouter: "openai/gpt-5.6-luna-pro",
-    reasoningEffort: "xhigh",
-  },
   // Kept internally so historical evals remain reproducible. These models
   // are no longer exposed in the product picker or used by default.
   "gpt-5.4-mini": {
@@ -155,6 +100,9 @@ const PAPER_REVIEW_INTERNAL_MODELS: Record<string, ModelChoice> = {
     flag: "🇺🇸",
     family: "openai",
     openrouter: "openai/gpt-5.4-mini",
+    inputUsdPerMillion: 0,
+    outputUsdPerMillion: 0,
+    providers: [],
   },
   "gpt-5.5": {
     id: "gpt-5.5",
@@ -163,6 +111,9 @@ const PAPER_REVIEW_INTERNAL_MODELS: Record<string, ModelChoice> = {
     family: "openai",
     openrouter: "openai/gpt-5.5",
     reasoningEffort: "high",
+    inputUsdPerMillion: 0,
+    outputUsdPerMillion: 0,
+    providers: [],
   },
   "claude-opus-4.8": {
     id: "claude-opus-4.8",
@@ -171,21 +122,21 @@ const PAPER_REVIEW_INTERNAL_MODELS: Record<string, ModelChoice> = {
     family: "anthropic",
     openrouter: "anthropic/claude-opus-4.8",
     reasoningEffort: "high",
+    inputUsdPerMillion: 0,
+    outputUsdPerMillion: 0,
+    providers: [],
   },
 };
 
-const DEFAULT_MODEL_ID = "gpt-5.6-luna";
-
 export function resolveModel(id?: string | null): ModelChoice {
-  if (id && MODEL_BY_ID[id]) return MODEL_BY_ID[id];
-  return MODEL_BY_ID[DEFAULT_MODEL_ID];
+  return resolveAnalysisModel(id);
 }
 
 export function resolvePaperReviewModel(id?: string | null): ModelChoice {
   if (id && PAPER_REVIEW_INTERNAL_MODELS[id]) {
     return PAPER_REVIEW_INTERNAL_MODELS[id];
   }
-  return resolveModel(id);
+  return resolveAnalysisModel(id);
 }
 
 const OPENROUTER_BASE = "https://openrouter.ai/api/v1";
@@ -196,14 +147,20 @@ export class OpenRouterProvider implements LlmProvider {
   readonly defaultModel: string;
   private client: OpenAI;
   private modelSlug: string;
+  private providerRoutingByModel: Record<string, ProviderRoutingPreference>;
 
-  constructor(modelId?: string, apiKey?: string) {
+  constructor(
+    modelId?: string,
+    apiKey?: string,
+    providerRoutingByModel: Record<string, ProviderRoutingPreference> = {},
+  ) {
     const choice = resolveModel(modelId);
     // The schema's `provider` field accepts "anthropic" | "openai"; map other
     // families to the closest neighbour so we don't break the DB column.
     this.id = (choice.family === "anthropic" ? "anthropic" : "openai") as ProviderId;
     this.defaultModel = choice.id;
     this.modelSlug = choice.openrouter;
+    this.providerRoutingByModel = providerRoutingByModel;
     this.client = new OpenAI({
       apiKey: apiKey ?? process.env.OPENROUTER_API_KEY,
       baseURL: OPENROUTER_BASE,
@@ -234,16 +191,12 @@ export class OpenRouterProvider implements LlmProvider {
   // these fields are present in the OpenAI SDK's Chat Completions types, so
   // we widen the request body below.
   private openRouterExtras(modelOverride?: string): Record<string, unknown> {
-    const choice = resolveModel(modelOverride ?? this.defaultModel);
-    const provider = {
-      ...(choice.providerOrder && choice.providerOrder.length > 0
-        ? {
-            order: choice.providerOrder,
-            allow_fallbacks: false,
-          }
-        : {}),
-      ...(choice.requireParameters ? { require_parameters: true } : {}),
-    };
+    const modelId = modelOverride ?? this.defaultModel;
+    const choice = resolveModel(modelId);
+    const provider = providerRoutingPayload(
+      modelId,
+      this.providerRoutingByModel[modelId],
+    );
     return {
       ...(Object.keys(provider).length > 0 ? { provider } : {}),
       ...(choice.reasoningEffort

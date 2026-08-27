@@ -8,7 +8,7 @@ import type { Lang } from "@/lib/fallacies";
 import { ingestText } from "@/lib/ingest/text";
 import { briefTopic } from "@/lib/live-title";
 import { resolveModel } from "@/lib/llm";
-import { DEFAULT_MODEL_CHAIN } from "@/lib/llm/fallback";
+import { loadAnalysisRouting } from "@/lib/analysis-routing";
 import { FACTCHECK_FAST_MODEL } from "@/lib/model-ids";
 import { splitBlocks } from "@/lib/paragraphs";
 import { splitSentences } from "@/lib/sentences";
@@ -59,7 +59,7 @@ export async function startApiAnalysisHistory(
 ): Promise<ApiAnalysisHistory> {
   const document = ingestText(input.text);
   const id = nanoid(10);
-  const initialModel = DEFAULT_MODEL_CHAIN[0];
+  const initialModel = (await loadAnalysisRouting()).modelChain[0];
   const sourceRef = sourceReference(input.transport, input.sourceLabel);
   const title = briefTopic(document.text) || `${input.transport} analysis`;
   const blocks = splitBlocks(document.text);

@@ -6,6 +6,8 @@ import {
   PERPLEXITY_SEARCH_MODEL_OPTIONS,
   factCheckModelForAttempt,
   isPerplexitySearchModelSetting,
+  isAnalysisModelSetting,
+  isAnalysisProviderSetting,
 } from "./settings";
 
 test("offers Gemma instead of retired DeepSeek for paper review routing", () => {
@@ -14,6 +16,21 @@ test("offers Gemma instead of retired DeepSeek for paper review routing", () => 
     PAPER_REVIEW_MODEL_OPTIONS.some(
       (model: string) => model === "deepseek-v4-flash-0731",
     ),
+    false,
+  );
+});
+
+test("validates admin-controlled analysis models and their providers", () => {
+  assert.equal(isAnalysisModelSetting("glm-5.3-flash"), true);
+  assert.equal(isAnalysisModelSetting("claude-opus-5"), true);
+  assert.equal(isAnalysisModelSetting("not-a-model"), false);
+  assert.equal(isAnalysisProviderSetting("glm-5.3-flash", "price"), true);
+  assert.equal(
+    isAnalysisProviderSetting("glm-5.3-flash", "novita/fp8"),
+    true,
+  );
+  assert.equal(
+    isAnalysisProviderSetting("claude-opus-5", "novita/fp8"),
     false,
   );
 });

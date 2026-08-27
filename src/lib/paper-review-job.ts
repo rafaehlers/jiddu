@@ -31,6 +31,7 @@ import type { Lang } from "@/lib/fallacies";
 import type { ResolvedVenueProfile } from "@/lib/venues";
 import type { OpenRouterUsage } from "@/lib/openrouter-usage";
 import { loadStringSettings } from "@/lib/settings";
+import { analysisRoutingFromSettings } from "@/lib/analysis-routing";
 import { selectVisualPages } from "@/lib/paper-visual-pages";
 import { appendPaperReviewTelemetry } from "@/lib/paper-review-telemetry";
 
@@ -328,6 +329,11 @@ export async function runPreparedPaperReview(
     onCallEvent: recordModelCall,
   });
   const routing = await loadStringSettings();
+  const analysisRouting = analysisRoutingFromSettings(routing);
+  const analysisFallback = {
+    fallbackModels: analysisRouting.modelChain,
+    providerRoutingByModel: analysisRouting.providerRoutingByModel,
+  };
   const deepModel =
     prepared.reviewDepth === "deep"
       ? routing["paperReview.deepModel"]
@@ -347,6 +353,7 @@ export async function runPreparedPaperReview(
       screenshots,
       {
         modelId: prepared.modelId,
+        ...analysisFallback,
         lang: prepared.lang,
         ...callTelemetry("ledger"),
         signal: options?.signal,
@@ -373,6 +380,7 @@ export async function runPreparedPaperReview(
     await stage(1, "research", "research");
     const research = await researchPaperNovelty(ledger, venueProfile, {
       modelId: deepModel,
+      ...analysisFallback,
       lang: prepared.lang,
       ...callTelemetry("research"),
       signal: options?.signal,
@@ -410,6 +418,7 @@ export async function runPreparedPaperReview(
           },
           {
             modelId: specialistModel,
+            ...analysisFallback,
             lang: prepared.lang,
             ...callTelemetry(`specs_${criterion}`),
             signal: options?.signal,
@@ -453,6 +462,7 @@ export async function runPreparedPaperReview(
         },
         {
           modelId: deepModel,
+          ...analysisFallback,
           lang: prepared.lang,
           ...callTelemetry("synthesis"),
           signal: options?.signal,
@@ -489,6 +499,7 @@ export async function runPreparedPaperReview(
         },
         {
           modelId: deepModel,
+          ...analysisFallback,
           lang: prepared.lang,
           ...callTelemetry("self_critique"),
           signal: options?.signal,
@@ -532,6 +543,7 @@ export async function runPreparedPaperReview(
         },
         {
           modelId: criticModel,
+          ...analysisFallback,
           lang: prepared.lang,
           ...callTelemetry("quality_audit"),
           signal: options?.signal,
@@ -567,6 +579,7 @@ export async function runPreparedPaperReview(
         },
         {
           modelId: deepModel,
+          ...analysisFallback,
           lang: prepared.lang,
           ...callTelemetry("final_repair"),
           signal: options?.signal,

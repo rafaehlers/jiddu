@@ -1,7 +1,7 @@
 import "server-only";
 
-import { DEFAULT_MODEL_CHAIN } from "@/lib/llm/fallback";
 import { getProvider, resolveModel } from "@/lib/llm";
+import type { AnalysisRouting } from "@/lib/analysis-routing";
 import type { Lang } from "@/lib/fallacies";
 import type { JidduCreditFeature } from "@/lib/jiddu-credit-rates";
 import { maxCreditsForCalls } from "@/lib/jiddu-credit-rates";
@@ -22,7 +22,7 @@ type AnalysisFileOptions = {
   access: WebAnalysisAccess;
   feature: JidduCreditFeature;
   resourceId: string;
-  modelId?: string;
+  routing: AnalysisRouting;
   lang: Lang;
   signal?: AbortSignal;
 };
@@ -62,13 +62,8 @@ export async function ingestAnalysisFile(
   }
   validateImageBytes(bytes);
 
-  const requestedModelChain: string[] = opts.modelId
-    ? Array.from(
-        new Set([resolveModel(opts.modelId).id, ...DEFAULT_MODEL_CHAIN]),
-      )
-    : [...DEFAULT_MODEL_CHAIN];
   // Keep image transcription on models that explicitly support vision.
-  const modelChain = requestedModelChain.filter(
+  const modelChain = opts.routing.modelChain.filter(
     (model) => resolveModel(model).supportsVision,
   );
   const reservation = await reserveWebAnalysisCredits(opts.access, {
@@ -93,7 +88,11 @@ export async function ingestAnalysisFile(
   const models: string[] = [];
   let completed = false;
   try {
-    const provider = getProvider(modelChain[0], opts.access.apiKey);
+    const provider = getProvider(
+      modelChain[0],
+      opts.access.apiKey,
+      opts.routing.providerRoutingByModel,
+    );
     const doc = await ingestImage(bytes, name, provider, modelChain, {
       lang: opts.lang,
       signal: opts.signal,

@@ -6,6 +6,15 @@ import {
   FACTCHECK_FAST_MODEL,
   RELATED_LINKS_MODEL,
 } from "@/lib/model-ids";
+import {
+  ANALYSIS_MODEL_CATALOG,
+  DEFAULT_ANALYSIS_FALLBACK_MODEL_ID,
+  DEFAULT_ANALYSIS_MODEL_ID,
+  DEFAULT_PROVIDER_ROUTING,
+  isAnalysisModelId,
+  isProviderRoutingPreferenceForModel,
+  type ProviderRoutingPreference,
+} from "@/lib/analysis-models";
 
 function positiveEnvironmentNumber(
   value: string | undefined,
@@ -126,6 +135,10 @@ export const PERPLEXITY_SEARCH_MODEL_OPTIONS = [
   "perplexity/sonar-reasoning-pro",
 ] as const;
 
+export const ANALYSIS_MODEL_OPTIONS = ANALYSIS_MODEL_CATALOG.map(
+  (model) => model.id,
+);
+
 export type PaperReviewModelSetting =
   (typeof PAPER_REVIEW_MODEL_OPTIONS)[number];
 export type LiveTranscriptionDelaySetting =
@@ -143,6 +156,20 @@ function supportedStringDefault<T extends readonly string[]>(
 }
 
 export const DEFAULT_STRING_SETTINGS = {
+  "analysis.primaryModel": supportedStringDefault(
+    process.env.JIDDU_ANALYSIS_PRIMARY_MODEL,
+    ANALYSIS_MODEL_OPTIONS,
+    DEFAULT_ANALYSIS_MODEL_ID,
+  ),
+  "analysis.fallbackModel": supportedStringDefault(
+    process.env.JIDDU_ANALYSIS_FALLBACK_MODEL,
+    ANALYSIS_MODEL_OPTIONS,
+    DEFAULT_ANALYSIS_FALLBACK_MODEL_ID,
+  ),
+  "analysis.primaryProvider": process.env.JIDDU_ANALYSIS_PRIMARY_PROVIDER?.trim() ||
+    DEFAULT_PROVIDER_ROUTING,
+  "analysis.fallbackProvider": process.env.JIDDU_ANALYSIS_FALLBACK_PROVIDER?.trim() ||
+    DEFAULT_PROVIDER_ROUTING,
   "paperReview.deepModel": supportedStringDefault(
     process.env.PAPER_REVIEW_DEEP_MODEL,
     PAPER_REVIEW_MODEL_OPTIONS,
@@ -182,6 +209,10 @@ export const DEFAULT_STRING_SETTINGS = {
 
 export type StringSettingKey = keyof typeof DEFAULT_STRING_SETTINGS;
 export type StringSettings = {
+  "analysis.primaryModel": string;
+  "analysis.fallbackModel": string;
+  "analysis.primaryProvider": ProviderRoutingPreference;
+  "analysis.fallbackProvider": ProviderRoutingPreference;
   "paperReview.deepModel": PaperReviewModelSetting;
   "paperReview.criticModel": PaperReviewModelSetting;
   "live.transcriptionDelay": LiveTranscriptionDelaySetting;
@@ -254,6 +285,18 @@ export async function loadStringSettings(): Promise<StringSettings> {
     }
   }
   const snap: StringSettings = {
+    "analysis.primaryModel": supportedStringDefault(
+      overrides.get("analysis.primaryModel"),
+      ANALYSIS_MODEL_OPTIONS,
+      DEFAULT_STRING_SETTINGS["analysis.primaryModel"],
+    ),
+    "analysis.fallbackModel": supportedStringDefault(
+      overrides.get("analysis.fallbackModel"),
+      ANALYSIS_MODEL_OPTIONS,
+      DEFAULT_STRING_SETTINGS["analysis.fallbackModel"],
+    ),
+    "analysis.primaryProvider": DEFAULT_PROVIDER_ROUTING,
+    "analysis.fallbackProvider": DEFAULT_PROVIDER_ROUTING,
     "paperReview.deepModel": supportedStringDefault(
       overrides.get("paperReview.deepModel"),
       PAPER_REVIEW_MODEL_OPTIONS,
@@ -290,6 +333,28 @@ export async function loadStringSettings(): Promise<StringSettings> {
       DEFAULT_STRING_SETTINGS["live.relatedLinksModel"],
     ),
   };
+  snap["analysis.primaryProvider"] = isProviderRoutingPreferenceForModel(
+    snap["analysis.primaryModel"],
+    overrides.get("analysis.primaryProvider") ?? "",
+  )
+    ? (overrides.get("analysis.primaryProvider") as ProviderRoutingPreference)
+    : isProviderRoutingPreferenceForModel(
+          snap["analysis.primaryModel"],
+          DEFAULT_STRING_SETTINGS["analysis.primaryProvider"],
+        )
+      ? DEFAULT_STRING_SETTINGS["analysis.primaryProvider"]
+      : DEFAULT_PROVIDER_ROUTING;
+  snap["analysis.fallbackProvider"] = isProviderRoutingPreferenceForModel(
+    snap["analysis.fallbackModel"],
+    overrides.get("analysis.fallbackProvider") ?? "",
+  )
+    ? (overrides.get("analysis.fallbackProvider") as ProviderRoutingPreference)
+    : isProviderRoutingPreferenceForModel(
+          snap["analysis.fallbackModel"],
+          DEFAULT_STRING_SETTINGS["analysis.fallbackProvider"],
+        )
+      ? DEFAULT_STRING_SETTINGS["analysis.fallbackProvider"]
+      : DEFAULT_PROVIDER_ROUTING;
   cachedStringSnapshot = snap;
   cachedStringsAt = now;
   return snap;
@@ -334,6 +399,17 @@ export function isPerplexitySearchModelSetting(
   value: string,
 ): value is PerplexitySearchModelSetting {
   return PERPLEXITY_SEARCH_MODEL_OPTIONS.some((option) => option === value);
+}
+
+export function isAnalysisModelSetting(value: string): boolean {
+  return isAnalysisModelId(value);
+}
+
+export function isAnalysisProviderSetting(
+  modelId: string,
+  value: string,
+): boolean {
+  return isProviderRoutingPreferenceForModel(modelId, value);
 }
 
 export function factCheckModelForAttempt(

@@ -24,7 +24,7 @@ import {
   maxCreditsForCalls,
   modelCreditRate,
 } from "@/lib/jiddu-credit-rates";
-import { DEFAULT_MODEL_CHAIN } from "@/lib/llm/fallback";
+import { analysisRoutingFromSettings } from "@/lib/analysis-routing";
 
 export const runtime = "nodejs";
 // Fact-check extracts claims AND verifies each via Perplexity Sonar (web
@@ -40,6 +40,7 @@ export async function POST(req: NextRequest) {
     loadStringSettings(),
   ]);
   const verifyModel = stringSettings["factcheck.fastModel"];
+  const analysisRouting = analysisRoutingFromSettings(stringSettings);
   // Tighter, dedicated bucket — each claim is a paid Sonar call.
   const rl = consume(`v1:factcheck:${auth.id}`, bucketFor(settings, "rate.apiFactcheck", auth));
   if (!rl.allowed) return rateLimitResponse(rl.retryAfterSec);
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest) {
   const maxClaims = Math.max(1, Math.floor(settings["api.maxClaims"]));
   const meter = await createApiCreditMeter(auth, {
     amount:
-      maxCreditsForCalls(DEFAULT_MODEL_CHAIN, 1) +
+      maxCreditsForCalls(analysisRouting.modelChain, 1) +
       maxClaims * modelCreditRate(verifyModel),
     feature: "factcheck_api",
     metadata: { apiKeyId: auth.id, maxClaims },
@@ -75,6 +76,7 @@ export async function POST(req: NextRequest) {
       signal: req.signal,
       apiKey: auth.apiKey,
       factCheckModel: verifyModel,
+      analysisRouting,
       onModelUsed(model) {
         meter.recordModel(model);
         history.recordModel(model);

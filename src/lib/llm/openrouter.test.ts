@@ -17,7 +17,7 @@ test("normalizes a fenced image transcription without changing its text", () => 
 });
 
 test("uses GPT-5.6 Luna first and paid Gemma 4 31B as the fallback", () => {
-  assert.equal(MODEL_CATALOG[0]?.id, "gpt-5.6-luna");
+  assert.equal(MODEL_CATALOG.some((model) => model.id === "gpt-5.6-luna"), true);
   assert.equal(resolveModel().openrouter, "openai/gpt-5.6-luna");
   assert.equal(resolveModel().reasoningEffort, "high");
   assert.equal(resolveModel().supportsVision, true);
@@ -32,6 +32,21 @@ test("uses GPT-5.6 Luna first and paid Gemma 4 31B as the fallback", () => {
     "gpt-5.6-luna",
     "gemma-4-31b-it",
   ]);
+});
+
+test("offers the compatible GLM and frontier model catalog", () => {
+  const glm = resolveModel("glm-5.3-flash");
+  assert.equal(glm.openrouter, "z-ai/glm-5.3-flash");
+  assert.equal(glm.reasoningEffort, "high");
+  assert.equal(glm.supportsVision, true);
+  for (const model of [
+    "gpt-5.6-sol",
+    "gpt-5.6-sol-pro",
+    "claude-sonnet-5",
+    "claude-opus-5",
+  ]) {
+    assert.equal(resolveModel(model).id, model);
+  }
 });
 
 test("uses Luna Pro at xhigh reasoning for Deep review", () => {

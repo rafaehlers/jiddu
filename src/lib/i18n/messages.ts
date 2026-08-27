@@ -633,7 +633,7 @@ const en: Messages = {
     "— no creed, authority, or method can hand it to you; you have to get there yourself. That is the whole point of the tool: it doesn't rule a text true or false for you, it gives you the instruments to read it critically and decide on your own.",
   privacy: "Privacy:",
   privacy_body:
-    "your content — including pasted screenshots and selected PDF page images when visual inspection is needed — is sent to the chosen model via OpenRouter. Jiddu does not retain screenshot files; their extracted text is stored locally under a shareable id.",
+    "your content — including pasted screenshots and selected PDF page images when visual inspection is needed — is sent through OpenRouter to the model configured by the operator. Jiddu does not retain screenshot files; their extracted text is stored locally under a shareable id.",
   see_demo: "See a demo",
   see_demo_for: (feature) => {
     const normalized = feature.toLocaleLowerCase("en-US");
@@ -1234,9 +1234,9 @@ const en: Messages = {
     {
       title: "3. Models and fallback",
       paragraphs: [
-        "Two model families are exposed in the picker: [🇺🇸 GPT-5.6 Luna](https://openrouter.ai/openai/gpt-5.6-luna) (default) and [🇺🇸 Gemma 4 31B](https://openrouter.ai/google/gemma-4-31b-it). Offering both lets users compare borderline interpretations and avoids making every analysis depend on one provider.",
+        "The public form does not expose model selection. An operator chooses the primary model, automatic fallback and compatible OpenRouter provider routing in Admin Settings, keeping one consistent analysis policy across Jiddu.",
         "Jiddu can fall back to the other model family when the selected provider is unavailable. Work already returned is preserved rather than discarded, so a visibly partial result should be treated as partial.",
-        "Perplexity Sonar is used exclusively for fact-check verdicts because it has built-in web search. Operators can route fast and deep checks separately in Admin Settings; it is never exposed in the public model picker.",
+        "Perplexity Sonar is used exclusively for fact-check verdicts because it has built-in web search. Operators can route fast and deep checks separately in Admin Settings; it is not exposed in the public form.",
       ],
     },
     {
@@ -1680,7 +1680,7 @@ const pt: Messages = {
     "— nenhum credo, autoridade ou método pode entregá-la a você; é preciso chegar até ela por conta própria. Esse é o propósito da ferramenta: ela não determina se um texto é verdadeiro ou falso por você; oferece os instrumentos para lê-lo criticamente e decidir por conta própria.",
   privacy: "Privacidade:",
   privacy_body:
-    "seu conteúdo — incluindo screenshots colados e imagens de páginas selecionadas do PDF quando necessário — é enviado ao modelo escolhido via OpenRouter. O Jiddu não retém o arquivo do screenshot; o texto extraído é armazenado localmente sob um id compartilhável.",
+    "seu conteúdo — incluindo screenshots colados e imagens de páginas selecionadas do PDF quando necessário — é enviado via OpenRouter ao modelo configurado pelo operador. O Jiddu não retém o arquivo do screenshot; o texto extraído é armazenado localmente sob um id compartilhável.",
   see_demo: "Ver demonstração",
   see_demo_for: (feature) =>
     `Ver uma demonstração de ${feature.toLocaleLowerCase("pt-BR")}`,
@@ -2282,7 +2282,7 @@ const pt: Messages = {
     {
       title: "3. Modelos e fallback",
       paragraphs: [
-        "Duas famílias de modelos aparecem no seletor: [🇺🇸 GPT-5.6 Luna](https://openrouter.ai/openai/gpt-5.6-luna) (padrão) e [🇺🇸 Gemma 4 31B](https://openrouter.ai/google/gemma-4-31b-it). Ter ambas permite comparar interpretações limítrofes e evita que toda análise dependa de um único provedor.",
+        "O formulário público não exibe seleção de modelo. O operador escolhe o modelo primário, o fallback automático e o roteamento por provedores compatíveis da OpenRouter em Admin Settings, mantendo uma política única de análise no Jiddu.",
         "O Jiddu pode recorrer à outra família de modelos quando o provedor selecionado está indisponível. O trabalho já retornado é preservado, portanto um resultado visivelmente parcial deve ser tratado como parcial.",
         "Perplexity Sonar é usado exclusivamente pros vereditos de fact-check porque tem busca web embutida. Operadores podem separar o modelo rápido e o aprofundado nas Configurações do Admin; ele nunca aparece no seletor público de modelo.",
       ],
@@ -2728,7 +2728,7 @@ const es: Messages = {
     "— ningún credo, autoridad o método puede entregártela; tienes que llegar a ella por tu cuenta. Ese es precisamente el propósito de la herramienta: no decide por ti si un texto es verdadero o falso, sino que te da los instrumentos para leerlo críticamente y decidir por tu cuenta.",
   privacy: "Privacidad:",
   privacy_body:
-    "tu contenido — incluidos screenshots pegados e imágenes de páginas seleccionadas del PDF cuando sea necesario — se envía al modelo elegido vía OpenRouter. Jiddu no conserva el archivo del screenshot; el texto extraído se almacena localmente bajo un id compartible.",
+    "tu contenido — incluidos screenshots pegados e imágenes de páginas seleccionadas del PDF cuando sea necesario — se envía vía OpenRouter al modelo configurado por el operador. Jiddu no conserva el archivo del screenshot; el texto extraído se almacena localmente bajo un id compartible.",
   see_demo: "Ver demostración",
   see_demo_for: (feature) =>
     `Ver una demostración de ${feature.toLocaleLowerCase("es")}`,
@@ -3332,7 +3332,7 @@ const es: Messages = {
     {
       title: "3. Modelos y fallback",
       paragraphs: [
-        "Dos familias de modelos aparecen en el selector: [🇺🇸 GPT-5.6 Luna](https://openrouter.ai/openai/gpt-5.6-luna) (por defecto) y [🇺🇸 Gemma 4 31B](https://openrouter.ai/google/gemma-4-31b-it). Tener ambas permite comparar interpretaciones limítrofes y evita que todo análisis dependa de un solo proveedor.",
+        "El formulario público no muestra selección de modelo. El operador elige el modelo principal, el fallback automático y el enrutamiento por proveedores compatibles de OpenRouter en Admin Settings, manteniendo una política única de análisis en Jiddu.",
         "Jiddu puede recurrir a la otra familia de modelos cuando el proveedor seleccionado no está disponible. El trabajo ya devuelto se conserva, por lo que un resultado visiblemente parcial debe tratarse como parcial.",
         "Perplexity Sonar se usa exclusivamente para los veredictos de fact-check porque tiene búsqueda web incorporada. Los operadores pueden separar el modelo rápido y el profundo en Configuración del administrador; nunca aparece en el selector público de modelo.",
       ],

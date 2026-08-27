@@ -3,6 +3,13 @@ export type PaperReviewErrorLanguage = "en" | "pt" | "es";
 const MODEL_LABELS: Record<string, string> = {
   "gpt-5.6-luna": "GPT-5.6 Luna",
   "gpt-5.6-luna-pro": "GPT-5.6 Luna Pro",
+  "gpt-5.6-terra": "GPT-5.6 Terra",
+  "gpt-5.6-terra-pro": "GPT-5.6 Terra Pro",
+  "gpt-5.6-sol": "GPT-5.6 Sol",
+  "gpt-5.6-sol-pro": "GPT-5.6 Sol Pro",
+  "claude-sonnet-5": "Claude Sonnet 5",
+  "claude-opus-5": "Claude Opus 5",
+  "glm-5.3-flash": "GLM-5.3 Flash",
   "gemma-4-31b-it": "Gemma 4 31B",
   // Retained so historical DeepSeek review telemetry remains readable.
   "deepseek-v4-flash-0731": "DeepSeek V4 Flash 0731",

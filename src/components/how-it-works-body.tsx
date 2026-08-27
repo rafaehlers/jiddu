@@ -3,44 +3,29 @@
 import { Fragment } from "react";
 import { PageTitle } from "@/components/page-title";
 import { useI18n } from "@/lib/i18n/provider";
-import {
-  creditsForModels,
-  DEFAULT_LIVE_MINIMUM_CREDITS,
-  JIDDU_CREDIT_RATE_VERSION,
-  maxCreditsForCalls,
-  paperReviewMaximumModels,
-} from "@/lib/jiddu-credit-rates";
-import { DEFAULT_MODEL_CHAIN } from "@/lib/llm/fallback";
+import { JIDDU_CREDIT_RATE_VERSION } from "@/lib/jiddu-credit-rates";
 
-const DEFAULT_PRIMARY_MODEL = DEFAULT_MODEL_CHAIN[0] ?? "gpt-5.6-luna";
-const PUBLIC_CREDIT_ESTIMATES = {
-  baseCall: maxCreditsForCalls(DEFAULT_MODEL_CHAIN, 1),
-  standardReview: creditsForModels(
-    paperReviewMaximumModels({
-      depth: "standard",
-      selectedModel: DEFAULT_PRIMARY_MODEL,
-    }),
-  ),
-  deepReview: creditsForModels(
-    paperReviewMaximumModels({
-      depth: "deep",
-      selectedModel: DEFAULT_PRIMARY_MODEL,
-      deepModel: "gpt-5.6-luna-pro",
-      criticModel: "claude-opus-4.8",
-    }),
-  ),
+export type PublicCreditEstimates = {
+  baseCall: number;
+  standardReview: number;
+  deepReview: number;
 };
 
 // Technical walkthrough of every Jiddu pipeline. Same content pattern as
 // LegalBody: structured array of {title, paragraphs} lives in i18n so the
 // three locales stay in sync. Paragraphs render markdown-style links —
 // [label](url) — inline.
-export function HowItWorksBody() {
+export function HowItWorksBody({
+  creditEstimates,
+  liveMinimumCredits,
+}: {
+  creditEstimates: PublicCreditEstimates;
+  liveMinimumCredits: number;
+}) {
   const { lang, t } = useI18n();
   const sections = HOW_IT_WORKS_SECTION_ORDER.map(
     (index) => t.how_it_works_sections[index],
   );
-  const liveMinimumCredits = DEFAULT_LIVE_MINIMUM_CREDITS;
   return (
     <article className="mx-auto max-w-5xl w-full px-4 sm:px-6 py-10 sm:py-16 flex flex-col gap-8">
       <header className="flex flex-col gap-2">
@@ -83,6 +68,7 @@ export function HowItWorksBody() {
                     <PublicCreditRateTable
                       table={s.creditTable}
                       liveMinimumCredits={liveMinimumCredits}
+                      creditEstimates={creditEstimates}
                       locale={lang === "pt" ? "pt-BR" : lang === "es" ? "es" : "en-US"}
                     />
                   ) : null;
@@ -141,20 +127,22 @@ type CreditTable = NonNullable<
 function PublicCreditRateTable({
   table,
   liveMinimumCredits,
+  creditEstimates,
   locale,
 }: {
   table: CreditTable;
   liveMinimumCredits: number;
+  creditEstimates: PublicCreditEstimates;
   locale: string;
 }) {
   const replacements = {
     "{liveCredits}": Math.ceil(liveMinimumCredits).toLocaleString(locale),
     "{rateVersion}": JIDDU_CREDIT_RATE_VERSION,
-    "{baseCallCredits}": PUBLIC_CREDIT_ESTIMATES.baseCall.toLocaleString(locale),
+    "{baseCallCredits}": creditEstimates.baseCall.toLocaleString(locale),
     "{standardReviewCredits}":
-      PUBLIC_CREDIT_ESTIMATES.standardReview.toLocaleString(locale),
+      creditEstimates.standardReview.toLocaleString(locale),
     "{deepReviewCredits}":
-      PUBLIC_CREDIT_ESTIMATES.deepReview.toLocaleString(locale),
+      creditEstimates.deepReview.toLocaleString(locale),
   };
   const interpolate = (text: string) =>
     Object.entries(replacements).reduce(

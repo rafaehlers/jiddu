@@ -26,6 +26,7 @@ import {
   creditsForModels,
   paperReviewMaximumModels,
 } from "@/lib/jiddu-credit-rates";
+import { analysisRoutingFromSettings } from "@/lib/analysis-routing";
 
 export const runtime = "nodejs";
 export const maxDuration = 900;
@@ -101,6 +102,7 @@ export async function POST(req: NextRequest) {
     }
 
     const options = parseReviewFields(fields);
+    const analysisRouting = analysisRoutingFromSettings(routing);
     const venueProfile = resolveVenueProfile({
       profileId: options.venueProfileId,
       venueName: options.venue,
@@ -117,6 +119,7 @@ export async function POST(req: NextRequest) {
       venueProfile,
       reviewDate: options.reviewDate,
       reviewDepth: options.depth,
+      modelId: analysisRouting.modelChain[0],
     });
     const maximumModels = paperReviewMaximumModels({
       depth: prepared.reviewDepth,

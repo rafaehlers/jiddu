@@ -6,6 +6,8 @@ import { prisma } from "@/lib/db";
 import {
   DEFAULT_SETTINGS,
   invalidateSettingsCache,
+  isAnalysisModelSetting,
+  isAnalysisProviderSetting,
   isLiveTranscriptionDelaySetting,
   isPaperReviewModelSetting,
   isPerplexitySearchModelSetting,
@@ -35,6 +37,27 @@ export async function saveSettingsAction(formData: FormData): Promise<void> {
     (inviteValues.perUserLimit < 1 || inviteValues.acceptanceCredits < 1)
   ) {
     redirect("/admin/settings?error=incomplete_invites");
+  }
+  const primaryModel = String(
+    formData.get("analysis.primaryModel") ?? "",
+  ).trim();
+  const fallbackModel = String(
+    formData.get("analysis.fallbackModel") ?? "",
+  ).trim();
+  const primaryProvider = String(
+    formData.get("analysis.primaryProvider") ?? "",
+  ).trim();
+  const fallbackProvider = String(
+    formData.get("analysis.fallbackProvider") ?? "",
+  ).trim();
+  if (
+    !isAnalysisModelSetting(primaryModel) ||
+    !isAnalysisModelSetting(fallbackModel) ||
+    primaryModel === fallbackModel ||
+    !isAnalysisProviderSetting(primaryModel, primaryProvider) ||
+    !isAnalysisProviderSetting(fallbackModel, fallbackProvider)
+  ) {
+    redirect("/admin/settings?error=invalid_analysis_routing");
   }
 
   for (const key of KEYS) {
@@ -76,6 +99,14 @@ export async function saveSettingsAction(formData: FormData): Promise<void> {
   const deepModel = String(
     formData.get("paperReview.deepModel") ?? "",
   ).trim();
+
+  await Promise.all([
+    setStringSetting("analysis.primaryModel", primaryModel),
+    setStringSetting("analysis.fallbackModel", fallbackModel),
+    setStringSetting("analysis.primaryProvider", primaryProvider),
+    setStringSetting("analysis.fallbackProvider", fallbackProvider),
+  ]);
+
   if (isPaperReviewModelSetting(deepModel)) {
     await setStringSetting("paperReview.deepModel", deepModel);
   }

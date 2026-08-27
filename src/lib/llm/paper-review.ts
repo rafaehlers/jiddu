@@ -41,6 +41,11 @@ import {
   readOpenRouterUsage,
   type OpenRouterUsage,
 } from "../openrouter-usage";
+import {
+  isAnalysisModelId,
+  providerRoutingPayload,
+  type ProviderRoutingPreference,
+} from "../analysis-models";
 
 const OPENROUTER_BASE = "https://openrouter.ai/api/v1";
 const REFERER = process.env.OPENROUTER_REFERER || "https://jiddu.app";
@@ -76,6 +81,8 @@ type RunOptions = {
   signal?: AbortSignal;
   strictModel?: boolean;
   apiKey?: string;
+  fallbackModels?: readonly string[];
+  providerRoutingByModel?: Record<string, ProviderRoutingPreference>;
   onUsage?: (usage: OpenRouterUsage) => void;
   onCallEvent?: (event: PaperReviewModelCallEvent) => void | Promise<void>;
 };
@@ -140,7 +147,11 @@ export async function researchPaperNovelty(
   const client = getClient(opts.apiKey);
   const errors: string[] = [];
 
-  for (const modelId of modelChain(opts.modelId, opts.strictModel)) {
+  for (const modelId of modelChain(
+    opts.modelId,
+    opts.strictModel,
+    opts.fallbackModels,
+  )) {
     const choice = resolvePaperReviewModel(modelId);
     try {
       return await trackModelCall(choice.id, opts, async () => {
@@ -174,7 +185,7 @@ export async function researchPaperNovelty(
             ],
             max_tool_calls: 5,
             max_tokens: 8_000,
-            ...providerExtras(choice),
+            ...providerExtras(choice, opts.providerRoutingByModel?.[choice.id]),
           } as unknown as OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming,
           opts.signal ? { signal: opts.signal } : undefined,
         );
@@ -362,7 +373,11 @@ async function runStructuredWithFallback<T>(
   const client = getClient(opts.apiKey);
   const errors: string[] = [];
 
-  for (const modelId of modelChain(opts.modelId, opts.strictModel)) {
+  for (const modelId of modelChain(
+    opts.modelId,
+    opts.strictModel,
+    opts.fallbackModels,
+  )) {
     const choice = resolvePaperReviewModel(modelId);
     try {
       return await trackModelCall(choice.id, opts, async () => {
@@ -391,7 +406,7 @@ async function runStructuredWithFallback<T>(
                     function: { name: "report_analysis" },
                   },
             max_tokens: 16_000,
-            ...providerExtras(choice),
+            ...providerExtras(choice, opts.providerRoutingByModel?.[choice.id]),
           } as OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming,
           opts.signal ? { signal: opts.signal } : undefined,
         );
@@ -426,29 +441,36 @@ async function runStructuredWithFallback<T>(
   throw new Error(`Structured review stage failed: ${errors.join(" / ")}`);
 }
 
-function modelChain(selected?: string, strictModel = false): string[] {
+function modelChain(
+  selected?: string,
+  strictModel = false,
+  fallbackModels: readonly string[] = DEFAULT_MODEL_CHAIN,
+): string[] {
   const resolved = resolvePaperReviewModel(selected).id;
   if (strictModel) return [resolved];
   return Array.from(
     new Set([
       resolved,
-      ...DEFAULT_MODEL_CHAIN,
+      ...fallbackModels,
     ]),
   );
 }
 
 function providerExtras(
   choice: ReturnType<typeof resolvePaperReviewModel>,
+  preference?: ProviderRoutingPreference,
 ): Record<string, unknown> {
-  const provider = {
-    ...(choice.providerOrder
-      ? {
-          order: choice.providerOrder,
-          allow_fallbacks: false,
-        }
-      : {}),
-    ...(choice.requireParameters ? { require_parameters: true } : {}),
-  };
+  const provider = isAnalysisModelId(choice.id)
+    ? providerRoutingPayload(choice.id, preference)
+    : {
+        ...(choice.providerOrder
+          ? {
+              order: choice.providerOrder,
+              allow_fallbacks: false,
+            }
+          : {}),
+        ...(choice.requireParameters ? { require_parameters: true } : {}),
+      };
   return {
     ...(Object.keys(provider).length > 0 ? { provider } : {}),
     ...(choice.reasoningEffort

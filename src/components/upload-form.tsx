@@ -11,7 +11,6 @@ import { VenueSuggestionModal } from "@/components/venue-suggestion-modal";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n/provider";
 import type { Messages } from "@/lib/i18n/messages";
-import { MODEL_CATALOG } from "@/lib/llm";
 import { EXPLAIN_LEVELS, type ExplainLevel } from "@/lib/explain-schema";
 import type {
   PaperType,
@@ -82,7 +81,6 @@ export function UploadForm({
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const imagePreviewUrlRef = useRef<string | null>(null);
   const [localError, setLocalError] = useState<ErrorState | null>(null);
-  const [model, setModel] = useState<string>(MODEL_CATALOG[0].id);
   // Explanation audience level. Only sent (and only shown) in explain mode;
   // "undergrad" is the sensible default for an academic paper.
   const [level, setLevel] = useState<ExplainLevel>("undergrad");
@@ -262,7 +260,6 @@ export function UploadForm({
         const fd = new FormData();
         fd.set("file", file);
         fd.set("lang", lang);
-        fd.set("model", model);
         if (mode === "explain") fd.set("level", level);
         if (mode === "review") {
           if (venue.trim()) fd.set("venue", venue.trim());
@@ -277,8 +274,8 @@ export function UploadForm({
       } else {
         const base =
           tab === "url"
-            ? { type: "url", url, lang, model }
-            : { type: "text", text, lang, model };
+            ? { type: "url", url, lang }
+            : { type: "text", text, lang };
         const body = JSON.stringify(
           mode === "explain" ? { ...base, level } : base,
         );
@@ -681,37 +678,6 @@ export function UploadForm({
           </div>
         </div>
       )}
-
-      {/* Model picker — a radio group. Each model has a country-of-origin
-          flag so its upstream family is explicit. The same prompt is sent
-          either way, apart from model-specific routing parameters. */}
-      <div className="flex flex-col gap-2">
-        <span className="text-xs uppercase tracking-wide text-muted">
-          {t.model}
-        </span>
-        <div role="radiogroup" aria-label={t.model} className="flex items-center gap-x-5 gap-y-2 flex-wrap">
-          {MODEL_CATALOG.map((m) => {
-            const checked = model === m.id;
-            return (
-              <button
-                key={m.id}
-                type="button"
-                role="radio"
-                aria-checked={checked}
-                onClick={() => setModel(m.id)}
-                className={cn(
-                  "inline-flex items-center gap-2 text-sm cursor-pointer transition-colors",
-                  checked ? "text-foreground" : "text-muted hover:text-foreground",
-                )}
-              >
-                <RadioDot checked={checked} />
-                {m.flag && <span className="text-base leading-none">{m.flag}</span>}
-                {m.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
 
       <div className="flex items-center justify-between">
         <span className="text-xs text-muted">

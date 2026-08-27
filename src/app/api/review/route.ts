@@ -29,6 +29,7 @@ import {
 } from "@/lib/web-credit-billing";
 import { prisma } from "@/lib/db";
 import type { OpenRouterUsage } from "@/lib/openrouter-usage";
+import { analysisRoutingFromSettings } from "@/lib/analysis-routing";
 
 export const runtime = "nodejs";
 export const maxDuration = 900;
@@ -84,7 +85,8 @@ export async function POST(req: NextRequest) {
   const reviewDate =
     normalizeDate(normalizeString(form.get("reviewDate"))) ??
     new Date().toISOString().slice(0, 10);
-  const selectedModel = normalizeString(form.get("model")) ?? "gpt-5.6-luna";
+  const analysisRouting = analysisRoutingFromSettings(routing);
+  const selectedModel = analysisRouting.modelChain[0];
   const reviewDepth = normalizeReviewDepth(form.get("reviewDepth"));
 
   let prepared;

@@ -16,9 +16,9 @@ import { liveSpeakerAttribution } from "@/lib/live-analysis-config";
 import { readLiveContext } from "@/lib/live-context-schema";
 import { getProvider, resolveModel } from "@/lib/llm";
 import {
-  DEFAULT_MODEL_CHAIN,
   withModelFallback,
 } from "@/lib/llm/fallback";
+import { loadAnalysisRouting } from "@/lib/analysis-routing";
 import type { OpenRouterUsage } from "@/lib/openrouter-usage";
 import { consume, rateLimitResponse } from "@/lib/rate-limit";
 import type { Sentence } from "@/lib/schema";
@@ -55,7 +55,10 @@ export async function POST(
     return Response.json({ error: "Invalid recovery request." }, { status: 400 });
   }
 
-  const settings = await loadSettings();
+  const [settings, analysisRouting] = await Promise.all([
+    loadSettings(),
+    loadAnalysisRouting(),
+  ]);
   const identity = access.userId ?? access.email ?? "unknown";
   const rate = consume(
     `context:claims-recovery:${identity}`,
@@ -151,9 +154,13 @@ export async function POST(
     }
 
     const modelChain = Array.from(
-      new Set([resolveModel(analysis.model).id, ...DEFAULT_MODEL_CHAIN]),
+      new Set([resolveModel(analysis.model).id, ...analysisRouting.modelChain]),
     );
-    const llm = getProvider(modelChain[0], access.apiKey);
+    const llm = getProvider(
+      modelChain[0],
+      access.apiKey,
+      analysisRouting.providerRoutingByModel,
+    );
     const reservation = await reserveWebAnalysisCredits(access, {
       amount: maxCreditsForCalls(modelChain, plan.chunks.length),
       feature: "factcheck_extract",

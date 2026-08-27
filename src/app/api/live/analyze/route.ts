@@ -4,6 +4,11 @@ import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { splitSentences } from "@/lib/sentences";
 import { getProvider, resolveModel } from "@/lib/llm";
+import {
+  withModelFallback,
+  withModelFallbackPromise,
+} from "@/lib/llm/fallback";
+import { loadAnalysisRouting } from "@/lib/analysis-routing";
 import { FindingSchema, type Finding, type Sentence } from "@/lib/schema";
 import { ClaimSchema, type Claim } from "@/lib/claims-schema";
 import {
@@ -74,7 +79,6 @@ type Body = {
   text?: string;
   sourceUrl?: unknown;
   lang?: string;
-  model?: string;
   lenses?: string[];
   timeZone?: string;
   finalize?: boolean;
@@ -91,6 +95,7 @@ export async function POST(req: NextRequest) {
 
   const body = (await req.json().catch(() => null)) as Body | null;
   if (!body) return jsonError("Invalid JSON", 400);
+  const analysisRouting = await loadAnalysisRouting();
 
   const text = typeof body.text === "string" ? body.text : "";
   const sourceUrlWasSupplied = Object.prototype.hasOwnProperty.call(
@@ -144,10 +149,14 @@ export async function POST(req: NextRequest) {
       return jsonError(`Session already ${row.status}`, 409);
     }
   } else {
-    const chosenModel = resolveModel(body.model);
+    const chosenModel = resolveModel(analysisRouting.modelChain[0]);
     let llm;
     try {
-      llm = getProvider(chosenModel.id, access.apiKey);
+      llm = getProvider(
+        chosenModel.id,
+        access.apiKey,
+        analysisRouting.providerRoutingByModel,
+      );
     } catch (err) {
       return jsonError(
         err instanceof Error ? err.message : "Provider error",
@@ -269,10 +278,17 @@ export async function POST(req: NextRequest) {
   }
 
   // ── Provider setup ───────────────────────────────────────────────────
-  const chosenModel = resolveModel(body.model ?? row.model);
+  const chosenModel = resolveModel(row.model);
+  const modelChain = Array.from(
+    new Set([chosenModel.id, ...analysisRouting.modelChain]),
+  );
   let llm;
   try {
-    llm = getProvider(chosenModel.id, access.apiKey);
+    llm = getProvider(
+      chosenModel.id,
+      access.apiKey,
+      analysisRouting.providerRoutingByModel,
+    );
   } catch (err) {
     permit?.release();
     return jsonError(
@@ -286,9 +302,9 @@ export async function POST(req: NextRequest) {
     reservation = shouldCallProvider
       ? await reserveWebAnalysisCredits(access, {
           amount: shouldAnalyze
-            ? maxCreditsForCalls([chosenModel.id], lenses.length)
+            ? maxCreditsForCalls(modelChain, lenses.length)
             : shouldFinalizeNeutrality
-              ? maxCreditsForCalls([chosenModel.id], 1)
+              ? maxCreditsForCalls(modelChain, 1)
               : 0,
           feature: "live_analysis",
           resourceId: row.id,
@@ -454,22 +470,28 @@ export async function POST(req: NextRequest) {
               tasks.push(
                 (async () => {
                   try {
-                    const response = await llm.analyzeLiveContext(
-                      {
-                        sentences: toAnalyze,
-                        lang,
-                        contextSentences,
-                        previous: existingLiveContext,
-                        analysisConfig,
-                        finalize,
-                        sourceUrl: capturedSourceUrl,
-                      },
-                      {
-                        signal: abortController.signal,
-                        onUsage: (usage) => usages.push(usage),
-                      },
+                    const response = await withModelFallbackPromise(
+                      modelChain,
+                      (model) =>
+                        llm.analyzeLiveContext(
+                          {
+                            sentences: toAnalyze,
+                            lang,
+                            contextSentences,
+                            previous: existingLiveContext,
+                            analysisConfig,
+                            finalize,
+                            sourceUrl: capturedSourceUrl,
+                          },
+                          {
+                            model,
+                            signal: abortController.signal,
+                            onUsage: (usage) => usages.push(usage),
+                          },
+                        ),
+                      abortController.signal,
+                      (model) => fallbackModels.push(model),
                     );
-                    fallbackModels.push(chosenModel.id);
                     const sanitized = sanitizeLiveContextWindow(
                       response.result,
                       new Set(toAnalyze.map((sentence) => sentence.id)),
@@ -538,27 +560,29 @@ export async function POST(req: NextRequest) {
             if (shouldAnalyze && lenses.includes("fallacy")) {
               tasks.push(
                 (async () => {
-                  let observedModelOutput = false;
                   const seen = new Set<string>(
                     existingFindings.map(findingKey),
                   );
                   try {
-                    for await (const event of llm.analyzeStream(
-                      {
-                        sentences: toAnalyze,
-                        lang,
-                        contextSentences,
-                        analysisConfig,
-                      },
-                      {
-                        signal: abortController.signal,
-                        onUsage: (usage) => usages.push(usage),
-                      },
+                    for await (const event of withModelFallback(
+                      modelChain,
+                      (model) =>
+                        llm.analyzeStream(
+                          {
+                            sentences: toAnalyze,
+                            lang,
+                            contextSentences,
+                            analysisConfig,
+                          },
+                          {
+                            model,
+                            signal: abortController.signal,
+                            onUsage: (usage) => usages.push(usage),
+                          },
+                        ),
+                      abortController.signal,
+                      (model) => fallbackModels.push(model),
                     )) {
-                      if (!observedModelOutput) {
-                        fallbackModels.push(chosenModel.id);
-                        observedModelOutput = true;
-                      }
                       if (event.type === "finding") {
                         if (!isAnchoredToWindow(event.finding, toAnalyze)) {
                           continue;
@@ -592,7 +616,6 @@ export async function POST(req: NextRequest) {
             if (shouldAnalyze && lenses.includes("factcheck") && factCheckRow) {
               tasks.push(
                 (async () => {
-                  let observedModelOutput = false;
                   const seen = new Set(existingClaims.map(claimKey));
                   let claimCounter = highestClaimCounter(existingClaims);
                   const maxClaims = Math.max(
@@ -600,23 +623,26 @@ export async function POST(req: NextRequest) {
                     Math.floor(settings?.["factcheck.maxClaims"] ?? 50),
                   );
                   try {
-                    for await (const event of llm.extractClaimsStream(
-                      {
-                        sentences: toAnalyze,
-                        lang,
-                        contextSentences,
-                        sourceUrl: capturedSourceUrl,
-                        analysisConfig,
-                      },
-                      {
-                        signal: abortController.signal,
-                        onUsage: (usage) => usages.push(usage),
-                      },
+                    for await (const event of withModelFallback(
+                      modelChain,
+                      (model) =>
+                        llm.extractClaimsStream(
+                          {
+                            sentences: toAnalyze,
+                            lang,
+                            contextSentences,
+                            sourceUrl: capturedSourceUrl,
+                            analysisConfig,
+                          },
+                          {
+                            model,
+                            signal: abortController.signal,
+                            onUsage: (usage) => usages.push(usage),
+                          },
+                        ),
+                      abortController.signal,
+                      (model) => fallbackModels.push(model),
                     )) {
-                      if (!observedModelOutput) {
-                        fallbackModels.push(chosenModel.id);
-                        observedModelOutput = true;
-                      }
                       if (event.type === "language") {
                         windowLanguage ??= event.language;
                         continue;
@@ -673,7 +699,6 @@ export async function POST(req: NextRequest) {
             ) {
               tasks.push(
                 (async () => {
-                  let observedModelOutput = false;
                   let finalResetSent = false;
                   const neutralitySentences = finalize
                     ? allSentences
@@ -689,22 +714,25 @@ export async function POST(req: NextRequest) {
                     send("neutralityReset", {});
                   };
                   try {
-                    for await (const event of llm.analyzeNeutralityStream(
-                      {
-                        sentences: neutralitySentences,
-                        lang,
-                        contextSentences: finalize ? [] : contextSentences,
-                        analysisConfig,
-                      },
-                      {
-                        signal: abortController.signal,
-                        onUsage: (usage) => usages.push(usage),
-                      },
+                    for await (const event of withModelFallback(
+                      modelChain,
+                      (model) =>
+                        llm.analyzeNeutralityStream(
+                          {
+                            sentences: neutralitySentences,
+                            lang,
+                            contextSentences: finalize ? [] : contextSentences,
+                            analysisConfig,
+                          },
+                          {
+                            model,
+                            signal: abortController.signal,
+                            onUsage: (usage) => usages.push(usage),
+                          },
+                        ),
+                      abortController.signal,
+                      (model) => fallbackModels.push(model),
                     )) {
-                      if (!observedModelOutput) {
-                        fallbackModels.push(chosenModel.id);
-                        observedModelOutput = true;
-                      }
                       if (event.type === "finding") {
                         if (
                           !isAnchoredToWindow(

@@ -69,7 +69,10 @@ import {
   paperReviewMaximumModels,
   type JidduCreditFeature,
 } from "@/lib/jiddu-credit-rates";
-import { DEFAULT_MODEL_CHAIN } from "@/lib/llm/fallback";
+import {
+  analysisRoutingFromSettings,
+  loadAnalysisRouting,
+} from "@/lib/analysis-routing";
 import {
   JIDDU_MCP_NAME,
   JIDDU_MCP_VERSION,
@@ -202,8 +205,9 @@ const mcpHandler = createMcpHandler(
         let history: ApiAnalysisHistory | null = null;
         try {
           const auth = currentMcpAuth();
+          const analysisRouting = await loadAnalysisRouting();
           meter = await createMcpCreditMeter({
-            amount: maxCreditsForCalls(DEFAULT_MODEL_CHAIN, 1),
+            amount: maxCreditsForCalls(analysisRouting.modelChain, 1),
             feature: "fallacy",
           });
           history = await startMcpAnalysisHistory({
@@ -214,6 +218,7 @@ const mcpHandler = createMcpHandler(
           const result = await runFallacies(text, {
             lang,
             apiKey: auth.apiKey,
+            analysisRouting,
             onModelUsed(model) {
               meter?.recordModel(model);
               history?.recordModel(model);
@@ -255,13 +260,14 @@ const mcpHandler = createMcpHandler(
             loadStringSettings(),
           ]);
           const verifyModel = stringSettings["factcheck.fastModel"];
+          const analysisRouting = analysisRoutingFromSettings(stringSettings);
           const maxClaims = Math.max(
             1,
             Math.floor(settings["api.maxClaims"]),
           );
           meter = await createMcpCreditMeter({
             amount:
-              maxCreditsForCalls(DEFAULT_MODEL_CHAIN, 1) +
+              maxCreditsForCalls(analysisRouting.modelChain, 1) +
               maxClaims * modelCreditRate(verifyModel),
             feature: "factcheck_api",
             metadata: { maxClaims },
@@ -277,6 +283,7 @@ const mcpHandler = createMcpHandler(
             maxClaims,
             apiKey: auth.apiKey,
             factCheckModel: verifyModel,
+            analysisRouting,
             onModelUsed(model) {
               meter?.recordModel(model);
               history?.recordModel(model);
@@ -320,8 +327,9 @@ const mcpHandler = createMcpHandler(
         let history: ApiAnalysisHistory | null = null;
         try {
           const auth = currentMcpAuth();
+          const analysisRouting = await loadAnalysisRouting();
           meter = await createMcpCreditMeter({
-            amount: maxCreditsForCalls(DEFAULT_MODEL_CHAIN, 1),
+            amount: maxCreditsForCalls(analysisRouting.modelChain, 1),
             feature: "neutrality",
           });
           history = await startMcpAnalysisHistory({
@@ -332,6 +340,7 @@ const mcpHandler = createMcpHandler(
           const result = await runNeutrality(text, {
             lang,
             apiKey: auth.apiKey,
+            analysisRouting,
             onModelUsed(model) {
               meter?.recordModel(model);
               history?.recordModel(model);
@@ -368,8 +377,9 @@ const mcpHandler = createMcpHandler(
         let history: ApiAnalysisHistory | null = null;
         try {
           const auth = currentMcpAuth();
+          const analysisRouting = await loadAnalysisRouting();
           meter = await createMcpCreditMeter({
-            amount: maxCreditsForCalls(DEFAULT_MODEL_CHAIN, 1),
+            amount: maxCreditsForCalls(analysisRouting.modelChain, 1),
             feature: "slop",
           });
           history = await startMcpAnalysisHistory({
@@ -380,6 +390,7 @@ const mcpHandler = createMcpHandler(
           const result = await runSlop(text, {
             lang,
             apiKey: auth.apiKey,
+            analysisRouting,
             onModelUsed(model) {
               meter?.recordModel(model);
               history?.recordModel(model);
@@ -426,8 +437,9 @@ const mcpHandler = createMcpHandler(
         try {
           const auth = currentMcpAuth();
           const lvl = normalizeLevel(level);
+          const analysisRouting = await loadAnalysisRouting();
           meter = await createMcpCreditMeter({
-            amount: maxCreditsForCalls(DEFAULT_MODEL_CHAIN, 1),
+            amount: maxCreditsForCalls(analysisRouting.modelChain, 1),
             feature: "explain",
             metadata: { level: lvl },
           });
@@ -441,6 +453,7 @@ const mcpHandler = createMcpHandler(
             lang,
             level: lvl,
             apiKey: auth.apiKey,
+            analysisRouting,
             onModelUsed(model) {
               meter?.recordModel(model);
               history?.recordModel(model);
@@ -569,6 +582,8 @@ const mcpHandler = createMcpHandler(
             track: venue_track,
             paperType: paper_type,
           });
+          const routing = await loadStringSettings();
+          const analysisRouting = analysisRoutingFromSettings(routing);
           const prepared = await preparePaperReview({
             ...source,
             ownerWorkosUserId: auth.userId,
@@ -577,8 +592,8 @@ const mcpHandler = createMcpHandler(
             reviewDate:
               review_date ?? new Date().toISOString().slice(0, 10),
             reviewDepth: depth ?? "standard",
+            modelId: analysisRouting.modelChain[0],
           });
-          const routing = await loadStringSettings();
           const maximumModels = paperReviewMaximumModels({
             depth: prepared.reviewDepth,
             selectedModel: prepared.modelId,
