@@ -55,6 +55,18 @@ test("describes the production API-key authentication contract", () => {
   });
 });
 
+test("accepts the five-character public result IDs in review polling", () => {
+  const path = JIDDU_OPENAPI.paths["/api/v1/adversarial-reviews/{id}"];
+  const parameter = path.get.parameters[0];
+
+  assert.deepEqual(parameter.schema, {
+    type: "string",
+    minLength: 5,
+    maxLength: 30,
+    pattern: "^[A-Za-z0-9_-]+$",
+  });
+});
+
 test("resolves every local OpenAPI reference", () => {
   const document: unknown = JIDDU_OPENAPI;
 

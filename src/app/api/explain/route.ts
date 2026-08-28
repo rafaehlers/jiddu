@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
-import { nanoid } from "nanoid";
 import { prisma } from "@/lib/db";
+import { reserveResultId } from "@/lib/result-id";
 import { ingestUrl } from "@/lib/ingest/url";
 import { ingestAnalysisFile } from "@/lib/ingest/file";
 import { ingestPdf, renderPdfPages } from "@/lib/ingest/pdf";
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
   let lang: Lang = "en";
   let level = normalizeLevel(undefined);
   let pdfBuffer: ArrayBuffer | null = null;
-  const id = nanoid(10);
+  let reservedResultId: string | undefined;
 
   try {
     const ct = req.headers.get("content-type") ?? "";
@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
         const ingested = await ingestAnalysisFile(file, {
           access,
           feature: "explain",
-          resourceId: id,
+          resourceId: (reservedResultId ??= await reserveResultId()),
           routing: analysisRouting,
           lang,
           signal: req.signal,
@@ -173,6 +173,7 @@ export async function POST(req: NextRequest) {
   // Technical batches may contain several complete sections, but never split
   // a section or become visible navigation units.
   const chunks = chunkExplainSections(explainSections);
+  const id = reservedResultId ?? (await reserveResultId());
   const creditReservation = await reserveWebAnalysisCredits(access, {
     // One call per section batch, one evidence-first methods/results reading,
     // and one bounded whole-document synthesis. The evidence-first call is

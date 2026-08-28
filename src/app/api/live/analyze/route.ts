@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
-import { nanoid } from "nanoid";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
+import { reserveResultId } from "@/lib/result-id";
 import { splitSentences } from "@/lib/sentences";
 import { getProvider, resolveModel } from "@/lib/llm";
 import {
@@ -163,7 +163,7 @@ export async function POST(req: NextRequest) {
         400,
       );
     }
-    const id = nanoid(10);
+    const id = await reserveResultId();
     const initialLiveContext = createLiveContextForAnalysis(
       requestedAnalysisConfig,
       lang,

@@ -7,6 +7,13 @@ datasource db {
   provider = "postgresql"
 }
 
+// Global, permanent reservation for short result URLs. Reservations are not
+// deleted with result rows so an old share URL can never point to new content.
+model ResultIdReservation {
+  id        String   @id
+  createdAt DateTime @default(now())
+}
+
 model Analysis {
   id                 String    @id
   ownerWorkosUserId  String?

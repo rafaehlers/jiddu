@@ -25,7 +25,7 @@ export async function GET(
   if (!rl.allowed) return rateLimitResponse(rl.retryAfterSec);
 
   const { id } = await params;
-  if (!/^[A-Za-z0-9_-]{6,30}$/.test(id)) {
+  if (!/^[A-Za-z0-9_-]{5,30}$/.test(id)) {
     return jsonError("Review job not found.", 404, "not_found");
   }
 

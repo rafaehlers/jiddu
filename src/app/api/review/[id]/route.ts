@@ -19,7 +19,7 @@ export async function GET(
   }
 
   const { id } = await params;
-  if (!/^[A-Za-z0-9_-]{6,30}$/.test(id)) {
+  if (!/^[A-Za-z0-9_-]{5,30}$/.test(id)) {
     return Response.json({ error: "Review job not found." }, { status: 404 });
   }
 

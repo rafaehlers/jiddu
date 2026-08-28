@@ -1,7 +1,7 @@
 import "server-only";
 
-import { nanoid } from "nanoid";
 import { prisma } from "@/lib/db";
+import { reserveResultId } from "@/lib/result-id";
 import { getExplainableBlocks } from "@/lib/explain-sections";
 import type { ExplainLevel } from "@/lib/explain-schema";
 import type { Lang } from "@/lib/fallacies";
@@ -58,7 +58,7 @@ export async function startApiAnalysisHistory(
   input: StartApiAnalysisInput,
 ): Promise<ApiAnalysisHistory> {
   const document = ingestText(input.text);
-  const id = nanoid(10);
+  const id = await reserveResultId();
   const initialModel = (await loadAnalysisRouting()).modelChain[0];
   const sourceRef = sourceReference(input.transport, input.sourceLabel);
   const title = briefTopic(document.text) || `${input.transport} analysis`;

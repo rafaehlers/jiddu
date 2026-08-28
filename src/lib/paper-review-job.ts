@@ -1,5 +1,5 @@
-import { nanoid } from "nanoid";
 import { prisma } from "@/lib/db";
+import { reserveResultId } from "@/lib/result-id";
 import { ingestPdf, renderPdfPages } from "@/lib/ingest/pdf";
 import {
   auditPaperReviewQuality,
@@ -177,7 +177,7 @@ export async function preparePaperReview(input: {
   )
     ? (input.reviewDepth ?? "standard")
     : "standard";
-  const id = nanoid(10);
+  const id = await reserveResultId();
   const ingestFinished = Date.now();
   const ingestFinishedAt = new Date(ingestFinished).toISOString();
 

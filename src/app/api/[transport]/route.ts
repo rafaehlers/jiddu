@@ -666,7 +666,7 @@ const mcpHandler = createMcpHandler(
         inputSchema: {
           id: z
             .string()
-            .regex(/^[A-Za-z0-9_-]{6,30}$/)
+            .regex(/^[A-Za-z0-9_-]{5,30}$/)
             .describe("Job id returned by start_adversarial_review."),
         },
       },

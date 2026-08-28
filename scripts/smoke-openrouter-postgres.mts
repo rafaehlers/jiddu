@@ -12,6 +12,7 @@ import "dotenv/config";
 import assert from "node:assert/strict";
 import { nanoid } from "nanoid";
 import { prisma } from "../src/lib/db";
+import { reserveResultId } from "../src/lib/result-id";
 import { claimCacheKey } from "../src/lib/factcheck/cache";
 import {
   MODEL_CATALOG,
@@ -133,7 +134,7 @@ async function smokeFallacy(source: "paste" | "live") {
   assert.equal(output.model, "gpt-5.6-luna");
   assert.ok(output.result.findings.length > 0, `${mode} returned no finding`);
 
-  const id = nanoid(10);
+  const id = await reserveResultId();
   await prisma.analysis.create({
     data: {
       id,
@@ -206,7 +207,7 @@ async function smokeFactCheck() {
   assert.equal(verdict.model, "perplexity/sonar");
   assert.ok(verdict.sources.length > 0, "Sonar returned no cited sources");
 
-  const id = nanoid(10);
+  const id = await reserveResultId();
   await prisma.factCheck.create({
     data: {
       id,
@@ -274,7 +275,7 @@ async function smokeNeutrality() {
   assert.ok(verdict, "neutrality returned no verdict");
   const findings = output.events.filter((event) => event.type === "finding");
 
-  const id = nanoid(10);
+  const id = await reserveResultId();
   await prisma.neutrality.create({
     data: {
       id,
@@ -344,7 +345,7 @@ async function smokeExplain() {
   assert.ok(overview, "explain returned no overview");
   const findings = output.events.filter((event) => event.type === "finding");
 
-  const id = nanoid(10);
+  const id = await reserveResultId();
   await prisma.explanation.create({
     data: {
       id,
@@ -402,7 +403,7 @@ async function smokeSlop() {
   assert.ok(findings.length > 0, "slop returned no finding");
   assert.notEqual(score, undefined, "slop returned no score");
 
-  const id = nanoid(10);
+  const id = await reserveResultId();
   await prisma.slopCheck.create({
     data: {
       id,
@@ -449,7 +450,7 @@ async function smokePaperReview(reviewDepth: "standard" | "deep") {
     track: "Research",
     paperType: "research",
   });
-  const id = nanoid(10);
+  const id = await reserveResultId();
   const reviewDate = "2026-07-31";
   await prisma.paperReview.create({
     data: {

@@ -189,7 +189,7 @@ export const JIDDU_OPENAPI = {
             description: "Job identifier returned by startAdversarialReview.",
             schema: {
               type: "string",
-              minLength: 6,
+              minLength: 5,
               maxLength: 30,
               pattern: "^[A-Za-z0-9_-]+$",
             },

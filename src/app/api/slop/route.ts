@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
-import { nanoid } from "nanoid";
 import { prisma } from "@/lib/db";
+import { reserveResultId } from "@/lib/result-id";
 import { ingestUrl } from "@/lib/ingest/url";
 import { ingestAnalysisFile } from "@/lib/ingest/file";
 import { ingestText } from "@/lib/ingest/text";
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
 
   let doc: IngestedDocument;
   let lang: Lang = "en";
-  const id = nanoid(10);
+  let reservedResultId: string | undefined;
 
   try {
     const ct = req.headers.get("content-type") ?? "";
@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
       const ingested = await ingestAnalysisFile(file, {
         access,
         feature: "slop",
-        resourceId: id,
+        resourceId: (reservedResultId ??= await reserveResultId()),
         routing: analysisRouting,
         lang,
         signal: req.signal,
@@ -125,6 +125,7 @@ export async function POST(req: NextRequest) {
   }
 
   const chunks = chunkSentences(sentences);
+  const id = reservedResultId ?? (await reserveResultId());
   const creditReservation = await reserveWebAnalysisCredits(access, {
     amount: maxCreditsForCalls(modelChain, chunks.length),
     feature: "slop",
