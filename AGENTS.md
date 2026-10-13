@@ -17,6 +17,8 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ## Production publishing — mandatory
 
+- Run the relevant validation checks in `CONTRIBUTING.md` locally.
+  GitHub Actions is disabled for this repository.
 - A plain `git push` updates GitHub but does **not** update the VPS.
 - Whenever Rafael asks to “push”, “subir”, “publicar”, “colocar no ar” or
   “deploy”, commit the intended changes and run `npm run deploy`.

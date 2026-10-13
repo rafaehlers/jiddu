@@ -38,8 +38,8 @@ After installing dependencies and generating the Prisma client:
 ```bash
 npm run lint
 npm test
-npx tsc --noEmit
 npm run build
+npx tsc --noEmit
 npm run build:extension
 npm run build --prefix packages/jiddu-mcp
 ```
@@ -56,11 +56,13 @@ production database. Model evaluations
 and `smoke:openrouter-postgres` can call paid providers and must be run
 explicitly with your own credentials and disposable data.
 
-GitHub Actions checks the build and tests and scans the complete Git history
-with Gitleaks. To repeat the secret scan locally with Gitleaks 8.30.1 or later:
+Run the checks relevant to your change locally before submitting a pull
+request or publishing changes. Scan the complete Git history locally with
+Gitleaks 8.30.1 or later:
 
 ```bash
-gitleaks git . --log-opts="--all --full-history" --redact --ignore-gitleaks-allow
+gitleaks git . --log-opts="--all --full-history" \
+  --redact=100 --ignore-gitleaks-allow --max-decode-depth=2 --max-archive-depth=2
 ```
 
 Keep scan reports outside the repository. Run the scanner again before

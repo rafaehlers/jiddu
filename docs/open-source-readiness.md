@@ -3,9 +3,9 @@
 Review date: October 13, 2026. Repository: `rafaehlers/jiddu`.
 Baseline commit: `bc2be33f5d5a5799331f202ee910e5c22c5b55b5`.
 
-This review prepares the complete application for release under MIT.
-Repository visibility remains private until the prepared changes are
-published and the maintainer changes visibility.
+The complete application was released under MIT on October 13, 2026.
+The GitHub repository is public. The history review and validation below
+describe the initial release preparation against the baseline above.
 
 ## History and privacy review
 
@@ -33,9 +33,9 @@ published and the maintainer changes visibility.
   production support records were identified. `scripts/backup-postgres.sh`
   is an operational script, not a database backup.
 
-GitHub has no issues/pull requests, release assets, or Actions artifacts
-at the time of review. All 53 historical Actions log downloads are expired
-or unavailable. Their run metadata contains the expected public repository
+At the start of the review, GitHub had no issues/pull requests, release
+assets, or Actions artifacts. All 53 historical Actions log downloads were
+expired or unavailable. Their run metadata contains the expected public repository
 and maintainer attribution; unavailable logs cannot be inspected.
 
 Raw audit output and extracted historical images were kept outside the
@@ -53,8 +53,8 @@ on the confirmed findings.
   in `THIRD_PARTY_NOTICES.md`, including MPL/LGPL native dependencies.
 - Added a standalone Compose override and included MIT/third-party notices
   in Docker and Chrome extension distributions.
-- Added read-only CI checks and an all-history Gitleaks scan, with pinned
-  action revisions and a verified scanner release.
+- Documented local build, test, and all-history Gitleaks checks in
+  `CONTRIBUTING.md`.
 - Expanded Git and Docker exclusions for private keys, database files,
   dumps, uploads, benchmark downloads, and security reports.
 
@@ -80,20 +80,20 @@ production configuration was not copied, and no paid model calls were made.
 - Both Compose configurations parsed correctly. The standalone override
   creates a managed network and binds the application port to loopback;
   the maintainer base file retains its external proxy network.
-- The CI YAML parsed successfully and all action revisions are pinned.
-  CI's checks were run locally before publication; this review does not
-  include a GitHub CI run.
 - Gitleaks reported no findings in the prepared source snapshot. The final
   source and history scans and `git diff --check` completed without findings.
 
 ## Publication
 
-Publish the prepared MIT changes on the default branch before changing
-visibility. Follow the maintainer's `npm run deploy` workflow when asked
-to push or deploy; it also verifies the jiddu.app deployment.
-Then change the GitHub repository visibility to public and enable private
-vulnerability reporting and secret-scanning push protection where available.
-Verify that GitHub detects MIT and that the source/license links resolve.
+The MIT changes are published on `main`, and GitHub recognizes the license.
+The source/license links resolve publicly. The maintainer publishes with
+`npm run deploy`, which verifies the deployed commit, container state,
+and public health check.
+
+GitHub Actions was removed on October 13, 2026 at the maintainer's request.
+Validation and secret scans run locally before publication. Private
+vulnerability reporting and secret-scanning push protection are recommended
+where available.
 
 This is a point-in-time review of reachable repository content and
 available GitHub metadata. It does not certify future commits, external

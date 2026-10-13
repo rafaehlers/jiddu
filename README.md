@@ -518,8 +518,10 @@ loopback interface.
 
 The container entrypoint applies Prisma migrations before accepting traffic. If a reverse proxy sits in front of Jiddu, disable response buffering for the SSE analysis routes so findings reach the browser as they are generated.
 
-The jiddu.app maintainer deployment does not run automatically from GitHub.
-It requires the maintainer's SSH access, `jiddu-vps` host alias, and remote
+GitHub Actions is disabled for this repository. Run build, test, and
+secret-scan checks locally as described in [CONTRIBUTING.md](./CONTRIBUTING.md).
+The jiddu.app maintainer deploys from a local machine using SSH access,
+the `jiddu-vps` host alias, and the remote
 deployment script. After committing intended changes on `main`, the
 maintainer publishes with:
 

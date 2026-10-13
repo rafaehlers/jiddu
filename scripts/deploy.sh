@@ -6,10 +6,9 @@
 # `git push` updates GitHub but does not update jiddu.app. Whenever a change
 # must be "pushed", "published", "deployed" or "subida", run this script.
 #
-# Replaces the GitHub Actions workflow. The Actions runner is blocked from
-# reaching the VPS on port 22 (firewall / fail2ban), but SSH from a local
-# machine works fine — so we push to GitHub and trigger the deploy over our
-# own SSH connection instead of through CI.
+# Deployment runs from the maintainer's local machine using its configured
+# SSH connection to the VPS. Build, test, and secret-scan checks run locally
+# as documented in CONTRIBUTING.md. GitHub Actions is disabled for this repo.
 #
 # Usage (from your machine, after committing):
 #     pnpm run deploy
