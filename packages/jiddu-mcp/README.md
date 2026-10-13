@@ -10,7 +10,7 @@ MCP server for [Jiddu](https://jiddu.app) — read anything with a critical mind
 - **`start_adversarial_review`** — start a persisted review of a complete PDF at a public URL.
 - **`get_adversarial_review`** — poll that review job and retrieve the final result.
 
-It's a thin wrapper over the Jiddu public REST API. You need an API key assigned to your verified Jiddu/WorkOS account — ask for one at [jiddu.app/api-access](https://jiddu.app/api-access). Calls use that account's included access or Jiddu credit balance.
+It's a thin wrapper over the Jiddu public REST API. You need an API key assigned to your verified Jiddu/WorkOS account — generate one in [your account](https://jiddu.app/account?tab=api). Calls use that account's included access or Jiddu credit balance. You can also point the wrapper at your own installation with `JIDDU_API_URL`.
 
 > **Most users don't need this package.** The recommended path is the hosted
 > server at `https://jiddu.app/api/mcp`: compatible clients discover WorkOS
@@ -61,7 +61,7 @@ See [AGENT.md](./AGENT.md) for machine-oriented docs: when to use each tool, res
 
 ```bash
 cd packages/jiddu-mcp
-npm install
+npm ci
 npm run build          # bundles to dist/index.js via tsup
 JIDDU_API_KEY=... JIDDU_API_URL=http://localhost:3000 node dist/index.js
 ```
@@ -72,6 +72,10 @@ Test interactively with the [MCP Inspector](https://github.com/modelcontextproto
 npx @modelcontextprotocol/inspector node dist/index.js
 ```
 
-## Proprietary software
+## License
 
-Copyright © 2026 Rafael M. Ehlers. All rights reserved. This package is private and is not published to npm.
+Copyright © 2026 Rafael M. Ehlers. Released under the repository's
+[MIT License](../../LICENSE). The package is built from source and is not
+published to npm; `private: true` prevents accidental registry publication.
+The license permits reuse and modification of the wrapper. Hosted API
+access uses the selected deployment's account, access, and credit rules.

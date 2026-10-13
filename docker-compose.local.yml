@@ -1,0 +1,10 @@
+# Standalone override: no maintainer reverse-proxy network is required.
+# docker compose -f docker-compose.yml -f docker-compose.local.yml up --build -d
+services:
+  jiddu-app:
+    ports:
+      - "127.0.0.1:${JIDDU_PORT:-3000}:3000"
+
+networks:
+  proxy-network:
+    external: false

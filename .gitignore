@@ -24,6 +24,22 @@
 # misc
 .DS_Store
 *.pem
+*.key
+*.p12
+*.pfx
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.sqlite-*
+*.sqlite3-*
+*.dump
+*.sql.gz
+*.sql.bz2
+*.log
+/backups
+/security-reports
+gitleaks-report*.json
 
 # debug
 npm-debug.log*

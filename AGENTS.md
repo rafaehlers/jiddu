@@ -4,6 +4,17 @@
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
 
+## Open source and privacy
+
+- Jiddu's original code and documentation use the MIT License. Preserve
+  `LICENSE` and the rights described in `THIRD_PARTY_NOTICES.md`.
+- Follow `CONTRIBUTING.md` and `SECURITY.md`. Use synthetic fixtures and
+  placeholder credentials in committed examples.
+- Never commit production configuration, API keys, database dumps, user
+  submissions, support records, or unredacted logs and screenshots.
+- Run the secret scan before publishing new Git history. Keep reports
+  outside the repository and report genuine findings privately.
+
 ## Production publishing — mandatory
 
 - A plain `git push` updates GitHub but does **not** update the VPS.

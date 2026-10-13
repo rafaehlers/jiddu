@@ -74,3 +74,11 @@ material UI change with:
 ```bash
 npm run render:store-assets --prefix packages/jiddu-chrome-extension
 ```
+
+## License
+
+Copyright © 2026 Rafael M. Ehlers. The extension's original code is released
+under the repository's [MIT License](../../LICENSE). Production builds
+include that license and the third-party notices. Material from external
+pages shown in listing screenshots retains its original rights; see
+[THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md).

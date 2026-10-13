@@ -2,9 +2,13 @@
   "name": "jiddu",
   "version": "0.1.0",
   "private": true,
-  "license": "UNLICENSED",
+  "license": "MIT",
   "author": "Rafael de Menezes Ehlers",
   "homepage": "https://jiddu.app",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rafaehlers/jiddu.git"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",

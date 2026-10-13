@@ -22,6 +22,10 @@ await rm(unpackedRoot, { recursive: true, force: true });
 await rm(zipPath, { force: true });
 await mkdir(unpackedRoot, { recursive: true });
 
+for (const file of ["LICENSE", "THIRD_PARTY_NOTICES.md"]) {
+  await cp(path.resolve(packageRoot, "../..", file), path.join(unpackedRoot, file));
+}
+
 for (const file of [
   "content-script.js",
   "content-style.css",

@@ -1,5 +1,5 @@
 # The Next.js app (root) plus the standalone MCP server package. The MCP
-# package has its own deps/lockfile and is published to npm separately; the
+# package has its own deps/lockfile and is built separately from source; the
 # Docker image (npm ci, root package-lock.json) never builds it.
 packages:
   - "."

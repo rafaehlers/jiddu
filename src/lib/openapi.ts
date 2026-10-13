@@ -58,8 +58,8 @@ export const JIDDU_OPENAPI = {
       email: "support@emails.jiddu.app",
     },
     license: {
-      name: "Proprietary",
-      url: "https://jiddu.app/terms",
+      name: "MIT",
+      url: "https://github.com/rafaehlers/jiddu/blob/main/LICENSE",
     },
   },
   servers: [{ url: "https://jiddu.app", description: "Production" }],

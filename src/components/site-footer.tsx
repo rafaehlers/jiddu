@@ -25,6 +25,8 @@ export function SiteFooter() {
     lang === "pt" ? "Contato" : lang === "es" ? "Contacto" : "Contact";
   const aboutLabel =
     lang === "pt" ? "Sobre" : lang === "es" ? "Acerca de" : "About";
+  const sourceLabel =
+    lang === "pt" ? "Código-fonte" : lang === "es" ? "Código fuente" : "Source code";
   const extensionLabel =
     lang === "pt"
       ? "Extensão Chrome"
@@ -156,6 +158,15 @@ export function SiteFooter() {
               Rafael M. Ehlers
             </a>
           </span>
+          <span aria-hidden>·</span>
+          <a
+            href="https://github.com/rafaehlers/jiddu"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-accent-hi transition-colors"
+          >
+            {sourceLabel} · MIT
+          </a>
         </nav>
         <span className="font-serif italic">
           {t.footer_quote}{" "}

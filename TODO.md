@@ -94,7 +94,7 @@ Pra referência rápida de o que já entrou. Vá movendo pra cima quando entrar 
 - ✅ De-hifenização de PDF no ingest — junta palavras quebradas por hífen no fim de linha ("self-\nreferent" → "selfreferent"); afeta os 4 pipelines.
 - ✅ Fix de upload de PDF em produção (Node 22): `@napi-rs/canvas` polyfilla DOMMatrix + worker do pdfjs no trace do standalone.
 - ✅ Deploy via `bash scripts/deploy.sh` (push + SSH), substituindo o GitHub Actions bloqueado; favicon Buda; sidebar de pipelines; footer centralizado.
-- ✅ Jiddu definido como software proprietário; referências públicas ao repositório removidas.
+- ✅ Preparação de abertura da aplicação inteira sob MIT, com licença, documentação e revisão do histórico.
 - ✅ Source-quality tiers + state-controlled flag (paper Goldfarb).
 - ✅ Neutrality dimension MVP — 8 padrões, sem direção partidária.
 - ✅ `/legal` page com termos em 3 línguas + banner "não revisado" no viewer + toggle no admin.

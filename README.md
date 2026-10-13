@@ -4,11 +4,15 @@
 
 **Critical reading for text and research papers.**
 
+Jiddu is an open source application released under the [MIT License](./LICENSE).
+The complete web application, analysis pipelines, prompts, agent integrations,
+and Chrome extension are included in this repository.
+
 Jiddu keeps the source and the analysis side by side. Drop a URL, paste text, upload a document, or review a complete paper; every finding stays anchored to the passage or page that supports it.
 
 Choose the lens that fits the reading: logical fallacies, factual claims, neutrality, plain-language explanation, writing patterns, or an adversarial pre-submission review. Results stream into an inspectable viewer, save to a shareable link, and export to PDF; paper reviews also export structured Markdown.
 
-[Open Jiddu](https://jiddu.app) · [Try the paper-review demo](https://jiddu.app/r/demo-en) · [How it works](https://jiddu.app/how-it-works) · [API & MCP](https://jiddu.app/api-access)
+[Open Jiddu](https://jiddu.app) · [Source code](https://github.com/rafaehlers/jiddu) · [Try the paper-review demo](https://jiddu.app/r/demo-en) · [How it works](https://jiddu.app/how-it-works) · [API & MCP](https://jiddu.app/api-access)
 
 ---
 
@@ -108,18 +112,37 @@ Jiddu is not affiliated with the authors, institutions, datasets or venues cited
 
 ## Local development
 
+Requirements: Node.js 22.12 or later in a supported LTS release, npm, and
+Docker with Docker Compose for PostgreSQL. The Docker image uses Node.js 22.
+
 ```bash
-# From an authorized local checkout:
-npm install
+git clone https://github.com/rafaehlers/jiddu.git
+cd jiddu
+npm ci
 cp .env.example .env
-# Set POSTGRES_PASSWORD, OPENROUTER_API_KEY and the WorkOS variables below.
-docker compose up -d jiddu-db
-npx prisma migrate dev
+# Set POSTGRES_PASSWORD and use the same password in DATABASE_URL.
+docker compose -f docker-compose.yml -f docker-compose.local.yml up -d jiddu-db
+npx prisma generate
+npx prisma migrate deploy
+npm run seed:demos
 npm run dev
 ```
 
 Open <http://localhost:3000>. Try `/a/demo-en`, `/e/demo-en`, or `/r/demo-en`
 (and the `-pt` / `-es` variants) to see the viewers without spending a token.
+
+The curated demos can be viewed without provider credentials. Running new
+analyses requires your own OpenRouter key and WorkOS configuration. Put your
+verified WorkOS email in `ADMIN_EMAILS` to administer your installation and
+use its included platform access. Stripe is needed only for selling credit
+packages; OpenAI is needed for Live transcription and Resend for email.
+Configure each service in your own account and use localhost callback URLs
+while developing. The software license does not include hosted API access,
+provider credits, or credentials for jiddu.app.
+
+Keep `.env` local. The committed `.env.example` contains placeholders and
+public defaults. See [CONTRIBUTING.md](./CONTRIBUTING.md) for validation and
+[SECURITY.md](./SECURITY.md) for private vulnerability reporting.
 
 ## Environment
 
@@ -149,7 +172,7 @@ Open <http://localhost:3000>. Try `/a/demo-en`, `/e/demo-en`, or `/r/demo-en`
 | `OPENAI_LIVE_TRANSCRIPTION_USD_PER_MINUTE` | Installation default for GPT Live Transcribe provider cost per audio minute. Defaults to `0.017`; the admin can override it at runtime. |
 | `OPENAI_LIVE_DIARIZATION_USD_PER_MINUTE` | Installation default for post-session OpenAI speaker diarization per audio minute. Defaults to `0.006`; the admin can override it at runtime. |
 | `PAPER_REVIEW_DEEP_MODEL` | Optional internal model id for Deep specialist/synthesis stages. Defaults to `gpt-5.6-luna-pro`. |
-| `PAPER_REVIEW_CRITIC_MODEL` | Optional independent Deep critic model id. Defaults to `claude-opus-5`. |
+| `PAPER_REVIEW_CRITIC_MODEL` | Optional independent Deep critic model id. See `.env.example` and the model catalog for the installation default. |
 | `JIDDU_FACTCHECK_FAST_MODEL` | Installation default for first-pass, bulk and API/MCP fact verification. Defaults to `perplexity/sonar`; the admin can override it at runtime. |
 | `JIDDU_FACTCHECK_DEEP_MODEL` | Installation default for explicit fact rechecks. Defaults to `perplexity/sonar`; the admin can select Reasoning Pro at runtime. |
 | `JIDDU_CONTEXT_NEWS_MODEL` | Installation default for Context news enrichment. Defaults to `perplexity/sonar`; the admin can override it at runtime. |
@@ -474,12 +497,31 @@ Each individual finding has a binary severity (`low` / `high`). The 0–100 scor
 
 ## Deployment
 
-Jiddu ships with a multi-stage [`Dockerfile`](./Dockerfile) and [`docker-compose.yml`](./docker-compose.yml). Configure the production environment and start the app plus its private PostgreSQL service with Docker Compose. PostgreSQL is bound only to the host loopback interface and is not exposed publicly.
+Jiddu ships with a multi-stage [`Dockerfile`](./Dockerfile) and
+[`docker-compose.yml`](./docker-compose.yml). For a standalone installation,
+configure your `.env` as described above and use the local override:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.local.yml up --build -d
+```
+
+This creates its own application network and exposes Jiddu at
+<http://localhost:3000> on the host loopback interface. Set
+`NEXT_PUBLIC_APP_URL`, WorkOS callbacks, and `MCP_RESOURCE_URL` for your
+installation. To serve a public domain, put an HTTPS reverse proxy in front
+of that local port. Keep the database and service credentials private.
+
+The base Compose file is used by the maintained jiddu.app deployment. It
+expects an existing external `proxy-network` and exposes the app through
+that deployment's reverse proxy. PostgreSQL is bound only to the host
+loopback interface.
 
 The container entrypoint applies Prisma migrations before accepting traffic. If a reverse proxy sits in front of Jiddu, disable response buffering for the SSE analysis routes so findings reach the browser as they are generated.
 
-Production does not deploy automatically from GitHub. After committing all
-intended changes, publish with:
+The jiddu.app maintainer deployment does not run automatically from GitHub.
+It requires the maintainer's SSH access, `jiddu-vps` host alias, and remote
+deployment script. After committing intended changes on `main`, the
+maintainer publishes with:
 
 ```bash
 npm run deploy
@@ -489,8 +531,26 @@ The script pushes `main`, updates and rebuilds the `jiddu-vps` container, then
 verifies the deployed commit SHA, container state and public health check. A
 plain `git push` alone is not a production deployment.
 
-## Proprietary software
+## Contributing and security
 
-Copyright © 2026 Rafael M. Ehlers. All rights reserved.
+Read [CONTRIBUTING.md](./CONTRIBUTING.md) for setup, checks, and pull request
+guidelines. Human and AI-assisted contributions are welcome; contributors
+are responsible for checking the code, evidence, and licenses they submit.
+Report vulnerabilities privately using [SECURITY.md](./SECURITY.md).
 
-Jiddu is proprietary software. The source code is not licensed for copying, redistribution, modification, or self-hosting without prior written permission.
+## License
+
+Copyright © 2026 Rafael M. Ehlers.
+
+Jiddu's original source code and documentation are released under the
+[MIT License](./LICENSE), including the web application, analysis lenses,
+prompts, local MCP package, and Chrome extension. You may study, run,
+modify, redistribute, and use them commercially while preserving the
+copyright and license notice.
+
+Third-party libraries, source documents, datasets, and material visible in
+screenshots retain their own licenses and rights. See
+[THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md). The `private: true`
+package flags prevent accidental npm publication; they do not restrict
+the MIT-licensed source code. Use of the hosted jiddu.app service remains
+subject to its [terms](https://jiddu.app/terms).

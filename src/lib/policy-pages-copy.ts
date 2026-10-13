@@ -92,7 +92,7 @@ export const POLICY_PAGES_COPY: Record<
       title: "Terms of service",
       subtitle:
         "The rules that apply when you use Jiddu's website, accounts, API, MCP tools, Live features, and paid credits.",
-      updated: "Last updated: August 5, 2026",
+      updated: "Last updated: October 13, 2026",
       sections: [
         {
           title: "1. Acceptance and scope",
@@ -141,7 +141,7 @@ export const POLICY_PAGES_COPY: Record<
         {
           title: "7. Jiddu materials and feedback",
           paragraphs: [
-            "Jiddu and its licensors retain rights in the Services, interface, software, branding, original taxonomies, and documentation. These Terms do not transfer those rights to you. Third-party sources, papers, libraries, and trademarks remain subject to their own rights and licenses.",
+            "Jiddu's original source code, prompts, analysis pipelines, and documentation are available in the [source repository](https://github.com/rafaehlers/jiddu) under the [MIT License](https://github.com/rafaehlers/jiddu/blob/main/LICENSE). These Terms govern use of the hosted Services and do not restrict the rights granted by that license. Jiddu and its licensors retain their copyright; third-party sources, papers, libraries, and trademarks remain subject to their own rights and licenses.",
             "If you send feedback, you allow Jiddu to use it without payment or obligation, provided that doing so does not grant Jiddu ownership of your submitted documents or personal information.",
           ],
         },
@@ -248,7 +248,7 @@ export const POLICY_PAGES_COPY: Record<
       title: "Termos de serviço",
       subtitle:
         "As regras aplicáveis ao uso do site, contas, API, ferramentas MCP, Live e créditos pagos do Jiddu.",
-      updated: "Última atualização: 5 de agosto de 2026",
+      updated: "Última atualização: 13 de outubro de 2026",
       sections: [
         {
           title: "1. Aceitação e escopo",
@@ -297,7 +297,7 @@ export const POLICY_PAGES_COPY: Record<
         {
           title: "7. Materiais do Jiddu e feedback",
           paragraphs: [
-            "O Jiddu e seus licenciadores mantêm os direitos sobre os Serviços, interface, software, marca, taxonomias originais e documentação. Estes Termos não transferem esses direitos. Fontes, papers, bibliotecas e marcas de terceiros continuam sujeitos aos respectivos direitos e licenças.",
+            "O código-fonte original, os prompts, os pipelines de análise e a documentação do Jiddu estão disponíveis no [repositório](https://github.com/rafaehlers/jiddu) sob a [licença MIT](https://github.com/rafaehlers/jiddu/blob/main/LICENSE). Estes Termos regem o uso dos Serviços hospedados e não restringem os direitos concedidos pela licença. O Jiddu e seus licenciadores mantêm seus direitos autorais; fontes, papers, bibliotecas e marcas de terceiros continuam sujeitos aos respectivos direitos e licenças.",
             "Ao enviar feedback, você permite que o Jiddu o utilize sem pagamento ou obrigação, sem que isso conceda ao Jiddu propriedade sobre seus documentos ou informações pessoais.",
           ],
         },
@@ -404,7 +404,7 @@ export const POLICY_PAGES_COPY: Record<
       title: "Términos de servicio",
       subtitle:
         "Las reglas aplicables al uso del sitio, cuentas, API, herramientas MCP, Live y créditos pagados de Jiddu.",
-      updated: "Última actualización: 5 de agosto de 2026",
+      updated: "Última actualización: 13 de octubre de 2026",
       sections: [
         {
           title: "1. Aceptación y alcance",
@@ -453,7 +453,7 @@ export const POLICY_PAGES_COPY: Record<
         {
           title: "7. Materiales de Jiddu y comentarios",
           paragraphs: [
-            "Jiddu y sus licenciantes conservan los derechos sobre los Servicios, interfaz, software, marca, taxonomías originales y documentación. Estos Términos no transfieren esos derechos. Fuentes, papers, bibliotecas y marcas de terceros siguen sujetos a sus propios derechos y licencias.",
+            "El código fuente original, los prompts, los pipelines de análisis y la documentación de Jiddu están disponibles en el [repositorio](https://github.com/rafaehlers/jiddu) bajo la [licencia MIT](https://github.com/rafaehlers/jiddu/blob/main/LICENSE). Estos Términos rigen el uso de los Servicios alojados y no restringen los derechos concedidos por esa licencia. Jiddu y sus licenciantes conservan sus derechos de autor; fuentes, papers, bibliotecas y marcas de terceros siguen sujetos a sus propios derechos y licencias.",
             "Si envías comentarios, permites que Jiddu los use sin pago u obligación, sin que ello otorgue a Jiddu propiedad sobre tus documentos o datos personales.",
           ],
         },

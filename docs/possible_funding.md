@@ -2,6 +2,9 @@
 
 > Mapeamento de caminhos para sustentar o custo operacional do Jiddu (LLM, infra) à medida que o uso crescer. Documento vivo — atualize com status, datas de aplicação e respostas.
 
+> Decisão de licença: aplicação inteira sob MIT. Este levantamento é histórico;
+> confirme valores, prazos e critérios atuais nos sites oficiais antes de aplicar.
+
 Organizado por horizonte de tempo e tamanho do grant, do mais fácil ao mais ambicioso.
 
 ---
@@ -72,8 +75,8 @@ Pelo perfil atual do projeto (solo, prod no ar, sem time/CNPJ ainda):
 - Zero custo de oportunidade. Soma fácil de US$ 3-5k em créditos.
 
 ### Próximas 4-8 semanas
-- Decidir se vai **abrir o código**. Se sim → NLnet é o grant de menor fricção pra projeto OSS solo. Aplicação é técnica, não exige time formado.
-- Se o projeto for mantido fechado, ainda dá pra aplicar em Knight Prototype, GNI, Luminate, OSF.
+- Usar a licença MIT, a documentação e os benchmarks na avaliação de programas para projetos de código aberto.
+- Confirmar os critérios atuais de NLnet, Knight, GNI, Luminate e OSF antes de preparar candidaturas.
 
 ### Próximos 3-6 meses
 - Montar números de uso reais: análises/mês, usuários únicos, **exemplos concretos** de análises que pegaram desinformação real (estudos de caso).
@@ -91,7 +94,7 @@ Pelo perfil atual do projeto (solo, prod no ar, sem time/CNPJ ainda):
 
 ## 6. O que ajuda em qualquer aplicação
 
-- **Código fechado** → priorizar programas que não exigem publicação do software; NLnet, Mozilla, OTF e Hugging Face podem deixar de ser elegíveis.
+- **Código aberto sob MIT** → permite avaliar programas que exigem publicação do software; a elegibilidade depende das regras atuais de cada chamada.
 - **Métricas de uso reais** → abre GNI, Knight, Luminate.
 - **Enquadramento "social good" claro** → abre AI for Good, OSF.
 - **Partnership com fact-check org acreditada** → multiplicador universal.
@@ -102,7 +105,7 @@ Pelo perfil atual do projeto (solo, prod no ar, sem time/CNPJ ainda):
 
 ## 7. Decisões a tomar antes de aplicar nos grants maiores
 
-- **Licença do código**: decidido — Jiddu é software proprietário de código fechado. Filtrar grants por compatibilidade com esse modelo.
+- **Licença do código**: decidido — aplicação inteira sob MIT. Preservar os avisos de terceiros e verificar os requisitos de cada programa.
 - **Entidade jurídica**: CNPJ próprio, MEI, vinculação a ONG existente? Necessário para grants maiores.
 - **Política de compartilhamento de dados**: análises são públicas via URL — isso é feature ou risco? Definir antes da aplicação.
 - **Roadmap apresentável**: o `docs/fact-check-roadmap.md` já ajuda. Preparar uma versão adequada para candidaturas sem expor detalhes internos.
@@ -115,4 +118,4 @@ Pelo perfil atual do projeto (solo, prod no ar, sem time/CNPJ ainda):
 1. Aplicar **Anthropic Startup Program** ainda esta semana (15 min de formulário).
 2. Aplicar **OpenAI Startup Program** em seguida.
 3. Email direto pro **OpenRouter** explicando o projeto e pedindo crédito.
-4. Decidir até final do mês se o repo vira público — destrava NLnet imediatamente.
+4. Usar o repositório MIT, o README e os benchmarks para documentar candidaturas, após conferir os critérios atuais.

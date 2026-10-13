@@ -254,51 +254,61 @@ function ArchitectureMapInner() {
       .filter((item): item is ArchitectureNodeDefinition => Boolean(item));
   }, [selectedNodeId]);
 
-  useEffect(() => {
-    if (!isPlaying) return;
-    const timer = window.setInterval(() => {
-      setTraceIndex((current) => (current + 1) % TRACE_PATH.length);
-    }, 1200);
-    return () => window.clearInterval(timer);
-  }, [isPlaying]);
-
-  useEffect(() => {
-    if (traceIndex < 0) return;
-    setSelectedNodeId(TRACE_PATH[traceIndex]);
+  const advanceTrace = useCallback(() => {
+    const nextIndex = (traceIndex + 1) % TRACE_PATH.length;
+    setTraceIndex(nextIndex);
+    setSelectedNodeId(TRACE_PATH[nextIndex]);
     setActiveDomain(null);
+    setDetailTab("what");
   }, [traceIndex]);
 
   useEffect(() => {
-    setDetailTab("what");
-  }, [activeDomain, selectedNodeId]);
+    if (!isPlaying) return;
+    const timer = window.setInterval(advanceTrace, 1200);
+    return () => window.clearInterval(timer);
+  }, [advanceTrace, isPlaying]);
 
-  const selectNode = useCallback((id: string) => {
-    setSelectedNodeId(id);
-    setActiveDomain(null);
-    setIsPlaying(false);
-  }, []);
+  const selectNode = useCallback(
+    (id: string) => {
+      if (selectedNodeId !== id || activeDomain !== null) setDetailTab("what");
+      setSelectedNodeId(id);
+      setActiveDomain(null);
+      setIsPlaying(false);
+    },
+    [activeDomain, selectedNodeId],
+  );
 
-  const selectDomain = useCallback((domain: DomainId | null) => {
-    setActiveDomain(domain);
-    setSelectedNodeId(null);
-    setIsPlaying(false);
-    setTraceIndex(-1);
-  }, []);
+  const selectDomain = useCallback(
+    (domain: DomainId | null) => {
+      if (activeDomain !== domain || selectedNodeId !== null) setDetailTab("what");
+      setActiveDomain(domain);
+      setSelectedNodeId(null);
+      setIsPlaying(false);
+      setTraceIndex(-1);
+    },
+    [activeDomain, selectedNodeId],
+  );
 
   const toggleTrace = useCallback(() => {
-    if (!isPlaying && traceIndex < 0) setTraceIndex(0);
+    if (!isPlaying && traceIndex < 0) {
+      setTraceIndex(0);
+      setSelectedNodeId(TRACE_PATH[0]);
+      setActiveDomain(null);
+      setDetailTab("what");
+    }
     setIsPlaying((current) => !current);
   }, [isPlaying, traceIndex]);
 
   const traceOneStep = useCallback(() => {
     setIsPlaying(false);
-    setTraceIndex((current) => (current + 1) % TRACE_PATH.length);
-  }, []);
+    advanceTrace();
+  }, [advanceTrace]);
 
   const reset = useCallback(() => {
     setQuery("");
     setActiveDomain(null);
     setSelectedNodeId(null);
+    setDetailTab("what");
     setTraceIndex(-1);
     setIsPlaying(false);
     void fitView({ padding: 0.12, maxZoom: 0.74, duration: 450 });
@@ -462,6 +472,7 @@ function ArchitectureMapInner() {
             nodeTypes={nodeTypes}
             onNodeClick={(_event, node) => selectNode(node.id)}
             onPaneClick={() => {
+              if (selectedNodeId !== null) setDetailTab("what");
               setSelectedNodeId(null);
               setIsPlaying(false);
             }}

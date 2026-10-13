@@ -171,7 +171,7 @@ URLs, and `retry_after_seconds`. Wait that many seconds, then call
 `complete` or `failed`. A completed response includes `result` with stage
 findings, strengths, localized/severity-ranked weaknesses, author questions,
 publication path, recommendation, literature sources with validation metadata,
-and a public audit summary. The private workflow uses five independent SPECS
+and a public audit summary. The review pipeline uses five independent SPECS
 specialists, deterministic arithmetic checks, an independent quality critic,
 and a retention gate before finalization.
 
