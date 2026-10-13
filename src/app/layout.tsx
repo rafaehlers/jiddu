@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Newsreader } from "next/font/google";
+import localFont from "next/font/local";
 import { cookies, headers } from "next/headers";
 import Script from "next/script";
 import { withAuth } from "@workos-inc/authkit-nextjs";
@@ -15,14 +15,20 @@ import "@radix-ui/themes/styles.css";
 import "@workos-inc/widgets/styles.css";
 import "./globals.css";
 
-const geistSans = Geist({
+const geistSans = localFont({
+  src: "./fonts/Geist.woff2",
   variable: "--font-geist-sans",
-  subsets: ["latin"],
+  weight: "100 900",
+  style: "normal",
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
+const geistMono = localFont({
+  src: "./fonts/GeistMono.woff2",
   variable: "--font-geist-mono",
-  subsets: ["latin"],
+  weight: "100 900",
+  style: "normal",
+  display: "swap",
 });
 
 // Newsreader (Production Type, Google Fonts) is a digital-first serif:
@@ -30,10 +36,16 @@ const geistMono = Geist_Mono({
 // medium-sized headings (text-lg / text-xl) hold up on the warm-black
 // background instead of feeling anemic. Still serif/editorial — keeps
 // the "newspaper / book" tone the site is going for.
-const serif = Newsreader({
+const serif = localFont({
+  src: [
+    { path: "./fonts/Newsreader.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/Newsreader.woff2", weight: "500", style: "normal" },
+    { path: "./fonts/Newsreader.woff2", weight: "600", style: "normal" },
+    { path: "./fonts/Newsreader.woff2", weight: "700", style: "normal" },
+  ],
   variable: "--font-serif",
-  weight: ["400", "500", "600", "700"],
-  subsets: ["latin"],
+  display: "swap",
+  adjustFontFallback: "Times New Roman",
 });
 
 export const metadata: Metadata = {

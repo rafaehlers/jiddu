@@ -30,6 +30,21 @@ Jiddu's license does not relicense their code. A source release and a
 distribution containing third-party binaries have different contents;
 preserve the notices appropriate to the artifact you distribute.
 
+## Fonts
+
+The bundled Geist, Geist Mono, and Newsreader fonts use the SIL Open Font
+License 1.1. They retain that license when distributed with Jiddu.
+
+- **Geist and Geist Mono:** Copyright 2024 The Geist Project Authors.
+  See [Geist's license](./src/app/fonts/geist-OFL.txt) and
+  [Geist Mono's license](./src/app/fonts/geistmono-OFL.txt).
+- **Newsreader:** Copyright 2020 The Newsreader Project Authors.
+  See [Newsreader's license](./src/app/fonts/newsreader-OFL.txt).
+
+The [font source notes](./src/app/fonts/README.md) record their upstream
+files and WOFF2 conversion. The Docker image includes the complete font
+licenses in `/app/src/app/fonts/`.
+
 ## no-ai-slop
 
 The initial slop-pattern taxonomy draws on Peter Yang's
