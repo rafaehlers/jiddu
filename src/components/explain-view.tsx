@@ -37,6 +37,7 @@ import { ReportTitle } from "@/components/report-title";
 import { ShareLinkBar } from "@/components/share-link-bar";
 import { useI18n } from "@/lib/i18n/provider";
 import type { Messages } from "@/lib/i18n/messages";
+import { ExplainDetail, useExplainDetails } from "@/components/explain-detail";
 
 type Props = {
   canEditTitle: boolean;
@@ -102,7 +103,8 @@ export function ExplainView({
   status,
   model,
 }: Props) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const details = useExplainDetails(id, lang);
   const [readingMode, setReadingMode] = useState<
     "quick" | "understand" | "challenge"
   >("quick");
@@ -285,10 +287,21 @@ export function ExplainView({
 
   useEffect(() => {
     const handler = () => measure();
+    // Follow-up explanations change card heights after the initial layout.
+    // Observe the cards as well as the source so later cards never overlap.
+    const observer = new ResizeObserver(handler);
+    if (articleRef.current) observer.observe(articleRef.current);
+    for (const { cardIdx } of visibleOrdered) {
+      const card = cardRefs.current.get(cardIdx);
+      if (card) observer.observe(card);
+    }
     window.addEventListener("resize", handler);
-    return () => window.removeEventListener("resize", handler);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", handler);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visibleOrdered, selectedBlocks]);
+  }, [visibleOrdered, selectedBlocks, readingMode]);
 
   useLayoutEffect(() => {
     const blockId = pendingBlockRef.current;
@@ -1176,6 +1189,13 @@ export function ExplainView({
                     <p className="text-sm leading-relaxed text-foreground">
                       {f.explanation}
                     </p>
+                    <ExplainDetail
+                      state={details.get(f.blockIds[0])}
+                      onToggle={() => void details.toggle(f.blockIds[0])}
+                      panelId={`card-${cardIdx}-detail`}
+                      levelLabel={t[levelLabelKey(level)] as string}
+                      t={t}
+                    />
                   </div>
                 );
               })
@@ -1237,7 +1257,7 @@ export function ExplainView({
                           statement.blockIds[0] && openEvidence(statement.blockIds[0])
                         }
                         disabled={!statement.blockIds[0]}
-                        className="rounded-md border border-rule p-4 text-left hover:border-foreground disabled:cursor-default"
+                        className="flex flex-col items-start rounded-md border border-rule p-4 text-left hover:border-foreground disabled:cursor-default"
                       >
                         <span className="text-[11px] uppercase tracking-wide text-muted">
                           {label}

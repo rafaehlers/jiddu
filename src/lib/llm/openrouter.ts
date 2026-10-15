@@ -32,6 +32,11 @@ import {
   type ExplainResult,
 } from "../explain-schema";
 import { EXPLAIN_JSON_SCHEMA } from "./explainJsonSchema";
+import {
+  buildExplainDetailSystemPrompt,
+  buildExplainDetailUserPrompt,
+  type ExplainDetailInput,
+} from "../explain-detail";
 import { PAPER_EVIDENCE_JSON_SCHEMA } from "./paperEvidenceJsonSchema";
 import { PAPER_SYNTHESIS_JSON_SCHEMA } from "./paperSynthesisJsonSchema";
 import {
@@ -1075,6 +1080,32 @@ export class OpenRouterProvider implements LlmProvider {
 
     if (requestUsage) requestUsage.completed = true;
     return { model: opts.model ?? this.defaultModel };
+  }
+
+  async explainDetail(input: ExplainDetailInput, opts?: LlmStreamOptions) {
+    const modelId = opts?.model ?? this.defaultModel;
+    const response = await this.client.chat.completions.create(
+      {
+        model: this.slug(modelId),
+        messages: [
+          {
+            role: "system",
+            content: buildExplainDetailSystemPrompt(input.lang, input.level),
+          },
+          { role: "user", content: buildExplainDetailUserPrompt(input) },
+        ],
+        ...this.openRouterExtras(modelId),
+      } as OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming,
+      opts?.signal ? { signal: opts.signal } : undefined,
+    );
+    const usage = readOpenRouterUsage(response, modelId);
+    if (usage) opts?.onUsage?.(usage);
+    const explanation = response.choices[0]?.message?.content?.trim();
+    if (!explanation || response.choices[0]?.finish_reason !== "stop") {
+      throw new Error("OpenRouter returned an incomplete section explanation");
+    }
+    if (usage) usage.completed = true;
+    return { model: modelId, explanation };
   }
 
   async synthesizePaperMap(

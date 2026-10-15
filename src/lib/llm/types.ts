@@ -15,6 +15,7 @@ import type { OpenRouterUsage } from "../openrouter-usage";
 import type { PaperSynthesisInput } from "../paper-map-prompt";
 import type { PaperEvidenceInput } from "../paper-evidence-prompt";
 import type { ExplainInputSection } from "../explain-units";
+import type { ExplainDetailInput } from "../explain-detail";
 import type {
   LiveContext,
   LiveContextWindow,
@@ -103,6 +104,10 @@ export interface LlmProvider {
     input: ExplainInput,
     opts: LlmStreamOptions & { level: ExplainLevel },
   ): AsyncGenerator<ExplainStreamEvent, { model: string }, void>;
+  explainDetail(
+    input: ExplainDetailInput,
+    opts?: LlmStreamOptions,
+  ): Promise<{ model: string; explanation: string }>;
   synthesizePaperMap(
     input: PaperSynthesisInput,
     opts?: LlmStreamOptions,

@@ -270,6 +270,14 @@ export type Messages = {
   explanations_count_one: string;
   explanations_count_many: string;
   explain_empty: string;
+  explain_detail_button: string;
+  explain_detail_loading: string;
+  explain_detail_show: string;
+  explain_detail_hide: string;
+  explain_detail_retry: string;
+  explain_detail_error: string;
+  explain_detail_rate_limit: string;
+  explain_detail_hint: (level: string) => string;
   explain_footer: (model: string) => string;
   pipeline_explain_desc: string;
 
@@ -951,6 +959,14 @@ const en: Messages = {
   explanations_count_one: "explanation",
   explanations_count_many: "explanations",
   explain_empty: "No explanations were produced for this document.",
+  explain_detail_button: "Explain further",
+  explain_detail_loading: "Expanding explanation…",
+  explain_detail_show: "Show detailed explanation",
+  explain_detail_hide: "Hide detailed explanation",
+  explain_detail_retry: "Try again",
+  explain_detail_error: "Could not expand this section. Please try again.",
+  explain_detail_rate_limit: "Too many requests. Wait a moment and try again.",
+  explain_detail_hint: (level) => `More detail and analogies · ${level}`,
   explain_footer: (model) =>
     `Explained by ${model} via Jiddu. Automated explanations can misread a paper — always check against the source.`,
   pipeline_explain_desc:
@@ -1997,6 +2013,14 @@ const pt: Messages = {
   explanations_count_one: "explicação",
   explanations_count_many: "explicações",
   explain_empty: "Nenhuma explicação foi gerada para este documento.",
+  explain_detail_button: "Explicar melhor",
+  explain_detail_loading: "Detalhando explicação…",
+  explain_detail_show: "Mostrar explicação detalhada",
+  explain_detail_hide: "Recolher explicação detalhada",
+  explain_detail_retry: "Tentar novamente",
+  explain_detail_error: "Não foi possível detalhar esta seção. Tente novamente.",
+  explain_detail_rate_limit: "Muitas solicitações. Aguarde um momento e tente novamente.",
+  explain_detail_hint: (level) => `Mais detalhes e analogias · ${level}`,
   explain_footer: (model) =>
     `Explicado por ${model} via Jiddu. Explicações automáticas podem interpretar mal um paper — sempre confira no original.`,
   pipeline_explain_desc:
@@ -3047,6 +3071,14 @@ const es: Messages = {
   explanations_count_one: "explicación",
   explanations_count_many: "explicaciones",
   explain_empty: "No se generaron explicaciones para este documento.",
+  explain_detail_button: "Explicar mejor",
+  explain_detail_loading: "Ampliando explicación…",
+  explain_detail_show: "Mostrar explicación detallada",
+  explain_detail_hide: "Ocultar explicación detallada",
+  explain_detail_retry: "Intentar de nuevo",
+  explain_detail_error: "No se pudo ampliar esta sección. Inténtalo de nuevo.",
+  explain_detail_rate_limit: "Demasiadas solicitudes. Espera un momento e inténtalo de nuevo.",
+  explain_detail_hint: (level) => `Más detalles y analogías · ${level}`,
   explain_footer: (model) =>
     `Explicado por ${model} vía Jiddu. Las explicaciones automáticas pueden malinterpretar un paper — verifica siempre con el original.`,
   pipeline_explain_desc:
