@@ -63,30 +63,55 @@ export type ClinicalTrialStatus = typeof CLINICAL_TRIAL_STATUSES[number];
 export type ClinicalTrialCheck = z.infer<typeof ClinicalTrialCheckSchema>;
 export type ClinicalTrialReport = z.infer<typeof ClinicalTrialReportSchema>;
 
+// Models fill a fixed set of named slots. Stored/public reports keep the
+// existing array contract; never truncate extra items or silently drop keys.
+export function normalizeClinicalTrialResponse(value: unknown): unknown {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+  const stage = value as Record<string, unknown>;
+  const assessment = stage.clinicalTrialCheck;
+  if (!assessment || typeof assessment !== "object" || Array.isArray(assessment)) return value;
+  const fields = assessment as Record<string, unknown>;
+  const checks = fields.checks;
+  if (!checks || typeof checks !== "object" || Array.isArray(checks)) return value;
+  const slots = checks as Record<string, unknown>;
+  const keys = Object.keys(slots);
+  if (keys.length !== CLINICAL_TRIAL_CHECKS.length ||
+      !CLINICAL_TRIAL_CHECKS.every((key) => Object.hasOwn(slots, key))) return value;
+  const items = CLINICAL_TRIAL_CHECKS.map((key) => {
+    const item = slots[key];
+    if (!item || typeof item !== "object" || Array.isArray(item)) return item;
+    // A conflicting model-generated key is invalid rather than overwritten.
+    if ("key" in item && item.key !== key) return item;
+    return { ...item, key };
+  });
+  return { ...stage, clinicalTrialCheck: { ...fields, checks: items } };
+}
+
+const clinicalTrialSlot = {
+  type: "object",
+  additionalProperties: false,
+  required: ["status", "details", "locations", "findingIds"],
+  properties: {
+    status: { type: "string", enum: CLINICAL_TRIAL_STATUSES },
+    details: { type: "string", minLength: 1 },
+    locations: { type: "array", minItems: 1, items: { type: "string", minLength: 1 } },
+    findingIds: { type: "array", items: { type: "string", pattern: "^E[0-9]+$" } },
+  },
+} as const;
+
 export const CLINICAL_TRIAL_CHECK_JSON_SCHEMA = {
   type: "object",
   additionalProperties: false,
   required: ["studyDesign", "rationale", "locations", "checks"],
   properties: {
     studyDesign: { type: "string", enum: ["randomized", "nonrandomized"] },
-    rationale: { type: "string" },
-    locations: { type: "array", minItems: 1, items: { type: "string" } },
+    rationale: { type: "string", minLength: 1 },
+    locations: { type: "array", minItems: 1, items: { type: "string", minLength: 1 } },
     checks: {
-      type: "array",
-      minItems: CLINICAL_TRIAL_CHECKS.length,
-      maxItems: CLINICAL_TRIAL_CHECKS.length,
-      items: {
-        type: "object",
-        additionalProperties: false,
-        required: ["key", "status", "details", "locations", "findingIds"],
-        properties: {
-          key: { type: "string", enum: CLINICAL_TRIAL_CHECKS },
-          status: { type: "string", enum: CLINICAL_TRIAL_STATUSES },
-          details: { type: "string" },
-          locations: { type: "array", minItems: 1, items: { type: "string" } },
-          findingIds: { type: "array", items: { type: "string" } },
-        },
-      },
+      type: "object",
+      additionalProperties: false,
+      required: CLINICAL_TRIAL_CHECKS,
+      properties: Object.fromEntries(CLINICAL_TRIAL_CHECKS.map((key) => [key, clinicalTrialSlot])),
     },
   },
 } as const;

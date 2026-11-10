@@ -5,8 +5,8 @@ const locatedItem = {
   additionalProperties: false,
   required: ["text", "locations"],
   properties: {
-    text: { type: "string" },
-    locations: { type: "array", items: { type: "string" } },
+    text: { type: "string", minLength: 1 },
+    locations: { type: "array", minItems: 1, items: { type: "string", minLength: 1 } },
   },
 } as const;
 export const PAPER_LEDGER_JSON_SCHEMA = {
@@ -61,7 +61,7 @@ export const PAPER_LEDGER_JSON_SCHEMA = {
               "other",
             ],
           },
-          locations: { type: "array", items: { type: "string" } },
+          locations: { type: "array", minItems: 1, items: { type: "string", minLength: 1 } },
           evidenceInPaper: { type: "string" },
           structural: { type: "boolean" },
         },
@@ -97,7 +97,7 @@ export const PAPER_LEDGER_JSON_SCHEMA = {
             ],
           },
           description: { type: "string" },
-          locations: { type: "array", items: { type: "string" } },
+          locations: { type: "array", minItems: 1, items: { type: "string", minLength: 1 } },
           reconciliationAttempt: { type: "string" },
         },
       },
@@ -169,7 +169,7 @@ export const PAPER_REVIEW_JSON_SCHEMA = {
           },
           title: { type: "string" },
           body: { type: "string" },
-          locations: { type: "array", items: { type: "string" } },
+          locations: { type: "array", minItems: 1, items: { type: "string", minLength: 1 } },
           sourceFindingIds: {
             type: "array",
             items: { type: "string" },
@@ -247,7 +247,7 @@ export const SPECS_STAGE_JSON_SCHEMA = {
           },
           title: { type: "string" },
           body: { type: "string" },
-          locations: { type: "array", items: { type: "string" } },
+          locations: { type: "array", minItems: 1, items: { type: "string", minLength: 1 } },
           severity: {
             type: "string",
             enum: ["MAJOR", "MODERATE", "MINOR"],
@@ -294,8 +294,8 @@ export const SPECS_STAGE_JSON_SCHEMA = {
               "f1",
             ],
           },
-          values: { type: "array", items: { type: "number" } },
-          weights: { type: "array", items: { type: "number" } },
+          values: { type: "array", minItems: 1, maxItems: 100, items: { type: "number" } },
+          weights: { type: "array", maxItems: 100, items: { type: "number" } },
           reportedValue: { type: "number" },
           tolerance: { type: "number", minimum: 0 },
           unit: { type: ["string", "null"] },

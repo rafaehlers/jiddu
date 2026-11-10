@@ -49,6 +49,8 @@ Extract construct definitions; necessary, sufficient, causal, empirical, quantit
 
 Candidate internal problems must use one of the required classifications. For a contradiction, name at least two localized passages and explain why an explicit qualifier does not reconcile them. Locations must look like "p. 7, §4.2" or at minimum "p. 7". Do not produce the final review yet.
 
+Every claim and every item in constructDefinitions, hypotheses, evaluationDesign, metricsAndOutcomes, falsificationConditions, limitationsAndExclusions and candidateInternalProblems MUST have at least one actual manuscript page in locations. Never return locations=[]. If evidence cannot be located, omit the unsupported item rather than inventing a page. For claims.kind use exactly one of necessary, sufficient, causal, empirical, quantitative, novelty, significance or other; do not create domain-specific labels such as clinical or statistical. Leave an entire optional collection empty when no supported item applies.
+
 MANUSCRIPT:
 ${paper}`;
 }
@@ -212,7 +214,7 @@ const CRITERION_PREFIX: Record<SpecsCriterion, string> = {
 const CLINICAL_TRIAL_INSTRUCTIONS = `CLINICAL TRIAL METHODOLOGICAL CHECK:
 First determine the study design from the manuscript's own methods and participant/intervention descriptions, not from the title, target venue, medical vocabulary or citations. Populate clinicalTrialCheck only for an original report of a prospective interventional clinical trial in human participants, randomized or nonrandomized. Return null for observational studies, systematic reviews, meta-analyses, protocols without trial results, animal studies, methodological benchmarks that analyze other trials, and unclear designs. Explain uncertain applicability in your summary instead of inventing a trial. This includes papers about AI reviewing clinical trials: those are not themselves clinical trials.
 
-For an applicable trial, provide studyDesign (randomized/nonrandomized), a short rationale and manuscript locations establishing that design. Include each of these nine keys exactly once, with localized evidence and an explanation even when no issue is identified:
+For an applicable trial, provide studyDesign (randomized/nonrandomized), a short rationale and manuscript locations establishing that design. clinicalTrialCheck.checks MUST be an OBJECT with exactly the following nine named properties, not an array. Put status, details, locations and findingIds inside each property. Include each property once and no additional properties, with localized evidence and an explanation even when no issue is identified:
 - abstract_results: compare abstract endpoints, populations, time points, effect sizes and conclusions with the main results.
 - text_tables: compare prose, tables and figures, arm sizes, totals, denominators, units and outcome counts. Allow rounding, different analysis populations and follow-up times when explicitly explained.
 - comparison_direction: check which arm is favored, event coding, reference group, benefit/harm direction and relative versus absolute effects; do not assume a lower value always means benefit.

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { ClinicalTrialCheck } from "../components/clinical-trial-check";
 import { CLINICAL_TRIAL_COPY } from "./clinical-trial-copy";
@@ -9,7 +10,7 @@ import {
   type ClinicalTrialCheck as Assessment,
 } from "./clinical-trial-schema";
 import { withClinicalTrialReport } from "./clinical-trial-review";
-import { SpecsStageResultSchema, type QualityAudit, type SpecsStageResult } from "./paper-review-audit-schema";
+import { SpecsStageResponseSchema, SpecsStageResultSchema, type QualityAudit, type SpecsStageResult } from "./paper-review-audit-schema";
 import { PaperReviewResultSchema, type PaperReviewResult } from "./paper-review-schema";
 import { paperReviewToMarkdown } from "./paper-review-markdown";
 import { getBlogPost } from "./blog";
@@ -101,6 +102,23 @@ test("clinical concerns cannot cite absent, unretained or non-evaluation special
   assert.equal(ClinicalTrialCheckSchema.safeParse(falseReassurance).success, false);
 });
 
+test("named clinical slots become the existing nine-item report without losing evidence", () => {
+  const original = stage();
+  const slots = Object.fromEntries(original.clinicalTrialCheck!.checks.map(({ key, ...item }) => [key, item]));
+  const response = { ...original, clinicalTrialCheck: { ...original.clinicalTrialCheck, checks: slots } };
+  const parsed = SpecsStageResponseSchema.parse(response);
+  assert.deepEqual(parsed, original);
+  assert.equal(SpecsStageResultSchema.safeParse(parsed).success, true);
+  const extra = { ...response, clinicalTrialCheck: { ...response.clinicalTrialCheck, checks: { ...slots, extra_check: slots.abstract_results } } };
+  assert.equal(SpecsStageResponseSchema.safeParse(extra).success, false);
+  const missing = structuredClone(response);
+  delete missing.clinicalTrialCheck.checks.abstract_results;
+  assert.equal(SpecsStageResponseSchema.safeParse(missing).success, false);
+  const omitted = { criterion: "evaluations", summary: "No explicit applicability decision.", findings: [], computationChecks: [] };
+  assert.equal(SpecsStageResultSchema.safeParse(omitted).success, true);
+  assert.equal(SpecsStageResponseSchema.safeParse(omitted).success, false);
+});
+
 test("retained clinical findings survive synthesis, parsing and Markdown export", () => {
   const result = PaperReviewResultSchema.parse(withClinicalTrialReport(review(), [stage()], "en", quality));
   assert.equal(result.clinicalTrial?.assessment.checks[0].status, "demonstrable_error");
@@ -158,7 +176,7 @@ test("the report and print checklist render localized labels, evidence and final
     const result = withClinicalTrialReport(review(), [stage()], language, quality);
     const copy = CLINICAL_TRIAL_COPY[language];
     for (const print of [false, true]) {
-      const html = renderToStaticMarkup(<ClinicalTrialCheck report={result.clinicalTrial!} weaknesses={result.weaknesses} print={print} />);
+      const html = renderToStaticMarkup(createElement(ClinicalTrialCheck, { report: result.clinicalTrial!, weaknesses: result.weaknesses, print }));
       assert.ok(html.includes(copy.title));
       assert.ok(html.includes(copy.statuses.demonstrable_error));
       assert.ok(html.includes('href="#weakness-W1"'));

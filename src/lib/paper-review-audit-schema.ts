@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ReviewSeveritySchema } from "./paper-review-schema";
-import { ClinicalTrialCheckSchema } from "./clinical-trial-schema";
+import { ClinicalTrialCheckSchema, normalizeClinicalTrialResponse } from "./clinical-trial-schema";
 
 export const REVIEW_DEPTHS = ["standard", "deep"] as const;
 export const ReviewDepthSchema = z.enum(REVIEW_DEPTHS);
@@ -78,6 +78,16 @@ export const SpecsStageResultSchema = z.object({
   }
 });
 export type SpecsStageResult = z.infer<typeof SpecsStageResultSchema>;
+
+// Only the model response accepts named slots. Persisted reviews still use
+// the strict, backward-compatible array schema above.
+export const SpecsStageResponseSchema = z.preprocess(
+  normalizeClinicalTrialResponse,
+  SpecsStageResultSchema.refine((stage) => Object.hasOwn(stage, "clinicalTrialCheck"), {
+    path: ["clinicalTrialCheck"],
+    message: "Return an explicit clinicalTrialCheck assessment or null; do not omit the applicability decision.",
+  }),
+);
 
 export const ComputationAuditItemSchema = ComputationProposalSchema.extend({
   status: z.enum(["passed", "failed", "invalid"]),
