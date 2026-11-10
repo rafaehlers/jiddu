@@ -14,6 +14,7 @@ import { DownloadMarkdownButton } from "@/components/download-markdown-button";
 import { ReportDeliveryActions } from "@/components/report-delivery-actions";
 import { ReportTitle } from "@/components/report-title";
 import { VenueStandardCard } from "@/components/venue-standard-card";
+import { ClinicalTrialCheck } from "@/components/clinical-trial-check";
 import { PAPER_REVIEW_DISCLAIMER } from "@/lib/paper-review-markdown";
 import type {
   PaperReviewResult,
@@ -137,6 +138,10 @@ export function PaperReviewView({
         <MarkdownText text={review.summary} />
       </section>
 
+      {review.clinicalTrial && (
+        <ClinicalTrialCheck report={review.clinicalTrial} weaknesses={review.weaknesses} />
+      )}
+
       <section className="flex flex-col gap-4">
         <h2 className="font-serif text-2xl">Stage Findings</h2>
         <div className="grid grid-cols-1 gap-3">
@@ -194,6 +199,7 @@ export function PaperReviewView({
           {review.weaknesses.map((weakness, index) => (
             <li
               key={weakness.id}
+              id={`weakness-${weakness.id}`}
               className="border border-rule rounded-lg bg-paper overflow-hidden"
             >
               <div className="p-4 sm:p-5 flex flex-col gap-3">

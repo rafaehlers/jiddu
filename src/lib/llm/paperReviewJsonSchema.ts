@@ -1,3 +1,5 @@
+import { CLINICAL_TRIAL_CHECK_JSON_SCHEMA } from "../clinical-trial-schema";
+
 const locatedItem = {
   type: "object",
   additionalProperties: false,
@@ -205,11 +207,14 @@ export const PAPER_REVIEW_JSON_SCHEMA = {
 export const SPECS_STAGE_JSON_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["criterion", "summary", "findings", "computationChecks"],
+  required: ["criterion", "summary", "findings", "computationChecks", "clinicalTrialCheck"],
   properties: {
     criterion: {
       type: "string",
       enum: ["story", "presentation", "evaluations", "correctness", "significance"],
+    },
+    clinicalTrialCheck: {
+      anyOf: [CLINICAL_TRIAL_CHECK_JSON_SCHEMA, { type: "null" }],
     },
     summary: { type: "string" },
     findings: {

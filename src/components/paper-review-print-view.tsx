@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { ClinicalTrialCheck } from "@/components/clinical-trial-check";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { PAPER_REVIEW_DISCLAIMER } from "@/lib/paper-review-markdown";
@@ -68,6 +69,10 @@ export function PaperReviewPrintView({
         </>
       )}
 
+      {review.clinicalTrial && (
+        <ClinicalTrialCheck report={review.clinicalTrial} weaknesses={review.weaknesses} print />
+      )}
+
       <h2>Stage Findings</h2>
       <Finding label="Story" text={review.stageFindings.story} />
       <Finding label="Presentation" text={review.stageFindings.presentation} />
@@ -92,7 +97,7 @@ export function PaperReviewPrintView({
       <h3>Weaknesses</h3>
       <ol>
         {review.weaknesses.map((weakness) => (
-          <li key={weakness.id}>
+          <li key={weakness.id} id={`weakness-${weakness.id}`}>
             <strong>
               [{weakness.id} — {weakness.severity}] {weakness.title}.
             </strong>{" "}

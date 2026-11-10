@@ -1554,7 +1554,7 @@ Puedes [abrir Jiddu Context](/context) e iniciar una sesión desde el micrófono
   {
     slug: "what-is-adversarial-review",
     publishedAt: "2026-08-02",
-    updatedAt: "2026-08-02",
+    updatedAt: "2026-11-10",
     author: "Jiddu",
     tags: ["adversarial-review", "academic-research", "responsible-ai"],
     image: {
@@ -1563,16 +1563,20 @@ Puedes [abrir Jiddu Context](/context) e iniciar una sesión desde el micrófono
       height: 910,
       type: "image/webp",
     },
+    citations: [
+      "https://arxiv.org/abs/2604.13940",
+      "https://doi.org/10.64898/2026.10.25.26366455",
+    ],
     translations: {
       en: {
         title:
           "What is adversarial review — and how it strengthens a paper before submission",
         seoTitle: "What is adversarial review? How Jiddu analyzes papers",
         description:
-          "Learn what adversarial review is, why it reduces blind spots in papers, and how Jiddu turns the idea into an auditable analysis.",
+          "Learn how Jiddu reviews papers before submission, including clinical trial methodological checks, localized evidence, and the limits of automated review.",
         excerpt:
-          "A deliberately skeptical reading can find blind spots before reviewers do. Learn why adversarial review exists and how it works in Jiddu.",
-        readingTime: "4 min read",
+          "See how adversarial review challenges a paper’s evidence and conclusions, with a dedicated methodological check for clinical trial reports.",
+        readingTime: "5 min read",
         imageAlt:
           "Translucent lenses inspecting a layered paper structure from different angles and revealing weak and strong supports",
         imageCaption:
@@ -1610,6 +1614,24 @@ In practice, the system:
 
 The result organizes strengths, weaknesses, questions, reproducibility, and a recommendation. Every substantive weakness must include a manuscript location and a severity — **MAJOR**, **MODERATE**, or **MINOR** — so the author can move from “something feels wrong here” to a concrete action.
 
+## A methodological check for clinical trials
+
+When the manuscript reports an original interventional trial in humans, Jiddu adds a **clinical trial methodological check** to the same review. It applies to randomized and nonrandomized trials according to their design; observational studies, reviews and trial protocols without results do not receive it.
+
+The check examines nine areas: consistency between abstract and results; text, tables and denominators; comparison direction; participant flow and exclusions; analysis populations and intention to treat where applicable; allocation, blinding and observation effects; outcomes and statistical analysis; uncertainty, clinical importance and harms; and whether conclusions follow from results.
+
+Each item includes an explanation and manuscript locations. The report distinguishes **demonstrable error**, **missing information** and **possible limitation**, alongside **no issue identified**, **not assessable** and **not applicable**. Concerns link to the review’s weaknesses and pass through its critique process; concerns not retained in the final review become not assessable in the checklist. The check also appears in print and Markdown exports.
+
+For example, an abstract that reports 25 events among 100 participants while the corresponding results table reports 20 deserves investigation. Before calling it an error, the review must check whether the passages refer to the same population, endpoint and time point. A missing explanation is different from a demonstrated contradiction.
+
+## What the supporting research establishes
+
+[Large language models detect methodological errors that human peer review misses in clinical trials](https://doi.org/10.64898/2026.10.25.26366455) studies LLM detection of inserted errors in randomized trial reports. It also tests control versions without inserted errors, an important way to examine how readily models raise concerns. A flag on a control is not automatically a false positive: the original report may contain a real limitation.
+
+The cited version is a **medRxiv preprint, not certified by peer review**. It uses historical human reviews and LLM judges, and it **did not evaluate Jiddu**. Its detection rates are not Jiddu performance claims, nor does it validate Jiddu’s extension to nonrandomized trials. Our clinical checklist still needs evaluation against expert annotations on complete trial reports.
+
+The check is limited to evidence in the supplied manuscript. It does not establish that raw data are authentic, execute analysis code, verify external protocols or discover undisclosed deviations. No issue identified does not certify validity, and the report does not guide treatment decisions.
+
 ## What it does not do
 
 Jiddu's review is still automated. It can miss problems, misread a passage, or make an inappropriate comparison. It also does not verify code execution or predict a conference decision.
@@ -1618,6 +1640,14 @@ Adversarial review therefore does not replace coauthors, domain experts, peer re
 
 You can [start an adversarial review](/review) or read [Jiddu's complete methodology](/how-it-works).`,
         faq: [
+          {
+            question: "Does Jiddu check clinical trial methods?",
+            answer: "Yes. Original reports of human interventional trials receive a manuscript-based check with localized evidence and a distinction between demonstrable errors, missing information and possible limitations. It is not clinical validation or treatment advice.",
+          },
+          {
+            question: "Does the cited study establish Jiddu’s detection rate?",
+            answer: "No. The preprint evaluated other review configurations, not Jiddu. Jiddu’s clinical checklist has not yet been validated against expert annotations on complete trials.",
+          },
           {
             question: "Does adversarial review replace peer review?",
             answer:
@@ -1634,16 +1664,21 @@ You can [start an adversarial review](/review) or read [Jiddu's complete methodo
               "No. Jiddu can recompute allowed arithmetic operations such as means, rates, and percentage changes, but it never executes code submitted with the paper.",
           },
         ],
+        cta: {
+          title: "Review your paper before submission",
+          description: "Upload the complete PDF. Clinical trial reports also receive a methodological check with manuscript locations and clearly stated limits.",
+          label: "Start an adversarial review",
+        },
       },
       pt: {
         title:
           "O que é revisão adversarial — e como ela fortalece um paper antes da submissão",
         seoTitle: "O que é revisão adversarial? Como o Jiddu analisa papers",
         description:
-          "Entenda o que é revisão adversarial, por que ela reduz pontos cegos em papers e como o Jiddu transforma essa ideia em uma análise auditável.",
+          "Entenda como o Jiddu revisa papers antes da submissão, com checagem metodológica de ensaios clínicos, evidências localizadas e limites da revisão automatizada.",
         excerpt:
-          "Uma leitura deliberadamente cética pode encontrar pontos cegos antes que eles cheguem aos revisores. Veja por que ela existe e como funciona no Jiddu.",
-        readingTime: "4 min de leitura",
+          "Veja como a revisão adversarial questiona evidências e conclusões de um paper, com uma checagem metodológica específica para relatos de ensaios clínicos.",
+        readingTime: "5 min de leitura",
         imageAlt:
           "Lentes translúcidas examinando uma estrutura de papel em camadas por diferentes ângulos e revelando apoios frágeis e sólidos",
         imageCaption:
@@ -1681,6 +1716,24 @@ Na prática, o sistema:
 
 O resultado organiza pontos fortes, fraquezas, perguntas, reprodutibilidade e recomendação. Cada fraqueza substantiva precisa trazer uma localização no manuscrito e uma severidade — **MAJOR**, **MODERATE** ou **MINOR** — para que o autor possa sair de “há algo estranho aqui” e chegar a uma ação concreta.
 
+## Uma checagem metodológica para ensaios clínicos
+
+Quando o manuscrito relata um ensaio intervencional original em humanos, o Jiddu acrescenta uma **checagem metodológica de ensaio clínico** à mesma revisão. Ela se aplica a ensaios randomizados e não randomizados conforme o desenho do estudo; estudos observacionais, revisões e protocolos de ensaio sem resultados não a recebem.
+
+A checagem examina nove áreas: consistência entre resumo e resultados; texto, tabelas e denominadores; direção das comparações; fluxo de participantes e exclusões; populações de análise e intenção de tratar quando aplicável; alocação, cegamento e efeitos de observação; desfechos e análise estatística; incerteza, relevância clínica e danos; e sustentação das conclusões pelos resultados.
+
+Cada item inclui justificativa e localização no manuscrito. O relatório distingue **erro demonstrável**, **informação ausente** e **possível limitação**, além de **nenhum problema identificado**, **não avaliável** e **não se aplica**. As preocupações se vinculam às fraquezas da revisão e passam pela crítica existente; achados não retidos na revisão final passam a não avaliáveis na checagem. Ela também aparece na impressão e no Markdown.
+
+Por exemplo, um resumo que relata 25 eventos entre 100 participantes enquanto a tabela correspondente informa 20 merece investigação. Antes de chamar isso de erro, a revisão precisa conferir se os trechos tratam da mesma população, desfecho e momento de avaliação. Uma explicação ausente é diferente de uma contradição demonstrada.
+
+## O que a pesquisa de referência demonstra
+
+[Large language models detect methodological errors that human peer review misses in clinical trials](https://doi.org/10.64898/2026.10.25.26366455) estuda a detecção de erros inseridos em relatos de ensaios randomizados por modelos de linguagem. Também testa versões de controle sem erros inseridos, uma forma importante de examinar a propensão dos modelos a levantar preocupações. Um alerta no controle não é automaticamente um falso positivo: o relato original pode conter uma limitação real.
+
+A versão citada é um **preprint do medRxiv, sem certificação por revisão por pares**. Usa revisões humanas históricas e modelos como avaliadores, e **não avaliou o Jiddu**. Suas taxas de detecção não representam desempenho do produto nem validam a extensão do Jiddu a ensaios não randomizados. Nossa checagem clínica ainda precisa ser avaliada contra anotações de especialistas em relatos completos de ensaios.
+
+A checagem se limita às evidências do manuscrito fornecido. Não comprova a autenticidade de dados brutos, não executa código de análise, não verifica protocolos externos nem descobre desvios não declarados. A ausência de problemas identificados não certifica validade, e o relatório não orienta decisões de tratamento.
+
 ## O que ela não faz
 
 A revisão do Jiddu continua sendo automatizada. Ela pode perder problemas, interpretar mal uma passagem ou fazer uma comparação inadequada. Também não verifica a execução do código nem prevê a decisão de uma conferência.
@@ -1689,6 +1742,14 @@ Por isso, revisão adversarial não substitui coautores, especialistas, revisão
 
 Você pode [iniciar uma revisão adversarial](/review) ou consultar [a metodologia completa do Jiddu](/how-it-works).`,
         faq: [
+          {
+            question: "O Jiddu checa os métodos de ensaios clínicos?",
+            answer: "Sim. Relatos originais de ensaios intervencionais em humanos recebem uma checagem baseada no manuscrito, com evidências localizadas e distinção entre erros demonstráveis, informações ausentes e possíveis limitações. Não é validação clínica nem orientação de tratamento.",
+          },
+          {
+            question: "O estudo citado estabelece a taxa de detecção do Jiddu?",
+            answer: "Não. O preprint avaliou outras configurações de revisão, não o Jiddu. A checagem clínica do Jiddu ainda não foi validada contra anotações de especialistas em ensaios completos.",
+          },
           {
             question: "Revisão adversarial substitui a revisão por pares?",
             answer:
@@ -1705,16 +1766,21 @@ Você pode [iniciar uma revisão adversarial](/review) ou consultar [a metodolog
               "Não. O Jiddu pode recalcular operações aritméticas permitidas, como médias, taxas e variações percentuais, mas nunca executa código enviado pelo paper.",
           },
         ],
+        cta: {
+          title: "Revise seu paper antes da submissão",
+          description: "Envie o PDF completo. Relatos de ensaios clínicos também recebem uma checagem metodológica com localização no manuscrito e limites explícitos.",
+          label: "Iniciar revisão adversarial",
+        },
       },
       es: {
         title:
           "Qué es la revisión adversarial — y cómo fortalece un paper antes de enviarlo",
         seoTitle: "¿Qué es la revisión adversarial? Cómo analiza papers Jiddu",
         description:
-          "Descubre qué es la revisión adversarial, por qué reduce los puntos ciegos de un paper y cómo Jiddu convierte la idea en un análisis auditable.",
+          "Descubre cómo Jiddu revisa papers antes del envío, con comprobación metodológica de ensayos clínicos, evidencia localizada y límites de la revisión automatizada.",
         excerpt:
-          "Una lectura deliberadamente escéptica puede encontrar puntos ciegos antes que los revisores. Descubre por qué existe y cómo funciona en Jiddu.",
-        readingTime: "4 min de lectura",
+          "Descubre cómo la revisión adversarial cuestiona la evidencia y las conclusiones de un paper, con una comprobación metodológica específica para informes de ensayos clínicos.",
+        readingTime: "5 min de lectura",
         imageAlt:
           "Lentes translúcidas que examinan una estructura de papel en capas desde distintos ángulos y revelan apoyos débiles y sólidos",
         imageCaption:
@@ -1752,6 +1818,24 @@ En la práctica, el sistema:
 
 El resultado organiza fortalezas, debilidades, preguntas, reproducibilidad y una recomendación. Cada debilidad sustantiva debe incluir una ubicación en el manuscrito y una severidad — **MAJOR**, **MODERATE** o **MINOR** — para que el autor pueda pasar de “aquí hay algo extraño” a una acción concreta.
 
+## Una comprobación metodológica para ensayos clínicos
+
+Cuando el manuscrito describe un ensayo intervencionista original en humanos, Jiddu añade una **comprobación metodológica de ensayo clínico** a la misma revisión. Se aplica a ensayos aleatorizados y no aleatorizados según su diseño; los estudios observacionales, las revisiones y los protocolos de ensayo sin resultados no la reciben.
+
+La comprobación examina nueve áreas: coherencia entre resumen y resultados; texto, tablas y denominadores; dirección de las comparaciones; flujo de participantes y exclusiones; poblaciones de análisis e intención de tratar cuando corresponda; asignación, enmascaramiento y efectos de observación; desenlaces y análisis estadístico; incertidumbre, relevancia clínica y daños; y respaldo de las conclusiones por los resultados.
+
+Cada punto incluye una explicación y ubicaciones en el manuscrito. El informe distingue **error demostrable**, **información ausente** y **posible limitación**, además de **ningún problema identificado**, **no evaluable** y **no se aplica**. Las preocupaciones se vinculan a las debilidades de la revisión y pasan por la crítica existente; los hallazgos no conservados en la revisión final pasan a no evaluables en la comprobación. También aparece en la impresión y el Markdown.
+
+Por ejemplo, un resumen que informa 25 eventos entre 100 participantes mientras la tabla correspondiente informa 20 merece una investigación. Antes de llamarlo error, la revisión debe comprobar si los pasajes se refieren a la misma población, desenlace y momento de evaluación. Una explicación ausente es diferente de una contradicción demostrada.
+
+## Qué demuestra la investigación de referencia
+
+[Large language models detect methodological errors that human peer review misses in clinical trials](https://doi.org/10.64898/2026.10.25.26366455) estudia la detección de errores insertados en informes de ensayos aleatorizados por modelos de lenguaje. También prueba versiones de control sin errores insertados, una forma importante de examinar la propensión de los modelos a plantear preocupaciones. Una alerta en un control no es automáticamente un falso positivo: el informe original puede contener una limitación real.
+
+La versión citada es un **preprint de medRxiv, sin certificación por revisión por pares**. Utiliza revisiones humanas históricas y modelos como evaluadores, y **no evaluó Jiddu**. Sus tasas de detección no representan el rendimiento del producto ni validan la extensión de Jiddu a ensayos no aleatorizados. Nuestra comprobación clínica aún necesita evaluación contra anotaciones de especialistas en informes completos de ensayos.
+
+La comprobación se limita a la evidencia del manuscrito proporcionado. No demuestra la autenticidad de los datos brutos, no ejecuta código de análisis, no verifica protocolos externos ni descubre desviaciones no declaradas. No identificar problemas no certifica validez y el informe no orienta decisiones de tratamiento.
+
 ## Lo que no hace
 
 La revisión de Jiddu sigue siendo automatizada. Puede pasar por alto problemas, interpretar mal un pasaje o hacer una comparación inadecuada. Tampoco verifica la ejecución del código ni predice la decisión de una conferencia.
@@ -1760,6 +1844,14 @@ Por eso, la revisión adversarial no sustituye a coautores, especialistas, revis
 
 Puedes [iniciar una revisión adversarial](/review) o consultar [la metodología completa de Jiddu](/how-it-works).`,
         faq: [
+          {
+            question: "¿Jiddu comprueba los métodos de ensayos clínicos?",
+            answer: "Sí. Los informes originales de ensayos intervencionistas en humanos reciben una comprobación basada en el manuscrito, con evidencia localizada y distinción entre errores demostrables, información ausente y posibles limitaciones. No es validación clínica ni orientación de tratamiento.",
+          },
+          {
+            question: "¿El estudio citado establece la tasa de detección de Jiddu?",
+            answer: "No. El preprint evaluó otras configuraciones de revisión, no Jiddu. La comprobación clínica de Jiddu aún no se ha validado contra anotaciones de especialistas en ensayos completos.",
+          },
           {
             question: "¿La revisión adversarial sustituye a la revisión por pares?",
             answer:
@@ -1776,6 +1868,11 @@ Puedes [iniciar una revisión adversarial](/review) o consultar [la metodología
               "No. Jiddu puede recalcular operaciones aritméticas permitidas, como medias, tasas y variaciones porcentuales, pero nunca ejecuta código enviado con el paper.",
           },
         ],
+        cta: {
+          title: "Revisa tu paper antes del envío",
+          description: "Sube el PDF completo. Los informes de ensayos clínicos también reciben una comprobación metodológica con ubicaciones en el manuscrito y límites explícitos.",
+          label: "Iniciar revisión adversarial",
+        },
       },
     },
   },

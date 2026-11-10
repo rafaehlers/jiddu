@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ReviewSeveritySchema } from "./paper-review-schema";
+import { ClinicalTrialCheckSchema } from "./clinical-trial-schema";
 
 export const REVIEW_DEPTHS = ["standard", "deep"] as const;
 export const ReviewDepthSchema = z.enum(REVIEW_DEPTHS);
@@ -60,6 +61,21 @@ export const SpecsStageResultSchema = z.object({
   summary: z.string().min(1),
   findings: z.array(SpecsFindingSchema),
   computationChecks: z.array(ComputationProposalSchema).default([]),
+  clinicalTrialCheck: ClinicalTrialCheckSchema.nullable().optional(),
+}).superRefine((stage, ctx) => {
+  if (!stage.clinicalTrialCheck) return;
+  if (stage.criterion !== "evaluations") {
+    ctx.addIssue({ code: "custom", path: ["clinicalTrialCheck"], message: "Only evaluations may produce a clinical trial check." });
+  }
+  const findings = new Map(stage.findings.map((finding) => [finding.id, finding]));
+  for (const [index, item] of stage.clinicalTrialCheck.checks.entries()) {
+    for (const id of item.findingIds) {
+      const finding = findings.get(id);
+      if (!finding || finding.criterion !== "evaluations" || !finding.retainInFinal) {
+        ctx.addIssue({ code: "custom", path: ["clinicalTrialCheck", "checks", index, "findingIds"], message: "Every clinical concern must reference a retained evaluation finding in this stage." });
+      }
+    }
+  }
 });
 export type SpecsStageResult = z.infer<typeof SpecsStageResultSchema>;
 

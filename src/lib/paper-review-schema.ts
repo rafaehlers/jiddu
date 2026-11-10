@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ClinicalTrialReportSchema } from "./clinical-trial-schema";
 
 export const REVIEW_SEVERITIES = ["MAJOR", "MODERATE", "MINOR"] as const;
 export const ReviewSeveritySchema = z.enum(REVIEW_SEVERITIES);
@@ -63,6 +64,7 @@ export const PaperReviewResultSchema = z.object({
   publicationPath: z.array(z.string().min(1)).min(1),
   recommendation: ReviewRecommendationSchema,
   sources: z.array(ReviewSourceSchema),
+  clinicalTrial: ClinicalTrialReportSchema.optional(),
   audit: z
     .object({
       methodology: z.string().min(1),

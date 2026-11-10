@@ -1,5 +1,6 @@
 import type { PaperReviewResult } from "./paper-review-schema";
 import type { ResolvedVenueProfile } from "./venues";
+import { clinicalTrialToMarkdown } from "./clinical-trial-review";
 
 export const PAPER_REVIEW_DISCLAIMER =
   "This review is AI-generated, may miss domain-specific nuance, and should be validated by a human expert before acting on it.";
@@ -98,6 +99,7 @@ ${review.sources
 
 ${venueStandard}
 ${audit}
+${review.clinicalTrial ? clinicalTrialToMarkdown(review.clinicalTrial, review.weaknesses) : ""}
 ### Stage Findings
 
 **Story:** ${review.stageFindings.story}

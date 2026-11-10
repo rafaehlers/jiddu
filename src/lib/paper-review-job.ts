@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { withClinicalTrialReport } from "@/lib/clinical-trial-review";
 import { reserveResultId } from "@/lib/result-id";
 import { ingestPdf, renderPdfPages } from "@/lib/ingest/pdf";
 import {
@@ -519,6 +520,7 @@ export async function runPreparedPaperReview(
       prepared.venueTarget,
       reviewDate,
     );
+    review = withClinicalTrialReport(review, specialistResults, prepared.lang);
     await stageDone(5);
 
     await stage(6, "source_validation", "source_validation");
@@ -605,6 +607,7 @@ export async function runPreparedPaperReview(
     }
 
     review = enforceRetention(review, specialistResults, retention.missingFindingIds);
+    review = withClinicalTrialReport(review, specialistResults, prepared.lang, quality);
     retention = buildRetentionAudit(specialistResults, review, quality);
     review = {
       ...review,
