@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 
 # ---------- deps ----------
-FROM node:22-slim AS deps
+FROM node:22.23.4-bookworm-slim AS deps
 WORKDIR /app
 # better-sqlite3 needs build tools to compile native bindings against the
 # container's libc (musl vs glibc, version matching).
@@ -14,7 +14,7 @@ COPY prisma.config.ts ./
 RUN npm ci --include=dev
 
 # ---------- builder ----------
-FROM node:22-slim AS builder
+FROM node:22.23.4-bookworm-slim AS builder
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 # Next evaluates parts of the server module graph while collecting build-time
@@ -35,7 +35,7 @@ ENV NEXT_PUBLIC_JIDDU_BUILD_VERSION="${JIDDU_BUILD_DATE} ${JIDDU_BUILD_TIME} ${J
 RUN npm run build
 
 # ---------- runner ----------
-FROM node:22-slim AS runner
+FROM node:22.23.4-bookworm-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
