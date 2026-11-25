@@ -28,7 +28,7 @@ services:
         JIDDU_BUILD_DATE: "${JIDDU_BUILD_DATE:-0000-00-00}"
         JIDDU_BUILD_TIME: "${JIDDU_BUILD_TIME:-00:00}"
         JIDDU_BUILD_HASH: "${JIDDU_BUILD_HASH:-local}"
-    image: jiddu-app
+    image: node-security-patched/jiddu-app:22.23.4-state
     container_name: jiddu-app
     restart: unless-stopped
     env_file:
