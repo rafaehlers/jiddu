@@ -219,14 +219,17 @@ src/
 │   ├── explain/page.tsx               Explain composer (paper explainer)
 │   ├── slop/page.tsx                  AI-slop composer
 │   ├── review/page.tsx                Adversarial paper-review composer
-│   ├── account/page.tsx               WorkOS account + OpenRouter connection
+│   ├── live/                          Live audio mode + saved sessions (/live/[id])
+│   ├── context/                       Context knowledge-graph sessions (/context/[id])
+│   ├── account/page.tsx               WorkOS account, credits, API keys, OpenRouter connection
+│   ├── pricing/page.tsx               Jiddu credit packs (Stripe Checkout)
+│   ├── admin/                         Settings, model routing, credits, platform access, feedback, metrics
 │   ├── callback/route.ts              WorkOS AuthKit callback
 │   ├── signup/route.ts                WorkOS AuthKit hosted registration
 │   ├── legal/page.tsx                 Terms + disclaimer + methodology citations
 │   ├── a/[id]/
 │   │   ├── page.tsx                   Analysis viewer (SSR)
-│   │   ├── print/page.tsx             Print-optimized "Save as PDF" view
-│   │   └── opengraph-image.tsx        Dynamic OG image per analysis
+│   │   └── print/page.tsx             Print-optimized "Save as PDF" view
 │   ├── f/[id]/
 │   │   ├── page.tsx                   Fact-check viewer (SSR + client refresh)
 │   │   └── print/page.tsx             Print-optimized view
@@ -243,6 +246,10 @@ src/
 │   │   ├── page.tsx                   Adversarial review viewer (SSR)
 │   │   └── print/page.tsx             Review PDF/print view
 │   └── api/
+│       ├── v1/                                         Public synchronous REST API (see below)
+│       ├── [transport]/route.ts                        Hosted MCP server (/api/mcp, WorkOS OAuth)
+│       ├── live/                                       Live mode: realtime token, analysis, diarization, billing
+│       ├── context/                                    Context sessions, entities and news enrichment
 │       ├── analyze/route.ts                            POST: fallacy SSE stream
 │       ├── analysis/[id]/route.ts                      GET: load a saved analysis
 │       ├── factcheck/route.ts                          POST: claim extraction SSE stream
@@ -270,7 +277,6 @@ src/
 │   ├── neutrality-view.tsx            Two-column neutrality viewer with issue findings
 │   ├── explain-view.tsx               Two-column explain viewer (role-colored paragraphs + cards)
 │   ├── *-print-view.tsx               Six print-optimized companions
-│   ├── unreviewed-banner.tsx          Yellow "not yet human-reviewed" banner
 │   ├── legal-body.tsx                 /legal page renderer with markdown-link support
 │   ├── upload-form.tsx                Shared inputs + 6-way mode toggle + review venue fields
 │   ├── share-link-bar.tsx             Copy-to-clipboard URL + inline rightSlot (export PDF)
@@ -282,7 +288,8 @@ src/
 │   ├── lang-selector.tsx              EN / PT / ES
 │   └── site-header.tsx + site-footer.tsx
 └── lib/
-    ├── db.ts                          Prisma client (better-sqlite3 adapter)
+    ├── db.ts                          Prisma client (PostgreSQL via @prisma/adapter-pg)
+    ├── analysis-models.ts             Model catalog, prices and admin-controlled routing/fallback
     ├── fallacies.ts                   46-fallacy catalog + golden-angle color palette
     ├── schema.ts                      Zod schemas for sentences, findings, result
     ├── prompt.ts                      Localized fallacy prompts
@@ -306,8 +313,10 @@ src/
     ├── settings.ts                    Admin-tunable runtime settings (cached 30s)
     ├── openrouter-credits.ts          Wrapper around OpenRouter /credits (5-min cache)
     ├── i18n/                          Provider + EN/PT/ES messages
-    ├── ingest/                        URL (SSRF-protected, browser-headers), PDF, TXT
+    ├── ingest/                        URL (SSRF-protected, browser-headers), PDF, TXT, image
     ├── factcheck/cache.ts             Verdict hash + getCached/putCached with per-type TTL
+    ├── api/                           Synchronous run/map layer shared by REST API and MCP
+    ├── live/                          Live-mode session, realtime events and diarization
     └── llm/
         ├── types.ts                   Provider interface
         ├── jsonSchema.ts              JSON Schema for fallacy tool
@@ -317,8 +326,8 @@ src/
         ├── stream.ts                  StreamEvent + ClaimStreamEvent + NeutralityStreamEvent + ExplainStreamEvent unions
         ├── openrouter.ts              Provider: OpenRouter via OpenAI SDK
         ├── verifyClaim.ts             Single-claim Sonar verifier (cache-first, force=true skips)
-        ├── fallback.ts                withModelFallback() — client-side retry across model chain
-        └── index.ts                   getProvider() + MODEL_CATALOG (🇺🇸 GPT, 🇺🇸 Gemma)
+        ├── fallback.ts                withModelFallback() — Jiddu-side retry across the model chain
+        └── index.ts                   getProvider() (OpenRouter) + re-exported MODEL_CATALOG
 ```
 
 ## Public API & MCP

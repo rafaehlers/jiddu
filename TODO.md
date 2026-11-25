@@ -13,7 +13,7 @@ Backlog vivo. Atualize à medida que cada item entrar ou sair de prioridade. Ite
 - [ ] **"Disputed" badge no viewer público**. Quando um claim/finding tiver ≥3 feedbacks `open`, mostra badge cinza "Disputed" embaixo dele. Sinal social pra outros usuários.
 
 ### Operacional / segurança
-- [ ] **Backup do SQLite**. Verificar se Hostinger faz snapshot do volume `jiddu_jiddu_data` automaticamente. Se não, cron + `rsync` ou `litestream` apontando pra um S3-compatible.
+- [ ] **Backup do PostgreSQL fora da VPS**. `scripts/backup-postgres.sh` já gera um `pg_dump` verificado (`pg_restore --list`) em `/opt/backups/jiddu-postgres`, com retenção de 14 dias. Falta: confirmar que ele está agendado no cron da VPS e copiar os dumps para um storage externo (S3-compatible), já que hoje ficam no mesmo disco do banco.
 - [ ] **Error monitoring**. Sentry self-hosted ou plano free. Pra cada `console.error` virar alerta. Custo: 0-15 min/mês de setup.
 
 ---
@@ -21,7 +21,7 @@ Backlog vivo. Atualize à medida que cada item entrar ou sair de prioridade. Ite
 ## P1 — Médio prazo
 
 ### Métricas / observabilidade
-- [ ] **Métricas no `/admin/metrics`** que faltam: top 10 vereditos mais reportados, complaint rate por modelo (gpt vs minimax), rationale com maior taxa de feedback. Tudo derivado das tabelas existentes.
+- [ ] **Métricas no `/admin/metrics`** que faltam: top 10 vereditos mais reportados, complaint rate por modelo, rationale com maior taxa de feedback. Tudo derivado das tabelas existentes.
 
 ### Polish UX
 - [ ] **Mobile composer** — formulário hoje é desktop-first. Testar em 375px e ajustar.
@@ -88,7 +88,7 @@ Pra referência rápida de o que já entrou. Vá movendo pra cima quando entrar 
 
 - ✅ **Acesso por conta WorkOS**: usuários na allowlist recebem acesso incluído; os demais usam créditos Jiddu com as credenciais de provedor administradas pela plataforma. CRUD em `/admin/platform-access`; `/admin` protegido exclusivamente por `ADMIN_EMAILS`, sem senha administrativa separada.
 - ✅ **Créditos Jiddu**: ledger independente do saldo OpenRouter da plataforma para web, REST e MCP hospedado, rate card versionado como estimativa/reserva, liquidação pelo custo real e tokens retornados pelo OpenRouter com margem configurável, fallback para o rate card quando usage não estiver disponível, saldo e histórico em `/account` e concessão/ajuste manual em `/admin/credits`.
-- [ ] **Comprar créditos Jiddu**: integrar checkout e webhooks, definir o valor em dólar dos pacotes e creditar o ledger idempotentemente após confirmação do pagamento.
+- ✅ **Comprar créditos Jiddu**: pacotes avulsos em `/pricing` via Stripe Checkout; webhook assinado (`/api/stripe/webhook`) e página de retorno compartilham o mesmo crédito idempotente no ledger.
 - ✅ **Revisão adversarial SPECS profunda**: cinco especialistas independentes, recálculo aritmético seguro, validação SSRF-protegida de fontes, autocrítica + crítico de outro modelo, gate de retenção MAJOR/MODERATE, modos Standard/Deep (GPT-5.6 Luna Pro + Claude Opus 4.8 configuráveis), auditoria pública, persistência privada, API/MCP e benchmark sintético balanceado de 30 casos.
 - ✅ **API pública para agentes** (era P3 "API key access"): REST API v1 (`/api/v1/detect-fallacies|fact-check|assess-neutrality|explain`) com API keys admin-issued (`/admin/api-keys`, header `X-Jiddu-Key`) + rate-limit por key; MCP server (remoto in-process em `/api/mcp` via mcp-remote, + pacote local `packages/jiddu-mcp`); evals (`evals/report.md`); `AGENT.md`; página `/api-access` (3 línguas).
 - ✅ De-hifenização de PDF no ingest — junta palavras quebradas por hífen no fim de linha ("self-\nreferent" → "selfreferent"); afeta os 4 pipelines.
@@ -97,13 +97,13 @@ Pra referência rápida de o que já entrou. Vá movendo pra cima quando entrar 
 - ✅ Preparação de abertura da aplicação inteira sob MIT, com licença, documentação e revisão do histórico.
 - ✅ Source-quality tiers + state-controlled flag (paper Goldfarb).
 - ✅ Neutrality dimension MVP — 8 padrões, sem direção partidária.
-- ✅ `/legal` page com termos em 3 línguas + banner "não revisado" no viewer + toggle no admin.
+- ✅ `/legal` page com termos em 3 línguas + toggle "revisado" no admin. (O banner "não revisado" no viewer foi removido depois; o status revisado aparece no metadado da versão impressa.)
 - ✅ Métricas dashboard em `/admin/metrics`.
 - ✅ Feedback "veredito errado" + queue no admin.
 - ✅ Cache cleanup oportunista.
 - ✅ Per-claim verify sem precisar bulk.
 - ✅ PDF export (`/a/[id]/print`, `/f/[id]/print`, `/n/[id]/print`).
-- ✅ Model picker com 🇺🇸 GPT-5.6 Luna / 🇨🇳 MiniMax M3.
+- ✅ Model picker com 🇺🇸 GPT-5.6 Luna / 🇨🇳 MiniMax M3. (Substituído depois pelo roteamento de modelos controlado pelo admin, com fallback automático; o formulário público não expõe mais escolha de modelo.)
 - ✅ Real-browser request headers (UOL passou de 403 → 200).
 - ✅ Phase 1 + Phase 2 + Phase 3a do roadmap original (extração + verdict via Sonar + cache).
 - ✅ Admin runtime settings + cache viewer + OpenRouter balance card.
