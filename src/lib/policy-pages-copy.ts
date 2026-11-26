@@ -62,7 +62,7 @@ export const POLICY_PAGES_COPY: Record<
         {
           title: "6. Service providers, sharing, and international transfers",
           paragraphs: [
-            "Jiddu shares only the information needed for a function with providers such as Hostinger for hosting, WorkOS for authentication, Stripe for payments, OpenRouter and upstream model providers for analysis, OpenAI for Live transcription, Resend for email delivery, and Google Analytics for traffic measurement.",
+            "Jiddu shares only the information needed for a function with providers such as Hostinger for hosting, WorkOS for authentication, Stripe for payments, OpenRouter and upstream model providers for analysis, OpenAI for Live transcription, Resend for email delivery, Sentry for error monitoring, and Google Analytics for traffic measurement. Sentry receives technical error details such as stack traces, the affected route, and browser or runtime version; Jiddu configures it not to receive submitted content, model output, request bodies, cookies, or account identity.",
             "Some providers process data outside Brazil. Jiddu can also disclose information when required by law, to investigate abuse or protect rights and safety, or as part of a protected merger, financing, acquisition, or transfer of the service. Jiddu does not sell personal information or use submitted content for personalized advertising.",
           ],
         },
@@ -218,7 +218,7 @@ export const POLICY_PAGES_COPY: Record<
         {
           title: "6. Provedores, compartilhamento e transferências internacionais",
           paragraphs: [
-            "O Jiddu compartilha apenas as informações necessárias a cada função com provedores como Hostinger para hospedagem, WorkOS para autenticação, Stripe para pagamentos, OpenRouter e provedores upstream para análises, OpenAI para transcrição do Live, Resend para emails e Google Analytics para medição de tráfego.",
+            "O Jiddu compartilha apenas as informações necessárias a cada função com provedores como Hostinger para hospedagem, WorkOS para autenticação, Stripe para pagamentos, OpenRouter e provedores upstream para análises, OpenAI para transcrição do Live, Resend para emails, Sentry para monitoramento de erros e Google Analytics para medição de tráfego. O Sentry recebe detalhes técnicos de erros, como stack traces, a rota afetada e a versão do navegador ou do runtime; o Jiddu o configura para não receber conteúdo enviado, respostas dos modelos, corpos de requisição, cookies ou identidade da conta.",
             "Alguns provedores tratam dados fora do Brasil. O Jiddu também pode divulgar informações quando exigido por lei, para investigar abuso ou proteger direitos e segurança, ou em uma fusão, financiamento, aquisição ou transferência protegida do serviço. O Jiddu não vende dados pessoais nem usa o conteúdo enviado para publicidade personalizada.",
           ],
         },
@@ -374,7 +374,7 @@ export const POLICY_PAGES_COPY: Record<
         {
           title: "6. Proveedores, transferencias y procesamiento internacional",
           paragraphs: [
-            "Jiddu comparte solo la información necesaria para cada función con proveedores como Hostinger para alojamiento, WorkOS para autenticación, Stripe para pagos, OpenRouter y proveedores upstream para análisis, OpenAI para transcripción de Live, Resend para emails y Google Analytics para medir tráfico.",
+            "Jiddu comparte solo la información necesaria para cada función con proveedores como Hostinger para alojamiento, WorkOS para autenticación, Stripe para pagos, OpenRouter y proveedores upstream para análisis, OpenAI para transcripción de Live, Resend para emails, Sentry para monitorear errores y Google Analytics para medir tráfico. Sentry recibe detalles técnicos de errores, como stack traces, la ruta afectada y la versión del navegador o del runtime; Jiddu lo configura para no recibir contenido enviado, respuestas de los modelos, cuerpos de solicitud, cookies ni la identidad de la cuenta.",
             "Algunos proveedores tratan datos fuera de Brasil. Jiddu también puede divulgar información cuando la ley lo exija, para investigar abusos o proteger derechos y seguridad, o en una fusión, financiación, adquisición o transferencia protegida del servicio. Jiddu no vende datos personales ni usa el contenido enviado para publicidad personalizada.",
           ],
         },
