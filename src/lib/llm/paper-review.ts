@@ -37,6 +37,7 @@ import {
   SPECS_STAGE_JSON_SCHEMA,
 } from "./paperReviewJsonSchema";
 import { DEFAULT_MODEL_CHAIN } from "./fallback";
+import { createOpenRouterClient, llmRequestOptions } from "./openrouter-client";
 import {
   readOpenRouterUsage,
   type OpenRouterUsage,
@@ -47,8 +48,6 @@ import {
   type ProviderRoutingPreference,
 } from "../analysis-models";
 
-const OPENROUTER_BASE = "https://openrouter.ai/api/v1";
-const REFERER = process.env.OPENROUTER_REFERER || "https://jiddu.app";
 
 type VisualPage = {
   pageNumber: number;
@@ -95,14 +94,7 @@ function getClient(apiKey?: string): OpenAI {
   if (!resolvedKey) {
     throw new Error("OPENROUTER_API_KEY is not set in the environment");
   }
-  const client = new OpenAI({
-    apiKey: resolvedKey,
-    baseURL: OPENROUTER_BASE,
-    defaultHeaders: {
-      "HTTP-Referer": REFERER,
-      "X-Title": "Jiddu",
-    },
-  });
+  const client = createOpenRouterClient(resolvedKey);
   if (!apiKey) cachedClient = client;
   return client;
 }
@@ -187,7 +179,7 @@ export async function researchPaperNovelty(
             max_tokens: 8_000,
             ...providerExtras(choice, opts.providerRoutingByModel?.[choice.id]),
           } as unknown as OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming,
-          opts.signal ? { signal: opts.signal } : undefined,
+          llmRequestOptions(paperReviewOperation(opts), opts.signal),
         );
         const usage = readOpenRouterUsage(response, choice.id);
         if (usage) opts.onUsage?.(usage);
@@ -441,7 +433,7 @@ async function runStructuredWithFallback<T>(
               max_tokens: 16_000,
               ...providerExtras(choice, opts.providerRoutingByModel?.[choice.id]),
             } as OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming,
-            opts.signal ? { signal: opts.signal } : undefined,
+            llmRequestOptions(paperReviewOperation(opts), opts.signal),
           );
           const usage = readOpenRouterUsage(response, choice.id);
           if (usage) opts.onUsage?.(usage);
@@ -531,6 +523,11 @@ function providerExtras(
       ? { reasoning: { effort: choice.reasoningEffort } }
       : {}),
   };
+}
+
+// LlmCall label for a paper-review stage, e.g. "paper_review.ledger".
+function paperReviewOperation(opts: RunOptions): string {
+  return `paper_review.${opts.operation ?? "unspecified"}`;
 }
 
 async function trackModelCall<T>(

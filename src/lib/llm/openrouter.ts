@@ -80,6 +80,7 @@ import type {
   ProviderId,
 } from "./types";
 import { readOpenRouterUsage } from "../openrouter-usage";
+import { createOpenRouterClient, llmRequestOptions } from "./openrouter-client";
 import {
   ANALYSIS_MODEL_CATALOG,
   providerRoutingPayload,
@@ -144,8 +145,6 @@ export function resolvePaperReviewModel(id?: string | null): ModelChoice {
   return resolveAnalysisModel(id);
 }
 
-const OPENROUTER_BASE = "https://openrouter.ai/api/v1";
-const REFERER = process.env.OPENROUTER_REFERER || "https://jiddu.app";
 
 export class OpenRouterProvider implements LlmProvider {
   readonly id: ProviderId;
@@ -166,14 +165,9 @@ export class OpenRouterProvider implements LlmProvider {
     this.defaultModel = choice.id;
     this.modelSlug = choice.openrouter;
     this.providerRoutingByModel = providerRoutingByModel;
-    this.client = new OpenAI({
-      apiKey: apiKey ?? process.env.OPENROUTER_API_KEY,
-      baseURL: OPENROUTER_BASE,
-      defaultHeaders: {
-        "HTTP-Referer": REFERER,
-        "X-Title": "Jiddu",
-      },
-    });
+    this.client = createOpenRouterClient(
+      apiKey ?? process.env.OPENROUTER_API_KEY,
+    );
   }
 
   private slug(modelOverride?: string): string {
@@ -246,7 +240,7 @@ export class OpenRouterProvider implements LlmProvider {
         ...this.openRouterExtras(modelId),
         reasoning: { effort: "low" },
       } as OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming,
-      opts?.signal ? { signal: opts.signal } : undefined,
+      llmRequestOptions("image_transcription", opts?.signal),
     );
     const usage = readOpenRouterUsage(response, modelId);
     if (usage) opts?.onUsage?.(usage);
@@ -297,7 +291,7 @@ export class OpenRouterProvider implements LlmProvider {
       ],
       tool_choice: this.toolChoiceFor("report_analysis", opts?.model),
       ...this.openRouterExtras(opts?.model),
-    } as OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming);
+    } as OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming, llmRequestOptions("fallacies"));
     const usage = readOpenRouterUsage(
       response,
       opts?.model ?? this.defaultModel,
@@ -356,7 +350,7 @@ export class OpenRouterProvider implements LlmProvider {
         stream: true,
         ...this.openRouterExtras(opts?.model),
       } as OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming,
-      opts?.signal ? { signal: opts.signal } : undefined,
+      llmRequestOptions("fallacies", opts?.signal),
     );
 
     let buffer = "";
@@ -503,7 +497,7 @@ export class OpenRouterProvider implements LlmProvider {
         stream: true,
         ...this.openRouterExtras(opts?.model),
       } as OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming,
-      opts?.signal ? { signal: opts.signal } : undefined,
+      llmRequestOptions("factcheck_claims", opts?.signal),
     );
 
     let buffer = "";
@@ -632,7 +626,7 @@ export class OpenRouterProvider implements LlmProvider {
         stream: true,
         ...this.openRouterExtras(opts?.model),
       } as OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming,
-      opts?.signal ? { signal: opts.signal } : undefined,
+      llmRequestOptions("neutrality", opts?.signal),
     );
 
     let buffer = "";
@@ -784,7 +778,7 @@ export class OpenRouterProvider implements LlmProvider {
         tool_choice: this.toolChoiceFor("report_live_context", modelId),
         ...this.openRouterExtras(modelId),
       } as OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming,
-      opts?.signal ? { signal: opts.signal } : undefined,
+      llmRequestOptions("live_context", opts?.signal),
     );
     const usage = readOpenRouterUsage(response, modelId);
     if (usage) opts?.onUsage?.(usage);
@@ -840,7 +834,7 @@ export class OpenRouterProvider implements LlmProvider {
         stream: true,
         ...this.openRouterExtras(opts?.model),
       } as OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming,
-      opts?.signal ? { signal: opts.signal } : undefined,
+      llmRequestOptions("slop", opts?.signal),
     );
 
     let buffer = "";
@@ -986,7 +980,7 @@ export class OpenRouterProvider implements LlmProvider {
         stream: true,
         ...this.openRouterExtras(opts.model),
       } as OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming,
-      opts.signal ? { signal: opts.signal } : undefined,
+      llmRequestOptions("explain", opts.signal),
     );
 
     let buffer = "";
@@ -1096,7 +1090,7 @@ export class OpenRouterProvider implements LlmProvider {
         ],
         ...this.openRouterExtras(modelId),
       } as OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming,
-      opts?.signal ? { signal: opts.signal } : undefined,
+      llmRequestOptions("explain_detail", opts?.signal),
     );
     const usage = readOpenRouterUsage(response, modelId);
     if (usage) opts?.onUsage?.(usage);
@@ -1137,7 +1131,7 @@ export class OpenRouterProvider implements LlmProvider {
         tool_choice: this.toolChoiceFor("report_paper_map", modelId),
         ...this.openRouterExtras(modelId),
       } as OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming,
-      opts?.signal ? { signal: opts.signal } : undefined,
+      llmRequestOptions("paper_map", opts?.signal),
     );
     const usage = readOpenRouterUsage(response, modelId);
     if (usage) opts?.onUsage?.(usage);
@@ -1202,7 +1196,7 @@ export class OpenRouterProvider implements LlmProvider {
         tool_choice: this.toolChoiceFor("report_paper_evidence", modelId),
         ...this.openRouterExtras(modelId),
       } as OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming,
-      opts?.signal ? { signal: opts.signal } : undefined,
+      llmRequestOptions("paper_evidence", opts?.signal),
     );
     const usage = readOpenRouterUsage(response, modelId);
     if (usage) opts?.onUsage?.(usage);

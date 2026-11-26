@@ -1,7 +1,5 @@
-import OpenAI from "openai";
-
-const OPENROUTER_BASE = "https://openrouter.ai/api/v1";
-const REFERER = process.env.OPENROUTER_REFERER || "https://jiddu.app";
+import type OpenAI from "openai";
+import { createOpenRouterClient } from "./openrouter-client";
 
 let cachedClient: OpenAI | null = null;
 
@@ -11,14 +9,7 @@ export function getSonarClient(apiKey?: string): OpenAI {
   if (!resolvedKey) {
     throw new Error("OPENROUTER_API_KEY is not set in the environment");
   }
-  const client = new OpenAI({
-    apiKey: resolvedKey,
-    baseURL: OPENROUTER_BASE,
-    defaultHeaders: {
-      "HTTP-Referer": REFERER,
-      "X-Title": "Jiddu",
-    },
-  });
+  const client = createOpenRouterClient(resolvedKey);
   if (!apiKey) cachedClient = client;
   return client;
 }

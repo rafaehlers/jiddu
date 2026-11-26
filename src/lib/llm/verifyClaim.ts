@@ -33,6 +33,7 @@ import {
 } from "./sonar-client";
 import { FACTCHECK_FAST_MODEL } from "../model-ids";
 import type { PerplexitySearchModelSetting } from "../settings";
+import { llmRequestOptions } from "./openrouter-client";
 
 type ClaimWithId = Claim & { id: string };
 
@@ -100,7 +101,7 @@ export async function verifyClaim(
       // routine verification based on an unrealistic maximum-cost exposure.
       max_tokens: 4_000,
     },
-    opts.signal ? { signal: opts.signal } : undefined,
+    llmRequestOptions("factcheck_verify", opts.signal),
   );
   const usage = readOpenRouterUsage(res, model);
   if (usage) opts.onUsage?.(usage);

@@ -636,3 +636,35 @@ model KnowledgeEnrichmentJob {
   @@unique([targetKey, kind])
   @@index([status, runAfter])
 }
+
+// One row per OpenRouter chat completion attempt (SDK retries included),
+// written by src/lib/llm/instrumented-fetch.ts. Operational metadata only:
+// never prompts, model output or user identity. Rows older than 90 days are
+// pruned by src/lib/llm/llm-call-log.ts.
+model LlmCall {
+  id               String   @id
+  createdAt        DateTime @default(now()) // when the request started
+  operation        String // Jiddu operation label, e.g. "slop", "factcheck_verify"
+  model            String // requested OpenRouter model slug
+  responseModel    String? // model reported by the response
+  stream           Boolean
+  status           String // ok | error | aborted
+  httpStatus       Int?
+  errorCode        String?
+  errorMessage     String? // provider error message, truncated to 200 chars
+  retryCount       Int      @default(0)
+  durationMs       Int // request start to last byte
+  ttfbMs           Int? // request start to response headers
+  firstChunkMs     Int? // request start to first streamed chunk
+  promptTokens     Int      @default(0)
+  completionTokens Int      @default(0)
+  reasoningTokens  Int      @default(0)
+  cachedTokens     Int      @default(0)
+  totalTokens      Int      @default(0)
+  costMicros       Int? // OpenRouter-reported cost in millionths of a US dollar
+  generationId     String?
+
+  @@index([createdAt])
+  @@index([operation, createdAt])
+  @@index([model, createdAt])
+}
