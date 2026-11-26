@@ -2,8 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { ErrorEvent } from "@sentry/nextjs";
 import {
+  resolveTracesSampleRate,
   scrubSentryBreadcrumb,
   scrubSentryEvent,
+  scrubSentrySpan,
   sentryBaseOptions,
   stripQuery,
 } from "./sentry-options";
@@ -15,7 +17,7 @@ test("stays disabled without a DSN", () => {
     const options = sentryBaseOptions();
     assert.equal(options.enabled, false);
     assert.equal(options.dsn, undefined);
-    assert.equal(options.tracesSampleRate, 0);
+    assert.equal(options.tracesSampleRate, 0.1);
     assert.equal(options.dataCollection.userInfo, false);
     assert.equal(options.dataCollection.cookies, false);
     assert.equal(options.dataCollection.httpHeaders, false);
@@ -116,4 +118,76 @@ test("drops console breadcrumbs and strips fetch and navigation URLs", () => {
     })!.data,
     { from: "/live", to: "/r/abc" },
   );
+});
+
+test("defaults traces to 10% and accepts valid overrides only", () => {
+  assert.equal(resolveTracesSampleRate(undefined), 0.1);
+  assert.equal(resolveTracesSampleRate(""), 0.1);
+  assert.equal(resolveTracesSampleRate("0"), 0);
+  assert.equal(resolveTracesSampleRate("0.25"), 0.25);
+  assert.equal(resolveTracesSampleRate("1"), 1);
+  assert.equal(resolveTracesSampleRate("2"), 0.1);
+  assert.equal(resolveTracesSampleRate("abc"), 0.1);
+});
+
+type TestSpan = Parameters<typeof scrubSentrySpan>[0];
+
+function span(name: string, attributes: Record<string, unknown>): TestSpan {
+  return {
+    trace_id: "t",
+    span_id: "s",
+    name,
+    start_timestamp: 0,
+    status: "ok",
+    is_segment: false,
+    attributes,
+  } as TestSpan;
+}
+
+test("keeps LLM timing metadata but drops prompts and responses", () => {
+  const scrubbed = scrubSentrySpan(
+    span("chat openai/gpt-5.6-luna", {
+      "gen_ai.request.model": "openai/gpt-5.6-luna",
+      "gen_ai.usage.input_tokens": 42,
+      "gen_ai.usage.output_tokens": 7,
+      "gen_ai.response.time_to_first_chunk": 0.3,
+      "gen_ai.input.messages": "[{\"role\":\"user\",\"content\":\"article\"}]",
+      "gen_ai.output.messages": "model answer",
+      "gen_ai.request.messages": "legacy prompt",
+      "gen_ai.response.text": "legacy answer",
+      "gen_ai.system_instructions": "system prompt",
+    }),
+  );
+
+  assert.deepEqual(scrubbed.attributes, {
+    "gen_ai.request.model": "openai/gpt-5.6-luna",
+    "gen_ai.usage.input_tokens": 42,
+    "gen_ai.usage.output_tokens": 7,
+    "gen_ai.response.time_to_first_chunk": 0.3,
+  });
+});
+
+test("strips query strings from span names and URL attributes", () => {
+  const scrubbed = scrubSentrySpan(
+    span("GET /api/slop?text=secret", {
+      "url.full": "https://jiddu.app/api/slop?text=secret#x",
+      "http.target": "/api/slop?text=secret",
+      "url.path": "/api/slop",
+      "http.route": { value: "/r/abc?ref=mail", type: "string" },
+      "url.query": "text=secret",
+      "http.request.header.cookie": "session=1",
+      "user.email": "person@example.com",
+      "db.query.text": "select * from x where y = 'secret'",
+      "gen_ai.request.model": "model?not-a-url",
+    }),
+  );
+
+  assert.equal(scrubbed.name, "GET /api/slop");
+  assert.deepEqual(scrubbed.attributes, {
+    "url.full": "https://jiddu.app/api/slop",
+    "http.target": "/api/slop",
+    "url.path": "/api/slop",
+    "http.route": { value: "/r/abc", type: "string" },
+    "gen_ai.request.model": "model?not-a-url",
+  });
 });

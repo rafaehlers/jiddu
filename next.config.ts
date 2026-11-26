@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs/config";
 
 const nextConfig: NextConfig = {
   output: "standalone",
@@ -53,4 +54,13 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// withSentryConfig instruments server dependencies at build time — notably the
+// `openai` SDK, so OpenRouter calls appear as gen_ai spans — and keeps
+// Sentry's runtime hook package external. No auth token is used: source maps
+// and releases are not uploaded, and Sentry's own build telemetry is off.
+export default withSentryConfig(nextConfig, {
+  telemetry: false,
+  silent: true,
+  sourcemaps: { disable: true },
+  release: { create: false, inject: false },
+});
